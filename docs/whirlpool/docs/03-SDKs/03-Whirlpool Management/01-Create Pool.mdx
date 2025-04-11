@@ -1,0 +1,367 @@
+---
+sidebar_label: Create Liquidity Pools
+hide_table_of_contents: true
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import ReactMarkdown from 'react-markdown';
+
+export const setupGuide = `
+Before creating a Splash Pool or a Concentrated Liquidity Pool, ensure you have completed the environment setup:
+- **RPC Setup**: Use a Solana RPC client to communicate with the blockchain.
+- **Wallet Creation**: Create a wallet to interact with the Solana network.
+- **Devnet Airdrop**: Fund your wallet with a Solana devnet airdrop to cover transaction fees.
+
+For more details, refer to our Environment Setup Guide.
+`;
+
+export const splashPoolSteps = `
+### Creating Splash Pools
+
+Splash Pools are the easiest way to get started:
+
+1. **Token Mint Addresses**: Provide the mint addresses of the two tokens that will make up the liquidity pool. The order of the tokens is important: the first token will be priced in terms of the second token. This means that the price you set will reflect how many units of the second token are needed to equal one unit of the first token. For example, if you set the price to 0.0001 SOL, this means that one unit of the first token is worth 0.0001 units of the second token (SOL). Make sure to verify the order of your tokens.
+2. **Initial Price**: Set the initial price of token 1 in terms of token 2.
+3. **Funder**: This will be your wallet, which will fund the initialization process.
+4. **Create Instructions**: Use the appropriate function to generate the required pool creation instructions.
+`;
+
+export const concentratedLiquiditySteps = `
+### Creating Concentrated Liquidity Pools
+
+Concentrated Liquidity Pools offer more flexibility:
+
+1. **Token Mint Addresses**: Provide the two token mints.
+2. **Tick Spacing**: Set the tick spacing, which defines the intervals for price ticks. Visit the Whirlpools Parameters page to learn more about the available values of tick spacing and their corresponding fee rates.
+3. **Initial Price**: Specify the initial price of token 1 in terms of token 2.
+4. **Funder**: This can be your wallet, which will fund the pool initialization. If the funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
+5. **Create instructions**: Use the appropriate function to create the pool.
+`;
+
+export const legacySetupGuide = `
+Before creating a Whirlpool, ensure you have completed the environment setup:
+- **Client Setup**: Create a WhirlpoolClient instance.
+- **Wallet Connection**: Connect a wallet to interact with the Solana network.
+- **Token Ordering**: Ensure your token mints are properly ordered.
+
+Whirlpools is set up such that anyone is able to set up a liquidity pool within a WhirlpoolsConfig space.
+`;
+
+# Creating Liquidity Pools on Orca
+
+Creating liquidity pools on Orca is an essential step for launching your token and enabling trading. In this guide, we'll explore two types of liquidity pools available in the Orca ecosystem, **Splash Pools** and **Concentrated Liquidity Pools**, and help you understand how to create them, their differences, and which one best suits your needs.
+
+## 1. Introduction to Pool Types
+
+### Overview
+
+Liquidity pools are a foundational concept in DeFi, enabling users to trade tokens without relying on traditional order books. On Orca, liquidity pools provide the means for traders to swap between two tokens, while liquidity providers earn fees by supplying the tokens to the pool.
+
+### Splash Pools vs. Concentrated Liquidity Pools
+
+- **Splash Pools**: Splash Pools are the simplest type of liquidity pool. They are ideal for those looking to launch a new token with minimal parameters. You only need to provide the mint addresses of the two tokens and set the initial price. Splash Pools offer an easy entry point into liquidity provision, making them especially appealing for community-driven projects like memecoins. These projects often prioritize community engagement over technical complexity, and Splash Pools provide a straightforward way to get started.
+
+- **Concentrated Liquidity Pools:** Concentrated Liquidity Pools are more advanced and allow liquidity providers to concentrate their liquidity within specific price ranges. This results in higher capital efficiency but requires a deeper understanding of how to manage liquidity. Concentrated Liquidity Pools are better suited for experienced users who want greater control over their liquidity.
+
+## 2. Getting Started Guide
+
+<Tabs groupId="sdk-type">
+  <TabItem value="rust" label="Rust">
+    <ReactMarkdown>{setupGuide}</ReactMarkdown>
+
+    <ReactMarkdown>{splashPoolSteps}</ReactMarkdown>
+
+    ```rust
+    use orca_whirlpools::{
+        create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+    };
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
+    use std::str::FromStr;
+    use tokio;
+    use orca_tx_sender::{
+        build_and_send_transaction,
+        set_rpc, get_rpc_client
+    };
+    use solana_sdk::commitment_config::CommitmentLevel;
+
+    #[tokio::main]
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+        set_rpc("https://api.devnet.solana.com").await?;
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        
+        let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
+        let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
+        let initial_price = Some(0.01);
+        let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
+        let funder = Some(wallet.pubkey());
+        let rpc = get_rpc_client()?;
+
+        let result =
+            create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
+                .await?;
+
+        println!("Pool Address: {:?}", result.pool_address);
+        println!(
+            "Initialization Cost: {} lamports",
+            result.initialization_cost
+        );
+        
+        let signature = build_and_send_transaction(
+            result.instructions,
+            &[&wallet],
+            Some(CommitmentLevel::Confirmed),
+            None, // No address lookup tables
+        ).await?;
+        
+        println!("Transaction sent: {}", signature);
+        Ok(())
+    }
+    ```
+
+    <ReactMarkdown>{concentratedLiquiditySteps}</ReactMarkdown>
+
+    ```rust
+    use orca_whirlpools::{
+        create_concentrated_liquidity_pool_instructions, set_whirlpools_config_address,
+        WhirlpoolsConfigInput,
+    };
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
+    use std::str::FromStr;
+    use tokio;
+    use orca_tx_sender::{
+        build_and_send_transaction,
+        set_rpc, get_rpc_client
+    };
+    use solana_sdk::commitment_config::CommitmentLevel;
+
+    #[tokio::main]
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+        set_rpc("https://api.devnet.solana.com").await?;
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        
+        let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
+        let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
+        let tick_spacing = 64;
+        let initial_price = Some(0.01);
+        let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
+        let funder = Some(wallet.pubkey());
+        let rpc = get_rpc_client()?;
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &rpc,
+            token_a,
+            token_b,
+            tick_spacing,
+            initial_price,
+            funder,
+        )
+        .await?;
+
+        println!("Pool Address: {:?}", result.pool_address);
+        println!(
+            "Initialization Cost: {} lamports",
+            result.initialization_cost
+        );
+        
+        let signature = build_and_send_transaction(
+            result.instructions,
+            &[&wallet],
+            Some(CommitmentLevel::Confirmed),
+            None, // No address lookup tables
+        ).await?;
+        
+        println!("Transaction sent: {}", signature);
+        Ok(())
+    }
+    ```
+  </TabItem>
+  
+  <TabItem value="ts-kit" label="TypeScript Kit">
+    <ReactMarkdown>{setupGuide}</ReactMarkdown>
+
+    <ReactMarkdown>{splashPoolSteps}</ReactMarkdown>
+
+    ```tsx
+    import { createSplashPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+
+    const tokenMintOne = address("So11111111111111111111111111111111111111112");
+    const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
+    const initialPrice = 0.01;
+
+    const { poolAddress, instructions, initializationCost, callback: sendTx } = await createSplashPool(
+        devnetRpc,
+        tokenMintOne,
+        tokenMintTwo,
+        initialPrice,
+        wallet
+    );
+
+    // Use the callback to submit the transaction
+    const txId = await sendTx();
+
+    console.log(`Pool Address: ${poolAddress}`);
+    console.log(`Initialization Cost: ${initializationCost} lamports`);
+    console.log(`Transaction ID: ${txId}`);
+    ```
+
+    <ReactMarkdown>{concentratedLiquiditySteps}</ReactMarkdown>
+
+    ```tsx
+    import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+
+    const tokenMintOne = address("So11111111111111111111111111111111111111112");
+    const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
+    const tickSpacing = 64;
+    const initialPrice = 0.01;
+
+    const { poolAddress, instructions, initializationCost, callback: sendTx } = await createConcentratedLiquidityPool(
+        devnetRpc,
+        tokenMintOne,
+        tokenMintTwo,
+        tickSpacing,
+        initialPrice,
+        wallet
+    );
+
+    // Use the callback to submit the transaction
+    const txId = await sendTx();
+
+
+    console.log(`Pool Address: ${poolAddress}`);
+    console.log(`Initialization Cost: ${initializationCost} lamports`);
+    console.log(`Transaction ID: ${txId}`);
+    ```
+
+  </TabItem>
+  
+  <TabItem value="ts-legacy" label="TypeScript Legacy">
+    <ReactMarkdown>{legacySetupGuide}</ReactMarkdown>
+
+    ### Creating Splash Pools
+
+    Splash Pools are the easiest way to get started. Follow these steps to create one using the Legacy SDK:
+
+    1. **Token Addresses**: Define the two token mint addresses. They need to be cardinally ordered with the [`orderMints`](https://dev.orca.so/legacy/classes/PoolUtil.html#orderMints) function.
+    2. **Set Initial Price**: Set the price of the first token in terms of the second token.
+    3. **Create the Pool**: Use the `createSplashPool` function to create the pool.
+
+    ```tsx
+    import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID} from "@orca-so/whirlpools-sdk";
+    import { PublicKey, Connection } from "@solana/web3.js";
+    import { Decimal } from "decimal.js";
+    import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
+
+    // UNIX/Linux/Mac
+    // bash$ export ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
+    // bash$ export ANCHOR_WALLET=wallet.json
+    
+    const connection = new Connection("https://api.devnet.solana.com");
+    const provider = new AnchorProvider(connection, wallet, {});
+    const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID);
+    const client = ctx.getClient();
+    const devnetWhirlpoolsConfig = new PublicKey("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
+    const tokenAddressA = new PublicKey("So11111111111111111111111111111111111111112"); // SOL
+    const tokenAddressB = new PublicKey("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
+    const initialPrice = new Decimal(0.01);
+
+    const { poolKey, tx } = await client.createSplashPool(
+      devnetWhirlpoolsConfig,
+      tokenAddressA,
+      tokenAddressB,
+      initialPrice,
+      ctx.wallet.publicKey
+    );
+    
+    const txId = await tx.buildAndExecute();
+    console.log(`Pool created at: ${poolKey.toBase58()}`);
+    console.log(`Transaction ID: ${txId}`);
+    ```
+
+    ### Creating Concentrated Liquidity Pools
+
+    Concentrated Liquidity Pools offer more control. Follow these steps to create one:
+
+    1. **Token Addresses**: Define the two token mint addresses.
+    2. **Define Tick Spacing**: Set the tick spacing based on your fee tier.
+    3. **Convert Price to Tick Index**: Calculate the tick index from your desired price.
+    4. **Create the Pool**: Use the `createPool` function to create the concentrated liquidity pool.
+
+    ```tsx
+    import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID} from "@orca-so/whirlpools-sdk";
+    import { PublicKey, Connection } from "@solana/web3.js";
+    import { Decimal } from "decimal.js";
+    import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
+
+    // bash$ export ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
+    // bash$ export ANCHOR_WALLET=wallet.json
+    
+    const connection = new Connection("https://api.devnet.solana.com");
+    const provider = new AnchorProvider(connection, wallet, {});
+    const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID);
+    const client = ctx.getClient();
+    const devnetWhirlpoolsConfig = new PublicKey("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
+    const tokenAddressA = new PublicKey("So11111111111111111111111111111111111111112"); // SOL
+    const tokenAddressB = new PublicKey("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
+    const decimalsA = 9;
+    const decimalsB = 6;
+    const tickSpacing = 64;
+    const initialPrice = new Decimal(0.01);
+    const initialTickIndex = PriceMath.priceToTickIndex(initialPrice, decimalsA, decimalsB),
+
+    const { poolKey, tx: createPoolTxBuilder } = await client.createPool(
+      devnetWhirlpoolsConfig,
+      tokenAddressA,
+      tokenAddressB,
+      tickSpacing,
+      initialTickIndex,
+      ctx.wallet.publicKey
+    );
+    
+    const createPoolTxId = await createPoolTxBuilder.buildAndExecute();
+    console.log(`Pool created at: ${poolKey.toBase58()}`);
+    console.log(`Transaction ID: ${createPoolTxId}`);
+    ```
+
+    ### Important Considerations
+
+    When creating pools with the Legacy SDK, keep these factors in mind:
+
+    - **Token Ordering**: Tokens must be cardinally ordered. Use the `orderMints` helper.
+    - **Price Representation**: For concentrated pools, price must be converted to a tick index.
+    - **Fee Tiers**: Different tick spacings correspond to different fee tiers.
+  </TabItem>
+</Tabs>
+
+### Comparison of Pool Types
+| Feature            | Splash Pools       | Concentrated Liquidity Pools     |
+| ------------------ | ------------------ | -------------------------------- |
+| Complexity         | Low                | High                             |
+| Initial Parameters | Token mints, price | Token mints, tick spacing, price |
+| Capital Efficiency | Moderate           | High                             |
+| Ideal For          | Beginners          | Advanced Users                   |
+
+## 3. Usage Examples
+
+### Launching a Token Pair with a Splash Pool
+
+Suppose you want to launch a new memecoin and pair it with USDC. You can leverage the simplicity of Splash Pools to quickly set up the pool with an initial price. This is ideal if you want to keep things simple and start earning trading fees with minimal configuration. For example, if a development team is building a launchpad for memecoins, Splash Pools are an ideal solution.
+
+### Creating a Concentrated Liquidity Pool for Efficiency
+
+If you want to maximize capital efficiency, you can use the flexibility of Concentrated Liquidity Pools to define specific price ranges for your liquidity. This approach is beneficial when you expect price movements within certain bounds and want to concentrate liquidity accordingly. For example, a DeFi protocol might use a Concentrated Liquidity Pool to facilitate a stablecoin-stablecoin pair, where the price is expected to remain within a tight range. By concentrating liquidity in this range, the protocol can maximize returns for liquidity providers and reduce slippage for traders.
+
+## 4. Next Steps
+
+After creating a liquidity pool, the pool is still empty and requires liquidity for people to trade against. To make the pool functional, open a position and add liquidity. This enables traders to swap between tokens and helps you start earning fees. 

@@ -2594,7 +2594,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "async-trait",
  "base64 0.20.0",
@@ -2623,7 +2623,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "2.0.4"
+version = "2.0.5"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -2638,7 +2638,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "ethnum",
  "libm",

@@ -1,5 +1,6 @@
 mod fees;
 mod liquidity;
+mod oracle;
 mod pool;
 mod position;
 mod rewards;
@@ -14,6 +15,7 @@ mod u64;
 
 pub use fees::*;
 pub use liquidity::*;
+pub use oracle::*;
 pub use pool::*;
 pub use position::*;
 pub use rewards::*;

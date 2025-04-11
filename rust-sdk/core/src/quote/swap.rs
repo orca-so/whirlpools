@@ -1,12 +1,5 @@
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee,
-    try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
-    try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
-    try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
-    CoreError, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
-    TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
-    INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
-    SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee, try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee, AdaptiveFeeInfo, CoreError, ExactInSwapQuote, ExactOutSwapQuote, FeeRateManager, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT
 };
 
 #[cfg(feature = "wasm")]
@@ -168,8 +161,8 @@ pub struct SwapResult {
 /// - `specified_input`: Determines if the input amount is specified:
 ///    - `true`: `token_amount` represents the input amount.
 ///    - `false`: `token_amount` represents the output amount.
-/// - `_timestamp`: A placeholder for future full swap logic, currently ignored.
-///
+/// - `timestamp`: A timestamp used to calculate the adaptive fee rate.
+/// - `adaptive_fee_info`: An optional `AdaptiveFeeInfo` struct containing information about the adaptive fee rate.
 /// # Returns
 /// A `Result` containing a `SwapResult` struct if the swap is successful, or an `ErrorCode` if the computation fails.
 /// # Notes
@@ -182,7 +175,8 @@ pub fn compute_swap<const SIZE: usize>(
     tick_sequence: TickArraySequence<SIZE>,
     a_to_b: bool,
     specified_input: bool,
-    _timestamp: u64, // currently ignored but needed for full swap logic
+    timestamp: u64,
+    adaptive_fee_info: Option<AdaptiveFeeInfo>,
 ) -> Result<SwapResult, CoreError> {
     let sqrt_price_limit = if sqrt_price_limit == 0 {
         if a_to_b {
@@ -215,6 +209,18 @@ pub fn compute_swap<const SIZE: usize>(
     let mut current_liquidity = whirlpool.liquidity;
     let mut trade_fee = 0u64;
 
+    if is_initialized_with_adaptive_fee_tier(&whirlpool) != adaptive_fee_info.is_some() {
+        return Err(INVALID_ADAPTIVE_FEE_INFO);
+    }
+
+    let mut fee_rate_manager = FeeRateManager::new(
+        a_to_b,
+        whirlpool.tick_current_index, // note:  -1 shift is acceptable
+        timestamp,
+        whirlpool.fee_rate,
+        &adaptive_fee_info,
+    )?;
+
     while amount_remaining > 0 && sqrt_price_limit != current_sqrt_price {
         let (next_tick, next_tick_index) = if a_to_b {
             tick_sequence.prev_initialized_tick(current_tick_index)?
@@ -228,12 +234,19 @@ pub fn compute_swap<const SIZE: usize>(
             next_tick_sqrt_price.min(sqrt_price_limit)
         };
 
+        loop {
+            fee_rate_manager.update_volatility_accumulator();
+
+            let total_fee_rate = fee_rate_manager.get_total_fee_rate();
+            let (bounded_sqrt_price_target, adaptive_fee_update_skipped) =
+                fee_rate_manager.get_bounded_sqrt_price_target(target_sqrt_price, current_liquidity);
+
         let step_quote = compute_swap_step(
             amount_remaining,
-            whirlpool.fee_rate,
+            total_fee_rate,
             current_liquidity,
             current_sqrt_price,
-            target_sqrt_price,
+            bounded_sqrt_price_target,
             a_to_b,
             specified_input,
         )?;
@@ -272,6 +285,24 @@ pub fn compute_swap<const SIZE: usize>(
         }
 
         current_sqrt_price = step_quote.next_sqrt_price;
+
+
+        if !adaptive_fee_update_skipped {
+            fee_rate_manager.advance_tick_group();
+        } else {
+            fee_rate_manager.advance_tick_group_after_skip(
+                current_sqrt_price,
+                next_tick_sqrt_price,
+                next_tick_index,
+            );
+        }
+
+        // do while loop
+        if amount_remaining == 0 || current_sqrt_price == target_sqrt_price {
+            break;
+        }
+
+        }
     }
 
     let swapped_amount = token_amount - amount_remaining;
@@ -286,6 +317,12 @@ pub fn compute_swap<const SIZE: usize>(
     } else {
         swapped_amount
     };
+
+    fee_rate_manager.update_major_swap_timestamp(
+        timestamp,
+        whirlpool.sqrt_price,
+        current_sqrt_price,
+    );
 
     Ok(SwapResult {
         token_a,
@@ -325,7 +362,7 @@ struct SwapStepQuote {
 
 fn compute_swap_step(
     amount_remaining: u64,
-    fee_rate: u16,
+    fee_rate: u32,
     current_liquidity: u128,
     current_sqrt_price: u128,
     target_sqrt_price: u128,
@@ -483,6 +520,10 @@ fn try_get_next_sqrt_price(
         )
         .map(|x| x.into())
     }
+}
+
+fn is_initialized_with_adaptive_fee_tier(whirlpool: &WhirlpoolFacade) -> bool {
+    whirlpool.fee_tier_index == whirlpool.tick_spacing
 }
 
 #[cfg(all(test, not(feature = "wasm")))]

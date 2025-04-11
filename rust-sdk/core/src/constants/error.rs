@@ -49,3 +49,6 @@ pub const TICK_INDEX_NOT_IN_ARRAY: CoreError = "Tick index not in array";
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub const INVALID_TICK_ARRAY_SEQUENCE: CoreError = "Invalid tick array sequence";
+
+#[cfg_attr(feature = "wasm", wasm_expose)]
+pub const INVALID_ADAPTIVE_FEE_INFO: CoreError = "Invalid adaptive fee info";

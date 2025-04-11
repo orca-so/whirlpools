@@ -1,3 +1,4 @@
+mod adaptive_fee;
 mod bundle;
 mod position;
 mod tick;
@@ -7,6 +8,7 @@ mod token;
 #[cfg(feature = "floats")]
 mod price;
 
+pub use adaptive_fee::*;
 pub use bundle::*;
 pub use position::*;
 pub use tick::*;

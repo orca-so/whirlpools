@@ -3,7 +3,7 @@ import type { Percentage } from "@orca-so/common-sdk";
 import { AddressUtil, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import type { AdaptiveFeeContext, WhirlpoolContext } from "../..";
+import type { OracleData, WhirlpoolContext } from "../..";
 import { TickUtil } from "../..";
 import type {
   WhirlpoolAccountFetchOptions,
@@ -42,7 +42,7 @@ export interface TickArrayRequest {
  * An alias for null indicating that the adaptive fee context does not exist.
  * @category Whirlpool Utils
  */
-export const NO_ADAPTIVE_FEE_CONTEXT = null;
+export const NO_ORACLE_DATA = null;
 
 /**
  * @category Whirlpool Utils
@@ -185,21 +185,21 @@ export class SwapUtils {
   }
 
   /**
-   * Fetch the adaptive fee info for a given whirlpool.
+   * Fetch the oracle data for a given whirlpool.
    *
    * @category Whirlpool Utils
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
    * @param fetcher - WhirlpoolAccountCacheInterface object to fetch solana accounts
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
-   * @returns AdaptiveFeeContext object containing the trade enable timestamp and adaptive fee constants and variables if the oracle is initialized, otherwise null.
+   * @returns OracleData object containing the trade enable timestamp and adaptive fee constants and variables if the oracle is initialized, otherwise null.
    */
-  public static async getAdaptiveFeeContext(
+  public static async getOracle(
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface,
     opts?: WhirlpoolAccountFetchOptions,
-  ): Promise<AdaptiveFeeContext | null> {
+  ): Promise<OracleData | null> {
     const oracleAddress = PDAUtil.getOracle(
       programId,
       whirlpoolAddress,
@@ -207,16 +207,10 @@ export class SwapUtils {
 
     const oracleData = await fetcher.getOracle(oracleAddress, opts);
     if (!oracleData) {
-      return NO_ADAPTIVE_FEE_CONTEXT;
+      return NO_ORACLE_DATA;
     }
 
-    return {
-      tradeEnableTimestamp: oracleData.tradeEnableTimestamp,
-      adaptiveFeeInfo: {
-        adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
-        adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
-      },
-    };
+    return oracleData;
   }
 
   /**

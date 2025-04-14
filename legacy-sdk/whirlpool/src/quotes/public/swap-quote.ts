@@ -12,6 +12,7 @@ import { IGNORE_CACHE } from "../../network/public/fetcher";
 import type {
   AdaptiveFeeConstantsData,
   AdaptiveFeeVariablesData,
+  OracleData,
   TickArray,
   WhirlpoolData,
 } from "../../types/public";
@@ -39,15 +40,6 @@ export enum UseFallbackTickArray {
 }
 
 /*
- * Adaptive fee context for a swap quote.
- * @category Quotes
- */
-export type AdaptiveFeeContext = {
-  tradeEnableTimestamp: BN;
-  adaptiveFeeInfo: AdaptiveFeeInfo;
-};
-
-/*
  * Adaptive fee constants and variables
  * @category Quotes
  */
@@ -66,7 +58,7 @@ export type AdaptiveFeeInfo = {
  * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
  *                                 the input token of the swap.
  * @param tickArrays - An sequential array of tick-array objects in the direction of the trade to swap on
- * @param adaptiveFeeCtx - Adaptive fee context for the whirlpool
+ * @param oracleData - Oracle data for the whirlpool
  * @param tokenExtensionCtx - TokenExtensions info for the whirlpool
  * @param fallbackTickArray - Optional. A reserve in case prices move in the opposite direction
  * @param timestampInSeconds - Optional. A parameter to generate this quote to a unix time stamp
@@ -79,7 +71,7 @@ export type SwapQuoteParam = {
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   tickArrays: TickArray[];
-  adaptiveFeeCtx: AdaptiveFeeContext | null;
+  oracleData: OracleData | null;
   tokenExtensionCtx: TokenExtensionContextForPool;
   fallbackTickArray?: PublicKey;
   timestampInSeconds?: BN;
@@ -295,7 +287,7 @@ async function swapQuoteByToken(
       whirlpoolData,
       IGNORE_CACHE,
     ),
-    getAdaptiveFeeCtx(whirlpool, programId, fetcher, opts),
+    getOracleData(whirlpool, programId, fetcher, opts),
   ]);
 
   const fallbackTickArray = getFallbackTickArray(
@@ -319,20 +311,20 @@ async function swapQuoteByToken(
     tokenExtensionCtx,
     fallbackTickArray,
     timestampInSeconds,
-    adaptiveFeeCtx,
+    oracleData: adaptiveFeeCtx,
   };
 }
 
-async function getAdaptiveFeeCtx(
+async function getOracleData(
   whirlpool: Whirlpool,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
-): Promise<AdaptiveFeeContext | null> {
+): Promise<OracleData | null> {
   if (!PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpool.getData())) {
     return null;
   }
-  return SwapUtils.getAdaptiveFeeContext(
+  return SwapUtils.getOracle(
     AddressUtil.toPubKey(programId),
     whirlpool.getAddress(),
     fetcher,

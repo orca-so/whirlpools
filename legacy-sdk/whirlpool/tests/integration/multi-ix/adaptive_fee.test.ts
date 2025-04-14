@@ -372,7 +372,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: pool.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              oracleData: await SwapUtils.getOracle(
                 testCtx.whirlpoolCtx.program.programId,
                 pool.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
@@ -556,7 +556,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: poolOne.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              oracleData: await SwapUtils.getOracle(
                 testCtx.whirlpoolCtx.program.programId,
                 poolOne.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
@@ -588,7 +588,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: swapQuoteOne.estimatedAmountOut,
               whirlpoolData: poolTwo.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              oracleData: await SwapUtils.getOracle(
                 testCtx.whirlpoolCtx.program.programId,
                 poolTwo.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
@@ -854,7 +854,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: pool.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+            oracleData: await SwapUtils.getOracle(
               testCtx.whirlpoolCtx.program.programId,
               pool.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
@@ -1007,7 +1007,7 @@ describe("adaptive fee tests", () => {
                 tokenAmount: tradeTokenAmount,
                 whirlpoolData: poolOne.getData(),
                 tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-                adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                oracleData: await SwapUtils.getOracle(
                   testCtx.whirlpoolCtx.program.programId,
                   poolOne.getAddress(),
                   testCtx.whirlpoolCtx.fetcher,
@@ -1040,7 +1040,7 @@ describe("adaptive fee tests", () => {
                 tokenAmount: swapQuoteOne.estimatedAmountOut,
                 whirlpoolData: poolTwo.getData(),
                 tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-                adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                oracleData: await SwapUtils.getOracle(
                   testCtx.whirlpoolCtx.program.programId,
                   poolTwo.getAddress(),
                   testCtx.whirlpoolCtx.fetcher,
@@ -1484,7 +1484,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+            oracleData: await SwapUtils.getOracle(
               testCtx.whirlpoolCtx.program.programId,
               poolOne.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
@@ -1516,7 +1516,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+            oracleData: await SwapUtils.getOracle(
               testCtx.whirlpoolCtx.program.programId,
               poolTwo.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
@@ -1798,7 +1798,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+            oracleData: await SwapUtils.getOracle(
               testCtx.whirlpoolCtx.program.programId,
               poolOne.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
@@ -1830,7 +1830,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+            oracleData: await SwapUtils.getOracle(
               testCtx.whirlpoolCtx.program.programId,
               poolTwo.getAddress(),
               testCtx.whirlpoolCtx.fetcher,

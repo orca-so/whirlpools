@@ -91,7 +91,10 @@ impl Position {
             return Err(ErrorCode::ClosePositionNotEmpty.into());
         }
 
-        // Do we care whether the tick range is the same as before?
+        if new_tick_lower_index == self.tick_lower_index && new_tick_upper_index == self.tick_upper_index {
+            return Err(ErrorCode::SameTickRangeNotAllowed.into());
+        }
+
         validate_tick_range_for_whirlpool(whirlpool, new_tick_lower_index, new_tick_upper_index)?;
 
         // Wihle we could theoretically update the whirlpool here

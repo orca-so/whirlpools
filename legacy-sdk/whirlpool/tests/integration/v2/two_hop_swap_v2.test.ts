@@ -8,7 +8,7 @@ import {
   buildWhirlpoolClient,
   METADATA_PROGRAM_ADDRESS,
   MIN_SQRT_PRICE_BN,
-  NO_ADAPTIVE_FEE_CONTEXT,
+  NO_ORACLE_DATA,
   PDAUtil,
   PriceMath,
   swapQuoteByInputToken,
@@ -246,7 +246,7 @@ describe("two_hop_swap_v2", () => {
                     whirlpoolDataOne,
                     IGNORE_CACHE,
                   ),
-                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+                oracleData: NO_ORACLE_DATA,
               },
               Percentage.fromFraction(1, 100),
             );
@@ -277,7 +277,7 @@ describe("two_hop_swap_v2", () => {
                     whirlpoolDataTwo,
                     IGNORE_CACHE,
                   ),
-                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+                oracleData: NO_ORACLE_DATA,
               },
               Percentage.fromFraction(1, 100),
             );
@@ -499,7 +499,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -529,7 +529,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -665,7 +665,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -695,7 +695,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -804,7 +804,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -834,7 +834,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -930,7 +930,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -960,7 +960,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1063,7 +1063,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1093,7 +1093,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1188,7 +1188,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1218,7 +1218,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1308,7 +1308,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1338,7 +1338,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1449,7 +1449,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1479,7 +1479,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1558,7 +1558,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1588,7 +1588,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1683,7 +1683,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1713,7 +1713,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1811,7 +1811,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataOne,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1841,7 +1841,7 @@ describe("two_hop_swap_v2", () => {
                   whirlpoolDataTwo,
                   IGNORE_CACHE,
                 ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -2124,7 +2124,7 @@ describe("two_hop_swap_v2", () => {
                 whirlpoolDataOne,
                 IGNORE_CACHE,
               ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(1, 100),
         );
@@ -2154,7 +2154,7 @@ describe("two_hop_swap_v2", () => {
                 whirlpoolDataTwo,
                 IGNORE_CACHE,
               ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(1, 100),
         );
@@ -2383,7 +2383,7 @@ describe("two_hop_swap_v2", () => {
                 whirlpoolDataOne,
                 IGNORE_CACHE,
               ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(1, 100),
         );
@@ -2413,7 +2413,7 @@ describe("two_hop_swap_v2", () => {
                 whirlpoolDataTwo,
                 IGNORE_CACHE,
               ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(1, 100),
         );
@@ -2570,7 +2570,7 @@ describe("two_hop_swap_v2", () => {
           IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+        oracleData: NO_ORACLE_DATA,
         whirlpoolData: whirlpoolOne.getData(),
         tokenAmount: new BN(1_000_000),
       };
@@ -3135,7 +3135,7 @@ describe("two_hop_swap_v2", () => {
           IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+        oracleData: NO_ORACLE_DATA,
         whirlpoolData: whirlpoolOne.getData(),
         tokenAmount: new BN(1_000_000),
       };

@@ -28,7 +28,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     otherAmountThreshold,
     amountSpecifiedIsInput,
     timestampInSeconds: optionalTimestampInSeconds,
-    adaptiveFeeCtx,
+    oracleData,
     tokenExtensionCtx,
   } = params;
 
@@ -73,13 +73,14 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     );
   }
 
-  const adaptiveFeeInfo = !!adaptiveFeeCtx
-    ? adaptiveFeeCtx.adaptiveFeeInfo
-    : null;
+  const adaptiveFeeInfo = !!oracleData ? {
+    adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
+    adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
+  } : null;
+
   const timestampInSeconds =
     optionalTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
-
-  if (adaptiveFeeCtx?.tradeEnableTimestamp.gt(timestampInSeconds)) {
+  if (oracleData?.tradeEnableTimestamp.gt(timestampInSeconds)) {
     throw new WhirlpoolsError(
       "Trade is not enabled yet.",
       SwapErrorCode.TradeIsNotEnabled,

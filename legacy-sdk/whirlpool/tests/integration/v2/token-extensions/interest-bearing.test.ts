@@ -5,7 +5,7 @@ import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../../../src";
 import {
-  NO_ADAPTIVE_FEE_CONTEXT,
+  NO_ORACLE_DATA,
   PDAUtil,
   swapQuoteWithParams,
   SwapUtils,
@@ -194,7 +194,7 @@ describe("TokenExtension/InterestBearing", () => {
           whirlpoolData,
           IGNORE_CACHE,
         ),
-        adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+        oracleData: NO_ORACLE_DATA,
       },
       Percentage.fromFraction(0, 100),
     );

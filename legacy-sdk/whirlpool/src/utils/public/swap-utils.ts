@@ -39,7 +39,7 @@ export interface TickArrayRequest {
 }
 
 /*
- * An alias for null indicating that the adaptive fee context does not exist.
+ * An alias for null indicating that the oracle data does not exist.
  * @category Whirlpool Utils
  */
 export const NO_ORACLE_DATA = null;

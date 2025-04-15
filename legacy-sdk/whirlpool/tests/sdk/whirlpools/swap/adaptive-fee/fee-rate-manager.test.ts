@@ -6,7 +6,8 @@ import {
 import * as assert from "assert";
 import type {
   AdaptiveFeeConstantsData,
-  AdaptiveFeeInfo} from "../../../../../src";
+  AdaptiveFeeInfo,
+} from "../../../../../src";
 import {
   ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR,
   FEE_RATE_HARD_LIMIT,

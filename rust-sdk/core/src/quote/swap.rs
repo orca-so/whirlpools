@@ -1,5 +1,13 @@
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee, try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee, AdaptiveFeeInfo, CoreError, ExactInSwapQuote, ExactOutSwapQuote, FeeRateManager, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT, INVALID_ADAPTIVE_FEE_INFO, OracleFacade,
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee,
+    try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
+    try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
+    try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
+    AdaptiveFeeInfo, CoreError, ExactInSwapQuote, ExactOutSwapQuote, FeeRateManager, OracleFacade,
+    TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade,
+    AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_ADAPTIVE_FEE_INFO,
+    INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
+    SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
 };
 
 #[cfg(feature = "wasm")]
@@ -256,70 +264,69 @@ pub fn compute_swap<const SIZE: usize>(
             applied_fee_rate_min = applied_fee_rate_min.min(total_fee_rate);
             applied_fee_rate_max = applied_fee_rate_max.max(total_fee_rate);
 
-            let (bounded_sqrt_price_target, adaptive_fee_update_skipped) =
-                fee_rate_manager.get_bounded_sqrt_price_target(target_sqrt_price, current_liquidity);
+            let (bounded_sqrt_price_target, adaptive_fee_update_skipped) = fee_rate_manager
+                .get_bounded_sqrt_price_target(target_sqrt_price, current_liquidity);
 
-        let step_quote = compute_swap_step(
-            amount_remaining,
-            total_fee_rate,
-            current_liquidity,
-            current_sqrt_price,
-            bounded_sqrt_price_target,
-            a_to_b,
-            specified_input,
-        )?;
-
-        trade_fee += step_quote.fee_amount;
-
-        if specified_input {
-            amount_remaining = amount_remaining
-                .checked_sub(step_quote.amount_in)
-                .ok_or(ARITHMETIC_OVERFLOW)?
-                .checked_sub(step_quote.fee_amount)
-                .ok_or(ARITHMETIC_OVERFLOW)?;
-            amount_calculated = amount_calculated
-                .checked_add(step_quote.amount_out)
-                .ok_or(ARITHMETIC_OVERFLOW)?;
-        } else {
-            amount_remaining = amount_remaining
-                .checked_sub(step_quote.amount_out)
-                .ok_or(ARITHMETIC_OVERFLOW)?;
-            amount_calculated = amount_calculated
-                .checked_add(step_quote.amount_in)
-                .ok_or(ARITHMETIC_OVERFLOW)?
-                .checked_add(step_quote.fee_amount)
-                .ok_or(ARITHMETIC_OVERFLOW)?;
-        }
-
-        if step_quote.next_sqrt_price == next_tick_sqrt_price {
-            current_liquidity = get_next_liquidity(current_liquidity, next_tick, a_to_b);
-            current_tick_index = if a_to_b {
-                next_tick_index - 1
-            } else {
-                next_tick_index
-            }
-        } else if step_quote.next_sqrt_price != current_sqrt_price {
-            current_tick_index = sqrt_price_to_tick_index(step_quote.next_sqrt_price.into()).into();
-        }
-
-        current_sqrt_price = step_quote.next_sqrt_price;
-
-
-        if !adaptive_fee_update_skipped {
-            fee_rate_manager.advance_tick_group();
-        } else {
-            fee_rate_manager.advance_tick_group_after_skip(
+            let step_quote = compute_swap_step(
+                amount_remaining,
+                total_fee_rate,
+                current_liquidity,
                 current_sqrt_price,
-                next_tick_sqrt_price,
-                next_tick_index,
-            );
-        }
+                bounded_sqrt_price_target,
+                a_to_b,
+                specified_input,
+            )?;
 
-        // do while loop
-        if amount_remaining == 0 || current_sqrt_price == target_sqrt_price {
-            break;
-        }
+            trade_fee += step_quote.fee_amount;
 
+            if specified_input {
+                amount_remaining = amount_remaining
+                    .checked_sub(step_quote.amount_in)
+                    .ok_or(ARITHMETIC_OVERFLOW)?
+                    .checked_sub(step_quote.fee_amount)
+                    .ok_or(ARITHMETIC_OVERFLOW)?;
+                amount_calculated = amount_calculated
+                    .checked_add(step_quote.amount_out)
+                    .ok_or(ARITHMETIC_OVERFLOW)?;
+            } else {
+                amount_remaining = amount_remaining
+                    .checked_sub(step_quote.amount_out)
+                    .ok_or(ARITHMETIC_OVERFLOW)?;
+                amount_calculated = amount_calculated
+                    .checked_add(step_quote.amount_in)
+                    .ok_or(ARITHMETIC_OVERFLOW)?
+                    .checked_add(step_quote.fee_amount)
+                    .ok_or(ARITHMETIC_OVERFLOW)?;
+            }
+
+            if step_quote.next_sqrt_price == next_tick_sqrt_price {
+                current_liquidity = get_next_liquidity(current_liquidity, next_tick, a_to_b);
+                current_tick_index = if a_to_b {
+                    next_tick_index - 1
+                } else {
+                    next_tick_index
+                }
+            } else if step_quote.next_sqrt_price != current_sqrt_price {
+                current_tick_index =
+                    sqrt_price_to_tick_index(step_quote.next_sqrt_price.into()).into();
+            }
+
+            current_sqrt_price = step_quote.next_sqrt_price;
+
+            if !adaptive_fee_update_skipped {
+                fee_rate_manager.advance_tick_group();
+            } else {
+                fee_rate_manager.advance_tick_group_after_skip(
+                    current_sqrt_price,
+                    next_tick_sqrt_price,
+                    next_tick_index,
+                );
+            }
+
+            // do while loop
+            if amount_remaining == 0 || current_sqrt_price == target_sqrt_price {
+                break;
+            }
         }
     }
 
@@ -593,6 +600,13 @@ mod tests {
         .into()
     }
 
+    fn now() -> u64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+    }
+
     #[test]
     fn test_exact_in_a_to_b_simple() {
         let result = swap_quote_by_input_token(
@@ -602,7 +616,7 @@ mod tests {
             test_whirlpool(1 << 64, true),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -622,7 +636,7 @@ mod tests {
             test_whirlpool(1 << 64, false),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -642,7 +656,7 @@ mod tests {
             test_whirlpool(1 << 64, true),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -662,7 +676,7 @@ mod tests {
             test_whirlpool(1 << 64, false),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -682,7 +696,7 @@ mod tests {
             test_whirlpool(1 << 64, true),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -702,7 +716,7 @@ mod tests {
             test_whirlpool(1 << 64, false),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -722,7 +736,7 @@ mod tests {
             test_whirlpool(1 << 64, true),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )
@@ -742,7 +756,7 @@ mod tests {
             test_whirlpool(1 << 64, false),
             None,
             test_tick_arrays(),
-            None,
+            now(),
             None,
             None,
         )

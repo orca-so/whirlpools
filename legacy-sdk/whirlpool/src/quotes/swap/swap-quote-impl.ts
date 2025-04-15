@@ -73,10 +73,12 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     );
   }
 
-  const adaptiveFeeInfo = !!oracleData ? {
-    adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
-    adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
-  } : null;
+  const adaptiveFeeInfo = !!oracleData
+    ? {
+        adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
+        adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
+      }
+    : null;
 
   const timestampInSeconds =
     optionalTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));

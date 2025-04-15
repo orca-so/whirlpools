@@ -694,7 +694,10 @@ mod tests {
         assert_eq!(try_reverse_apply_swap_fee(9990, 1000), Ok(10000));
         assert_eq!(try_reverse_apply_swap_fee(9900, 10000), Ok(10000));
         assert_eq!(try_reverse_apply_swap_fee(9344, u16::MAX as u32), Ok(10000));
-        assert_eq!(try_reverse_apply_swap_fee(9000, FEE_RATE_HARD_LIMIT), Ok(10000));
+        assert_eq!(
+            try_reverse_apply_swap_fee(9000, FEE_RATE_HARD_LIMIT),
+            Ok(10000)
+        );
         assert_eq!(
             try_reverse_apply_swap_fee(u64::MAX, 1000),
             Err(AMOUNT_EXCEEDS_MAX_U64)

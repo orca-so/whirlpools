@@ -1,13 +1,16 @@
-use std::{error::Error, iter::zip, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    error::Error,
+    iter::zip,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use orca_whirlpools_client::{
-    get_oracle_address, get_tick_array_address, AccountsType, RemainingAccountsInfo,
-    RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, TickArray, Whirlpool, Oracle,
+    get_oracle_address, get_tick_array_address, AccountsType, Oracle, RemainingAccountsInfo,
+    RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, TickArray, Whirlpool,
 };
 use orca_whirlpools_core::{
     get_tick_array_start_tick_index, swap_quote_by_input_token, swap_quote_by_output_token,
     ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade, TickFacade, TICK_ARRAY_SIZE,
-    OracleFacade,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
@@ -242,7 +245,10 @@ pub async fn swap_instructions(
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let trade_enable_timestamp = oracle.as_ref().map(|x| x.trade_enable_timestamp).unwrap_or(0);
+    let trade_enable_timestamp = oracle
+        .as_ref()
+        .map(|x| x.trade_enable_timestamp)
+        .unwrap_or(0);
 
     let quote = match swap_type {
         SwapType::ExactIn => SwapQuote::ExactIn(swap_quote_by_input_token(

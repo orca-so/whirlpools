@@ -96,13 +96,21 @@ function testPosition(): PositionFacade {
 describe("WASM bundle smoke test", () => {
   it("SwapIn", async () => {
     const timestamp = BigInt(Math.floor(Date.now() / 1000));
-    const result = swapQuoteByInputToken(1000n, false, 1000, testWhirlpool(), undefined, [
-      testTickArray(0),
-      testTickArray(176),
-      testTickArray(352),
-      testTickArray(-176),
-      testTickArray(-352),
-    ], timestamp);
+    const result = swapQuoteByInputToken(
+      1000n,
+      false,
+      1000,
+      testWhirlpool(),
+      undefined,
+      [
+        testTickArray(0),
+        testTickArray(176),
+        testTickArray(352),
+        testTickArray(-176),
+        testTickArray(-352),
+      ],
+      timestamp,
+    );
     assert.strictEqual(result.tokenIn, 1000n);
     assert.strictEqual(result.tokenEstOut, 918n);
     assert.strictEqual(result.tokenMinOut, 826n);
@@ -111,13 +119,21 @@ describe("WASM bundle smoke test", () => {
 
   it("SwapOut", async () => {
     const timestamp = BigInt(Math.floor(Date.now() / 1000));
-    const result = swapQuoteByOutputToken(1000n, true, 1000, testWhirlpool(), undefined, [
-      testTickArray(0),
-      testTickArray(176),
-      testTickArray(352),
-      testTickArray(-176),
-      testTickArray(-352),
-    ], timestamp);
+    const result = swapQuoteByOutputToken(
+      1000n,
+      true,
+      1000,
+      testWhirlpool(),
+      undefined,
+      [
+        testTickArray(0),
+        testTickArray(176),
+        testTickArray(352),
+        testTickArray(-176),
+        testTickArray(-352),
+      ],
+      timestamp,
+    );
     assert.strictEqual(result.tokenOut, 1000n);
     assert.strictEqual(result.tokenEstIn, 1088n);
     assert.strictEqual(result.tokenMaxIn, 1197n);

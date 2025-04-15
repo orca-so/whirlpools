@@ -1,13 +1,13 @@
-use orca_whirlpools_core::{OracleFacade, AdaptiveFeeConstantsFacade, AdaptiveFeeVariablesFacade};
+use orca_whirlpools_core::{AdaptiveFeeConstantsFacade, AdaptiveFeeVariablesFacade, OracleFacade};
 
-use crate::{Oracle, AdaptiveFeeConstants, AdaptiveFeeVariables};
+use crate::{AdaptiveFeeConstants, AdaptiveFeeVariables, Oracle};
 
 impl From<Oracle> for OracleFacade {
     fn from(val: Oracle) -> Self {
         OracleFacade {
-          trade_enable_timestamp: val.trade_enable_timestamp,
-          adaptive_fee_constants: val.adaptive_fee_constants.into(),
-          adaptive_fee_variables: val.adaptive_fee_variables.into(),
+            trade_enable_timestamp: val.trade_enable_timestamp,
+            adaptive_fee_constants: val.adaptive_fee_constants.into(),
+            adaptive_fee_variables: val.adaptive_fee_variables.into(),
         }
     }
 }

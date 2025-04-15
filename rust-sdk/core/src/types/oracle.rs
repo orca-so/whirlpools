@@ -6,9 +6,9 @@ use orca_whirlpools_macros::wasm_expose;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub struct OracleFacade {
-  pub trade_enable_timestamp: u64,
-  pub adaptive_fee_constants: AdaptiveFeeConstantsFacade,
-  pub adaptive_fee_variables: AdaptiveFeeVariablesFacade,
+    pub trade_enable_timestamp: u64,
+    pub adaptive_fee_constants: AdaptiveFeeConstantsFacade,
+    pub adaptive_fee_variables: AdaptiveFeeVariablesFacade,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -36,15 +36,15 @@ pub struct AdaptiveFeeVariablesFacade {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub struct AdaptiveFeeInfo {
-  pub constants: AdaptiveFeeConstantsFacade,
-  pub variables: AdaptiveFeeVariablesFacade,
+    pub constants: AdaptiveFeeConstantsFacade,
+    pub variables: AdaptiveFeeVariablesFacade,
 }
 
 impl From<OracleFacade> for AdaptiveFeeInfo {
-  fn from(oracle: OracleFacade) -> Self {
-    AdaptiveFeeInfo {
-      constants: oracle.adaptive_fee_constants,
-      variables: oracle.adaptive_fee_variables,
+    fn from(oracle: OracleFacade) -> Self {
+        AdaptiveFeeInfo {
+            constants: oracle.adaptive_fee_constants,
+            variables: oracle.adaptive_fee_variables,
+        }
     }
-  }
 }

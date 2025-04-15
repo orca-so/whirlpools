@@ -170,7 +170,8 @@ async function getOracle(
   whirlpool: Whirlpool,
 ): Promise<Oracle | undefined> {
   // no need to fetch oracle for non-adaptive fee whirlpools
-  const feeTierIndex = whirlpool.feeTierIndexSeed[0] + whirlpool.feeTierIndexSeed[1] * 256;
+  const feeTierIndex =
+    whirlpool.feeTierIndexSeed[0] + whirlpool.feeTierIndexSeed[1] * 256;
   if (whirlpool.tickSpacing == feeTierIndex) {
     return undefined;
   }

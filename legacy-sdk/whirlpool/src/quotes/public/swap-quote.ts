@@ -272,7 +272,7 @@ async function swapQuoteByToken(
       amountSpecifiedIsInput,
     ) === SwapDirection.AtoB;
 
-  const [tickArrays, tokenExtensionCtx, adaptiveFeeCtx] = await Promise.all([
+  const [tickArrays, tokenExtensionCtx, oracleData] = await Promise.all([
     SwapUtils.getTickArrays(
       whirlpoolData.tickCurrentIndex,
       whirlpoolData.tickSpacing,
@@ -311,7 +311,7 @@ async function swapQuoteByToken(
     tokenExtensionCtx,
     fallbackTickArray,
     timestampInSeconds,
-    oracleData: adaptiveFeeCtx,
+    oracleData,
   };
 }
 

@@ -155,6 +155,8 @@ pub struct SwapResult {
     pub token_a: u64,
     pub token_b: u64,
     pub trade_fee: u64,
+    pub applied_fee_rate_min: u32,
+    pub applied_fee_rate_max: u32,
 }
 
 /// Computes the amounts of tokens A and B based on the current Whirlpool state and tick sequence.
@@ -202,8 +204,8 @@ pub fn compute_swap<const SIZE: usize>(
         return Err(SQRT_PRICE_LIMIT_OUT_OF_BOUNDS);
     }
 
-    if a_to_b && sqrt_price_limit > whirlpool.sqrt_price
-        || !a_to_b && sqrt_price_limit < whirlpool.sqrt_price
+    if a_to_b && sqrt_price_limit >= whirlpool.sqrt_price
+        || !a_to_b && sqrt_price_limit <= whirlpool.sqrt_price
     {
         return Err(INVALID_SQRT_PRICE_LIMIT_DIRECTION);
     }
@@ -218,6 +220,9 @@ pub fn compute_swap<const SIZE: usize>(
     let mut current_tick_index = whirlpool.tick_current_index;
     let mut current_liquidity = whirlpool.liquidity;
     let mut trade_fee = 0u64;
+
+    let mut applied_fee_rate_min: u32 = whirlpool.fee_rate as u32;
+    let mut applied_fee_rate_max: u32 = whirlpool.fee_rate as u32;
 
     if is_initialized_with_adaptive_fee_tier(&whirlpool) != adaptive_fee_info.is_some() {
         return Err(INVALID_ADAPTIVE_FEE_INFO);
@@ -248,6 +253,9 @@ pub fn compute_swap<const SIZE: usize>(
             fee_rate_manager.update_volatility_accumulator();
 
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
+            applied_fee_rate_min = applied_fee_rate_min.min(total_fee_rate);
+            applied_fee_rate_max = applied_fee_rate_max.max(total_fee_rate);
+
             let (bounded_sqrt_price_target, adaptive_fee_update_skipped) =
                 fee_rate_manager.get_bounded_sqrt_price_target(target_sqrt_price, current_liquidity);
 
@@ -338,6 +346,8 @@ pub fn compute_swap<const SIZE: usize>(
         token_a,
         token_b,
         trade_fee,
+        applied_fee_rate_min,
+        applied_fee_rate_max,
     })
 }
 

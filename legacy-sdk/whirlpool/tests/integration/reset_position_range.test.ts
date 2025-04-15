@@ -221,6 +221,30 @@ describe("reset_position_range", () => {
     );
   });
 
+  it("fails to reset range to same tick range", async () => {
+    const { positionPda, positionTokenAccount } = (
+      await initializeDefaultPosition(whirlpoolPda.publicKey)
+    ).params;
+
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.resetPositionRangeIx(ctx.program, {
+          funder: funderKeypair.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          position: positionPda.publicKey,
+          positionTokenAccount,
+          tickLowerIndex: tickLowerIndex,
+          tickUpperIndex: tickUpperIndex,
+        }),
+      )
+        .addSigner(funderKeypair)
+        .buildAndExecute(),
+      /0x17ac/, // SameTickRangeNotAllowed
+    );
+  });
+
   it("successfully opens bundled position and verify position address contents", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,

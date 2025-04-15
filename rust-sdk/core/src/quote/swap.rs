@@ -1,5 +1,5 @@
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee, try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee, AdaptiveFeeInfo, CoreError, ExactInSwapQuote, ExactOutSwapQuote, FeeRateManager, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee, try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee, AdaptiveFeeInfo, CoreError, ExactInSwapQuote, ExactOutSwapQuote, FeeRateManager, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT, INVALID_ADAPTIVE_FEE_INFO, OracleFacade,
 };
 
 #[cfg(feature = "wasm")]
@@ -12,7 +12,9 @@ use orca_whirlpools_macros::wasm_expose;
 /// - `specified_token_a`: If `true`, the input token is token A. Otherwise, it is token B.
 /// - `slippage_tolerance`: The slippage tolerance in basis points.
 /// - `whirlpool`: The whirlpool state.
+/// - `oracle`: The oracle data for the whirlpool.
 /// - `tick_arrays`: The tick arrays needed for the swap.
+/// - `timestamp`: The timestamp for the swap.
 /// - `transfer_fee_a`: The transfer fee for token A.
 /// - `transfer_fee_b`: The transfer fee for token B.
 ///
@@ -24,7 +26,9 @@ pub fn swap_quote_by_input_token(
     specified_token_a: bool,
     slippage_tolerance_bps: u16,
     whirlpool: WhirlpoolFacade,
+    oracle: Option<OracleFacade>,
     tick_arrays: TickArrays,
+    timestamp: u64,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<ExactInSwapQuote, CoreError> {
@@ -45,7 +49,8 @@ pub fn swap_quote_by_input_token(
         tick_sequence,
         specified_token_a,
         true,
-        0,
+        timestamp,
+        oracle.map(|oracle| oracle.into()),
     )?;
 
     let (token_in_after_fees, token_est_out_before_fee) = if specified_token_a {
@@ -80,7 +85,9 @@ pub fn swap_quote_by_input_token(
 /// - `specified_token_a`: If `true`, the output token is token A. Otherwise, it is token B.
 /// - `slippage_tolerance`: The slippage tolerance in basis points.
 /// - `whirlpool`: The whirlpool state.
+/// - `oracle`: The oracle data for the whirlpool.
 /// - `tick_arrays`: The tick arrays needed for the swap.
+/// - `timestamp`: The timestamp for the swap.
 /// - `transfer_fee_a`: The transfer fee for token A.
 /// - `transfer_fee_b`: The transfer fee for token B.
 ///
@@ -92,7 +99,9 @@ pub fn swap_quote_by_output_token(
     specified_token_a: bool,
     slippage_tolerance_bps: u16,
     whirlpool: WhirlpoolFacade,
+    oracle: Option<OracleFacade>,
     tick_arrays: TickArrays,
+    timestamp: u64,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<ExactOutSwapQuote, CoreError> {
@@ -113,7 +122,8 @@ pub fn swap_quote_by_output_token(
         tick_sequence,
         !specified_token_a,
         false,
-        0,
+        timestamp,
+        oracle.map(|oracle| oracle.into()),
     )?;
 
     let (token_out_before_fee, token_est_in_after_fee) = if specified_token_a {
@@ -523,7 +533,7 @@ fn try_get_next_sqrt_price(
 }
 
 fn is_initialized_with_adaptive_fee_tier(whirlpool: &WhirlpoolFacade) -> bool {
-    whirlpool.fee_tier_index == whirlpool.tick_spacing
+    u16::from_le_bytes(whirlpool.fee_tier_index_seed) == whirlpool.tick_spacing
 }
 
 #[cfg(all(test, not(feature = "wasm")))]
@@ -580,7 +590,9 @@ mod tests {
             true,
             1000,
             test_whirlpool(1 << 64, true),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -598,7 +610,9 @@ mod tests {
             true,
             1000,
             test_whirlpool(1 << 64, false),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -616,7 +630,9 @@ mod tests {
             false,
             1000,
             test_whirlpool(1 << 64, true),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -634,7 +650,9 @@ mod tests {
             false,
             1000,
             test_whirlpool(1 << 64, false),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -652,7 +670,9 @@ mod tests {
             false,
             1000,
             test_whirlpool(1 << 64, true),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -670,7 +690,9 @@ mod tests {
             false,
             1000,
             test_whirlpool(1 << 64, false),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -688,7 +710,9 @@ mod tests {
             true,
             1000,
             test_whirlpool(1 << 64, true),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )
@@ -706,7 +730,9 @@ mod tests {
             true,
             1000,
             test_whirlpool(1 << 64, false),
+            None,
             test_tick_arrays(),
+            None,
             None,
             None,
         )

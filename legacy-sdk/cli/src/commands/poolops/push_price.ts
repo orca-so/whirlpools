@@ -165,7 +165,12 @@ const quote = swapQuoteWithParams(
     tickArrays,
     whirlpoolData: whirlpool,
     tokenExtensionCtx,
-
+    oracleData: await SwapUtils.getOracle(
+      ORCA_WHIRLPOOL_PROGRAM_ID,
+      whirlpoolPubkey,
+      ctx.fetcher,
+      IGNORE_CACHE,
+    ),
     // use too much input to estimate required input amount
     tokenAmount: U64_MAX,
     sqrtPriceLimit: targetSqrtPrice,

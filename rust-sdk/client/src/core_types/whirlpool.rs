@@ -5,6 +5,7 @@ use crate::{Whirlpool, WhirlpoolRewardInfo};
 impl From<Whirlpool> for WhirlpoolFacade {
     fn from(val: Whirlpool) -> Self {
         WhirlpoolFacade {
+            fee_tier_index_seed: val.fee_tier_index_seed,
             tick_spacing: val.tick_spacing,
             fee_rate: val.fee_rate,
             protocol_fee_rate: val.protocol_fee_rate,

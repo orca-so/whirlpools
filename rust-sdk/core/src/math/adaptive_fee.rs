@@ -71,7 +71,7 @@ impl FeeRateManager {
                             core_tick_group_range_lower_index,
                             tick_index_to_sqrt_price(
                                 core_tick_group_range_lower_bound_tick_index,
-                            ),
+                            ).into(),
                         ))
                     } else {
                         None
@@ -82,7 +82,7 @@ impl FeeRateManager {
                             core_tick_group_range_upper_index,
                             tick_index_to_sqrt_price(
                                 core_tick_group_range_upper_bound_tick_index,
-                            ),
+                            ).into(),
                         ))
                     } else {
                         None
@@ -186,10 +186,11 @@ impl FeeRateManager {
 
                   // Note: It was pointed out during the review that using curr_tick_index may suppress tick_index_from_sqrt_price.
                   //       However, since curr_tick_index may also be shifted by -1, we decided to prioritize safety by recalculating it here.
-                  let tick_index = sqrt_price_to_tick_index(sqrt_price);
+                  let tick_index = sqrt_price_to_tick_index(sqrt_price.into());
+                  let sqrt_price_from_tick_index: u128 = tick_index_to_sqrt_price(tick_index).into();
                   let is_on_tick_group_boundary =
                       tick_index % adaptive_fee_constants.tick_group_size as i32 == 0
-                          && sqrt_price == tick_index_to_sqrt_price(tick_index);
+                          && sqrt_price == sqrt_price_from_tick_index;
                   (tick_index, is_on_tick_group_boundary)
               };
 
@@ -312,9 +313,9 @@ impl FeeRateManager {
                         + adaptive_fee_constants.tick_group_size as i32
                 };
 
-                let boundary_sqrt_price = tick_index_to_sqrt_price(
+                let boundary_sqrt_price: u128 = tick_index_to_sqrt_price(
                     boundary_tick_index.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX),
-                );
+                ).into();
 
                 if *a_to_b {
                     (sqrt_price.max(boundary_sqrt_price), false)
@@ -447,8 +448,8 @@ impl AdaptiveFeeVariablesFacade {
       let (smaller_sqrt_price, larger_sqrt_price) =
           if pre_sqrt_price < post_sqrt_price { (pre_sqrt_price, post_sqrt_price) } else { (post_sqrt_price, pre_sqrt_price) };
 
-      let major_swap_sqrt_price_factor =
-          tick_index_to_sqrt_price(major_swap_threshold_ticks as i32);
+      let major_swap_sqrt_price_factor: u128 =
+          tick_index_to_sqrt_price(major_swap_threshold_ticks as i32).into();
       let major_swap_sqrt_price_target: u128 = ((<U256>::from(smaller_sqrt_price)
           * <U256>::from(major_swap_sqrt_price_factor)) >> 64u32).try_into().unwrap(); // safe unwrap
 

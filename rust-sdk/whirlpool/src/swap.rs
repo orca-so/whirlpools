@@ -1,12 +1,13 @@
-use std::{error::Error, iter::zip};
+use std::{error::Error, iter::zip, time::{SystemTime, UNIX_EPOCH}};
 
 use orca_whirlpools_client::{
     get_oracle_address, get_tick_array_address, AccountsType, RemainingAccountsInfo,
-    RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, TickArray, Whirlpool,
+    RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, TickArray, Whirlpool, Oracle,
 };
 use orca_whirlpools_core::{
     get_tick_array_start_tick_index, swap_quote_by_input_token, swap_quote_by_output_token,
     ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade, TickFacade, TICK_ARRAY_SIZE,
+    OracleFacade,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
@@ -55,6 +56,9 @@ pub struct SwapInstructions {
 
     /// A `SwapQuote` representing the details of the swap.
     pub quote: SwapQuote,
+
+    /// The timestamp when the trade was enabled.
+    pub trade_enable_timestamp: u64,
 
     /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
@@ -109,6 +113,19 @@ async fn fetch_tick_arrays_or_default(
         .map_err(|_| "Failed to convert tick arrays to array".to_string())?;
 
     Ok(result)
+}
+
+async fn fetch_oracle(
+    rpc: &RpcClient,
+    oracle_address: Pubkey,
+    whirlpool: &Whirlpool,
+) -> Result<Option<Oracle>, Box<dyn Error>> {
+    // no need to fetch oracle for non-adaptive fee whirlpools
+    if whirlpool.tick_spacing == u16::from_le_bytes(whirlpool.fee_tier_index_seed) {
+        return Ok(None);
+    }
+    let oracle_info = rpc.get_account(&oracle_address).await?;
+    Ok(Some(Oracle::from_bytes(&oracle_info.data)?))
 }
 
 /// Generates the instructions necessary to execute a token swap.
@@ -215,10 +232,17 @@ pub async fn swap_instructions(
         .ok_or(format!("Mint b not found: {}", whirlpool.token_mint_b))?;
 
     let oracle_address = get_oracle_address(&whirlpool_address)?.0;
+    let oracle = fetch_oracle(rpc, oracle_address, &whirlpool).await?;
 
     let current_epoch = rpc.get_epoch_info().await?.epoch;
     let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), current_epoch);
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), current_epoch);
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let trade_enable_timestamp = oracle.as_ref().map(|x| x.trade_enable_timestamp).unwrap_or(0);
 
     let quote = match swap_type {
         SwapType::ExactIn => SwapQuote::ExactIn(swap_quote_by_input_token(
@@ -226,7 +250,9 @@ pub async fn swap_instructions(
             specified_token_a,
             slippage_tolerance_bps,
             whirlpool.clone().into(),
+            oracle.map(|oracle| oracle.into()),
             tick_arrays.map(|x| x.1).into(),
+            timestamp,
             transfer_fee_a,
             transfer_fee_b,
         )?),
@@ -235,7 +261,9 @@ pub async fn swap_instructions(
             specified_token_a,
             slippage_tolerance_bps,
             whirlpool.clone().into(),
+            oracle.map(|oracle| oracle.into()),
             tick_arrays.map(|x| x.1).into(),
+            timestamp,
             transfer_fee_a,
             transfer_fee_b,
         )?),
@@ -321,6 +349,7 @@ pub async fn swap_instructions(
         instructions,
         quote,
         additional_signers: token_accounts.additional_signers,
+        trade_enable_timestamp,
     })
 }
 

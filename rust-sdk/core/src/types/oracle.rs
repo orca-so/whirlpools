@@ -39,3 +39,12 @@ pub struct AdaptiveFeeInfo {
   pub constants: AdaptiveFeeConstantsFacade,
   pub variables: AdaptiveFeeVariablesFacade,
 }
+
+impl From<OracleFacade> for AdaptiveFeeInfo {
+  fn from(oracle: OracleFacade) -> Self {
+    AdaptiveFeeInfo {
+      constants: oracle.adaptive_fee_constants,
+      variables: oracle.adaptive_fee_variables,
+    }
+  }
+}

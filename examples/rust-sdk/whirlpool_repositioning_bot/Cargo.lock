@@ -877,9 +877,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.14"
+version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ba6d68e24814cb8de6bb986db8222d3a027d15872cabc0d18817bc3c0e4471"
+checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -2329,7 +2329,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "bincode",
  "orca_whirlpools_client",
@@ -2348,7 +2348,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "2.0.3"
+version = "2.0.5"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -2363,7 +2363,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "ethnum",
  "libm",
@@ -5651,7 +5651,7 @@ checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "whirlpool_repositioning_bot"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "clap",
  "colored",

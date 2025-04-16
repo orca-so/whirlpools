@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust-core
 
+## 1.0.6
+
+### Patch Changes
+
+- [#884](https://github.com/orca-so/whirlpools/pull/884) [`6cd51d6`](https://github.com/orca-so/whirlpools/commit/6cd51d64de8fe0f310c1bf2f3a5e659a68c426d0) Thanks [@calintje](https://github.com/calintje)! - Prevent endless swap loop when token amount exceeds available liquidity
+
 ## 1.0.5
 
 ### Patch Changes

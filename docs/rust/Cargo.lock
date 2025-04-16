@@ -2205,7 +2205,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "bincode",
  "orca_whirlpools_client",
@@ -2224,7 +2224,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "2.0.3"
+version = "2.0.5"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -2239,7 +2239,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "ethnum",
  "libm",
@@ -2248,7 +2248,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_docs"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "orca_whirlpools",
  "orca_whirlpools_client",
@@ -5051,9 +5051,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.43.0"
+version = "1.44.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d61fa4ffa3de412bfea335c6ecff681de2b609ba3c77ef3e00e521813a9ed9e"
+checksum = "e6b88822cbe49de4185e3a4cbf8321dd487cf5fe0c5c65695fef6346371e9c48"
 dependencies = [
  "backtrace",
  "bytes",

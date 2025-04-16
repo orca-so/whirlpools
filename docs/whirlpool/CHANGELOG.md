@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-docs
 
+## 0.1.7
+
+### Patch Changes
+
+- [#892](https://github.com/orca-so/whirlpools/pull/892) [`22c9d4a`](https://github.com/orca-so/whirlpools/commit/22c9d4ac415af4a43c3d53c263e61d70b275e209) Thanks [@calintje](https://github.com/calintje)! - Documentation Reorganization: Unified SDK Documentation
+
+## 0.1.6
+
 ## 0.1.5
 
 ### Patch Changes

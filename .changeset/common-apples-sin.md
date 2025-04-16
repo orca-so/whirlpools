@@ -5,4 +5,4 @@
 "@orca-so/whirlpools-client": patch
 ---
 
-Add reset position range feature
+Add reset position range feature, lock concentrated positions feature

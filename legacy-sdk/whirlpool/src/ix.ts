@@ -608,6 +608,8 @@ export class WhirlpoolIx {
    *
    * #### Special Errors
    * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
+   * `ClosePositionNotEmpty` - The provided position account is not empty.
+   * `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
    *
    * @param program - program object containing services required to generate the instruction
    * @param params - ResetPositionRangeParams object

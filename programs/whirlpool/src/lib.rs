@@ -650,6 +650,8 @@ pub mod whirlpool {
     /// #### Special Errors
     /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
     ///                        the tick-spacing in this pool.
+    /// - `ClosePositionNotEmpty` - The provided position account is not empty.
+    /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
     pub fn reset_position_range(
         ctx: Context<ResetPositionRange>,
         new_tick_lower_index: i32,

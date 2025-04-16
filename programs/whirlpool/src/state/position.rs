@@ -91,7 +91,9 @@ impl Position {
             return Err(ErrorCode::ClosePositionNotEmpty.into());
         }
 
-        if new_tick_lower_index == self.tick_lower_index && new_tick_upper_index == self.tick_upper_index {
+        if new_tick_lower_index == self.tick_lower_index
+            && new_tick_upper_index == self.tick_upper_index
+        {
             return Err(ErrorCode::SameTickRangeNotAllowed.into());
         }
 

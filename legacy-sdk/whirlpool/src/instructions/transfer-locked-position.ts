@@ -1,5 +1,5 @@
 import type { Program } from "@coral-xyz/anchor";
-import type { Instruction, PDA } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
@@ -8,20 +8,22 @@ import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
  * Parameters to transfer a position.
  *
  * @category Instruction Types
- * @param authority - The authority that owns the position.
- * @param positionPda - PDA for the position.
+ * @param receiver - PublicKey for the wallet that will receive the rented lamports.
+ * @param position - PublicKey for the position.
  * @param positionMint - PublicKey for the mint token for the Position token.
  * @param positionTokenAccount - The associated token address for the position token in the owners wallet.
  * @param destinationTokenAccount - The associated token address for the position token in the destination wallet.
- * @param positionTokenProgram - The program id for the position token program.
+ * @param positionAuthority - The authority that owns the position.
+ * @param lockConfig - PublicKey for the lock config for the locked position.
  */
 export type TransferLockedPositionParams = {
-  positionPda: PDA;
+  receiver: PublicKey;
+  position: PublicKey;
   positionMint: PublicKey;
   positionTokenAccount: PublicKey;
   destinationTokenAccount: PublicKey;
-  authority: PublicKey;
-  lockConfigPda: PDA;
+  positionAuthority: PublicKey;
+  lockConfig: PublicKey;
 };
 
 /**
@@ -38,13 +40,14 @@ export function transferLockedPositionIx(
 ): Instruction {
   const ix = program.instruction.transferLockedPosition({
     accounts: {
-      positionAuthority: params.authority,
-      position: params.positionPda.publicKey,
+      receiver: params.receiver,
+      positionAuthority: params.positionAuthority,
+      position: params.position,
       positionMint: params.positionMint,
       positionTokenAccount: params.positionTokenAccount,
       destinationTokenAccount: params.destinationTokenAccount,
       token2022Program: TOKEN_2022_PROGRAM_ID,
-      lockConfig: params.lockConfigPda.publicKey,
+      lockConfig: params.lockConfig,
     },
   });
 

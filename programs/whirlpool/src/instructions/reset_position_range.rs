@@ -18,7 +18,7 @@ pub struct ResetPositionRange<'info> {
     #[account(mut, has_one = whirlpool)]
     pub position: Box<Account<'info, Position>>,
 
-    #[account(mut,
+    #[account(
         constraint = position_token_account.amount == 1,
         constraint = position_token_account.mint == position.position_mint)]
     pub position_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,

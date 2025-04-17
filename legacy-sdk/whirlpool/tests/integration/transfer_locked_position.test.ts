@@ -242,10 +242,8 @@ describe("transfer_locked_position", () => {
         positionTokenAccount,
         destinationTokenAccount,
         positionAuthority: authority?.publicKey ?? ctx.wallet.publicKey,
-        lockConfig: PDAUtil.getLockConfig(
-          ctx.program.programId,
-          position,
-        ).publicKey,
+        lockConfig: PDAUtil.getLockConfig(ctx.program.programId, position)
+          .publicKey,
         receiver: receiver ?? ctx.wallet.publicKey,
       }),
     );
@@ -320,7 +318,11 @@ describe("transfer_locked_position", () => {
     await lockPosition(positionParams);
 
     const receiver = anchor.web3.Keypair.generate().publicKey;
-    const rent = (await provider.connection.getAccountInfo(positionParams.positionTokenAccount))?.lamports;
+    const rent = (
+      await provider.connection.getAccountInfo(
+        positionParams.positionTokenAccount,
+      )
+    )?.lamports;
     assert.ok(rent != null && rent > 0);
 
     await transferPosition(

@@ -34,7 +34,7 @@ import { useMaxCU } from "../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../utils/v2/fixture-v2";
 import { IGNORE_CACHE } from "../../dist/network/public/fetcher/fetcher-types";
 
-describe("transfer_position", () => {
+describe("transfer_locked_position", () => {
   const provider = anchor.AnchorProvider.local(
     undefined,
     defaultConfirmOptions,
@@ -206,11 +206,12 @@ describe("transfer_position", () => {
   }
 
   async function transferPosition(
-    positionPda: PDA,
+    position: PublicKey,
     positionMint: PublicKey,
     positionTokenAccount: PublicKey,
     destinationWallet: PublicKey,
     authority?: Keypair,
+    receiver?: PublicKey,
   ) {
     const destinationTokenAccount = getAssociatedTokenAddressSync(
       positionMint,
@@ -236,15 +237,16 @@ describe("transfer_position", () => {
     const tx = toTx(
       ctx,
       WhirlpoolIx.transferLockedPositionIx(ctx.program, {
-        positionPda,
+        position,
         positionMint,
         positionTokenAccount,
         destinationTokenAccount,
-        authority: authority?.publicKey ?? ctx.wallet.publicKey,
-        lockConfigPda: PDAUtil.getLockConfig(
+        positionAuthority: authority?.publicKey ?? ctx.wallet.publicKey,
+        lockConfig: PDAUtil.getLockConfig(
           ctx.program.programId,
-          positionPda.publicKey,
-        ),
+          position,
+        ).publicKey,
+        receiver: receiver ?? ctx.wallet.publicKey,
       }),
     );
 
@@ -301,11 +303,37 @@ describe("transfer_position", () => {
     await lockPosition(positionParams);
 
     await transferPosition(
-      positionParams.positionPda,
+      positionParams.positionPda.publicKey,
       positionParams.positionMint,
       positionParams.positionTokenAccount,
       funderKeypair.publicKey,
     );
+  });
+
+  it("Should transfer a locked position token, different receiver", async () => {
+    const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
+      splashPoolFixture,
+      splashPoolFullRange[0],
+      splashPoolFullRange[1],
+      new BN(1_000_000),
+    );
+    await lockPosition(positionParams);
+
+    const receiver = anchor.web3.Keypair.generate().publicKey;
+    const rent = (await provider.connection.getAccountInfo(positionParams.positionTokenAccount))?.lamports;
+    assert.ok(rent != null && rent > 0);
+
+    await transferPosition(
+      positionParams.positionPda.publicKey,
+      positionParams.positionMint,
+      positionParams.positionTokenAccount,
+      funderKeypair.publicKey,
+      undefined,
+      receiver,
+    );
+
+    const balance = await provider.connection.getBalance(receiver);
+    assert.equal(balance, rent);
   });
 
   it("Should not be able to transfer an unlocked position token", async () => {
@@ -318,7 +346,7 @@ describe("transfer_position", () => {
 
     assert.rejects(
       transferPosition(
-        positionParams.positionPda,
+        positionParams.positionPda.publicKey,
         positionParams.positionMint,
         positionParams.positionTokenAccount,
         funderKeypair.publicKey,
@@ -337,7 +365,7 @@ describe("transfer_position", () => {
     await lockPosition(positionParams);
     await assert.rejects(
       transferPosition(
-        positionParams.positionPda,
+        positionParams.positionPda.publicKey,
         positionParams.positionMint,
         positionParams.positionTokenAccount,
         funderKeypair.publicKey,
@@ -357,7 +385,7 @@ describe("transfer_position", () => {
     await lockPosition(positionParams);
     await assert.rejects(
       transferPosition(
-        positionParams.positionPda,
+        positionParams.positionPda.publicKey,
         positionParams.positionMint,
         positionParams.positionTokenAccount,
         ctx.wallet.publicKey,
@@ -382,7 +410,7 @@ describe("transfer_position", () => {
 
     await assert.rejects(
       transferPosition(
-        positionParams.positionPda,
+        positionParams.positionPda.publicKey,
         positionParams.positionMint,
         positionParams.positionTokenAccount,
         delegatedAuthority.publicKey,

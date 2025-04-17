@@ -16,6 +16,10 @@ use crate::{
 pub struct TransferLockedPosition<'info> {
     pub position_authority: Signer<'info>,
 
+    /// CHECK: safe, for receiving rent only
+    #[account(mut)]
+    pub receiver: UncheckedAccount<'info>,
+
     #[account(
         seeds = [b"position".as_ref(), position_mint.key().as_ref()],
         bump,
@@ -96,7 +100,7 @@ pub fn handler(ctx: Context<TransferLockedPosition>) -> Result<()> {
         &ctx.accounts.position_authority,
         &ctx.accounts.position_token_account,
         &ctx.accounts.token_2022_program,
-        &ctx.accounts.position_authority,
+        &ctx.accounts.receiver,
     )?;
 
     ctx.accounts

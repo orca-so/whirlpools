@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
 import { Percentage } from "@orca-so/common-sdk";
 import {
   TOKEN_2022_PROGRAM_ID,

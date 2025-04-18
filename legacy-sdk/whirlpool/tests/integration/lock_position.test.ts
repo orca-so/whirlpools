@@ -51,7 +51,7 @@ import type {
 import { useMaxCU } from "../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../utils/v2/fixture-v2";
 import { approveTokenV2, createTokenAccountV2 } from "../utils/v2/token-2022";
-import { PositionData } from "@orca-so/whirlpools";
+import type { PositionData } from "@orca-so/whirlpools";
 
 describe("lock_position", () => {
   const provider = anchor.AnchorProvider.local(
@@ -349,15 +349,24 @@ describe("lock_position", () => {
     );
   }
 
-  async function isFullRangePosition(positionAddress: PublicKey): Promise<boolean> {
-    const position = await fetcher.getPosition(
+  async function isFullRangePosition(
+    positionAddress: PublicKey,
+  ): Promise<boolean> {
+    const position = (await fetcher.getPosition(
       positionAddress,
       IGNORE_CACHE,
-    ) as PositionData;
+    )) as PositionData;
 
-    const pool = await fetcher.getPool(position.whirlpool, IGNORE_CACHE) as WhirlpoolData;
+    const pool = (await fetcher.getPool(
+      position.whirlpool,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
 
-    return TickUtil.isFullRange(pool.tickSpacing, position.tickLowerIndex, position.tickUpperIndex);    
+    return TickUtil.isFullRange(
+      pool.tickSpacing,
+      position.tickLowerIndex,
+      position.tickUpperIndex,
+    );
   }
 
   it("successfully locks a position in SplashPool and verify token account and LockConfig state", async () => {
@@ -475,7 +484,9 @@ describe("lock_position", () => {
     );
 
     // confirm that position is NOT a FullRange position
-    assert.ok(!(await isFullRangePosition(positionParams.positionPda.publicKey)));
+    assert.ok(
+      !(await isFullRangePosition(positionParams.positionPda.publicKey)),
+    );
 
     const lockParams: LockPositionParams = {
       funder: ctx.wallet.publicKey,

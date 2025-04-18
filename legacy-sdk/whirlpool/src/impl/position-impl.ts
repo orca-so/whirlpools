@@ -28,6 +28,7 @@ import {
   increaseLiquidityIx,
   increaseLiquidityV2Ix,
   lockPositionIx,
+  resetPositionRangeIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
 import type { WhirlpoolAccountFetchOptions } from "../network/public/fetcher";
@@ -690,6 +691,45 @@ export class PositionImpl implements Position {
         this.address,
       ),
       lockType,
+    });
+
+    txBuilder.addInstruction(ix);
+
+    return txBuilder;
+  }
+
+  async resetPositionRange(
+    tickLowerIndex: number,
+    tickUpperIndex: number,
+    positionWallet?: Address,
+    funder?: Address,
+  ): Promise<TransactionBuilder> {
+    const [positionWalletKey, funderKey] = AddressUtil.toPubKeys([
+      positionWallet ?? this.ctx.wallet.publicKey,
+      funder ?? this.ctx.wallet.publicKey,
+    ]);
+
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts,
+    );
+
+    const positionTokenAccount = getAssociatedTokenAddressSync(
+      this.data.positionMint,
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.positionMintTokenProgramId,
+    );
+
+    const ix = resetPositionRangeIx(this.ctx.program, {
+      funder: funderKey,
+      positionAuthority: positionWalletKey,
+      whirlpool: this.data.whirlpool,
+      position: this.address,
+      positionTokenAccount,
+      tickLowerIndex,
+      tickUpperIndex,
     });
 
     txBuilder.addInstruction(ix);

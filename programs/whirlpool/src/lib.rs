@@ -628,7 +628,7 @@ pub mod whirlpool {
 
     /// Lock the position to prevent any liquidity changes.
     ///
-    /// ### Authority       
+    /// ### Authority
     /// - `position_authority` - The authority that owns the position token.
     ///
     /// #### Special Errors
@@ -658,6 +658,14 @@ pub mod whirlpool {
         new_tick_upper_index: i32,
     ) -> Result<()> {
         instructions::reset_position_range::handler(ctx, new_tick_lower_index, new_tick_upper_index)
+    }
+
+    /// Transfer a locked position to to a different token account.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    pub fn transfer_locked_position(ctx: Context<TransferLockedPosition>) -> Result<()> {
+        instructions::transfer_locked_position::handler(ctx)
     }
 
     ////////////////////////////////////////////////////////////////////////////////

@@ -641,6 +641,20 @@ export class WhirlpoolIx {
     return ix.lockPositionIx(program, params);
   }
 
+  /**
+   * Transfer a position in a Whirlpool.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - TransferPositionParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static transferLockedPositionIx(
+    program: Program<Whirlpool>,
+    params: ix.TransferLockedPositionParams,
+  ) {
+    return ix.transferLockedPositionIx(program, params);
+  }
+
   // V2 instructions
   // TODO: comments
   public static collectFeesV2Ix(

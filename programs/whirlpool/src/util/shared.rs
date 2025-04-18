@@ -58,7 +58,7 @@ pub fn verify_position_authority_interface(
     Ok(())
 }
 
-fn validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo) -> Result<()> {
+pub fn validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo) -> Result<()> {
     if expected_owner != owner_account_info.key || !owner_account_info.is_signer {
         return Err(ErrorCode::MissingOrInvalidDelegate.into());
     }

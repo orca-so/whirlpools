@@ -43,6 +43,10 @@ impl LockConfig {
         }
         Ok(())
     }
+
+    pub fn update_position_owner(&mut self, position_owner: Pubkey) {
+        self.position_owner = position_owner;
+    }
 }
 
 #[cfg(test)]

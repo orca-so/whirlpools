@@ -1,9 +1,9 @@
 use crate::fee_config::{FeeConfig, JitoFeeStrategy, JitoPercentile};
+use serde::Deserialize;
 use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_program::system_instruction;
 use std::str::FromStr;
-use serde::Deserialize;
 
 // Jito tip receiver addresses
 const JITO_TIP_ADDRESSES: [&str; 8] = [
@@ -44,24 +44,27 @@ pub async fn add_jito_tip_instruction(
     payer: &Pubkey,
 ) -> Result<Option<Instruction>, String> {
     match &fee_config.jito {
-        JitoFeeStrategy::Dynamic { percentile, max_lamports } => {
+        JitoFeeStrategy::Dynamic {
+            percentile,
+            max_lamports,
+        } => {
             let tip = calculate_dynamic_jito_tip(fee_config, *percentile).await?;
             let clamped_tip = std::cmp::min(tip, *max_lamports);
-            
+
             if clamped_tip > 0 {
                 let tip_instruction = create_tip_instruction(clamped_tip, payer);
                 return Ok(Some(tip_instruction));
             }
-        },
+        }
         JitoFeeStrategy::Exact(lamports) => {
             if *lamports > 0 {
                 let tip_instruction = create_tip_instruction(*lamports, payer);
                 return Ok(Some(tip_instruction));
             }
-        },
-        JitoFeeStrategy::Disabled => {},
+        }
+        JitoFeeStrategy::Disabled => {}
     }
-    
+
     Ok(None)
 }
 
@@ -72,26 +75,30 @@ pub(crate) async fn calculate_dynamic_jito_tip(
 ) -> Result<u64, String> {
     // Make a request to the Jito block engine API to get recent tips
     let reqwest_client = reqwest::Client::new();
-    let url = format!("{}/api/v1/bundles/tip_floor", fee_config.jito_block_engine_url);
-    
+    let url = format!(
+        "{}/api/v1/bundles/tip_floor",
+        fee_config.jito_block_engine_url
+    );
+
     let response = reqwest_client
         .get(&url)
         .send()
         .await
         .map_err(|e| format!("Jito Error: {}", e))?;
-    
+
     if !response.status().is_success() {
         return Err(format!(
-            "Fee Calculation Failed: Failed to get Jito tips: HTTP {}", 
+            "Fee Calculation Failed: Failed to get Jito tips: HTTP {}",
             response.status()
         ));
     }
-    
+
     // Parse the response as a structured type
-    let tip_data: Vec<JitoTipData> = response.json()
+    let tip_data: Vec<JitoTipData> = response
+        .json()
         .await
         .map_err(|e| format!("Jito Error: {}", e))?;
-    
+
     // Get the first entry if available
     if let Some(data) = tip_data.first() {
         // Get the appropriate percentile value based on the requested percentile
@@ -103,12 +110,12 @@ pub(crate) async fn calculate_dynamic_jito_tip(
             JitoPercentile::P95 => data.landed_tips_95th_percentile,
             JitoPercentile::P99 => data.landed_tips_99th_percentile,
         };
-        
+
         // Convert from SOL to lamports (multiply by 10^9)
         let lamports = (value * 1_000_000_000.0).floor() as u64;
         return Ok(lamports);
     }
-    
+
     // Default to 0 if we couldn't get a valid tip
     Ok(0)
 }
@@ -116,14 +123,14 @@ pub(crate) async fn calculate_dynamic_jito_tip(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_create_tip_instruction() {
         let payer = Pubkey::new_unique();
         let instruction = create_tip_instruction(1000, &payer);
-        
+
         assert_eq!(instruction.program_id, solana_program::system_program::id());
         assert_eq!(instruction.accounts[0].pubkey, payer);
         assert!(JITO_TIP_ADDRESSES.contains(&instruction.accounts[1].pubkey.to_string().as_str()));
     }
-} 
+}

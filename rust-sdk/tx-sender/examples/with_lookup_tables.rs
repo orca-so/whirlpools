@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     set_jito_fee_strategy(JitoFeeStrategy::Disabled)?;
 
     // Create a memo instruction
-    let memo_data = format!("Hello from versioned transactions with address lookup tables!");
+    let memo_data = "Hello from versioned transactions with address lookup tables!".to_string();
     let memo_program_id = Pubkey::from_str("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr").unwrap();
     let memo_instruction =
         util::create_memo_instruction(memo_program_id, &payer.pubkey(), &memo_data);

@@ -1,14 +1,14 @@
 use crate::fee_config::{FeeConfig, Percentile, PriorityFeeStrategy};
 use crate::rpc_config::RpcConfig;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_client::rpc_config::RpcSimulateTransactionConfig;
 use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_rpc_client_api::response::RpcPrioritizationFee;
-use solana_client::rpc_config::RpcSimulateTransactionConfig;
+use solana_sdk::address_lookup_table::AddressLookupTableAccount;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::message::{v0::Message, VersionedMessage};
 use solana_sdk::transaction::VersionedTransaction;
-use solana_sdk::address_lookup_table::AddressLookupTableAccount;
 
 /// Estimate compute units by simulating a transaction
 pub async fn estimate_compute_units(
@@ -22,7 +22,7 @@ pub async fn estimate_compute_units(
         .get_latest_blockhash()
         .await
         .map_err(|e| format!("Failed to get recent blockhash: {}", e))?;
-    
+
     let message = Message::try_compile(payer, &instructions, &alt_accounts, blockhash)
         .map_err(|e| format!("Failed to compile message: {}", e))?;
 
@@ -30,33 +30,33 @@ pub async fn estimate_compute_units(
         signatures: vec![solana_sdk::signature::Signature::default()],
         message: VersionedMessage::V0(message),
     };
-    
+
     let result = rpc_client
-            .simulate_transaction_with_config(
-                &transaction,
-                RpcSimulateTransactionConfig {
-                    sig_verify: false,
-                    replace_recent_blockhash: true,
-                    commitment: None,
-                    encoding: None,
-                    accounts: None,
-                    min_context_slot: None,
-                    inner_instructions: false,
-                },
-            )
-            .await;
+        .simulate_transaction_with_config(
+            &transaction,
+            RpcSimulateTransactionConfig {
+                sig_verify: false,
+                replace_recent_blockhash: true,
+                commitment: None,
+                encoding: None,
+                accounts: None,
+                min_context_slot: None,
+                inner_instructions: false,
+            },
+        )
+        .await;
 
     match result {
         Ok(simulation_result) => {
             if let Some(err) = simulation_result.value.err {
                 return Err(format!("Transaction simulation failed: {}", err));
             }
-            
+
             match simulation_result.value.units_consumed {
                 Some(units) => Ok(units as u32),
-                None => Err("Transaction simulation didn't return consumed units".to_string())
+                None => Err("Transaction simulation didn't return consumed units".to_string()),
             }
-        },
+        }
         Err(e) => Err(format!("Transaction simulation failed: {}", e)),
     }
 }
@@ -71,37 +71,33 @@ pub async fn get_compute_budget_instruction(
     writable_accounts: &[Pubkey],
 ) -> Result<Vec<Instruction>, String> {
     let mut budget_instructions = Vec::new();
-    let compute_units_with_margin = (compute_units as f64 * (fee_config.compute_unit_margin_multiplier)) as u32;
-    
-    budget_instructions.push(
-        ComputeBudgetInstruction::set_compute_unit_limit(compute_units_with_margin),
-    );
+    let compute_units_with_margin =
+        (compute_units as f64 * (fee_config.compute_unit_margin_multiplier)) as u32;
+
+    budget_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(
+        compute_units_with_margin,
+    ));
 
     match &fee_config.priority_fee {
         PriorityFeeStrategy::Dynamic {
             percentile,
             max_lamports,
         } => {
-            let fee = calculate_dynamic_priority_fee(
-                client,
-                rpc_config,
-                writable_accounts,
-                *percentile,
-            )
-            .await?;
+            let fee =
+                calculate_dynamic_priority_fee(client, rpc_config, writable_accounts, *percentile)
+                    .await?;
             let clamped_fee = std::cmp::min(fee, *max_lamports);
 
             if clamped_fee > 0 {
-                budget_instructions.push(
-                    ComputeBudgetInstruction::set_compute_unit_price(clamped_fee),
-                );
+                budget_instructions.push(ComputeBudgetInstruction::set_compute_unit_price(
+                    clamped_fee,
+                ));
             }
         }
         PriorityFeeStrategy::Exact(lamports) => {
             if *lamports > 0 {
-                budget_instructions.push(
-                    ComputeBudgetInstruction::set_compute_unit_price(*lamports),
-                );
+                budget_instructions
+                    .push(ComputeBudgetInstruction::set_compute_unit_price(*lamports));
             }
         }
         PriorityFeeStrategy::Disabled => {}
@@ -133,7 +129,7 @@ pub(crate) async fn get_priority_fee_with_percentile(
     // This is a direct RPC call using reqwest since the Solana client doesn't support
     // the percentile parameter yet
     let rpc_url = client.url();
-   
+
     let response = reqwest::Client::new()
         .post(rpc_url)
         .json(&serde_json::json!({
@@ -153,8 +149,9 @@ pub(crate) async fn get_priority_fee_with_percentile(
     struct Response {
         result: RpcPrioritizationFee,
     }
-    
-    response.json::<Response>()
+
+    response
+        .json::<Response>()
         .await
         .map(|resp| resp.result.prioritization_fee)
         .map_err(|e| format!("Failed to parse prioritization fee response: {}", e))

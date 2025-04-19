@@ -5,10 +5,11 @@ import {
   LockConfigUtil,
   TickUtil,
 } from "@orca-so/whirlpools-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
 import {
-  TransactionBuilder,
-} from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+  getAssociatedTokenAddressSync,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
@@ -29,10 +30,14 @@ if (!positionMint) {
 }
 
 if (!positionMint.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) {
-  throw new Error("positionMint is not a 2022 token (only Token-2022 based position is supported)");
+  throw new Error(
+    "positionMint is not a 2022 token (only Token-2022 based position is supported)",
+  );
 }
 if (position.liquidity.isZero()) {
-  throw new Error("position liquidity is zero (empty position is not lockable)");
+  throw new Error(
+    "position liquidity is zero (empty position is not lockable)",
+  );
 }
 
 const whirlpoolPubkey = position.whirlpool;
@@ -63,7 +68,10 @@ if (!yesno) {
 }
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 
-const lockConfigPda = PDAUtil.getLockConfig(ctx.program.programId, positionPubkey);
+const lockConfigPda = PDAUtil.getLockConfig(
+  ctx.program.programId,
+  positionPubkey,
+);
 builder.addInstruction(
   WhirlpoolIx.lockPositionIx(ctx.program, {
     position: positionPubkey,

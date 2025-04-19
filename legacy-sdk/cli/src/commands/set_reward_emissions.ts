@@ -12,9 +12,17 @@ console.info("set reward emissions...");
 const X64 = new BN(2).pow(new BN(64));
 const SECONDS_PER_WEEK = 60 * 60 * 24 * 7;
 
-function emissionsPerSecondX64ToDecimal(emissionsPerSecondX64: BN, decimals: number): { perSecond: Decimal, perWeek: Decimal } {
-  const perSecond = DecimalUtil.fromBN(emissionsPerSecondX64, decimals).div(X64.toString()).toDecimalPlaces(decimals);
-  const perWeek = DecimalUtil.fromBN(emissionsPerSecondX64, decimals).mul(SECONDS_PER_WEEK.toString()).div(X64.toString()).toDecimalPlaces(decimals);
+function emissionsPerSecondX64ToDecimal(
+  emissionsPerSecondX64: BN,
+  decimals: number,
+): { perSecond: Decimal; perWeek: Decimal } {
+  const perSecond = DecimalUtil.fromBN(emissionsPerSecondX64, decimals)
+    .div(X64.toString())
+    .toDecimalPlaces(decimals);
+  const perWeek = DecimalUtil.fromBN(emissionsPerSecondX64, decimals)
+    .mul(SECONDS_PER_WEEK.toString())
+    .div(X64.toString())
+    .toDecimalPlaces(decimals);
   return { perSecond, perWeek };
 }
 
@@ -26,28 +34,40 @@ if (!whirlpool) {
   throw new Error("whirlpool not found");
 }
 
-const initializedRewards = whirlpool.rewardInfos.filter((ri) => PoolUtil.isRewardInitialized(ri));
+const initializedRewards = whirlpool.rewardInfos.filter((ri) =>
+  PoolUtil.isRewardInitialized(ri),
+);
 if (initializedRewards.length === 0) {
   throw new Error("no reward initialized");
 }
 
 const initializedRewardMintPubkeys = initializedRewards.map((ri) => ri.mint);
 const initializedRewardVaultPubkeys = initializedRewards.map((ri) => ri.vault);
-const initializedRewardMints = await ctx.fetcher.getMintInfos(initializedRewardMintPubkeys);
-const initializedRewardVaults = await ctx.fetcher.getTokenInfos(initializedRewardVaultPubkeys);
+const initializedRewardMints = await ctx.fetcher.getMintInfos(
+  initializedRewardMintPubkeys,
+);
+const initializedRewardVaults = await ctx.fetcher.getTokenInfos(
+  initializedRewardVaultPubkeys,
+);
 const initializedRewardInfos = initializedRewards.map((ri) => {
   return {
     ...ri,
-    vaultAmount: new BN(initializedRewardVaults.get(ri.vault.toBase58())!.amount.toString()),
+    vaultAmount: new BN(
+      initializedRewardVaults.get(ri.vault.toBase58())!.amount.toString(),
+    ),
     mintDecimals: initializedRewardMints.get(ri.mint.toBase58())!.decimals,
-    mintTokenProgram: initializedRewardMints.get(ri.mint.toBase58())!.tokenProgram,
+    mintTokenProgram: initializedRewardMints.get(ri.mint.toBase58())!
+      .tokenProgram,
   };
 });
 
 console.info("pool", whirlpoolPubkey.toBase58());
 console.info("initialized rewards:");
 initializedRewardInfos.forEach((ri, i) => {
-  const currentEmissions = emissionsPerSecondX64ToDecimal(ri.emissionsPerSecondX64, ri.mintDecimals);
+  const currentEmissions = emissionsPerSecondX64ToDecimal(
+    ri.emissionsPerSecondX64,
+    ri.mintDecimals,
+  );
 
   console.info(
     `[${i}]:`,
@@ -82,11 +102,17 @@ if (!rewardInfo.authority.equals(ctx.wallet.publicKey)) {
   );
 }
 
-const vaultAmount = DecimalUtil.fromBN(rewardInfo.vaultAmount, rewardInfo.mintDecimals);
-const currentEmissions = emissionsPerSecondX64ToDecimal(rewardInfo.emissionsPerSecondX64, rewardInfo.mintDecimals);
+const vaultAmount = DecimalUtil.fromBN(
+  rewardInfo.vaultAmount,
+  rewardInfo.mintDecimals,
+);
+const currentEmissions = emissionsPerSecondX64ToDecimal(
+  rewardInfo.emissionsPerSecondX64,
+  rewardInfo.mintDecimals,
+);
 
-let  newEmissionsPerSecondX64: BN;
-while (true ) {
+let newEmissionsPerSecondX64: BN;
+while (true) {
   console.info("vault amount:", vaultAmount.toString());
 
   const newEmissionsPerWeekStr = await promptText("newEmissionsPerWeek");
@@ -98,17 +124,38 @@ while (true ) {
 
   if (newEmissionsPerWeekOrg.greaterThan(vaultAmount)) {
     console.info("emissions per week is larger than vault amount");
-    console.info("you should set emissions per week less than or equal to vault amount for safety reason");
+    console.info(
+      "you should set emissions per week less than or equal to vault amount for safety reason",
+    );
     continue;
   }
 
-  newEmissionsPerSecondX64 = new BN(newEmissionsPerWeekOrg.mul(10**rewardInfo.mintDecimals).floor().toString()).mul(X64).divn(SECONDS_PER_WEEK);
-  const newEmissions = emissionsPerSecondX64ToDecimal(newEmissionsPerSecondX64, rewardInfo.mintDecimals);
+  newEmissionsPerSecondX64 = new BN(
+    newEmissionsPerWeekOrg
+      .mul(10 ** rewardInfo.mintDecimals)
+      .floor()
+      .toString(),
+  )
+    .mul(X64)
+    .divn(SECONDS_PER_WEEK);
+  const newEmissions = emissionsPerSecondX64ToDecimal(
+    newEmissionsPerSecondX64,
+    rewardInfo.mintDecimals,
+  );
 
-  console.info("current emission:", `${currentEmissions.perWeek} per week (${currentEmissions.perSecond} per second)`);
-  console.info("new emission:", `${newEmissions.perWeek} per week (${newEmissions.perSecond} per second)`);
-  console.info("vault amount / new emission:", `${vaultAmount.div(newEmissions.perWeek).mul(7).floor().toString()} days`);
-  
+  console.info(
+    "current emission:",
+    `${currentEmissions.perWeek} per week (${currentEmissions.perSecond} per second)`,
+  );
+  console.info(
+    "new emission:",
+    `${newEmissions.perWeek} per week (${newEmissions.perSecond} per second)`,
+  );
+  console.info(
+    "vault amount / new emission:",
+    `${vaultAmount.div(newEmissions.perWeek).mul(7).floor().toString()} days`,
+  );
+
   const ok = await promptConfirm("If the above is OK, enter YES");
   if (ok) {
     break;
@@ -124,7 +171,7 @@ builder.addInstruction(
     rewardAuthority: ctx.wallet.publicKey,
     whirlpool: whirlpoolPubkey,
     rewardVaultKey: rewardInfo.vault,
-  })
+  }),
 );
 
 await sendTransaction(builder);

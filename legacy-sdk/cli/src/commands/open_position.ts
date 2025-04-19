@@ -146,9 +146,7 @@ const initUpperTickArray = !upperTickArray;
 console.info(`if you want to create position with Metadata, enter YES`);
 const withMetadataYesno = await promptConfirm("YES");
 
-console.info(
-  `if you want to create position WITH TokenExtensions, enter YES`,
-);
+console.info(`if you want to create position WITH TokenExtensions, enter YES`);
 const withTokenExtensions = await promptConfirm("YES");
 
 console.info(
@@ -199,7 +197,10 @@ if (initLowerTickArray) {
   );
 }
 
-if (initUpperTickArray && !upperTickArrayPda.publicKey.equals(lowerTickArrayPda.publicKey)) {
+if (
+  initUpperTickArray &&
+  !upperTickArrayPda.publicKey.equals(lowerTickArrayPda.publicKey)
+) {
   builder.addInstruction(
     WhirlpoolIx.initTickArrayIx(ctx.program, {
       whirlpool: whirlpoolPubkey,

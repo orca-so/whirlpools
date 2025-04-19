@@ -6,9 +6,7 @@ import {
   PriceMath,
   ORCA_WHIRLPOOL_PROGRAM_ID,
 } from "@orca-so/whirlpools-sdk";
-import {
-  TransactionBuilder,
-} from "@orca-so/common-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
@@ -32,13 +30,19 @@ if (!positionMint) {
 }
 
 if (!position.liquidity.isZero()) {
-  throw new Error("position liquidity is NOT zero (only empty position is resettable)");
+  throw new Error(
+    "position liquidity is NOT zero (only empty position is resettable)",
+  );
 }
 if (!position.feeOwedA.isZero() || !position.feeOwedB.isZero()) {
-  throw new Error("position feeOwed is NOT zero (only empty position is resettable)");
+  throw new Error(
+    "position feeOwed is NOT zero (only empty position is resettable)",
+  );
 }
 if (!position.rewardInfos.every((ri) => ri.amountOwed.isZero())) {
-  throw new Error("position rewardOwed is NOT zero (only empty position is resettable)");
+  throw new Error(
+    "position rewardOwed is NOT zero (only empty position is resettable)",
+  );
 }
 
 const whirlpoolPubkey = position.whirlpool;
@@ -79,13 +83,23 @@ console.info(
 let lowerTickIndex: number;
 let upperTickIndex: number;
 
-console.info("current lowerPrice(Index)",
-  PriceMath.tickIndexToPrice(position.tickLowerIndex, decimalsA, decimalsB).toSD(6),
-  `(${position.tickLowerIndex})`
+console.info(
+  "current lowerPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickLowerIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
+  `(${position.tickLowerIndex})`,
 );
-console.info("current upperPrice(Index)",
-  PriceMath.tickIndexToPrice(position.tickUpperIndex, decimalsA, decimalsB).toSD(6),
-  `(${position.tickUpperIndex})`
+console.info(
+  "current upperPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickUpperIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
+  `(${position.tickUpperIndex})`,
 );
 
 console.info(`if you want to create FULL RANGE position, enter YES`);
@@ -174,15 +188,25 @@ const initUpperTickArray = !upperTickArray;
 
 console.info("pool", whirlpoolPubkey.toBase58());
 console.info("position", positionPubkey.toBase58());
-console.info("position lowerPrice(Index)",
-  PriceMath.tickIndexToPrice(position.tickLowerIndex, decimalsA, decimalsB).toSD(6),
+console.info(
+  "position lowerPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickLowerIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
   `(${position.tickLowerIndex})`,
   "-->",
   PriceMath.tickIndexToPrice(lowerTickIndex, decimalsA, decimalsB).toSD(6),
   `(${lowerTickIndex})`,
 );
-console.info("position upperPrice(Index)",
-  PriceMath.tickIndexToPrice(position.tickUpperIndex, decimalsA, decimalsB).toSD(6),
+console.info(
+  "position upperPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickUpperIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
   `(${position.tickUpperIndex})`,
   "-->",
   PriceMath.tickIndexToPrice(upperTickIndex, decimalsA, decimalsB).toSD(6),
@@ -215,7 +239,10 @@ if (initLowerTickArray) {
   );
 }
 
-if (initUpperTickArray && !upperTickArrayPda.publicKey.equals(lowerTickArrayPda.publicKey)) {
+if (
+  initUpperTickArray &&
+  !upperTickArrayPda.publicKey.equals(lowerTickArrayPda.publicKey)
+) {
   builder.addInstruction(
     WhirlpoolIx.initTickArrayIx(ctx.program, {
       whirlpool: whirlpoolPubkey,

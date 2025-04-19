@@ -1,12 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import {
-  PDAUtil,
-  WhirlpoolIx,
-} from "@orca-so/whirlpools-sdk";
-import {
-  resolveOrCreateATA,
-  TransactionBuilder,
-} from "@orca-so/common-sdk";
+import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
+import { resolveOrCreateATA, TransactionBuilder } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
@@ -27,7 +21,10 @@ if (!positionMint) {
   throw new Error("positionMint not found");
 }
 
-const lockConfigPda = PDAUtil.getLockConfig(ctx.program.programId, positionPubkey);
+const lockConfigPda = PDAUtil.getLockConfig(
+  ctx.program.programId,
+  positionPubkey,
+);
 const lockConfig = await ctx.fetcher.getLockConfig(lockConfigPda.publicKey);
 if (!lockConfig) {
   throw new Error("position is not locked");
@@ -40,7 +37,9 @@ const positionTokenAccountPubkey = getAssociatedTokenAddressSync(
   undefined,
   positionMint.tokenProgram,
 );
-const positionTokenAccount = await ctx.fetcher.getTokenInfo(positionTokenAccountPubkey);
+const positionTokenAccount = await ctx.fetcher.getTokenInfo(
+  positionTokenAccountPubkey,
+);
 if (!positionTokenAccount || positionTokenAccount.amount !== 1n) {
   throw new Error("position NFT not found on wallet ATA");
 }
@@ -53,14 +52,20 @@ const newOwnerPositionTokenAccountPubkey = getAssociatedTokenAddressSync(
   true,
   positionMint.tokenProgram,
 );
-const newOwnerPositionTokenAccount = await ctx.fetcher.getTokenInfo(newOwnerPositionTokenAccountPubkey);
+const newOwnerPositionTokenAccount = await ctx.fetcher.getTokenInfo(
+  newOwnerPositionTokenAccountPubkey,
+);
 const initializeDestinationTokenAccount = newOwnerPositionTokenAccount === null;
 
 console.info("pool", position.whirlpool.toBase58());
 console.info("position", positionPubkey.toBase58());
 console.info("position liquidity", position.liquidity.toString());
 console.info("new owner", newOwnerPubkey.toBase58());
-console.info("new owner ATA address", newOwnerPositionTokenAccountPubkey.toBase58(), initializeDestinationTokenAccount ? "(will be created)" : "(already exists)");
+console.info(
+  "new owner ATA address",
+  newOwnerPositionTokenAccountPubkey.toBase58(),
+  initializeDestinationTokenAccount ? "(will be created)" : "(already exists)",
+);
 
 console.info("\nif the above is OK, enter YES");
 const yesno = await promptConfirm("yesno");
@@ -70,7 +75,16 @@ if (!yesno) {
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 
 if (initializeDestinationTokenAccount) {
-  const ixs = await resolveOrCreateATA(ctx.connection, newOwnerPubkey, position.positionMint, ctx.fetcher.getAccountRentExempt, undefined, ctx.wallet.publicKey, false, true);
+  const ixs = await resolveOrCreateATA(
+    ctx.connection,
+    newOwnerPubkey,
+    position.positionMint,
+    ctx.fetcher.getAccountRentExempt,
+    undefined,
+    ctx.wallet.publicKey,
+    false,
+    true,
+  );
   builder.addInstruction(ixs);
 }
 
@@ -86,7 +100,7 @@ builder.addInstruction(
   }),
 );
 
-const landed = await sendTransaction(builder);
+await sendTransaction(builder);
 
 /*
 

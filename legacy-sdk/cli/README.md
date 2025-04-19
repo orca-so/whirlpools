@@ -43,7 +43,7 @@ Token-2022 tokens are acceptable 👍
 ## Reward
 - `yarn start setRewardAuthority`: set new reward authority of rewards on a whirlpool
 - `yarn start initializeReward`: initialize new reward for a whirlpool
-- TODO: set reward emission
+- `yarn start setRewardEmissions`: set reward emissions
 
 ## Position
 - `yarn start openPosition`: open a new position
@@ -52,6 +52,9 @@ Token-2022 tokens are acceptable 👍
 - `yarn start collectFees`: collect fees from a position
 - `yarn start collectRewards`: collect rewards from a position
 - `yarn start closePosition`: close an empty position
+- `yarn start lockPosition`: lock a non-empty position permanently
+- `yarn start transferLockedPosition`: transfer locked position
+- `yarn start resetPositionRange`: reset the range setting of an empty position
 
 ## PositionBundle
 - `yarn start initializePositionBundle`: create a new position bundle

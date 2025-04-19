@@ -1,32 +1,56 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import {
-  ORCA_WHIRLPOOL_PROGRAM_ID,
   PDAUtil,
   WhirlpoolIx,
-  PriceMath,
   TickUtil,
+  PriceMath,
+  ORCA_WHIRLPOOL_PROGRAM_ID,
 } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import {
-  getAssociatedTokenAddressSync,
-  TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { sendTransaction } from "../utils/transaction_sender";
-import Decimal from "decimal.js";
-import { calcDepositRatio } from "../utils/deposit_ratio";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
+import Decimal from "decimal.js";
+import { calcDepositRatio } from "../utils/deposit_ratio";
 
-console.info("open Position...");
+console.info("reset position range...");
 
 // prompt
-const whirlpoolPubkeyStr = await promptText("whirlpoolPubkey");
+const positionPubkeyStr = await promptText("positionPubkey");
 
-const whirlpoolPubkey = new PublicKey(whirlpoolPubkeyStr);
+const positionPubkey = new PublicKey(positionPubkeyStr);
+const position = await ctx.fetcher.getPosition(positionPubkey);
+if (!position) {
+  throw new Error("position not found");
+}
+const positionMint = await ctx.fetcher.getMintInfo(position.positionMint);
+if (!positionMint) {
+  throw new Error("positionMint not found");
+}
+
+if (!position.liquidity.isZero()) {
+  throw new Error(
+    "position liquidity is NOT zero (only empty position is resettable)",
+  );
+}
+if (!position.feeOwedA.isZero() || !position.feeOwedB.isZero()) {
+  throw new Error(
+    "position feeOwed is NOT zero (only empty position is resettable)",
+  );
+}
+if (!position.rewardInfos.every((ri) => ri.amountOwed.isZero())) {
+  throw new Error(
+    "position rewardOwed is NOT zero (only empty position is resettable)",
+  );
+}
+
+const whirlpoolPubkey = position.whirlpool;
 const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey);
 if (!whirlpool) {
   throw new Error("whirlpool not found");
 }
+
 const tickSpacing = whirlpool.tickSpacing;
 
 const tokenMintAPubkey = whirlpool.tokenMintA;
@@ -58,6 +82,25 @@ console.info(
 
 let lowerTickIndex: number;
 let upperTickIndex: number;
+
+console.info(
+  "current lowerPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickLowerIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
+  `(${position.tickLowerIndex})`,
+);
+console.info(
+  "current upperPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickUpperIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
+  `(${position.tickUpperIndex})`,
+);
 
 console.info(`if you want to create FULL RANGE position, enter YES`);
 const fullrangeYesno = await promptConfirm("YES");
@@ -143,47 +186,46 @@ const upperTickArray = await ctx.fetcher.getTickArray(
 const initLowerTickArray = !lowerTickArray;
 const initUpperTickArray = !upperTickArray;
 
-console.info(`if you want to create position with Metadata, enter YES`);
-const withMetadataYesno = await promptConfirm("YES");
-
-console.info(`if you want to create position WITH TokenExtensions, enter YES`);
-const withTokenExtensions = await promptConfirm("YES");
-
+console.info("pool", whirlpoolPubkey.toBase58());
+console.info("position", positionPubkey.toBase58());
 console.info(
-  "setting...",
-  "\n\twhirlpool",
-  whirlpoolPubkey.toBase58(),
-  "\n\ttokenMintA",
-  tokenMintAPubkey.toBase58(),
-  "\n\ttokenMintB",
-  tokenMintBPubkey.toBase58(),
-  "\n\ttickSpacing",
-  tickSpacing,
-  "\n\tcurrentPrice",
-  currentPrice.toSD(6),
-  "B/A",
-  "\n\tlowerPrice(Index)",
+  "position lowerPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickLowerIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
+  `(${position.tickLowerIndex})`,
+  "-->",
   PriceMath.tickIndexToPrice(lowerTickIndex, decimalsA, decimalsB).toSD(6),
   `(${lowerTickIndex})`,
-  "\n\tupperPrice(Index)",
+);
+console.info(
+  "position upperPrice(Index)",
+  PriceMath.tickIndexToPrice(
+    position.tickUpperIndex,
+    decimalsA,
+    decimalsB,
+  ).toSD(6),
+  `(${position.tickUpperIndex})`,
+  "-->",
   PriceMath.tickIndexToPrice(upperTickIndex, decimalsA, decimalsB).toSD(6),
   `(${upperTickIndex})`,
-  "\n\tlowerTickArray",
+);
+console.info(
+  "lowerTickArray",
   lowerTickArrayPda.publicKey.toBase58(),
   initLowerTickArray ? "(TO BE INITIALIZED)" : "(initialized)",
-  "\n\tupperTickArray",
+  "\nupperTickArray",
   upperTickArrayPda.publicKey.toBase58(),
   initUpperTickArray ? "(TO BE INITIALIZED)" : "(initialized)",
-  "\n\twithMetadata",
-  withMetadataYesno ? "WITH metadata" : "WITHOUT metadata",
-  "\n\twithTokenExtensions",
-  withTokenExtensions ? "WITH TokenExtensions" : "WITHOUT TokenExtensions",
 );
-const yesno = await promptConfirm("if the above is OK, enter YES");
+
+console.info("\nif the above is OK, enter YES");
+const yesno = await promptConfirm("yesno");
 if (!yesno) {
   throw new Error("stopped");
 }
-
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 
 if (initLowerTickArray) {
@@ -211,114 +253,62 @@ if (
   );
 }
 
-const positionMintKeypair = Keypair.generate();
-const positionPda = PDAUtil.getPosition(
-  ORCA_WHIRLPOOL_PROGRAM_ID,
-  positionMintKeypair.publicKey,
-);
-if (withTokenExtensions) {
-  // TokenExtensions based Position NFT
-  builder.addInstruction(
-    WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, {
-      funder: ctx.wallet.publicKey,
-      whirlpool: whirlpoolPubkey,
-      tickLowerIndex: lowerTickIndex,
-      tickUpperIndex: upperTickIndex,
-      withTokenMetadataExtension: withMetadataYesno,
-      owner: ctx.wallet.publicKey,
-      positionMint: positionMintKeypair.publicKey,
-      positionPda,
-      positionTokenAccount: getAssociatedTokenAddressSync(
-        positionMintKeypair.publicKey,
-        ctx.wallet.publicKey,
-        undefined,
-        TOKEN_2022_PROGRAM_ID,
-      ),
-    }),
-  );
-} else {
-  // TokenProgram based Position NFT
-
-  const metadataPda = PDAUtil.getPositionMetadata(
-    positionMintKeypair.publicKey,
-  );
-  const params = {
-    funder: ctx.wallet.publicKey,
-    whirlpool: whirlpoolPubkey,
+builder.addInstruction(
+  WhirlpoolIx.resetPositionRangeIx(ctx.program, {
     tickLowerIndex: lowerTickIndex,
     tickUpperIndex: upperTickIndex,
-    owner: ctx.wallet.publicKey,
-    positionMintAddress: positionMintKeypair.publicKey,
-    positionPda,
+    position: positionPubkey,
+    positionAuthority: ctx.wallet.publicKey,
     positionTokenAccount: getAssociatedTokenAddressSync(
-      positionMintKeypair.publicKey,
+      position.positionMint,
       ctx.wallet.publicKey,
+      undefined,
+      positionMint.tokenProgram,
     ),
-    metadataPda,
-  };
+    whirlpool: whirlpoolPubkey,
+    funder: ctx.wallet.publicKey,
+  }),
+);
 
-  if (withMetadataYesno) {
-    builder.addInstruction(
-      WhirlpoolIx.openPositionWithMetadataIx(ctx.program, params),
-    );
-  } else {
-    builder.addInstruction(WhirlpoolIx.openPositionIx(ctx.program, params));
-  }
-}
-builder.addSigner(positionMintKeypair);
-
-const landed = await sendTransaction(builder);
-if (landed) {
-  console.info(
-    "position mint address:",
-    positionMintKeypair.publicKey.toBase58(),
-  );
-  console.info("position address:", positionPda.publicKey.toBase58());
-  console.info(
-    "📝position liquidity is empty, please use yarn run increaseLiquidity to deposit",
-  );
-}
+await sendTransaction(builder);
 
 /*
 
 SAMPLE EXECUTION LOG
 
-connection endpoint http://localhost:8899
-wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
-open Position...
-prompt: whirlpoolPubkey:  EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4
-tokenMintA Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa (TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)
+connection endpoint https://api.devnet.solana.com
+wallet 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5
+reset position range...
+✔ positionPubkey … 9MtyLDRJK5fBvLozLqzfFdiSgXiH2QBLVDPcDEYJUrRC
+tokenMintA So11111111111111111111111111111111111111112 (TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)
 tokenMintB BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k (TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)
+current lowerPrice(Index) 0.0000000000000000544947 (-443584)
+current upperPrice(Index) 18350300000000000000000 (443584)
 if you want to create FULL RANGE position, enter YES
-prompt: yesno:  YES
-using full range
-if you want to create position with Metadata, enter YES
-prompt: yesno:  no
-setting...
-        whirlpool EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4
-        tokenMintA Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa
-        tokenMintB BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k
-        tickSpacing 64
-        currentPrice 0.0100099 B/A
-        lowerPrice(Index) 0.0000000000000000544947 (-443584)
-        upperPrice(Index) 18350300000000000000000 (443584)
-        lowerTickArray AihMywzP74pU2riq1ihFW2YSVcc1itT3yiP7minvkxDs (initialized)
-        upperTickArray F4h3qr6uBgdLDJyTms4YiebiaiuCEvC5C9LJE8scA1LV (initialized)
-        withMetadata WITHOUT metadata
+✔ YES › No
+current price: 13.5467 B/A
+✔ lowerPrice … 500
+✔ upperPrice … 800
+deposit ratio A:B 100.00% : 0.00%
+is range [500.991, 804.455] OK ? (if it is OK, enter OK)
+✔ OK › Yes
+pool 3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt
+position 9MtyLDRJK5fBvLozLqzfFdiSgXiH2QBLVDPcDEYJUrRC
+position lowerPrice(Index) 0.0000000000000000544947 (-443584) --> 500.991 (-6912)
+position upperPrice(Index) 18350300000000000000000 (443584) --> 804.455 (-2176)
+lowerTickArray GsCSnitrDbtw5m8UzPsmwb3Tr3R3DYmpz4WzhTriWri (initialized) 
+upperTickArray 3rC87MFCC7VKpkhAR5gp2zMBjHr46jRajvMHxCBF8MWr (initialized)
 
 if the above is OK, enter YES
-prompt: yesno:  YES
-estimatedComputeUnits: 163606
-prompt: priorityFeeInSOL:  0
+✔ yesno › Yes
+estimatedComputeUnits: 106232
+✔ priorityFeeInSOL … 0
 Priority fee: 0 SOL
 process transaction...
-transaction is still valid, 150 blocks left (at most)
+transaction is still valid, 151 blocks left (at most)
 sending...
 confirming...
 ✅successfully landed
-signature CAY5wBXVhbHRVjJYgi8c1KS5XczLDwZB1S7sf5fwkCakXo8SQBtasvjBvtjwpdZUoQnwJoPmhG2ZrPGX3PRQ8ax
-position mint address: 8nBbX74FraqPuoL8AwXxPiPaULg8CP8hUJ41hJGAx4nb
-position address: H4WEb57EYh5AhorHArjgRXVgSBJRMZi3DvsLb3J1XNj6
-📝position liquidity is empty, please use yarn run increaseLiquidity to deposit
+signature 4vDt37s8fHr6uktrna5FTn5tfu836yA4r7ah9eCmu5i1DSXCHMVeB3vocqtUiVuP7BF47aKBuKy1Y2i58V7Rzf1F
 
 */

@@ -370,6 +370,64 @@ pub fn increase_liquidity_quote_b(
     )
 }
 
+pub fn try_get_token_estimates_from_liquidity(
+    liquidity_delta: u128,
+    current_sqrt_price: u128,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
+    round_up: bool,
+) -> Result<(u64, u64), CoreError> {
+    if liquidity_delta == 0 {
+        return Ok((0, 0));
+    }
+
+    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index).into();
+    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index).into();
+
+    let position_status = position_status(
+        current_sqrt_price.into(),
+        tick_lower_index,
+        tick_upper_index,
+    );
+
+    match position_status {
+        PositionStatus::PriceBelowRange => {
+            let token_a = try_get_token_a_from_liquidity(
+                liquidity_delta,
+                sqrt_price_lower,
+                sqrt_price_upper,
+                round_up,
+            )?;
+            Ok((token_a, 0))
+        }
+        PositionStatus::PriceInRange => {
+            let token_a = try_get_token_a_from_liquidity(
+                liquidity_delta,
+                current_sqrt_price,
+                sqrt_price_upper,
+                round_up,
+            )?;
+            let token_b = try_get_token_b_from_liquidity(
+                liquidity_delta,
+                sqrt_price_lower,
+                current_sqrt_price,
+                round_up,
+            )?;
+            Ok((token_a, token_b))
+        }
+        PositionStatus::PriceAboveRange => {
+            let token_b = try_get_token_b_from_liquidity(
+                liquidity_delta,
+                sqrt_price_lower,
+                sqrt_price_upper,
+                round_up,
+            )?;
+            Ok((0, token_b))
+        }
+        PositionStatus::Invalid => Ok((0, 0)),
+    }
+}
+
 // Private functions
 
 fn try_get_liquidity_from_a(
@@ -441,64 +499,6 @@ fn try_get_token_b_from_liquidity(
         (result + 1).try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     } else {
         result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
-    }
-}
-
-fn try_get_token_estimates_from_liquidity(
-    liquidity_delta: u128,
-    current_sqrt_price: u128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
-    round_up: bool,
-) -> Result<(u64, u64), CoreError> {
-    if liquidity_delta == 0 {
-        return Ok((0, 0));
-    }
-
-    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index).into();
-    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index).into();
-
-    let position_status = position_status(
-        current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
-    );
-
-    match position_status {
-        PositionStatus::PriceBelowRange => {
-            let token_a = try_get_token_a_from_liquidity(
-                liquidity_delta,
-                sqrt_price_lower,
-                sqrt_price_upper,
-                round_up,
-            )?;
-            Ok((token_a, 0))
-        }
-        PositionStatus::PriceInRange => {
-            let token_a = try_get_token_a_from_liquidity(
-                liquidity_delta,
-                current_sqrt_price,
-                sqrt_price_upper,
-                round_up,
-            )?;
-            let token_b = try_get_token_b_from_liquidity(
-                liquidity_delta,
-                sqrt_price_lower,
-                current_sqrt_price,
-                round_up,
-            )?;
-            Ok((token_a, token_b))
-        }
-        PositionStatus::PriceAboveRange => {
-            let token_b = try_get_token_b_from_liquidity(
-                liquidity_delta,
-                sqrt_price_lower,
-                sqrt_price_upper,
-                round_up,
-            )?;
-            Ok((0, token_b))
-        }
-        PositionStatus::Invalid => Ok((0, 0)),
     }
 }
 

@@ -7,7 +7,8 @@ use crate::{
     order_tick_indexes, position_status, tick_index_to_sqrt_price, try_apply_transfer_fee,
     try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance,
     try_reverse_apply_transfer_fee, CoreError, DecreaseLiquidityQuote, IncreaseLiquidityQuote,
-    PositionStatus, TransferFee, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, U128,
+    PositionStatus, PositionTokenAmounts, TransferFee, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
+    U128,
 };
 
 /// Calculate the quote for decreasing liquidity
@@ -370,62 +371,41 @@ pub fn increase_liquidity_quote_b(
     )
 }
 
-pub fn try_get_token_estimates_from_liquidity(
-    liquidity_delta: u128,
-    current_sqrt_price: u128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
-    round_up: bool,
-) -> Result<(u64, u64), CoreError> {
-    if liquidity_delta == 0 {
-        return Ok((0, 0));
-    }
+/// Calculate the token amounts in an existing position
+///
+/// # Parameters
+/// - `position_liquidity` - The total liquidity of the position
+/// - `current_sqrt_price` - The current sqrt price of the pool
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
+/// - `transfer_fee_a` - The transfer fee for token A in bps
+/// - `transfer_fee_b` - The transfer fee for token B in bps
+///
+/// # Returns
+/// - A PositionTokenAmounts struct containing the token amounts in the position
+#[cfg_attr(feature = "wasm", wasm_expose)]
+pub fn get_position_token_amounts(
+    position_liquidity: U128,
+    current_sqrt_price: U128,
+    tick_index_1: i32,
+    tick_index_2: i32,
+    transfer_fee_a: Option<TransferFee>,
+    transfer_fee_b: Option<TransferFee>,
+) -> Result<PositionTokenAmounts, CoreError> {
+    let quote = decrease_liquidity_quote(
+        position_liquidity,
+        0,
+        current_sqrt_price,
+        tick_index_1,
+        tick_index_2,
+        transfer_fee_a,
+        transfer_fee_b,
+    )?;
 
-    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index).into();
-    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index).into();
-
-    let position_status = position_status(
-        current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
-    );
-
-    match position_status {
-        PositionStatus::PriceBelowRange => {
-            let token_a = try_get_token_a_from_liquidity(
-                liquidity_delta,
-                sqrt_price_lower,
-                sqrt_price_upper,
-                round_up,
-            )?;
-            Ok((token_a, 0))
-        }
-        PositionStatus::PriceInRange => {
-            let token_a = try_get_token_a_from_liquidity(
-                liquidity_delta,
-                current_sqrt_price,
-                sqrt_price_upper,
-                round_up,
-            )?;
-            let token_b = try_get_token_b_from_liquidity(
-                liquidity_delta,
-                sqrt_price_lower,
-                current_sqrt_price,
-                round_up,
-            )?;
-            Ok((token_a, token_b))
-        }
-        PositionStatus::PriceAboveRange => {
-            let token_b = try_get_token_b_from_liquidity(
-                liquidity_delta,
-                sqrt_price_lower,
-                sqrt_price_upper,
-                round_up,
-            )?;
-            Ok((0, token_b))
-        }
-        PositionStatus::Invalid => Ok((0, 0)),
-    }
+    Ok(PositionTokenAmounts {
+        token_a: quote.token_est_a,
+        token_b: quote.token_est_b,
+    })
 }
 
 // Private functions
@@ -499,6 +479,64 @@ fn try_get_token_b_from_liquidity(
         (result + 1).try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     } else {
         result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
+    }
+}
+
+fn try_get_token_estimates_from_liquidity(
+    liquidity_delta: u128,
+    current_sqrt_price: u128,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
+    round_up: bool,
+) -> Result<(u64, u64), CoreError> {
+    if liquidity_delta == 0 {
+        return Ok((0, 0));
+    }
+
+    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index).into();
+    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index).into();
+
+    let position_status = position_status(
+        current_sqrt_price.into(),
+        tick_lower_index,
+        tick_upper_index,
+    );
+
+    match position_status {
+        PositionStatus::PriceBelowRange => {
+            let token_a = try_get_token_a_from_liquidity(
+                liquidity_delta,
+                sqrt_price_lower,
+                sqrt_price_upper,
+                round_up,
+            )?;
+            Ok((token_a, 0))
+        }
+        PositionStatus::PriceInRange => {
+            let token_a = try_get_token_a_from_liquidity(
+                liquidity_delta,
+                current_sqrt_price,
+                sqrt_price_upper,
+                round_up,
+            )?;
+            let token_b = try_get_token_b_from_liquidity(
+                liquidity_delta,
+                sqrt_price_lower,
+                current_sqrt_price,
+                round_up,
+            )?;
+            Ok((token_a, token_b))
+        }
+        PositionStatus::PriceAboveRange => {
+            let token_b = try_get_token_b_from_liquidity(
+                liquidity_delta,
+                sqrt_price_lower,
+                sqrt_price_upper,
+                round_up,
+            )?;
+            Ok((0, token_b))
+        }
+        PositionStatus::Invalid => Ok((0, 0)),
     }
 }
 
@@ -1182,5 +1220,45 @@ mod tests {
         assert_eq!(result.token_est_b, 0);
         assert_eq!(result.token_max_a, 0);
         assert_eq!(result.token_max_b, 0);
+    }
+
+    #[test]
+    fn test_get_position_token_amounts() {
+        // Below range position
+        let result =
+            get_position_token_amounts(1000000, 18354745142194483561, -10, 10, None, None).unwrap();
+        assert_eq!(result.token_a, 999);
+        assert_eq!(result.token_b, 0);
+
+        // In range position
+        let result =
+            get_position_token_amounts(1000000, 18446744073709551616, -10, 10, None, None).unwrap();
+        assert_eq!(result.token_a, 499);
+        assert_eq!(result.token_b, 499);
+
+        // Above range position
+        let result =
+            get_position_token_amounts(1000000, 18539204128674405812, -10, 10, None, None).unwrap();
+        assert_eq!(result.token_a, 0);
+        assert_eq!(result.token_b, 999);
+
+        // Zero liquidity position
+        let result =
+            get_position_token_amounts(0, 18446744073709551616, -10, 10, None, None).unwrap();
+        assert_eq!(result.token_a, 0);
+        assert_eq!(result.token_b, 0);
+
+        // Position with transfer fees
+        let result = get_position_token_amounts(
+            1000000,
+            18446744073709551616,
+            -10,
+            10,
+            Some(TransferFee::new(2000)),
+            Some(TransferFee::new(1000)),
+        )
+        .unwrap();
+        assert_eq!(result.token_a, 399);
+        assert_eq!(result.token_b, 449);
     }
 }

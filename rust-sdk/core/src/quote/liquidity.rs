@@ -370,6 +370,17 @@ pub fn increase_liquidity_quote_b(
     )
 }
 
+/// Calculate the estimated token amounts for a given liquidity delta and price range
+///
+/// # Parameters
+/// - `liquidity_delta` - The amount of liquidity to get token estimates for
+/// - `current_sqrt_price` - The current sqrt price of the pool
+/// - `tick_lower_index` - The lower tick index of the range
+/// - `tick_upper_index` - The upper tick index of the range
+/// - `round_up` - Whether to round the token amounts up
+///
+/// # Returns
+/// - A tuple containing the estimated amounts of token A and token B
 pub fn try_get_token_estimates_from_liquidity(
     liquidity_delta: u128,
     current_sqrt_price: u128,

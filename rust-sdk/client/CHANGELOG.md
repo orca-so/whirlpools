@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust-client
 
+## 2.0.6
+
+### Patch Changes
+
+- [#902](https://github.com/orca-so/whirlpools/pull/902) [`11a8c04`](https://github.com/orca-so/whirlpools/commit/11a8c0420da5f6cf4cde26f82216bef5a703c2ea) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Add reset position range feature, lock concentrated positions feature, transfer locked position feature
+
 ## 2.0.5
 
 ### Patch Changes

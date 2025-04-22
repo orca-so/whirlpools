@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust-core
 
+## 1.0.7
+
+### Patch Changes
+
+- [#912](https://github.com/orca-so/whirlpools/pull/912) [`4642811`](https://github.com/orca-so/whirlpools/commit/46428111241653addd0f3a7076a452bef7ab99c7) Thanks [@calintje](https://github.com/calintje)! - Expose useful utility functions
+
 ## 1.0.6
 
 ### Patch Changes

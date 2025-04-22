@@ -1,6 +1,6 @@
 [package]
 name = "whirlpool"
-version = "0.3.5"
+version = "0.3.6"
 publish = false
 edition = "2021"
 license-file = "../../LICENSE"

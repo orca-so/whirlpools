@@ -1,5 +1,14 @@
 # @orca-so/whirlpools
 
+## 1.1.2
+
+### Patch Changes
+
+- [#912](https://github.com/orca-so/whirlpools/pull/912) [`4642811`](https://github.com/orca-so/whirlpools/commit/46428111241653addd0f3a7076a452bef7ab99c7) Thanks [@calintje](https://github.com/calintje)! - Expose useful utility functions
+
+- Updated dependencies [[`11a8c04`](https://github.com/orca-so/whirlpools/commit/11a8c0420da5f6cf4cde26f82216bef5a703c2ea)]:
+  - @orca-so/whirlpools-client@1.0.6
+
 ## 1.1.1
 
 ### Patch Changes

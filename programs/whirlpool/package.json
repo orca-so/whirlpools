@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-program",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "scripts": {
     "build": "RUSTUP_TOOLCHAIN=1.78.0 anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",

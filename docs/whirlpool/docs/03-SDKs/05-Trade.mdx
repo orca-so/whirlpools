@@ -127,18 +127,18 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     7. **Submit Transaction**: Use the callback to submit the transaction.
 
     ```tsx
-    import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/kit';
+    import { setWhirlpoolsConfig, swap } from '@orca-so/whirlpools';
+    import { createSolanaRpc, address } from '@solana/kit';
     import { loadWallet } from './utils';
 
     await setWhirlpoolsConfig('solanaDevnet');
-    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const devnetRpc = createSolanaRpc('https://api.devnet.solana.com');
     const wallet = await loadWallet();
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
     const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
     const inputAmount = 1_000_000n;
 
-    const { instructions, quote, callback: swap } = await swapInstructions(
+    const { instructions, quote, callback: sendTx } = await swap(
       devnetRpc,
       { inputAmount, mint: mintAddress },
       whirlpoolAddress,
@@ -147,7 +147,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     );
 
     // Use the callback to submit the transaction
-    const txId = await swap();
+    const txId = await sendTx();
 
     console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
     console.log(`Number of instructions:, ${instructions.length}`);

@@ -2224,7 +2224,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "2.0.5"
+version = "2.0.6"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -2239,7 +2239,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "1.0.6"
+version = "1.0.7"
 dependencies = [
  "ethnum",
  "libm",

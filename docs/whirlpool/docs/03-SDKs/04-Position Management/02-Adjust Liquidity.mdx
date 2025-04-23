@@ -147,7 +147,7 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     <ReactMarkdown>{startingGuideText}</ReactMarkdown>
 
     ```tsx
-    import { decreaseLiquidityInstructions, increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { decreaseLiquidity, increaseLiquidity, setWhirlpoolsConfig } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
     import { loadWallet } from './utils';
 
@@ -173,8 +173,8 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         wallet
     );
 
-    console.log(`Increase quote token max B: ${increaseQuote.tokenEstB}`);
-    console.log(`Decrease quote token max B: ${decreaseQuote.tokenEstB}`);
+    console.log(`Increase quote estimated token B: ${increaseQuote.tokenEstB}`);
+    console.log(`Decrease quote estimated token B: ${decreaseQuote.tokenEstB}`);
 
     // Use the callback to submit the transaction
     const txIdIncrease = await sendTxIncrease();

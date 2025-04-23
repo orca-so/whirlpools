@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.0
+
+### Minor Changes
+
+- [#915](https://github.com/orca-so/whirlpools/pull/915) [`3ed21c5`](https://github.com/orca-so/whirlpools/commit/3ed21c5ac1a6e74c89ec995f8d32cea565163c52) Thanks [@calintje](https://github.com/calintje)! - Add Adaptive Fees math explainer. Fix basic usage reference examples for `kit`.
+
 ## 0.1.7
 
 ### Patch Changes

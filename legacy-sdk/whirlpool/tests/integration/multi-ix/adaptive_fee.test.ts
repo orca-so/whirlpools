@@ -793,12 +793,12 @@ describe("adaptive fee tests", () => {
 
       await assert.rejects(
         toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute(),
-        /0x17ad/, // TradeIsNotEnabled.
+        /0x17b0/, // TradeIsNotEnabled.
       );
 
       await assert.rejects(
         toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute(),
-        /0x17ad/, // TradeIsNotEnabled.
+        /0x17b0/, // TradeIsNotEnabled.
       );
 
       // wait until trade enable timestamp (margin: 5s)
@@ -989,12 +989,12 @@ describe("adaptive fee tests", () => {
 
           await assert.rejects(
             toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute(),
-            /0x17ad/, // TradeIsNotEnabled.
+            /0x17b0/, // TradeIsNotEnabled.
           );
 
           await assert.rejects(
             toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute(),
-            /0x17ad/, // TradeIsNotEnabled.
+            /0x17b0/, // TradeIsNotEnabled.
           );
 
           // wait until trade enable timestamp (margin: 5s)

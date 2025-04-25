@@ -2184,7 +2184,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             modifiedPoolInitInfo,
           ),
         ).buildAndExecute(),
-        /0x17ac/, // InvalidTradeEnableTimestamp
+        /0x17af/, // InvalidTradeEnableTimestamp
       );
 
       await toTx(
@@ -2288,7 +2288,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               tradeEnableTimestamp,
             }),
           ).buildAndExecute(),
-          /0x17ac/, // InvalidTradeEnableTimestamp
+          /0x17af/, // InvalidTradeEnableTimestamp
         );
       }
     });

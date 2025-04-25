@@ -283,7 +283,7 @@ describe("initialize_adaptive_fee_tier", () => {
         delegatedFeeAuthority,
         presetAdaptiveFeeConstants,
       ),
-      /0x17ab/, // InvalidFeeTierIndex
+      /0x17ae/, // InvalidFeeTierIndex
     );
   });
 
@@ -720,7 +720,7 @@ describe("initialize_adaptive_fee_tier", () => {
           delegatedFeeAuthority,
           constants,
         ),
-        /0x17aa/, // InvalidAdaptiveFeeConstants
+        /0x17ad/, // InvalidAdaptiveFeeConstants
       );
     }
 

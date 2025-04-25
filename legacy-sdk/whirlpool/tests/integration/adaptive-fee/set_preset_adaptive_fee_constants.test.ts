@@ -444,7 +444,7 @@ describe("set_preset_adaptive_fee_constants", () => {
         )
           .addSigner(feeAuthorityKeypair)
           .buildAndExecute(),
-        /0x17aa/, // InvalidAdaptiveFeeConstants
+        /0x17ad/, // InvalidAdaptiveFeeConstants
       );
     }
 

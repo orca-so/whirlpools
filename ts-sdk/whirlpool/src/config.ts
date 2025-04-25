@@ -1,7 +1,23 @@
 import { getWhirlpoolsConfigExtensionAddress } from "@orca-so/whirlpools-client";
-import type { Address, TransactionSigner } from "@solana/web3.js";
-import { address, createNoopSigner, isAddress } from "@solana/web3.js";
+import type { Address, TransactionSigner, KeyPairSigner } from "@solana/kit";
+import {
+  address,
+  createNoopSigner,
+  isAddress,
+  createKeyPairFromBytes,
+  createSignerFromKeyPair,
+} from "@solana/kit";
 
+export {
+  setComputeUnitMarginMultiplier,
+  setJitoBlockEngineUrl,
+  setJitoTipSetting,
+  setPriorityFeeSetting,
+  setRpc,
+  setJitoFeePercentile,
+  setPriorityFeePercentile,
+  getRpcConfig,
+} from "@orca-so/tx-sender";
 /**
  * The default (null) address.
  */
@@ -169,4 +185,38 @@ export function resetConfiguration() {
   FUNDER = DEFAULT_FUNDER;
   SLIPPAGE_TOLERANCE_BPS = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
   NATIVE_MINT_WRAPPING_STRATEGY = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
+}
+
+let _payer: KeyPairSigner | undefined;
+
+/**
+ * Sets the payer from a private key byte array.
+ *
+ * @param {Uint8Array<ArrayBuffer>} pkBytes - The private key bytes to create the payer from.
+ * @returns {Promise<KeyPairSigner>} - A promise that resolves to the created signer.
+ *
+ * @example
+ * ```ts
+ * // Set payer from a private key byte array
+ * const privateKeyBytes = new Uint8Array([
+ *   55, 244, 186, 115, 93, 3, 9, 47, 12, 168,
+ *   86, 1, 5, 155, 127, 3, 44, 165, 155, 3,
+ *   112, 1, 3, 99, 3, 211, 3, 77, 153,
+ *   44, 1, 179
+ * ]);
+ * const signer = await setPayerFromBytes(privateKeyBytes);
+ * ```
+ */
+export async function setPayerFromBytes(pkBytes: Uint8Array<ArrayBuffer>) {
+  const kp = await createKeyPairFromBytes(pkBytes);
+  const signer = await createSignerFromKeyPair(kp);
+  _payer = signer;
+  return signer;
+}
+
+export function getPayer(): KeyPairSigner {
+  if (!_payer) {
+    throw new Error("Payer not set. Call setPayer() first.");
+  }
+  return _payer;
 }

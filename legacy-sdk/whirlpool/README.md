@@ -2,7 +2,7 @@
 
 Whirpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
 
-The legacy Whirlpools Typescript SDK (`@orca-so/whirlpools-sdk`) allows for easy interaction with a deployed Whirlpools program and is a solid choice if you are working the Solana Web3.js \<v2.
+The legacy Whirlpools Typescript SDK (`@orca-so/whirlpools-sdk`) allows for easy interaction with a deployed Whirlpools program and is a solid choice if you are working the Solana Web3.js.
 
 The contract has been audited by Kudelski and Neodyme.
 
@@ -21,7 +21,7 @@ yarn add "decimal.js"
 
 ## Usage
 
-Visit our [documentation site on GitHub](https://orca-so.github.io/whirlpools/) to to learn more about how to use this SDK.
+Visit our [documentation site on GitHub](https://dev.orca.so/) to to learn more about how to use this SDK.
 
 ## Tests
 

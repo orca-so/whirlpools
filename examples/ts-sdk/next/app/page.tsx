@@ -2,7 +2,7 @@
 import { fetchPositionsForOwner, PositionOrBundle } from "@orca-so/whirlpools";
 import { tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
 import { useCallback, useMemo, useState } from "react";
-import { createSolanaRpc, mainnet, address, devnet } from "@solana/web3.js";
+import { createSolanaRpc, mainnet, address, devnet } from "@solana/kit";
 
 export default function Page() {
   const [positions, setPositions] = useState<PositionOrBundle[]>([]);

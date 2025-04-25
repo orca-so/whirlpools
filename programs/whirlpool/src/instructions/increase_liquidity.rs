@@ -3,6 +3,7 @@ use anchor_spl::token::{self, Token, TokenAccount};
 use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 
 use crate::errors::ErrorCode;
+use crate::events::*;
 use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
@@ -109,6 +110,18 @@ pub fn handler(
         &ctx.accounts.token_program,
         delta_b,
     )?;
+
+    emit!(LiquidityIncreased {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        position: ctx.accounts.position.key(),
+        tick_lower_index: ctx.accounts.position.tick_lower_index,
+        tick_upper_index: ctx.accounts.position.tick_upper_index,
+        liquidity: liquidity_amount,
+        token_a_amount: delta_a,
+        token_b_amount: delta_b,
+        token_a_transfer_fee: 0,
+        token_b_transfer_fee: 0,
+    });
 
     Ok(())
 }

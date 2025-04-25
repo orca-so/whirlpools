@@ -16,8 +16,8 @@ import type {
   Lamports,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
-import { generateKeyPairSigner, lamports } from "@solana/web3.js";
+} from "@solana/kit";
+import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
@@ -35,6 +35,7 @@ import { fetchAllMint } from "@solana-program/token-2022";
 import assert from "assert";
 import { getTokenSizeForMint, orderMints } from "./token";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -63,7 +64,7 @@ export type CreatePoolInstructions = {
  *
  * @example
  * import { createSplashPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -115,7 +116,7 @@ export function createSplashPoolInstructions(
  *
  * @example
  * import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -271,3 +272,12 @@ export async function createConcentratedLiquidityPoolInstructions(
     initializationCost: lamports(nonRefundableRent),
   };
 }
+
+// -------- ACTIONS --------
+
+export const createSplashPool = wrapFunctionWithExecution(
+  createSplashPoolInstructions,
+);
+export const createConcentratedLiquidityPool = wrapFunctionWithExecution(
+  createConcentratedLiquidityPoolInstructions,
+);

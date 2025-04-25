@@ -342,3 +342,113 @@ pub fn build_position_token_metadata<'info>(
 
     (name, WP_2022_METADATA_SYMBOL.to_string(), uri)
 }
+
+pub fn freeze_user_position_token_2022<'info>(
+    position_mint: &InterfaceAccount<'info, Mint>,
+    position_token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_2022_program: &Program<'info, Token2022>,
+    position: &Account<'info, Position>,
+    position_seeds: &[&[u8]],
+) -> Result<()> {
+    // Note: Token-2022 program rejects the freeze instruction if the account is already frozen.
+    invoke_signed(
+        &spl_token_2022::instruction::freeze_account(
+            token_2022_program.key,
+            position_token_account.to_account_info().key,
+            position_mint.to_account_info().key,
+            &position.key(),
+            &[],
+        )?,
+        &[
+            token_2022_program.to_account_info(),
+            position_token_account.to_account_info(),
+            position_mint.to_account_info(),
+            position.to_account_info(),
+        ],
+        &[position_seeds],
+    )?;
+
+    Ok(())
+}
+
+pub fn unfreeze_user_position_token_2022<'info>(
+    position_mint: &InterfaceAccount<'info, Mint>,
+    position_token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_2022_program: &Program<'info, Token2022>,
+    position: &Account<'info, Position>,
+    position_seeds: &[&[u8]],
+) -> Result<()> {
+    // Note: Token-2022 program rejects the unfreeze instruction if the account is not frozen.
+    invoke_signed(
+        &spl_token_2022::instruction::thaw_account(
+            token_2022_program.key,
+            position_token_account.to_account_info().key,
+            position_mint.to_account_info().key,
+            &position.key(),
+            &[],
+        )?,
+        &[
+            token_2022_program.to_account_info(),
+            position_token_account.to_account_info(),
+            position_mint.to_account_info(),
+            position.to_account_info(),
+        ],
+        &[position_seeds],
+    )?;
+
+    Ok(())
+}
+
+pub fn transfer_user_position_token_2022<'info>(
+    authority: &Signer<'info>,
+    position_mint: &InterfaceAccount<'info, Mint>,
+    position_token_account: &InterfaceAccount<'info, TokenAccount>,
+    destination_token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_2022_program: &Program<'info, Token2022>,
+) -> Result<()> {
+    invoke(
+        &spl_token_2022::instruction::transfer_checked(
+            token_2022_program.key,
+            position_token_account.to_account_info().key,
+            position_mint.to_account_info().key,
+            destination_token_account.to_account_info().key,
+            authority.key,
+            &[],
+            1,
+            position_mint.decimals,
+        )?,
+        &[
+            token_2022_program.to_account_info(),
+            position_token_account.to_account_info(),
+            position_mint.to_account_info(),
+            destination_token_account.to_account_info(),
+            authority.to_account_info(),
+        ],
+    )?;
+    Ok(())
+}
+
+pub fn close_empty_token_account_2022<'info>(
+    token_authority: &Signer<'info>,
+    token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_2022_program: &Program<'info, Token2022>,
+    receiver: &AccountInfo<'info>,
+) -> Result<()> {
+    invoke(
+        &spl_token_2022::instruction::close_account(
+            token_2022_program.key,
+            token_account.to_account_info().key,
+            receiver.key,
+            token_authority.key,
+            &[],
+        )?,
+        &[
+            token_2022_program.to_account_info(),
+            token_account.to_account_info(),
+            receiver.to_account_info(),
+            token_authority.to_account_info(),
+        ],
+    )?;
+
+    Ok(())
+}

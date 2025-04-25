@@ -7,6 +7,8 @@ pub mod constants;
 #[doc(hidden)]
 pub mod errors;
 #[doc(hidden)]
+pub mod events;
+#[doc(hidden)]
 pub mod instructions;
 #[doc(hidden)]
 pub mod manager;
@@ -20,7 +22,7 @@ pub mod tests;
 #[doc(hidden)]
 pub mod util;
 
-use crate::state::{OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
+use crate::state::{LockType, OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
 use crate::util::RemainingAccountsInfo;
 use instructions::*;
 
@@ -623,6 +625,48 @@ pub mod whirlpool {
         ctx: Context<ClosePositionWithTokenExtensions>,
     ) -> Result<()> {
         instructions::close_position_with_token_extensions::handler(ctx)
+    }
+
+    /// Lock the position to prevent any liquidity changes.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    ///
+    /// #### Special Errors
+    /// - `PositionAlreadyLocked` - The provided position is already locked.
+    /// - `PositionNotLockable` - The provided position is not lockable (e.g. An empty position).
+    pub fn lock_position(ctx: Context<LockPosition>, lock_type: LockType) -> Result<()> {
+        instructions::lock_position::handler(ctx, lock_type)
+    }
+
+    /// Reset the position range to a new range.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    ///
+    /// ### Parameters
+    /// - `new_tick_lower_index` - The new tick specifying the lower end of the position range.
+    /// - `new_tick_upper_index` - The new tick specifying the upper end of the position range.
+    ///
+    /// #### Special Errors
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    /// - `ClosePositionNotEmpty` - The provided position account is not empty.
+    /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
+    pub fn reset_position_range(
+        ctx: Context<ResetPositionRange>,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+    ) -> Result<()> {
+        instructions::reset_position_range::handler(ctx, new_tick_lower_index, new_tick_upper_index)
+    }
+
+    /// Transfer a locked position to to a different token account.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    pub fn transfer_locked_position(ctx: Context<TransferLockedPosition>) -> Result<()> {
+        instructions::transfer_locked_position::handler(ctx)
     }
 
     /// Initializes a adaptive_fee_tier account usable by Whirlpools in a WhirlpoolConfig space.

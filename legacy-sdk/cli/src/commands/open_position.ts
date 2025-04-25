@@ -146,10 +146,8 @@ const initUpperTickArray = !upperTickArray;
 console.info(`if you want to create position with Metadata, enter YES`);
 const withMetadataYesno = await promptConfirm("YES");
 
-console.info(
-  `if you want to create position WITHOUT TokenExtensions, enter YES`,
-);
-const withoutTokenExtensions = await promptConfirm("YES");
+console.info(`if you want to create position WITH TokenExtensions, enter YES`);
+const withTokenExtensions = await promptConfirm("YES");
 
 console.info(
   "setting...",
@@ -179,7 +177,7 @@ console.info(
   "\n\twithMetadata",
   withMetadataYesno ? "WITH metadata" : "WITHOUT metadata",
   "\n\twithTokenExtensions",
-  !withoutTokenExtensions ? "WITH TokenExtensions" : "WITHOUT TokenExtensions",
+  withTokenExtensions ? "WITH TokenExtensions" : "WITHOUT TokenExtensions",
 );
 const yesno = await promptConfirm("if the above is OK, enter YES");
 if (!yesno) {
@@ -199,7 +197,10 @@ if (initLowerTickArray) {
   );
 }
 
-if (initUpperTickArray) {
+if (
+  initUpperTickArray &&
+  !upperTickArrayPda.publicKey.equals(lowerTickArrayPda.publicKey)
+) {
   builder.addInstruction(
     WhirlpoolIx.initTickArrayIx(ctx.program, {
       whirlpool: whirlpoolPubkey,
@@ -215,7 +216,7 @@ const positionPda = PDAUtil.getPosition(
   ORCA_WHIRLPOOL_PROGRAM_ID,
   positionMintKeypair.publicKey,
 );
-if (!withoutTokenExtensions) {
+if (withTokenExtensions) {
   // TokenExtensions based Position NFT
   builder.addInstruction(
     WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, {

@@ -4,7 +4,7 @@ import { rpc, signer, sendTransaction } from "./utils/mockRpc";
 import { setupMint, setupAta } from "./utils/token";
 import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token-2022";
-import type { Address } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
 import assert from "assert";
 import {
   setupPosition,

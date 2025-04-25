@@ -1,6 +1,8 @@
-import { address } from "@solana/web3.js";
+import { address } from "@solana/kit";
 import assert from "assert";
+import { describe, it } from "vitest";
 import { getFeeTierAddress } from "../src/pda/feeTier";
+import { getLockConfigAddress } from "../src/pda/lockConfig";
 import { getOracleAddress } from "../src/pda/oracle";
 import { getPositionAddress } from "../src/pda/position";
 import {
@@ -11,10 +13,12 @@ import { getTickArrayAddress } from "../src/pda/tickArray";
 import { getTokenBadgeAddress } from "../src/pda/tokenBadge";
 import { getWhirlpoolAddress } from "../src/pda/whirlpool";
 import { getWhirlpoolsConfigExtensionAddress } from "../src/pda/whirlpoolsConfigExtension";
-import { describe, it } from "vitest";
 
 const TEST_WHIRLPOOLS_CONFIG_ADDRESS = address(
   "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ",
+);
+const TEST_POSITON_ADDRESS = address(
+  "2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq",
 );
 const TEST_POSITION_MINT_ADDRESS = address(
   "6sf6fSK6tTubFA2LMCeTzt4c6DeNVyA6WpDDgtWs7a5p",
@@ -35,6 +39,14 @@ describe("derive program accounts", () => {
     assert.strictEqual(
       address[0],
       "62dSkn5ktwY1PoKPNMArZA4bZsvyemuknWUnnQ2ATTuN",
+    );
+  });
+
+  it("LockConfig", async () => {
+    const address = await getLockConfigAddress(TEST_POSITON_ADDRESS);
+    assert.strictEqual(
+      address[0],
+      "3MaMYjnnqyZSs5kD7vbPKTyx3RkD6qHuSF94kvvKukKx",
     );
   });
 

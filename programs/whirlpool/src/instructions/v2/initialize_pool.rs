@@ -1,7 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-use crate::{state::*, util::verify_supported_token_mint};
+use crate::{
+    errors::ErrorCode,
+    events::*,
+    state::*,
+    util::verify_supported_token_mint,
+};
 
 #[derive(Accounts)]
 #[instruction(tick_spacing: u16)]
@@ -100,5 +105,20 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
-    )
+    )?;
+
+    emit!(PoolInitialized {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        whirlpools_config: ctx.accounts.whirlpools_config.key(),
+        token_mint_a: ctx.accounts.token_mint_a.key(),
+        token_mint_b: ctx.accounts.token_mint_b.key(),
+        tick_spacing,
+        token_program_a: ctx.accounts.token_program_a.key(),
+        token_program_b: ctx.accounts.token_program_b.key(),
+        decimals_a: ctx.accounts.token_mint_a.decimals,
+        decimals_b: ctx.accounts.token_mint_b.decimals,
+        initial_sqrt_price,
+    });
+
+    Ok(())
 }

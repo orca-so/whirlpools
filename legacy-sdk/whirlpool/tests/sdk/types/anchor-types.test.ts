@@ -13,6 +13,7 @@ describe("anchor-types", () => {
       [AccountName.PositionBundle]: 136,
       [AccountName.WhirlpoolsConfigExtension]: 616,
       [AccountName.TokenBadge]: 200,
+      [AccountName.LockConfig]: 241,
       [AccountName.AdaptiveFeeTier]: 256,
       [AccountName.Oracle]: 254,
     };

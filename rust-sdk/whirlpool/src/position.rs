@@ -9,6 +9,7 @@ use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccoun
 use solana_sdk::account::Account;
 use solana_sdk::pubkey::Pubkey;
 
+use crate::utils::batch_get_multiple_accounts;
 use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
 
 /// Represents a single Position account.
@@ -166,16 +167,15 @@ pub async fn fetch_positions_for_owner(
         .map(|x| get_position_bundle_address(&x.mint).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
-    let position_infos = rpc.get_multiple_accounts(&position_addresses).await?;
+    let position_infos = batch_get_multiple_accounts(rpc, &position_addresses, None).await?;
 
     let positions: Vec<Option<Position>> = position_infos
         .iter()
         .map(|x| x.as_ref().and_then(|x| Position::from_bytes(&x.data).ok()))
         .collect();
 
-    let position_bundle_infos = rpc
-        .get_multiple_accounts(&position_bundle_addresses)
-        .await?;
+    let position_bundle_infos =
+        batch_get_multiple_accounts(rpc, &position_bundle_addresses, None).await?;
 
     let position_bundles: Vec<Option<PositionBundle>> = position_bundle_infos
         .iter()
@@ -191,12 +191,12 @@ pub async fn fetch_positions_for_owner(
         .flat_map(get_position_in_bundle_addresses)
         .collect();
 
-    let bundled_positions_infos: Vec<Account> = rpc
-        .get_multiple_accounts(&bundled_positions_addresses)
-        .await?
-        .into_iter()
-        .flatten()
-        .collect();
+    let bundled_positions_infos: Vec<Account> =
+        batch_get_multiple_accounts(rpc, &bundled_positions_addresses, None)
+            .await?
+            .into_iter()
+            .flatten()
+            .collect();
 
     let mut bundled_positions_map: HashMap<Pubkey, Vec<(Pubkey, Position)>> = HashMap::new();
     for i in 0..bundled_positions_addresses.len() {

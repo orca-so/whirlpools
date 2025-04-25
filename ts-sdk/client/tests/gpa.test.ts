@@ -6,19 +6,28 @@ import type {
   Address,
   GetProgramAccountsMemcmpFilter,
   ReadonlyUint8Array,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   createDefaultRpcTransport,
   createSolanaRpcFromTransport,
   getAddressDecoder,
   getBase58Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   feeTierFeeRateFilter,
   feeTierTickSpacingFilter,
   feeTierWhirlpoolsConfigFilter,
   fetchAllFeeTierWithFilter,
 } from "../src/gpa/feeTier";
+import type { LockConfigArgs } from "../src/generated/accounts/lockConfig";
+import { getLockConfigEncoder } from "../src/generated/accounts/lockConfig";
+import { LockTypeLabel } from "../src/generated/types/lockTypeLabel";
+import {
+  fetchAllLockConfigWithFilter,
+  lockConfigPositionFilter,
+  lockConfigPositionOwnerFilter,
+  lockConfigWhirlpoolFilter,
+} from "../src/gpa/lockConfig";
 import type { PositionArgs } from "../src/generated/accounts/position";
 import { getPositionEncoder } from "../src/generated/accounts/position";
 import {
@@ -131,6 +140,24 @@ describe("get program account memcmp filters", () => {
       feeTierFeeRateFilter(feeTierStruct.defaultFeeRate),
     );
     const data = getFeeTierEncoder().encode(feeTierStruct);
+    assertFilters(data);
+  });
+
+  it("LockConfig", async () => {
+    const lockConfigStruct: LockConfigArgs = {
+      position: addresses[0],
+      positionOwner: addresses[1],
+      whirlpool: addresses[2],
+      lockedTimestamp: 1234,
+      lockType: LockTypeLabel.Permanent,
+    };
+    await fetchAllLockConfigWithFilter(
+      mockRpc,
+      lockConfigPositionFilter(lockConfigStruct.position),
+      lockConfigPositionOwnerFilter(lockConfigStruct.positionOwner),
+      lockConfigWhirlpoolFilter(lockConfigStruct.whirlpool),
+    );
+    const data = getLockConfigEncoder().encode(lockConfigStruct);
     assertFilters(data);
   });
 

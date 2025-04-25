@@ -3,6 +3,7 @@ use anchor_spl::token::{self, Token, TokenAccount};
 
 use crate::{
     errors::ErrorCode,
+    events::*,
     manager::swap_manager::*,
     state::{OracleAccessor, Whirlpool},
     util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
@@ -107,6 +108,14 @@ pub fn handler(
 
     oracle_accessor.update_adaptive_fee_variables(&swap_update.next_adaptive_fee_info)?;
 
+    let pre_sqrt_price = whirlpool.sqrt_price;
+    let (input_amount, output_amount) = if a_to_b {
+        (swap_update.amount_a, swap_update.amount_b)
+    } else {
+        (swap_update.amount_b, swap_update.amount_a)
+    };
+    let (lp_fee, protocol_fee) = (swap_update.lp_fee, swap_update.next_protocol_fee);
+
     update_and_swap_whirlpool(
         whirlpool,
         &ctx.accounts.token_authority,
@@ -118,5 +127,20 @@ pub fn handler(
         &swap_update,
         a_to_b,
         timestamp,
-    )
+    )?;
+
+    emit!(Traded {
+        whirlpool: whirlpool.key(),
+        a_to_b,
+        pre_sqrt_price,
+        post_sqrt_price: whirlpool.sqrt_price,
+        input_amount,
+        output_amount,
+        input_transfer_fee: 0,
+        output_transfer_fee: 0,
+        lp_fee,
+        protocol_fee,
+    });
+
+    Ok(())
 }

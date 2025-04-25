@@ -3,7 +3,7 @@
 Whirpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
 This repository contains the Rust smart contract and SDKs to interact with a deployed program.
 
-The official deployment of the whilrpool contract can be found at the `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` address on:
+The official deployment of the whirlpool contract can be found at the `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` address on:
 - [Solana Mainnet](https://solscan.io/account/whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc)
 - [Solana Devnet](https://solscan.io/account/whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc?cluster=devnet)
 
@@ -24,9 +24,9 @@ For specific use-cases you can opt for integrating with lower level packages suc
 * `@orca-so/whirlpools-client` & `orca_whirlpools_client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
 * `@orca-so/whirlpools-core` & `orca_whirlpools_core` - utility, math and quoting functions used by other packages.
 
-The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) remains a solid choice, and it’s currently the only option if your project uses Solana Web3.js versions below v2.
+The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) remains a solid choice, and it’s currently the only option if your project uses Solana Web3.js.
 
-For a more detailed overview of our SDK suite and usage examples, visit our [developer documentation](https://orca-so.github.io/whirlpools/) site.
+For a more detailed overview of our SDK suite and usage examples, visit our [developer documentation](https://dev.orca.so/) site.
 
 ## Local Development
 

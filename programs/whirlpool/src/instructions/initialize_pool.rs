@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{events::*, state::*};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
@@ -78,5 +78,20 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
-    )
+    )?;
+
+    emit!(PoolInitialized {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        whirlpools_config: ctx.accounts.whirlpools_config.key(),
+        token_mint_a: ctx.accounts.token_mint_a.key(),
+        token_mint_b: ctx.accounts.token_mint_b.key(),
+        tick_spacing,
+        token_program_a: ctx.accounts.token_program.key(),
+        token_program_b: ctx.accounts.token_program.key(),
+        decimals_a: ctx.accounts.token_mint_a.decimals,
+        decimals_b: ctx.accounts.token_mint_b.decimals,
+        initial_sqrt_price,
+    });
+
+    Ok(())
 }

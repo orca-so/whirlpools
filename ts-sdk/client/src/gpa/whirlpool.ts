@@ -4,12 +4,12 @@ import type {
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getAddressEncoder,
   getBase58Decoder,
   getU16Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import type { Whirlpool } from "../generated/accounts/whirlpool";
 import {
   WHIRLPOOL_DISCRIMINATOR,
@@ -208,7 +208,7 @@ export function whirlpoolRewardVault3Filter(
  * @returns {Promise<Account<Whirlpool>[]>} A promise that resolves to an array of Whirlpool accounts.
  *
  * @example
- * import { address, createSolanaRpc, devnet } from "@solana/web3.js";
+ * import { address, createSolanaRpc, devnet } from "@solana/kit";
  * import { fetchAllWhirlpoolWithFilter, whirlpoolWhirlpoolConfigFilter } from "@orca-so/whirlpools-client";
  *
  * const rpcDevnet = createSolanaRpc(devnet("https://api.devnet.solana.com"));

@@ -1,12 +1,12 @@
 [package]
 name = "orca_whirlpools"
-version = "2.0.0"
+version = "2.0.4"
 description = "Orca's high-level rust sdk to interact with Orca's on-chain Whirlpool program."
 include = ["src/*"]
-documentation = "https://orca-so.github.io/whirlpools/"
+documentation = "https://dev.orca.so/"
 homepage = "https://orca.so"
 repository = "https://github.com/orca-so/whirlpools"
-license = "Apache-2.0"
+license-file = "../../LICENSE"
 keywords = ["solana", "crypto", "defi", "dex", "amm"]
 authors = ["team@orca.so"]
 edition = "2021"

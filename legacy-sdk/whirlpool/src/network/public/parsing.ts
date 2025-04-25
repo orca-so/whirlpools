@@ -6,6 +6,7 @@ import type { AccountInfo, PublicKey } from "@solana/web3.js";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import type {
   FeeTierData,
+  LockConfigData,
   PositionBundleData,
   PositionData,
   TickArrayData,
@@ -192,6 +193,25 @@ export class ParsableTokenBadge {
       return parseAnchorAccount(AccountName.TokenBadge, accountData);
     } catch (e) {
       console.error(`error while parsing TokenBadge: ${e}`);
+      return null;
+    }
+  }
+}
+
+@staticImplements<ParsableEntity<LockConfigData>>()
+export class ParsableLockConfig {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null,
+  ): LockConfigData | null {
+    if (!accountData?.data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.LockConfig, accountData);
+    } catch (e) {
+      console.error(`error while parsing LockConfig: ${e}`);
       return null;
     }
   }

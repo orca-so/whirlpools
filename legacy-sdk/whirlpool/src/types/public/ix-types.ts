@@ -31,6 +31,9 @@ export type {
   DeletePositionBundleParams,
   OpenBundledPositionParams,
   CloseBundledPositionParams,
+  OpenPositionWithTokenExtensionsParams,
+  ClosePositionWithTokenExtensionsParams,
+  LockPositionParams,
 } from "../../instructions";
 export type {
   CollectFeesV2Params,

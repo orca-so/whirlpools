@@ -415,10 +415,6 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       TickUtil.checkTickInBounds(initialTick),
       "initialTick is out of bounds.",
     );
-    invariant(
-      TickUtil.isTickInitializable(initialTick, tickSpacing),
-      `initial tick ${initialTick} is not an initializable tick for tick-spacing ${tickSpacing}`,
-    );
 
     const correctTokenOrder = PoolUtil.orderMints(tokenMintA, tokenMintB).map(
       (addr) => addr.toString(),

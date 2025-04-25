@@ -1,0 +1,201 @@
+---
+sidebar_label: Monitor Positions
+hide_table_of_contents: true
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import ReactMarkdown from 'react-markdown';
+
+export const introText = `
+Retrieving details about positions held in liquidity pools is an essential part of managing your liquidity and monitoring performance. This guide explains how to use the SDK to gather information about all active positions held by a given wallet.
+`;
+
+export const overviewSection = `
+## 1. Overview of Position Monitoring
+Monitoring positions helps developers retrieve information on liquidity positions associated with a specific wallet. It scans the Solana blockchain for token accounts owned by the wallet, determines which ones represent positions, and decodes the data to provide detailed information about each position.
+
+With position monitoring, you can:
+- Identify all liquidity positions held by a wallet
+- Gather information about liquidity, price ranges, and fees earned
+- Track position performance over time
+- Make informed decisions about adjusting or closing positions
+`;
+
+export const fetchingPositionsSection = `
+## 2. Fetching Positions
+`;
+
+export const walletPositionsSection = `
+### Fetching Positions for a Wallet
+    
+Fetching positions is a straightforward process:
+
+1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
+2. **Wallet Address**: Provide the wallet address of the user whose positions you want to fetch.
+3. **Fetch Positions**: Use the appropriate function to retrieve all positions held by the specified wallet.
+`;
+
+export const whirlpoolPositionsSection = `
+### Fetching Positions in a Whirlpool
+    
+To fetch all positions in a specific Whirlpool:
+
+1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
+2. **Whirlpool Address**: Provide the whirlpool address for the positions you want to fetch.
+3. **Fetch Positions**: Use the appropriate function to retrieve all positions in a whirlpool.
+`;
+
+export const workingWithDataSection = `
+## 3. Working with Position Data
+
+After fetching position information, you can use it to:
+
+1. **Track Position Performance**: Monitor the performance of each position over time, including fees earned and value changes.
+2. **Identify Optimal Actions**: Determine when to adjust liquidity, harvest rewards, or close positions based on performance metrics.
+3. **Calculate Returns**: Compute the return on investment for each position by comparing current value to initial deposit.
+4. **Build Trading Strategies**: Develop automated strategies for position management based on market conditions.
+5. **Portfolio Analytics**: Create dashboards to visualize position performance across multiple pools.
+`;
+
+export const implementationExampleSection = `
+## 4. Implementation Example
+
+Suppose you're building a portfolio tracker for Whirlpool positions. You can create a monitoring service that periodically:
+
+1. Fetches all positions for a user's wallet
+2. Calculates current value and accumulated fees for each position
+3. Compares performance against market benchmarks
+4. Alerts users when positions require attention (e.g., out of range, significant fee accumulation)
+
+This monitoring capability is essential for both manual traders and algorithmic strategies.
+`;
+
+export const nextStepsSection = `
+## 5. Next Steps
+
+After monitoring positions, you might want to:
+
+- [Adjust Liquidity](03-Adjust%20Liquidity.mdx): Modify the amount of liquidity in positions based on their performance.
+- [Harvest Rewards](04-Harvest.mdx): Collect accumulated fees and rewards from profitable positions.
+- [Close Position](04-Close%20Position.mdx): Exit positions that are no longer aligned with your strategy.
+
+By effectively monitoring positions, you gain the insights needed to optimize your liquidity management strategy and maximize returns.
+`;
+
+<Tabs groupId="sdk-type">
+  <TabItem value="rust" label="Rust">
+    <ReactMarkdown>{introText}</ReactMarkdown>
+    
+    <ReactMarkdown>{overviewSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{fetchingPositionsSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{walletPositionsSection}</ReactMarkdown>
+    
+    ```rust
+    use orca_whirlpools::{
+        fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
+    };
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    #[tokio::main]
+    async fn main() {
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+        let owner_address =
+            Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+
+        let positions = fetch_positions_for_owner(&rpc, owner_address)
+            .await
+            .unwrap();
+
+        println!("Positions: {:?}", positions);
+    }
+    ```
+
+    <ReactMarkdown>{whirlpoolPositionsSection}</ReactMarkdown>
+    
+    ```rust
+    use orca_whirlpools::{
+        fetch_positions_in_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
+    };
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    #[tokio::main]
+    async fn main() {
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+        let whirlpool_address =
+            Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+
+        let positions = fetch_positions_in_whirlpool(&rpc, whirlpool_address)
+            .await
+            .unwrap();
+
+        println!("Positions: {:?}", positions);
+    }
+    ```
+    
+    <ReactMarkdown>{workingWithDataSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{implementationExampleSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{nextStepsSection}</ReactMarkdown>
+  </TabItem>
+  
+  <TabItem value="ts" label="TypeScript Kit" default>
+    <ReactMarkdown>{introText}</ReactMarkdown>
+    
+    <ReactMarkdown>{overviewSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{fetchingPositionsSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{walletPositionsSection}</ReactMarkdown>
+
+    ```tsx
+    import { fetchPositionsForOwner, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const owner = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt"); // set an owner address
+
+    const positions = await fetchPositionsForOwner(devnetRpc, owner);
+
+    console.log(positions);
+    ```
+
+    <ReactMarkdown>{whirlpoolPositionsSection}</ReactMarkdown>
+
+    ```tsx
+    import { fetchPositionsInWhirlpool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
+
+    const positions = await fetchPositionsInWhirlpool(devnetRpc, whirlpoolAddress);
+
+    console.log(positions);
+    ```
+    
+    <ReactMarkdown>{workingWithDataSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{implementationExampleSection}</ReactMarkdown>
+    
+    <ReactMarkdown>{nextStepsSection}</ReactMarkdown>
+  </TabItem>
+
+  <TabItem value="ts-legacy" label="TypeScript Legacy">
+    ## Identifying Wallet Positions
+    
+    To fetch all position accounts of a wallet, you can use [`getAllPositionAccountsByOwner`](https://dev.orca.so/legacy/functions/_orca-so_whirlpools-sdk.getAllPositionAccountsByOwner.html).
+
+    > **Note:** This documentation section is currently being expanded. More detailed examples and usage patterns will be added in future updates.
+  </TabItem>
+</Tabs> 

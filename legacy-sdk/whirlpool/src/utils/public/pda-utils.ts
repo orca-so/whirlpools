@@ -15,6 +15,7 @@ const PDA_POSITION_BUNDLE_SEED = "position_bundle";
 const PDA_BUNDLED_POSITION_SEED = "bundled_position";
 const PDA_CONFIG_EXTENSION_SEED = "config_extension";
 const PDA_TOKEN_BADGE_SEED = "token_badge";
+const PDA_LOCK_CONFIG_SEED = "lock_config";
 
 /**
  * @category Whirlpool Utils
@@ -272,6 +273,19 @@ export class PDAUtil {
         whirlpoolsConfigAddress.toBuffer(),
         tokenMintKey.toBuffer(),
       ],
+      programId,
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param programId
+   * @param positionKey
+   * @returns
+   */
+  public static getLockConfig(programId: PublicKey, positionKey: PublicKey) {
+    return AddressUtil.findProgramAddress(
+      [Buffer.from(PDA_LOCK_CONFIG_SEED), positionKey.toBuffer()],
       programId,
     );
   }

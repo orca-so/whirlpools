@@ -2,13 +2,14 @@ use anchor_lang::prelude::*;
 
 use crate::constants::transfer_memo;
 use crate::errors::ErrorCode;
+use crate::events::*;
 use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::util::{
-    calculate_transfer_fee_excluded_amount, parse_remaining_accounts, AccountsType,
-    RemainingAccountsInfo,
+    calculate_transfer_fee_excluded_amount, is_locked_position, parse_remaining_accounts,
+    AccountsType, RemainingAccountsInfo,
 };
 use crate::util::{
     to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority_interface,
@@ -30,6 +31,10 @@ pub fn handler<'info>(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;
+
+    if is_locked_position(&ctx.accounts.position_token_account) {
+        return Err(ErrorCode::OperationNotAllowedOnLockedPosition.into());
+    }
 
     let clock = Clock::get()?;
 
@@ -108,6 +113,18 @@ pub fn handler<'info>(
         delta_b,
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
+
+    emit!(LiquidityDecreased {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        position: ctx.accounts.position.key(),
+        tick_lower_index: ctx.accounts.position.tick_lower_index,
+        tick_upper_index: ctx.accounts.position.tick_upper_index,
+        liquidity: liquidity_amount,
+        token_a_amount: delta_a,
+        token_b_amount: delta_b,
+        token_a_transfer_fee: transfer_fee_excluded_delta_a.transfer_fee,
+        token_b_transfer_fee: transfer_fee_excluded_delta_b.transfer_fee,
+    });
 
     Ok(())
 }

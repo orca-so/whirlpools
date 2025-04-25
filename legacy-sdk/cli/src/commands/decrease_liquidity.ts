@@ -153,7 +153,7 @@ while (true) {
   const decimalSlippagePercent = new Decimal(decimalSlippagePercentNum);
   const slippage = Percentage.fromDecimal(decimalSlippagePercent);
 
-  const quote = await decreaseLiquidityQuoteByLiquidityWithParams({
+  const quote = decreaseLiquidityQuoteByLiquidityWithParams({
     liquidity: liquidityAmount,
     sqrtPrice: whirlpool.sqrtPrice,
     tickCurrentIndex: whirlpool.tickCurrentIndex,

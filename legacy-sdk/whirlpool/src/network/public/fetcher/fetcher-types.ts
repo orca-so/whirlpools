@@ -8,6 +8,7 @@ import type {
 } from "@orca-so/common-sdk";
 import type {
   FeeTierData,
+  LockConfigData,
   PositionBundleData,
   PositionData,
   TickArrayData,
@@ -32,6 +33,7 @@ export type WhirlpoolSupportedTypes =
   | PositionBundleData
   | WhirlpoolsConfigExtensionData
   | TokenBadgeData
+  | LockConfigData
   | AdaptiveFeeTierData
   | OracleData
   | BasicSupportedTypes;
@@ -283,9 +285,27 @@ export interface WhirlpoolAccountFetcherInterface {
   ): Promise<ReadonlyMap<string, TokenBadgeData | null>>;
 
   /**
+   * Fetch and cache the account for a given LockConfig address
+   * @param address The address of the LockConfig account
+   */
+  getLockConfig(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<LockConfigData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of LockConfig addresses
+   * @param addresses The array of LockConfig account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getLockConfigs(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, LockConfigData | null>>;
+
+  /**
    * Fetch and cache the account for a given AdaptiveFeeTier address
    * @param address The address of the adaptive fee tier account
-   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
   getAdaptiveFeeTier(
     address: Address,
@@ -323,7 +343,6 @@ export interface WhirlpoolAccountFetcherInterface {
   ): Promise<ReadonlyMap<string, OracleData | null>>;
 
   /**
-   * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts
    * @param accounts The map of addresses to on-chain account data
    * @param parser The {@link ParsableEntity} instance to parse the accounts
    * @param now The current timestamp to use for the cache

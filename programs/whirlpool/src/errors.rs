@@ -147,14 +147,22 @@ pub enum ErrorCode {
     #[msg("Trade resulted in partial fill")]
     PartialFillError, // 0x17a9 (6057)
 
+    #[msg("Position is not lockable")]
+    PositionNotLockable, // 0x17aa (6058)
+    #[msg("Operation not allowed on locked position")]
+    OperationNotAllowedOnLockedPosition, // 0x17ab (6059)
+
+    #[msg("Cannot reset position range with same tick range")]
+    SameTickRangeNotAllowed, // 0x17ac (6060)
+
     #[msg("Invalid adaptive fee constants")]
-    InvalidAdaptiveFeeConstants, // 0x17aa (6058)
+    InvalidAdaptiveFeeConstants, // 0x17ad (6061)
     #[msg("Invalid fee tier index")]
-    InvalidFeeTierIndex, // 0x17ab (6059)
+    InvalidFeeTierIndex, // 0x17ae (6062)
     #[msg("Invalid trade enable timestamp")]
-    InvalidTradeEnableTimestamp, // 0x17ac (6060)
+    InvalidTradeEnableTimestamp, // 0x17af (6063)
     #[msg("Trade is not enabled yet")]
-    TradeIsNotEnabled, // 0x17ad (6061)
+    TradeIsNotEnabled, // 0x17b0 (6064)
 }
 
 impl From<TryFromIntError> for ErrorCode {

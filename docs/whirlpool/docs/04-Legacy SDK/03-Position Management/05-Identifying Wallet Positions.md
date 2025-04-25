@@ -1,2 +1,0 @@
-# Identifying Wallet Positions
-To fetch all position accounts of a wallet, you can use [`getAllPositionAccountsByOwner`](https://orca-so.github.io/whirlpools/legacy/functions/getAllPositionAccountsByOwner.html).

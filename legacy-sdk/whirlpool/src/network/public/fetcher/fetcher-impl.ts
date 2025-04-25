@@ -20,6 +20,7 @@ import type {
 import { DEFAULT_WHIRLPOOL_RETENTION_POLICY } from "..";
 import type {
   FeeTierData,
+  LockConfigData,
   PositionBundleData,
   PositionData,
   TickArrayData,
@@ -32,6 +33,7 @@ import type {
 } from "../../../types/public";
 import {
   ParsableFeeTier,
+  ParsableLockConfig,
   ParsablePosition,
   ParsablePositionBundle,
   ParsableTickArray,
@@ -240,6 +242,20 @@ export class WhirlpoolAccountFetcher
   ): Promise<ReadonlyMap<string, TokenBadgeData | null>> {
     return this.fetcher.getAccounts(addresses, ParsableTokenBadge, opts);
   }
+
+  getLockConfig(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<LockConfigData | null> {
+    return this.fetcher.getAccount(address, ParsableLockConfig, opts);
+  }
+  getLockConfigs(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, LockConfigData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableLockConfig, opts);
+  }
+
 
   getAdaptiveFeeTier(
     address: Address,

@@ -8,8 +8,8 @@ import type {
   IInstruction,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
-import { AccountRole, lamports } from "@solana/web3.js";
+} from "@solana/kit";
+import { AccountRole, lamports } from "@solana/kit";
 import { FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
@@ -38,6 +38,7 @@ import {
 } from "./token";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import { fetchAllMint } from "@solana-program/token-2022";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -106,6 +107,7 @@ function createUninitializedTickArray(
         rewardGrowthsOutside: [0n, 0n, 0n],
       }),
     },
+    space: 0n,
     executable: false,
     lamports: lamports(0n),
     programAddress,
@@ -204,7 +206,7 @@ function getSwapQuote<T extends SwapParams>(
  *
  * @example
  * import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
@@ -323,3 +325,7 @@ export async function swapInstructions<T extends SwapParams>(
     instructions,
   };
 }
+
+// -------- ACTIONS --------
+
+export const swap = wrapFunctionWithExecution(swapInstructions);

@@ -1,0 +1,97 @@
+---
+sidebar_label: CPI
+---
+import DocCard from '@theme/DocCard';
+
+# Cross-Program Invocation with Orca Whirlpools
+
+This guide provides an overview of how to integrate the Orca Whirlpools Program into your own on-chain Anchor Programs using Cross-Program Invocation (CPI).
+
+<DocCard item={{
+  type: 'link',
+  href: 'https://github.com/orca-so/whirlpools-cpi-examples',
+  label: 'Orca CPI Examples Repository',
+  description: 'https://github.com/orca-so/whirlpools-cpi-examples'
+}} />
+
+## Overview
+
+The Orca CPI Examples repository offers a comprehensive toolkit for developers looking to integrate with Orca Whirlpools from their own Anchor programs. It includes examples for multiple Anchor versions and client-side implementations.
+
+### Highlights
+
+- CPI examples for multiple Anchor versions:
+  - v0.29.0
+  - v0.30.1
+  - v0.31.0
+- Client-side code for generating instruction data and account information using:
+  - `@solana/web3.js`
+  - `@solana/kit`
+- Specific use case for Launchpad creators who want to graduate tokens from their bonding curve to Orca Whirlpools
+
+## Program Implementation Considerations
+
+### Solana CLI and Anchor Version Compatibility
+
+Each Anchor version requires a specific Solana CLI version:
+
+| Anchor Version | Solana CLI Version |
+|----------------|-------------------|
+| v0.29.0        | v1.18.17          |
+| v0.30.1        | v1.18.17          |
+| v0.31.0        | v2.1.0            |
+
+### Important: Solana Program Dependency Patching
+
+For Anchor versions 0.29.0 and 0.30.1, you **must patch** the `solana-program` crate:
+
+- **Why?** These Anchor versions rely on `solana-program` crate < v2, while the Orca Whirlpools and Whirlpools SDK pull in `solana-program` > v2, creating version conflicts.
+- **Solution:** Apply the patch using:
+  ```bash
+  cargo update solana-program@2.2.1 --precise 1.18.17
+  ```
+
+For Anchor version 0.31.0, **no patching is required** as it's compatible with `solana-program` > v2.
+
+## Client Implementations
+
+### Solana Kit Client
+
+The `@solana/kit` client leverages modern Solana SDK features with:
+- Automated Anchor client generation using Codama
+- Integration with `@orca-so/whirlpools` SDK for Whirlpools interactions
+- Test suite using `Bankrun` for simulation without a local validator
+
+### Web3.js Client
+
+The classic `@solana/web3.js` implementation with Anchor provides:
+- Integration with Anchor for account management and instruction creation
+- Compatibility with the Whirlpools SDK
+- Testing framework using Vitest
+
+### Important Note on Dependencies
+
+The `@orca-so/whirlpools-sdk` is dependent on Anchor v0.29.0. For other Anchor versions, the examples include `resolutions` in the `package.json` to manage dependency conflicts.
+
+## Specific Use Case: Launchpad Integration
+
+For Launchpad creators who want to graduate tokens from their bonding curve to Orca Whirlpools, a detailed implementation guide is available at:
+
+[Launchpad Integration Guide](https://github.com/orca-so/orca-cpi-examples/blob/main/use-cases/Launchpad.md)
+
+This guide covers:
+- How to configure and initialize Splash Pools (full-range CLMM pools)
+- Managing token mint ordering and price calculation
+- Position NFT ownership and fee collection opportunities
+- Complete integration process from bonding curve to Orca Whirlpools
+
+## Getting Started
+
+To get started with CPI integration with Orca Whirlpools:
+
+1. Clone the example repository
+2. Select the appropriate Anchor version for your project
+3. Follow the setup instructions in the README
+4. Explore the specific use cases in the repository
+
+The repository includes a `run-tests.sh` script that automates all the setup and testing steps, making it easy to get started with CPI integration.

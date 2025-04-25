@@ -1,8 +1,9 @@
 [package]
 name = "whirlpool"
-version = "0.3.4"
+version = "0.3.6"
 publish = false
 edition = "2021"
+license-file = "../../LICENSE"
 
 [lib]
 crate-type = ["cdylib", "lib"]

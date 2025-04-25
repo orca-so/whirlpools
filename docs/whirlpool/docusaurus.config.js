@@ -7,8 +7,8 @@ export default {
   tagline: "Open source concentrated liquidity AMM contract on Solana",
   favicon: "https://orca.so/favicon.ico",
 
-  url: "https://orca-so.github.io/",
-  baseUrl: "/whirlpools",
+  url: "https://dev.orca.so/",
+  baseUrl: "/",
 
   organizationName: "orca-so",
   projectName: "whirlpools",
@@ -63,26 +63,25 @@ export default {
       items: [
         { to: "/", label: "Docs", position: "left" },
         {
-          label: "Whirlpools SDKs Reference",
+          label: "SDK Reference",
           position: "left",
           items: [
-            {
-              href: "/ts/",
-              label: "TS SDK Reference",
-              target: "_blank",
-            },
             {
               href: "/orca_whirlpools_docs/",
               label: "Rust SDK Reference",
               target: "_blank",
             },
+            {
+              href: "/ts/",
+              label: "TS Kit SDK Reference",
+              target: "_blank",
+            },
+            {
+              href: "/legacy/",
+              label: "TS Legacy SDK Reference",
+              target: "_blank",
+            },
           ],
-        },
-        {
-          href: "/legacy/",
-          label: "Legacy SDK Reference",
-          position: "left",
-          target: "_blank",
         },
         {
           href: "https://api.orca.so/docs",

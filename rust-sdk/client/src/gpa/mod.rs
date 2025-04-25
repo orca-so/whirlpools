@@ -1,4 +1,5 @@
 mod fee_tier;
+mod lock_config;
 mod position;
 mod position_bundle;
 mod tick_array;
@@ -13,6 +14,7 @@ mod whirlpools_config_extension;
 // we can remove them from here.
 
 pub use fee_tier::*;
+pub use lock_config::*;
 pub use position::*;
 pub use position_bundle::*;
 pub use tick_array::*;

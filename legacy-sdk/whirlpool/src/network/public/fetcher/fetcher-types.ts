@@ -287,6 +287,7 @@ export interface WhirlpoolAccountFetcherInterface {
   /**
    * Fetch and cache the account for a given LockConfig address
    * @param address The address of the LockConfig account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
   getLockConfig(
     address: Address,

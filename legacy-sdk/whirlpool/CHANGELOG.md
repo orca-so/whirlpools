@@ -1,5 +1,23 @@
 # @orca-so/whirlpools-sdk
 
+## 0.13.20
+
+### Patch Changes
+
+- [#902](https://github.com/orca-so/whirlpools/pull/902) [`11a8c04`](https://github.com/orca-so/whirlpools/commit/11a8c0420da5f6cf4cde26f82216bef5a703c2ea) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Add reset position range feature, lock concentrated positions feature, transfer locked position feature
+
+## 0.13.19
+
+### Patch Changes
+
+- [#866](https://github.com/orca-so/whirlpools/pull/866) [`7db9161`](https://github.com/orca-so/whirlpools/commit/7db9161cd1a7d722d3341160be56410239ae86c9) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Fix: Remove isTickInitializable check on createPool function
+
+## 0.13.18
+
+### Patch Changes
+
+- [#805](https://github.com/orca-so/whirlpools/pull/805) [`1e939cb`](https://github.com/orca-so/whirlpools/commit/1e939cb50a41f24240d46edf8a5601502c425f6f) Thanks [@pauldragonfly](https://github.com/pauldragonfly)! - Fix fetch_positions_for_owner() to perform batch calls
+
 ## 0.13.17
 
 ### Patch Changes

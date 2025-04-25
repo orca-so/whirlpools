@@ -1,5 +1,19 @@
 # @orca-so/whirlpools-rust
 
+## 2.0.4
+
+### Patch Changes
+
+- [#884](https://github.com/orca-so/whirlpools/pull/884) [`6cd51d6`](https://github.com/orca-so/whirlpools/commit/6cd51d64de8fe0f310c1bf2f3a5e659a68c426d0) Thanks [@calintje](https://github.com/calintje)! - Updated cargo.lock
+
+- [#884](https://github.com/orca-so/whirlpools/pull/884) [`6cd51d6`](https://github.com/orca-so/whirlpools/commit/6cd51d64de8fe0f310c1bf2f3a5e659a68c426d0) Thanks [@calintje](https://github.com/calintje)! - Update e2e tests to prevent INVALID_TICK_ARRAY_SEQUENCE error thrown from core library
+
+## 2.0.3
+
+### Patch Changes
+
+- [#805](https://github.com/orca-so/whirlpools/pull/805) [`1e939cb`](https://github.com/orca-so/whirlpools/commit/1e939cb50a41f24240d46edf8a5601502c425f6f) Thanks [@pauldragonfly](https://github.com/pauldragonfly)! - Fix fetch_positions_for_owner() to perform batch calls
+
 ## 2.0.2
 
 ### Patch Changes

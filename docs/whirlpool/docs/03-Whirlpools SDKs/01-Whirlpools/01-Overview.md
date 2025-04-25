@@ -1,2 +1,0 @@
-# Overview
-This High-Level SDK is our top recommendation for anyone who wants to integrate with the Whirlpool Program. It builds upon the Low-Level and Core SDKs to provide an easy-to-use interface for interacting with the Whirlpool Program. This SDK abstracts many of the underlying complexities, such as tick array management, and makes managing pools and positions, and executing swaps much simpler. It is suitable for developers who need efficient, high-level functionalities and want to minimize manual configuration and management.

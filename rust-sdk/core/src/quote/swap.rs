@@ -676,6 +676,31 @@ mod tests {
         assert_eq!(result.trade_fee, 42);
     }
 
+    #[test]
+    fn test_swap_quote_throws_if_tick_array_sequence_holds_insufficient_liquidity() {
+        let result_3428 = swap_quote_by_input_token(
+            3428,
+            true,
+            0,
+            test_whirlpool(1 << 64, false),
+            test_tick_arrays(),
+            None,
+            None,
+        )
+        .unwrap();
+        let result_3429 = swap_quote_by_input_token(
+            3429,
+            true,
+            0,
+            test_whirlpool(1 << 64, false),
+            test_tick_arrays(),
+            None,
+            None,
+        );
+        assert_eq!(result_3428.token_in, 3428);
+        assert!(matches!(result_3429, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+    }
+
     // TODO: add more complex tests that
     // * only fill partially
     // * transfer fee

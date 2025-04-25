@@ -6,6 +6,7 @@ export function systemTransferTx(
   provider: AnchorProvider,
   toPubkey: web3.PublicKey,
   lamports: number,
+  fromPubkey: web3.PublicKey = provider.wallet.publicKey,
 ): TransactionBuilder {
   return new TransactionBuilder(
     provider.connection,
@@ -13,7 +14,7 @@ export function systemTransferTx(
   ).addInstruction({
     instructions: [
       web3.SystemProgram.transfer({
-        fromPubkey: provider.wallet.publicKey,
+        fromPubkey,
         toPubkey,
         lamports,
       }),

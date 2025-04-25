@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::util::{
     calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount,
-    parse_remaining_accounts, AccountsType, RemainingAccountsInfo,
+    parse_remaining_accounts, token, AccountsType, RemainingAccountsInfo,
 };
 use crate::{
     constants::transfer_memo,
@@ -151,12 +151,15 @@ pub fn handler<'info>(
     } else {
         (swap_update.amount_b, swap_update.amount_a)
     };
+    let (token_mint_input, token_mint_output) = if a_to_b {
+        (&ctx.accounts.token_mint_a, &ctx.accounts.token_mint_b)
+    } else {
+        (&ctx.accounts.token_mint_b, &ctx.accounts.token_mint_a)
+    };
     let input_transfer_fee =
-        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_a, input_amount)?
-            .transfer_fee;
+        calculate_transfer_fee_excluded_amount(token_mint_input, input_amount)?.transfer_fee;
     let output_transfer_fee =
-        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_b, output_amount)?
-            .transfer_fee;
+        calculate_transfer_fee_excluded_amount(token_mint_output, output_amount)?.transfer_fee;
     let (lp_fee, protocol_fee) = (swap_update.lp_fee, swap_update.next_protocol_fee);
 
     update_and_swap_whirlpool_v2(

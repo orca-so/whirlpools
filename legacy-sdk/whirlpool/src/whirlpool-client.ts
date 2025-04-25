@@ -472,6 +472,19 @@ export interface Position {
   ) => Promise<TransactionBuilder[]>;
 
   /**
+   * Reset a position's range. Requires liquidity to be zero.
+   *
+   * @param tickLowerIndex - the tick index for the lower bound of this position
+   * @param tickUpperIndex - the tick index for the upper bound of this position
+   * @return the transactions that will reset the position's range. The transactions must be executed serially.
+   */
+  resetPositionRange: (
+    tickLowerIndex: number,
+    tickUpperIndex: number,
+    positionWallet?: Address,
+  ) => Promise<TransactionBuilder>;
+
+  /**
    * Lock this position.
    *
    * Please note that this function is only available for TokenExtensions based positions.

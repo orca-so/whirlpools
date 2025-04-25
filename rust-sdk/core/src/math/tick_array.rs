@@ -1,11 +1,12 @@
 use crate::{
-    CoreError, TickArrayFacade, TickFacade, INVALID_TICK_INDEX, MAX_TICK_INDEX, MIN_TICK_INDEX,
-    TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE, TICK_INDEX_OUT_OF_BOUNDS, TICK_SEQUENCE_EMPTY,
+    CoreError, TickArrayFacade, TickFacade, INVALID_TICK_ARRAY_SEQUENCE, INVALID_TICK_INDEX,
+    MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE,
+    TICK_INDEX_OUT_OF_BOUNDS, TICK_SEQUENCE_EMPTY,
 };
 
 use super::{
     get_initializable_tick_index, get_next_initializable_tick_index,
-    get_prev_initializable_tick_index,
+    get_prev_initializable_tick_index, get_tick_array_start_tick_index,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -83,6 +84,9 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         tick_index: i32,
     ) -> Result<(Option<&TickFacade>, i32), CoreError> {
         let array_end_index = self.end_index();
+        if tick_index >= array_end_index {
+            return Err(INVALID_TICK_ARRAY_SEQUENCE);
+        }
         let mut next_index = tick_index;
         loop {
             next_index = get_next_initializable_tick_index(next_index, self.tick_spacing);
@@ -102,6 +106,9 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         tick_index: i32,
     ) -> Result<(Option<&TickFacade>, i32), CoreError> {
         let array_start_index = self.start_index();
+        if tick_index < array_start_index {
+            return Err(INVALID_TICK_ARRAY_SEQUENCE);
+        }
         let mut prev_index =
             get_initializable_tick_index(tick_index, self.tick_spacing, Some(false));
         loop {
@@ -140,16 +147,57 @@ fn ticks(tick_array: &Option<TickArrayFacade>) -> &[TickFacade] {
 mod tests {
     use super::*;
 
-    fn test_sequence(tick_spacing: u16) -> TickArraySequence<5> {
-        let ticks: [TickFacade; TICK_ARRAY_SIZE] = (0..TICK_ARRAY_SIZE)
-            .map(|x| TickFacade {
-                initialized: x & 1 == 1,
-                liquidity_net: x as i128,
-                ..TickFacade::default()
+    fn test_tick(initialized: bool, liquidity_net: i128) -> TickFacade {
+        TickFacade {
+            initialized,
+            liquidity_net,
+            ..TickFacade::default()
+        }
+    }
+
+    fn test_ticks_initialized() -> [TickFacade; TICK_ARRAY_SIZE] {
+        (0..TICK_ARRAY_SIZE)
+            .map(|x| test_tick(true, x as i128))
+            .collect::<Vec<TickFacade>>()
+            .try_into()
+            .unwrap()
+    }
+
+    fn test_ticks_uninitialized() -> [TickFacade; TICK_ARRAY_SIZE] {
+        (0..TICK_ARRAY_SIZE)
+            .map(|_| test_tick(false, 0))
+            .collect::<Vec<TickFacade>>()
+            .try_into()
+            .unwrap()
+    }
+
+    fn test_ticks_alternating_initialized() -> [TickFacade; TICK_ARRAY_SIZE] {
+        (0..TICK_ARRAY_SIZE)
+            .map(|x| {
+                let initialized = x & 1 == 1;
+                test_tick(initialized, if initialized { x as i128 } else { 0 })
             })
             .collect::<Vec<TickFacade>>()
             .try_into()
-            .unwrap();
+            .unwrap()
+    }
+
+    fn test_sequence_with_one_tick_array(
+        tick_spacing: u16,
+        ticks: [TickFacade; TICK_ARRAY_SIZE],
+        start_tick_index: i32,
+    ) -> TickArraySequence<5> {
+        let one = TickArrayFacade {
+            start_tick_index,
+            ticks,
+        };
+        TickArraySequence::new([Some(one), None, None, None, None], tick_spacing).unwrap()
+    }
+
+    fn test_sequence(
+        tick_spacing: u16,
+        ticks: [TickFacade; TICK_ARRAY_SIZE],
+    ) -> TickArraySequence<5> {
         let one = TickArrayFacade {
             start_tick_index: -(TICK_ARRAY_SIZE as i32 * tick_spacing as i32),
             ticks,
@@ -171,19 +219,19 @@ mod tests {
 
     #[test]
     fn test_tick_array_start_index() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         assert_eq!(sequence.start_index(), -1408);
     }
 
     #[test]
     fn test_tick_array_end_index() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         assert_eq!(sequence.end_index(), 2815);
     }
 
     #[test]
     fn test_get_tick() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         assert_eq!(sequence.tick(-1408).map(|x| x.liquidity_net), Ok(0));
         assert_eq!(sequence.tick(-16).map(|x| x.liquidity_net), Ok(87));
         assert_eq!(sequence.tick(0).map(|x| x.liquidity_net), Ok(0));
@@ -194,7 +242,8 @@ mod tests {
 
     #[test]
     fn test_get_tick_large_tick_spacing() {
-        let sequence: TickArraySequence<5> = test_sequence(32896);
+        let sequence: TickArraySequence<5> =
+            test_sequence(32896, test_ticks_alternating_initialized());
         assert_eq!(sequence.tick(-427648).map(|x| x.liquidity_net), Ok(75));
         assert_eq!(sequence.tick(0).map(|x| x.liquidity_net), Ok(0));
         assert_eq!(sequence.tick(427648).map(|x| x.liquidity_net), Ok(13));
@@ -202,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_get_tick_errors() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
 
         let out_out_bounds_lower = sequence.tick(-1409);
         assert!(matches!(
@@ -225,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_index() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.next_initialized_tick(0);
         assert_eq!(pair.map(|x| x.1), Ok(16));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(1)));
@@ -233,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_index_off_spacing() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.next_initialized_tick(-17);
         assert_eq!(pair.map(|x| x.1), Ok(-16));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(87)));
@@ -241,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_cross_array() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.next_initialized_tick(1392);
         assert_eq!(pair.map(|x| x.1), Ok(1424));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(1)));
@@ -249,23 +298,83 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_skip_uninitialized() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.next_initialized_tick(-1);
         assert_eq!(pair.map(|x| x.1), Ok(16));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(1)));
     }
 
     #[test]
-    fn test_get_next_initializable_tick_out_of_bounds() {
-        let sequence = test_sequence(16);
-        let pair = sequence.next_initialized_tick(2817);
-        assert_eq!(pair.map(|x| x.1), Ok(2815));
-        assert_eq!(pair.map(|x| x.0), Ok(None));
+    fn test_get_next_initializable_tick_INVALID_TICK_ARRAY_SEQUENCE() {
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
+        let pair_2813 = sequence.next_initialized_tick(2813);
+        let pair_2814 = sequence.next_initialized_tick(2814);
+        let pair_2815 = sequence.next_initialized_tick(2815);
+        let pair_2816 = sequence.next_initialized_tick(2816);
+        assert_eq!(pair_2813, Ok((None, 2815)));
+        assert_eq!(pair_2814, Ok((None, 2815)));
+        assert_eq!(pair_2815, Err(INVALID_TICK_ARRAY_SEQUENCE));
+        assert_eq!(pair_2816, Err(INVALID_TICK_ARRAY_SEQUENCE));
+    }
+
+    #[test]
+    fn test_get_next_initializable_tick_with_last_initializable_tick_initialized() {
+        let sequence = test_sequence(16, test_ticks_initialized());
+        let pair_2799 = sequence.next_initialized_tick(2799);
+        let pair_2800 = sequence.next_initialized_tick(2800);
+        assert_eq!(pair_2799, Ok((Some(&test_tick(true, 87)), 2800)));
+        assert_eq!(pair_2800, Ok((None, 2815)));
+    }
+
+    #[test]
+    fn test_get_next_initializable_tick_with_last_initializable_tick_uninitialized() {
+        let sequence = test_sequence(16, test_ticks_uninitialized());
+        let pair_2799 = sequence.next_initialized_tick(2799);
+        assert_eq!(pair_2799, Ok((None, 2815)));
+    }
+
+    #[test]
+    fn test_get_next_initializable_tick_in_end_tick_array_with_uninitialized_ticks_ts_16() {
+        let tick_spacing = 16;
+        let start_tick_index = get_tick_array_start_tick_index(MAX_TICK_INDEX, tick_spacing);
+        let sequence = test_sequence_with_one_tick_array(
+            tick_spacing,
+            test_ticks_uninitialized(),
+            start_tick_index,
+        );
+        let pair = sequence.next_initialized_tick(start_tick_index);
+        assert_eq!(pair, Ok((None, MAX_TICK_INDEX)));
+    }
+
+    #[test]
+    fn test_get_next_initializable_tick_in_end_tick_array_with_uninitialized_ticks_ts_1() {
+        let tick_spacing = 1;
+        let start_tick_index = get_tick_array_start_tick_index(MAX_TICK_INDEX, tick_spacing);
+        let sequence = test_sequence_with_one_tick_array(
+            tick_spacing,
+            test_ticks_uninitialized(),
+            start_tick_index,
+        );
+        let pair = sequence.next_initialized_tick(start_tick_index);
+        assert_eq!(pair, Ok((None, MAX_TICK_INDEX)));
+    }
+
+    #[test]
+    fn test_get_next_initializable_tick_in_end_tick_array_with_initialized_ticks_ts_1() {
+        let tick_spacing = 1;
+        let start_tick_index = get_tick_array_start_tick_index(MAX_TICK_INDEX, tick_spacing);
+        let sequence = test_sequence_with_one_tick_array(
+            tick_spacing,
+            test_ticks_initialized(),
+            start_tick_index,
+        );
+        let pair = sequence.next_initialized_tick(MAX_TICK_INDEX - 1);
+        assert_eq!(pair, Ok((Some(&test_tick(true, 28)), MAX_TICK_INDEX)));
     }
 
     #[test]
     fn test_get_prev_initializable_tick_index() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.prev_initialized_tick(32);
         assert_eq!(pair.map(|x| x.1), Ok(16));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(1)));
@@ -273,7 +382,7 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_index_off_spacing() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.prev_initialized_tick(-1);
         assert_eq!(pair.map(|x| x.1), Ok(-16));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(87)));
@@ -281,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_skip_uninitialized() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.prev_initialized_tick(33);
         assert_eq!(pair.map(|x| x.1), Ok(16));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(1)));
@@ -289,17 +398,75 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_cross_array() {
-        let sequence = test_sequence(16);
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
         let pair = sequence.prev_initialized_tick(1408);
         assert_eq!(pair.map(|x| x.1), Ok(1392));
         assert_eq!(pair.map(|x| x.0.map(|x| x.liquidity_net)), Ok(Some(87)));
     }
 
     #[test]
-    fn test_get_prev_initialized_tick_out_of_bounds() {
-        let sequence = test_sequence(16);
-        let pair = sequence.prev_initialized_tick(-1409);
-        assert_eq!(pair.map(|x| x.1), Ok(-1408));
-        assert_eq!(pair.map(|x| x.0), Ok(None));
+    fn test_get_prev_initialized_tick_INVALID_TICK_ARRAY_SEQUENCE() {
+        let sequence = test_sequence(16, test_ticks_alternating_initialized());
+        let pair_1407 = sequence.prev_initialized_tick(-1407);
+        let pair_1408 = sequence.prev_initialized_tick(-1408);
+        let pair_1409 = sequence.prev_initialized_tick(-1409);
+        let pair_1410 = sequence.prev_initialized_tick(-1410);
+        assert!(matches!(pair_1407, Ok((None, -1408))));
+        assert!(matches!(pair_1408, Ok((None, -1408))));
+        assert!(matches!(pair_1409, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+        assert!(matches!(pair_1410, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+    }
+
+    #[test]
+    fn test_get_prev_initializable_tick_with_first_initializable_tick_initialized() {
+        let sequence = test_sequence(16, test_ticks_initialized());
+        let pair = sequence.prev_initialized_tick(-1408);
+        assert_eq!(pair, Ok((Some(&test_tick(true, 0)), -1408)));
+    }
+
+    #[test]
+    fn test_get_prev_initializable_tick_with_first_initializable_tick_uninitialized() {
+        let sequence = test_sequence(16, test_ticks_uninitialized());
+        let pair = sequence.prev_initialized_tick(-1408);
+        assert_eq!(pair, Ok((None, -1408)));
+    }
+
+    #[test]
+    fn test_get_prev_initializable_tick_in_first_tick_array_with_uninitialized_ticks_ts_16() {
+        let tick_spacing = 16;
+        let start_tick_index = get_tick_array_start_tick_index(MIN_TICK_INDEX, tick_spacing);
+        let sequence = test_sequence_with_one_tick_array(
+            tick_spacing,
+            test_ticks_uninitialized(),
+            start_tick_index,
+        );
+        let pair = sequence.prev_initialized_tick(MIN_TICK_INDEX + tick_spacing as i32);
+        assert_eq!(pair, Ok((None, MIN_TICK_INDEX)));
+    }
+
+    #[test]
+    fn test_get_prev_initializable_tick_in_first_tick_array_with_uninitialized_ticks_ts_1() {
+        let tick_spacing = 1;
+        let start_tick_index = get_tick_array_start_tick_index(MIN_TICK_INDEX, tick_spacing);
+        let sequence = test_sequence_with_one_tick_array(
+            tick_spacing,
+            test_ticks_uninitialized(),
+            start_tick_index,
+        );
+        let pair = sequence.prev_initialized_tick(MIN_TICK_INDEX + tick_spacing as i32);
+        assert_eq!(pair, Ok((None, MIN_TICK_INDEX)));
+    }
+
+    #[test]
+    fn test_get_prev_initializable_tick_in_first_tick_array_with_initialized_ticks_ts_1() {
+        let tick_spacing = 1;
+        let start_tick_index = get_tick_array_start_tick_index(MIN_TICK_INDEX, tick_spacing);
+        let sequence = test_sequence_with_one_tick_array(
+            tick_spacing,
+            test_ticks_initialized(),
+            start_tick_index,
+        );
+        let pair = sequence.prev_initialized_tick(MIN_TICK_INDEX);
+        assert_eq!(pair, Ok((Some(&test_tick(true, 60)), MIN_TICK_INDEX)));
     }
 }

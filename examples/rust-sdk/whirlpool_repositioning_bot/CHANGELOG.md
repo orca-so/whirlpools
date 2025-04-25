@@ -1,5 +1,17 @@
 # @orca-so/whirlpools-example-rust-repositioning-bot
 
+## 0.2.2
+
+### Patch Changes
+
+- [#884](https://github.com/orca-so/whirlpools/pull/884) [`6cd51d6`](https://github.com/orca-so/whirlpools/commit/6cd51d64de8fe0f310c1bf2f3a5e659a68c426d0) Thanks [@calintje](https://github.com/calintje)! - Updated cargo.lock
+
+## 0.2.1
+
+### Patch Changes
+
+- [#821](https://github.com/orca-so/whirlpools/pull/821) [`c72652d`](https://github.com/orca-so/whirlpools/commit/c72652dbb21a57d2b715415e14f3fcd65f4b0728) Thanks [@calintje](https://github.com/calintje)! - Fix calculation of position deviation
+
 ## 0.2.0
 
 ### Minor Changes

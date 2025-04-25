@@ -25,8 +25,9 @@ generated
 .docusaurus
 .cache-loader
 .devcontainer
-**/Cargo.lock
 .next
 .env
 wallet.json
 solana-release
+rust-sdk/integration/**/Cargo.lock
+ts-sdk/integration/**/Cargo.lock

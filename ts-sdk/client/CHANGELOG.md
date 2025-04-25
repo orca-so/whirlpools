@@ -1,5 +1,17 @@
 # @orca-so/whirlpools-client
 
+## 1.0.6
+
+### Patch Changes
+
+- [#902](https://github.com/orca-so/whirlpools/pull/902) [`11a8c04`](https://github.com/orca-so/whirlpools/commit/11a8c0420da5f6cf4cde26f82216bef5a703c2ea) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Add reset position range feature, lock concentrated positions feature, transfer locked position feature
+
+## 1.0.5
+
+### Patch Changes
+
+- [#837](https://github.com/orca-so/whirlpools/pull/837) [`72f0e7c`](https://github.com/orca-so/whirlpools/commit/72f0e7c7effcbafefec2df67b0422111acfc3259) Thanks [@pauldragonfly](https://github.com/pauldragonfly)! - LockConfig gpa and pda functions in ts-sdk and rust-sdk
+
 ## 1.0.4
 
 ### Patch Changes

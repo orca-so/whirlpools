@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::{
+    events::*,
     errors::ErrorCode,
     state::*,
     util::{to_timestamp_u64, verify_supported_token_mint},
@@ -141,7 +142,22 @@ pub fn handler(
         ctx.accounts.adaptive_fee_tier.max_volatility_accumulator,
         ctx.accounts.adaptive_fee_tier.tick_group_size,
         ctx.accounts.adaptive_fee_tier.major_swap_threshold_ticks,
-    )
+    )?;
+
+    emit!(PoolInitialized {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        whirlpools_config: ctx.accounts.whirlpools_config.key(),
+        token_mint_a: ctx.accounts.token_mint_a.key(),
+        token_mint_b: ctx.accounts.token_mint_b.key(),
+        tick_spacing,
+        token_program_a: ctx.accounts.token_program_a.key(),
+        token_program_b: ctx.accounts.token_program_b.key(),
+        decimals_a: ctx.accounts.token_mint_a.decimals,
+        decimals_b: ctx.accounts.token_mint_b.decimals,
+        initial_sqrt_price,
+    });
+
+    Ok(())
 }
 
 fn is_valid_trade_enable_timestamp(

@@ -1,0 +1,64 @@
+name: Checks
+
+on:
+  pull_request:
+    branches: "*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup Anchor
+      uses: ./.github/actions/anchor
+    - name: Install dependencies
+      run: yarn install
+    - name: Build packages
+      run: yarn build --output-style static
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Remove Unnecessary Files
+      uses: ./.github/actions/cleanup
+    - name: Setup Anchor
+      uses: ./.github/actions/anchor
+    - name: Install dependencies
+      run: yarn install
+    - name: Run tests
+      run: yarn test --exclude legacy-sdk/integration --exclude rust-sdk/integration --output-style static
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup Anchor
+      uses: ./.github/actions/anchor
+    - name: Install dependencies
+      run: yarn install
+    - name: Run Lint
+      run: yarn lint --output-style static
+
+  changeset:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install dependencies
+      run: yarn install
+    - name: Check changesets
+      run: yarn changeset status --since origin/main
+
+

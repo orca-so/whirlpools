@@ -1,0 +1,45 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Main Only
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: exit 1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+      - name: Setup SSH
+        uses: ./.github/actions/ssh
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          user: changests[bot]
+      - name: Setup Anchor
+        uses: ./.github/actions/anchor
+      - name: Install dependencies
+        run: yarn install
+      - name: Determine New Versions
+        run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Cargo Version Numbers
+        uses: ./.github/actions/sync
+      - name: Git Commit
+        run: git add . && git commit -m "Publish Packages"
+      - name: Publish Packages
+        run: yarn deploy
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      - name: Tag Release
+        run: yarn changeset tag
+      - name: Git Push
+        run: git push origin main && git push --tags

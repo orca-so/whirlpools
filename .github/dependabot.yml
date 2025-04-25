@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels: []
+    groups:
+      docusaurus:
+        applies-to: version-updates
+        patterns:
+          - "@docusaurus/*"
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels: []
+    groups:
+      program-dependencies:
+        applies-to: version-updates
+        dependency-type: production
+  - package-ecosystem: "cargo"
+    directories: ["/examples/*", "/rust-sdk/*", "/ts-sdk/*"]
+    schedule:
+      interval: "daily"
+    labels: []
+    groups:
+      program-dependencies:
+        applies-to: version-updates
+        dependency-type: production
+    versioning-strategy: lockfile-only
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels: []

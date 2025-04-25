@@ -1,12 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-use crate::{
-    errors::ErrorCode,
-    events::*,
-    state::*,
-    util::verify_supported_token_mint,
-};
+use crate::{events::*, state::*, util::verify_supported_token_mint};
 
 #[derive(Accounts)]
 #[instruction(tick_spacing: u16)]

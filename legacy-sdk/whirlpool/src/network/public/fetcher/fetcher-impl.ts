@@ -256,7 +256,6 @@ export class WhirlpoolAccountFetcher
     return this.fetcher.getAccounts(addresses, ParsableLockConfig, opts);
   }
 
-
   getAdaptiveFeeTier(
     address: Address,
     opts?: WhirlpoolAccountFetchOptions,

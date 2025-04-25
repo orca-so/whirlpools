@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::{
-    events::*,
     errors::ErrorCode,
+    events::*,
     state::*,
     util::{to_timestamp_u64, verify_supported_token_mint},
 };

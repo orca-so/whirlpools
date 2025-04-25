@@ -712,7 +712,7 @@ export class WhirlpoolIx {
     return ix.setPresetAdaptiveFeeConstantsIx(program, params);
   }
 
-  /*
+  /**
    * Reset a position's range. Requires liquidity to be zero.
    *
    * #### Special Errors

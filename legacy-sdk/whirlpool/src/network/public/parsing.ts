@@ -198,6 +198,9 @@ export class ParsableTokenBadge {
   }
 }
 
+/**
+ * @category Network
+ */
 @staticImplements<ParsableEntity<LockConfigData>>()
 export class ParsableLockConfig {
   public static parse(

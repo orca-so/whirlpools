@@ -343,6 +343,7 @@ export interface WhirlpoolAccountFetcherInterface {
   ): Promise<ReadonlyMap<string, OracleData | null>>;
 
   /**
+   * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts
    * @param accounts The map of addresses to on-chain account data
    * @param parser The {@link ParsableEntity} instance to parse the accounts
    * @param now The current timestamp to use for the cache

@@ -116,10 +116,6 @@ pub fn swap(
                 a_to_b,
             )?;
 
-            fee_sum = fee_sum
-                .checked_add(swap_computation.fee_amount)
-                .ok_or(ErrorCode::AmountCalcOverflow)?;
-
             if amount_specified_is_input {
                 amount_remaining = amount_remaining
                     .checked_sub(swap_computation.amount_in)
@@ -143,6 +139,10 @@ pub fn swap(
                     .checked_add(swap_computation.fee_amount)
                     .ok_or(ErrorCode::AmountCalcOverflow)?;
             }
+
+            fee_sum = fee_sum
+                .checked_add(swap_computation.fee_amount)
+                .ok_or(ErrorCode::AmountCalcOverflow)?;
 
             let (next_protocol_fee, next_fee_growth_global_input) = calculate_fees(
                 swap_computation.fee_amount,

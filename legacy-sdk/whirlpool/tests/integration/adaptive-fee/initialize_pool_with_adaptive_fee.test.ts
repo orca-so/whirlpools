@@ -26,6 +26,7 @@ import {
   TickSpacing,
   ZERO_BN,
   dropIsSignerFlag,
+  sleep,
   systemTransferTx,
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -41,11 +42,21 @@ import {
   createMintV2,
   initializeNativeMint2022Idempotent,
 } from "../../utils/v2/token-2022";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
-import { AccountState, NATIVE_MINT, NATIVE_MINT_2022 } from "@solana/spl-token";
-import { initFeeTier } from "../../utils/init-utils";
-import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
+import {
+  AccountState,
+  createInitializeMintInstruction,
+  NATIVE_MINT,
+  NATIVE_MINT_2022,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import { initAdaptiveFeeTier, initFeeTier } from "../../utils/init-utils";
+import {
+  generateDefaultConfigParams,
+  getDefaultPresetAdaptiveFeeConstants,
+} from "../../utils/test-builders";
 
 describe("initialize_pool_with_adaptive_fee", () => {
   const provider = anchor.AnchorProvider.local(
@@ -2292,6 +2303,156 @@ describe("initialize_pool_with_adaptive_fee", () => {
         );
       }
     });
+  });
+
+  it("emit PoolInitialized event", async () => {
+    const tickSpacing = TickSpacing.Standard;
+    const feeTierIndex = 1024 + TickSpacing.Standard;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const whirlpoolsConfig = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+
+    const { params: feeTierParams } = await initAdaptiveFeeTier(
+      ctx,
+      configInitInfo,
+      configKeypairs.feeAuthorityKeypair,
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      presetAdaptiveFeeConstants,
+    );
+
+    // initialize mint with various decimals
+    const tokenXKeypair = Keypair.generate();
+    const tokenYKeypair = Keypair.generate();
+    const [tokenAKeypair, tokenBKeypair] =
+      PoolUtil.compareMints(tokenXKeypair.publicKey, tokenYKeypair.publicKey) <
+      0
+        ? [tokenXKeypair, tokenYKeypair]
+        : [tokenYKeypair, tokenXKeypair];
+    const decimalsA = 7;
+    const decimalsB = 11;
+    await toTx(ctx, {
+      instructions: [
+        SystemProgram.createAccount({
+          fromPubkey: ctx.wallet.publicKey,
+          newAccountPubkey: tokenAKeypair.publicKey,
+          space: 82,
+          lamports:
+            await ctx.provider.connection.getMinimumBalanceForRentExemption(82),
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        createInitializeMintInstruction(
+          tokenAKeypair.publicKey,
+          decimalsA,
+          ctx.wallet.publicKey,
+          null,
+          TOKEN_PROGRAM_ID,
+        ),
+        SystemProgram.createAccount({
+          fromPubkey: ctx.wallet.publicKey,
+          newAccountPubkey: tokenBKeypair.publicKey,
+          space: 82,
+          lamports:
+            await ctx.provider.connection.getMinimumBalanceForRentExemption(82),
+          programId: TOKEN_2022_PROGRAM_ID,
+        }),
+        createInitializeMintInstruction(
+          tokenBKeypair.publicKey,
+          decimalsB,
+          ctx.wallet.publicKey,
+          null,
+          TOKEN_2022_PROGRAM_ID,
+        ),
+      ],
+      cleanupInstructions: [],
+      signers: [tokenAKeypair, tokenBKeypair],
+    }).buildAndExecute();
+
+    const initSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(123456);
+    const tokenVaultAKeypair = Keypair.generate();
+    const tokenVaultBKeypair = Keypair.generate();
+    const whirlpoolPda = PDAUtil.getWhirlpool(
+      ctx.program.programId,
+      whirlpoolsConfig,
+      tokenAKeypair.publicKey,
+      tokenBKeypair.publicKey,
+      feeTierIndex,
+    );
+    const tokenBadgeA = PDAUtil.getTokenBadge(
+      ctx.program.programId,
+      whirlpoolsConfig,
+      tokenAKeypair.publicKey,
+    ).publicKey;
+    const tokenBadgeB = PDAUtil.getTokenBadge(
+      ctx.program.programId,
+      whirlpoolsConfig,
+      tokenBKeypair.publicKey,
+    ).publicKey;
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
+
+    // event verification
+    let eventVerified = false;
+    let detectedSignature = null;
+    const listener = ctx.program.addEventListener(
+      "PoolInitialized",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify
+        assert.equal(event.decimalsA, decimalsA);
+        assert.equal(event.decimalsB, decimalsB);
+        assert.equal(event.tickSpacing, tickSpacing);
+        assert.ok(event.initialSqrtPrice.eq(initSqrtPrice));
+        assert.ok(event.tokenMintA.equals(tokenAKeypair.publicKey));
+        assert.ok(event.tokenMintB.equals(tokenBKeypair.publicKey));
+        assert.ok(event.tokenProgramA.equals(TOKEN_PROGRAM_ID));
+        assert.ok(event.tokenProgramB.equals(TOKEN_2022_PROGRAM_ID));
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.ok(event.whirlpoolsConfig.equals(whirlpoolsConfig));
+        eventVerified = true;
+      },
+    );
+
+    const signature = await toTx(
+      ctx,
+      WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
+        whirlpoolPda,
+        whirlpoolsConfig,
+        tokenMintA: tokenAKeypair.publicKey,
+        tokenMintB: tokenBKeypair.publicKey,
+        adaptiveFeeTierKey: feeTierParams.feeTierPda.publicKey,
+        initSqrtPrice,
+        funder: ctx.wallet.publicKey,
+        initializePoolAuthority: ctx.wallet.publicKey,
+        oraclePda,
+        tokenBadgeA,
+        tokenBadgeB,
+        tokenProgramA: TOKEN_PROGRAM_ID,
+        tokenProgramB: TOKEN_2022_PROGRAM_ID,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+      }),
+    )
+      .addSigner(tokenVaultAKeypair)
+      .addSigner(tokenVaultBKeypair)
+      .buildAndExecute();
+
+    await sleep(2000);
+    assert.equal(signature, detectedSignature);
+    assert.ok(eventVerified);
+
+    ctx.program.removeEventListener(listener);
   });
 
   async function asyncAssertOracle(

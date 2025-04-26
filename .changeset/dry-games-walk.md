@@ -1,5 +1,5 @@
 ---
-"@orca-so/rust-tx-sender": patch
+"@orca-so/rust-tx-sender": major
 ---
 
-Fix transaction signature mismatch in simulation during compute unit estimation
+BREAKING: Changed build_transaction to accept signers array instead of single payer. Fixed transaction signature mismatch in compute unit estimation that caused "accounts offsets" errors.

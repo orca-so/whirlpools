@@ -28,7 +28,7 @@ pub async fn build_and_send_transaction(
         .first()
         .ok_or_else(|| "At least one signer is required".to_string())?;
     // Build transaction with compute budget and priority fees
-    let mut tx = build_transaction(instructions, *payer, address_lookup_tables).await?;
+    let mut tx = build_transaction(instructions, *payer, signers, address_lookup_tables).await?;
     // Serialize the message once instead of for each signer
     let serialized_message = tx.message.serialize();
     tx.signatures = signers
@@ -49,6 +49,7 @@ pub async fn build_and_send_transaction(
 pub async fn build_transaction(
     mut instructions: Vec<Instruction>,
     payer: &dyn Signer,
+    signers: &[&dyn Signer],
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<VersionedTransaction, String> {
     let config = config::get_global_config()
@@ -70,6 +71,7 @@ pub async fn build_transaction(
         &rpc_client,
         instructions.clone(),
         &payer.pubkey(),
+        signers,
         address_lookup_tables_clone,
     )
     .await?;

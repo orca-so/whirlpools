@@ -2248,7 +2248,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_docs"
-version = "0.1.7"
+version = "0.2.0"
 dependencies = [
  "orca_whirlpools",
  "orca_whirlpools_client",

@@ -101,15 +101,21 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
             create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
                 .await?;
 
+        // The instructions include new Tick Array accounts that need to be created
+        // and signed for with their corresponding Keypair.
+        let mut signers: Vec<&dyn Signer> = vec![&wallet];
+        signers.extend(result.additional_signers.iter().map(|kp| kp as &dyn Signer));
+
         println!("Pool Address: {:?}", result.pool_address);
         println!(
             "Initialization Cost: {} lamports",
             result.initialization_cost
         );
+        println!("Signers: {:?}", signers);
         
         let signature = build_and_send_transaction(
             result.instructions,
-            &[&wallet],
+            &signers,
             Some(CommitmentLevel::Confirmed),
             None, // No address lookup tables
         ).await?;
@@ -184,12 +190,13 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     <ReactMarkdown>{splashPoolSteps}</ReactMarkdown>
 
     ```tsx
-    import { createSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSplashPool, setWhirlpoolsConfig, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
     import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+    import secret from "wallet.json";
 
     await setWhirlpoolsConfig('solanaDevnet');
-    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+    await setRpc('https://api.devnet.solana.com');
+    const signer = await setPayerFromBytes(new Uint8Array(secret));
 
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
@@ -200,7 +207,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         tokenMintOne,
         tokenMintTwo,
         initialPrice,
-        wallet
+        signer
     );
 
     // Use the callback to submit the transaction
@@ -214,12 +221,13 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     <ReactMarkdown>{concentratedLiquiditySteps}</ReactMarkdown>
 
     ```tsx
-    import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
     import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+    import secret from "wallet.json";
 
     await setWhirlpoolsConfig('solanaDevnet');
-    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+    await setRpc('https://api.devnet.solana.com');
+    const signer = await setPayerFromBytes(new Uint8Array(secret));
 
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
@@ -232,7 +240,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         tokenMintTwo,
         tickSpacing,
         initialPrice,
-        wallet
+        signer
     );
 
     // Use the callback to submit the transaction

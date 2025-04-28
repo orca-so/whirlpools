@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/rust-tx-sender",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "scripts": {
     "build": "cargo build",
     "test": "cargo test --lib",

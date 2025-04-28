@@ -57,10 +57,14 @@ import TabItem from "@theme/TabItem";
             // Get instructions from Whirlpools SDK
             let instructions_result = // your whirlpool instructions here
 
+            // Some instructions may require additional signers
+            let mut signers: Vec<&dyn Signer> = vec![&wallet];
+            signers.extend(instructions_result.additional_signers.iter().map(|kp| kp as &dyn Signer));            
+            
             // Build and send transaction
             let signature = build_and_send_transaction(
                 instructions_result.instructions,
-                &[&wallet], // signers array including your wallet and any additional signers
+                &signers, // signers array including your wallet and any additional signers
                 Some(CommitmentLevel::Confirmed),
                 None, // No address lookup tables
             ).await?;

@@ -125,13 +125,19 @@ After opening a position, you can:
         Some(wallet.pubkey())
       ).await?;
 
+      // The instructions include the position mint and potentially a new token 
+      // account that needs to be created for WSOL.
+      let mut signers: Vec<&dyn Signer> = vec![&wallet];
+      signers.extend(result.additional_signers.iter().map(|kp| kp as &dyn Signer));
+      println!("Signers: {:?}", signers);
+
       println!("Quote token mac B: {:?}", result.quote.token_max_b);
       println!("Initialization cost: {:?}", result.initialization_cost);
       println!("Position mint: {:?}", result.position_mint);
       
       let signature = build_and_send_transaction(
           result.instructions,
-          &[&wallet],
+          &signers,
           Some(CommitmentLevel::Confirmed),
           None, // No address lookup tables
       ).await?;
@@ -177,13 +183,19 @@ After opening a position, you can:
         Some(wallet.pubkey())
       ).await?;
 
+      // The instructions include the position mint and potentially new token 
+      // accounts that need to be created and signed for with their corresponding Keypair.
+      let mut signers: Vec<&dyn Signer> = vec![&wallet];
+      signers.extend(result.additional_signers.iter().map(|kp| kp as &dyn Signer));
+
       println!("Quote token max B: {:?}", result.quote.token_est_b);
       println!("Initialization cost: {:?}", result.initialization_cost);
       println!("Position mint: {:?}", result.position_mint);
-      
+      println!("Signers: {:?}", signers);
+
       let signature = build_and_send_transaction(
           result.instructions,
-          &[&wallet],
+          &signers,
           Some(CommitmentLevel::Confirmed),
           None, // No address lookup tables
       ).await?;
@@ -245,12 +257,12 @@ After opening a position, you can:
 
     ```tsx
     import { openPosition, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/kit';
-    import { loadWallet } from './utils';
+    import { createSolanaRpc, devnet, address, setRpc, setPayerFromBytes } from '@solana/kit';
+    import secret from "wallet.json";
 
     await setWhirlpoolsConfig('solanaDevnet');
-    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await loadWallet(); // load your wallet
+    await setRpc('https://api.devnet.solana.com');
+    const signer = await setPayerFromBytes(new Uint8Array(secret));
 
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt"); // SOL/devUSDC
 

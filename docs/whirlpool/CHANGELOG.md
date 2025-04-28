@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.1
+
+### Patch Changes
+
+- [#921](https://github.com/orca-so/whirlpools/pull/921) [`356d585`](https://github.com/orca-so/whirlpools/commit/356d5858fa45e6a13dd6d2b9f032550357748ef8) Thanks [@calintje](https://github.com/calintje)! - Fix 'action' examples. Add additional_signers handling to Rust examples.
+
 ## 0.2.0
 
 ### Minor Changes

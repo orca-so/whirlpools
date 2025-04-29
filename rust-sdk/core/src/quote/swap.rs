@@ -188,6 +188,7 @@ pub struct SwapResult {
 /// # Notes
 /// - This function doesn't take into account slippage tolerance.
 /// - This function doesn't take into account transfer fee extension.
+#[allow(clippy::too_many_arguments)]
 pub fn compute_swap<const SIZE: usize>(
     token_amount: u64,
     sqrt_price_limit: u128,
@@ -229,8 +230,9 @@ pub fn compute_swap<const SIZE: usize>(
     let mut current_liquidity = whirlpool.liquidity;
     let mut trade_fee = 0u64;
 
-    let mut applied_fee_rate_min: u32 = whirlpool.fee_rate as u32;
-    let mut applied_fee_rate_max: u32 = whirlpool.fee_rate as u32;
+    let base_fee_rate = whirlpool.fee_rate;
+    let mut applied_fee_rate_min: Option<u32> = None;
+    let mut applied_fee_rate_max: Option<u32> = None;
 
     if is_initialized_with_adaptive_fee_tier(&whirlpool) != adaptive_fee_info.is_some() {
         return Err(INVALID_ADAPTIVE_FEE_INFO);
@@ -240,7 +242,7 @@ pub fn compute_swap<const SIZE: usize>(
         a_to_b,
         whirlpool.tick_current_index, // note:  -1 shift is acceptable
         timestamp,
-        whirlpool.fee_rate,
+        base_fee_rate,
         &adaptive_fee_info,
     )?;
 
@@ -261,8 +263,8 @@ pub fn compute_swap<const SIZE: usize>(
             fee_rate_manager.update_volatility_accumulator();
 
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
-            applied_fee_rate_min = applied_fee_rate_min.min(total_fee_rate);
-            applied_fee_rate_max = applied_fee_rate_max.max(total_fee_rate);
+            applied_fee_rate_min = Some(applied_fee_rate_min.unwrap_or(total_fee_rate).min(total_fee_rate));
+            applied_fee_rate_max = Some(applied_fee_rate_max.unwrap_or(total_fee_rate).max(total_fee_rate));
 
             let (bounded_sqrt_price_target, adaptive_fee_update_skipped) = fee_rate_manager
                 .get_bounded_sqrt_price_target(target_sqrt_price, current_liquidity);
@@ -353,8 +355,8 @@ pub fn compute_swap<const SIZE: usize>(
         token_a,
         token_b,
         trade_fee,
-        applied_fee_rate_min,
-        applied_fee_rate_max,
+        applied_fee_rate_min: applied_fee_rate_min.unwrap_or(base_fee_rate as u32),
+        applied_fee_rate_max: applied_fee_rate_max.unwrap_or(base_fee_rate as u32),
     })
 }
 
@@ -550,7 +552,7 @@ fn try_get_next_sqrt_price(
 }
 
 fn is_initialized_with_adaptive_fee_tier(whirlpool: &WhirlpoolFacade) -> bool {
-    u16::from_le_bytes(whirlpool.fee_tier_index_seed) == whirlpool.tick_spacing
+    whirlpool.fee_tier_index != whirlpool.tick_spacing
 }
 
 #[cfg(all(test, not(feature = "wasm")))]

@@ -29,7 +29,7 @@ function testWhirlpool(): WhirlpoolFacade {
     liquidity: 265000n,
     sqrtPrice: 1n << 64n,
     tickSpacing: 2,
-    feeTierIndexSeed: [2, 0],
+    feeTierIndex: 2,
     rewardLastUpdatedTimestamp: 0n,
     rewardInfos: [
       {

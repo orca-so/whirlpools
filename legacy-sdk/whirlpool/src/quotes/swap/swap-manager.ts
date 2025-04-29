@@ -37,8 +37,8 @@ export function computeSwap(
   let currTickIndex = whirlpoolData.tickCurrentIndex;
   let totalFeeAmount = ZERO;
   const feeRate = whirlpoolData.feeRate;
-  let appliedFeeRateMin = feeRate;
-  let appliedFeeRateMax = feeRate;
+  let appliedFeeRateMin = undefined;
+  let appliedFeeRateMax = undefined;
   const protocolFeeRate = whirlpoolData.protocolFeeRate;
   let currProtocolFee = new BN(0);
   let currFeeGrowthGlobalInput = aToB
@@ -72,8 +72,8 @@ export function computeSwap(
       feeRateManager.updateVolatilityAccumulator();
 
       const totalFeeRate = feeRateManager.getTotalFeeRate();
-      appliedFeeRateMin = Math.min(appliedFeeRateMin, totalFeeRate);
-      appliedFeeRateMax = Math.max(appliedFeeRateMax, totalFeeRate);
+      appliedFeeRateMin = Math.min(appliedFeeRateMin ?? totalFeeRate, totalFeeRate);
+      appliedFeeRateMax = Math.max(appliedFeeRateMax ?? totalFeeRate, totalFeeRate);
 
       const { boundedSqrtPriceTarget, adaptiveFeeUpdateSkipped } =
         feeRateManager.getBoundedSqrtPriceTarget(
@@ -175,8 +175,8 @@ export function computeSwap(
     nextTickIndex: currTickIndex,
     nextSqrtPrice: currSqrtPrice,
     totalFeeAmount,
-    appliedFeeRateMin,
-    appliedFeeRateMax,
+    appliedFeeRateMin: appliedFeeRateMin ?? feeRate,
+    appliedFeeRateMax: appliedFeeRateMax ?? feeRate,
   };
 }
 

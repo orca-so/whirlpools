@@ -8,6 +8,7 @@ use solana_rpc_client_api::response::RpcPrioritizationFee;
 use solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::message::{v0::Message, VersionedMessage};
+use solana_sdk::signature::Signer;
 use solana_sdk::transaction::VersionedTransaction;
 
 /// Estimate compute units by simulating a transaction
@@ -15,6 +16,7 @@ pub async fn estimate_compute_units(
     rpc_client: &RpcClient,
     instructions: Vec<Instruction>,
     payer: &Pubkey,
+    signers: &[&dyn Signer],
     alts: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<u32, String> {
     let alt_accounts = alts.unwrap_or_default();
@@ -27,7 +29,7 @@ pub async fn estimate_compute_units(
         .map_err(|e| format!("Failed to compile message: {}", e))?;
 
     let transaction = VersionedTransaction {
-        signatures: vec![solana_sdk::signature::Signature::default()],
+        signatures: vec![solana_sdk::signature::Signature::default(); signers.len()],
         message: VersionedMessage::V0(message),
     };
 

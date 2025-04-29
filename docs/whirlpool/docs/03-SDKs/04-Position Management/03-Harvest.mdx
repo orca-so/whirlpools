@@ -84,13 +84,19 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
         let result = harvest_position_instructions(&rpc, position_mint_address, Some(wallet.pubkey()))
             .await?;
 
+        // The instructions may include new token accounts that need to be created
+        // and signed for with their corresponding Keypair.
+        let mut signers: Vec<&dyn Signer> = vec![&wallet];
+        signers.extend(result.additional_signers.iter().map(|kp| kp as &dyn Signer));
+
         println!("Fees Quote: {:?}", result.fees_quote);
         println!("Rewards Quote: {:?}", result.rewards_quote);
         println!("Number of Instructions: {}", result.instructions.len());
+        println!("Signers: {:?}", signers);
         
         let signature = build_and_send_transaction(
             result.instructions,
-            &[&wallet],
+            &signers,
             Some(CommitmentLevel::Confirmed),
             None, // No address lookup tables
         ).await?;
@@ -116,18 +122,18 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
 
     ```tsx
     import { harvestPosition, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/kit';
-    import { loadWallet } from './utils';
+    import { createSolanaRpc, devnet, address, setRpc, setPayerFromBytes } from '@solana/kit';
+    import secret from "wallet.json";
 
     await setWhirlpoolsConfig('solanaDevnet');
-    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await loadWallet();
+    await setRpc('https://api.devnet.solana.com');
+    const signer = await setPayerFromBytes(new Uint8Array(secret));
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
     const { feesQuote, rewardsQuote, instructions, callback: sendTx } = await harvestPosition(
       devnetRpc,
       positionMint,
-      wallet
+      signer
     );
 
     // Use the callback to submit the transaction

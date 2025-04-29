@@ -41,8 +41,7 @@ pub async fn build_and_send_transaction_with_config(
         .map(|signer| signer.sign_message(&serialized_message))
         .collect();
     // Send with retry logic
-    let rpc_client = config::get_rpc_client()?;
-    send_transaction_with_config(tx, commitment, &rpc_client).await
+    send_transaction_with_config(tx, commitment, rpc_client).await
 }
 
 /// Build and send a transaction using the global configuration

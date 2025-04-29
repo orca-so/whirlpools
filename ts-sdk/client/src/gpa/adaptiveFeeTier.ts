@@ -13,13 +13,20 @@ import {
 } from "@solana/kit";
 import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
-import { ADAPTIVE_FEE_TIER_DISCRIMINATOR, AdaptiveFeeTier, getAdaptiveFeeTierDecoder } from "../generated";
+import type {
+  AdaptiveFeeTier} from "../generated";
+import {
+  ADAPTIVE_FEE_TIER_DISCRIMINATOR,
+  getAdaptiveFeeTierDecoder,
+} from "../generated";
 
 type AdaptiveFeeTierFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
 };
 
-export function adaptiveFeeTierWhirlpoolsConfigFilter(address: Address): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierWhirlpoolsConfigFilter(
+  address: Address,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 8n,
@@ -29,7 +36,9 @@ export function adaptiveFeeTierWhirlpoolsConfigFilter(address: Address): Adaptiv
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierFeeTierIndexFilter(feeTierIndex: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierFeeTierIndexFilter(
+  feeTierIndex: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 40n,
@@ -39,8 +48,9 @@ export function adaptiveFeeTierFeeTierIndexFilter(feeTierIndex: number): Adaptiv
   } as AdaptiveFeeTierFilter;
 }
 
-
-export function adaptiveFeeTierTickSpacingFilter(tickSpacing: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierTickSpacingFilter(
+  tickSpacing: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 42n,
@@ -50,7 +60,9 @@ export function adaptiveFeeTierTickSpacingFilter(tickSpacing: number): AdaptiveF
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierInitializePoolAuthorityFilter(address: Address): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierInitializePoolAuthorityFilter(
+  address: Address,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 44n,
@@ -60,7 +72,9 @@ export function adaptiveFeeTierInitializePoolAuthorityFilter(address: Address): 
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierDelegatedFeeAuthorityFilter(address: Address): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierDelegatedFeeAuthorityFilter(
+  address: Address,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 76n,
@@ -70,7 +84,9 @@ export function adaptiveFeeTierDelegatedFeeAuthorityFilter(address: Address): Ad
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierDefaultBaseFeeRateFilter(feeRate: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierDefaultBaseFeeRateFilter(
+  feeRate: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 108n,
@@ -80,7 +96,9 @@ export function adaptiveFeeTierDefaultBaseFeeRateFilter(feeRate: number): Adapti
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierFilterPeriodFilter(filterPeriod: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierFilterPeriodFilter(
+  filterPeriod: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 110n,
@@ -90,7 +108,9 @@ export function adaptiveFeeTierFilterPeriodFilter(filterPeriod: number): Adaptiv
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierDecayPeriodFilter(decayPeriod: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierDecayPeriodFilter(
+  decayPeriod: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 112n,
@@ -100,7 +120,9 @@ export function adaptiveFeeTierDecayPeriodFilter(decayPeriod: number): AdaptiveF
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierReductionFactorFilter(reductionFactor: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierReductionFactorFilter(
+  reductionFactor: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 114n,
@@ -110,17 +132,23 @@ export function adaptiveFeeTierReductionFactorFilter(reductionFactor: number): A
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierAdaptiveFeeControlFactorFilter(adaptiveFeeControlFactor: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierAdaptiveFeeControlFactorFilter(
+  adaptiveFeeControlFactor: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 116n,
-      bytes: getBase58Decoder().decode(getU32Encoder().encode(adaptiveFeeControlFactor)),
+      bytes: getBase58Decoder().decode(
+        getU32Encoder().encode(adaptiveFeeControlFactor),
+      ),
       encoding: "base58",
     },
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierMaxVolatilityFilter(maxVolatility: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierMaxVolatilityFilter(
+  maxVolatility: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 120n,
@@ -130,7 +158,9 @@ export function adaptiveFeeTierMaxVolatilityFilter(maxVolatility: number): Adapt
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierTickGroupSizeFilter(tickGroupSize: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierTickGroupSizeFilter(
+  tickGroupSize: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 124n,
@@ -140,11 +170,15 @@ export function adaptiveFeeTierTickGroupSizeFilter(tickGroupSize: number): Adapt
   } as AdaptiveFeeTierFilter;
 }
 
-export function adaptiveFeeTierMajorSwapThresholdTicksFilter(majorSwapThresholdTicks: number): AdaptiveFeeTierFilter {
+export function adaptiveFeeTierMajorSwapThresholdTicksFilter(
+  majorSwapThresholdTicks: number,
+): AdaptiveFeeTierFilter {
   return {
     memcmp: {
       offset: 126n,
-      bytes: getBase58Decoder().decode(getU16Encoder().encode(majorSwapThresholdTicks)),
+      bytes: getBase58Decoder().decode(
+        getU16Encoder().encode(majorSwapThresholdTicks),
+      ),
       encoding: "base58",
     },
   } as AdaptiveFeeTierFilter;
@@ -154,7 +188,9 @@ export async function fetchAllAdaptiveFeeTierWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: AdaptiveFeeTierFilter[]
 ): Promise<Account<AdaptiveFeeTier>[]> {
-  const discriminator = getBase58Decoder().decode(ADAPTIVE_FEE_TIER_DISCRIMINATOR);
+  const discriminator = getBase58Decoder().decode(
+    ADAPTIVE_FEE_TIER_DISCRIMINATOR,
+  );
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

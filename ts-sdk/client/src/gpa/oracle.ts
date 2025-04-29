@@ -14,7 +14,8 @@ import {
 } from "@solana/kit";
 import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
-import { getOracleDecoder, Oracle, ORACLE_DISCRIMINATOR } from "../generated";
+import type { Oracle} from "../generated";
+import { getOracleDecoder, ORACLE_DISCRIMINATOR } from "../generated";
 
 type OracleFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -30,7 +31,9 @@ export function oracleWhirlpoolFilter(address: Address): OracleFilter {
   } as OracleFilter;
 }
 
-export function oracleTradeEnableTimestampFilter(timestamp: number | bigint): OracleFilter {
+export function oracleTradeEnableTimestampFilter(
+  timestamp: number | bigint,
+): OracleFilter {
   return {
     memcmp: {
       offset: 40n,
@@ -60,7 +63,9 @@ export function oracleDecayPeriodFilter(decayPeriod: number): OracleFilter {
   } as OracleFilter;
 }
 
-export function oracleReductionFactorFilter(reductionFactor: number): OracleFilter {
+export function oracleReductionFactorFilter(
+  reductionFactor: number,
+): OracleFilter {
   return {
     memcmp: {
       offset: 52n,
@@ -70,11 +75,15 @@ export function oracleReductionFactorFilter(reductionFactor: number): OracleFilt
   } as OracleFilter;
 }
 
-export function oracleAdaptiveFeeControlFactorFilter(adaptiveFeeControlFactor: number): OracleFilter {
+export function oracleAdaptiveFeeControlFactorFilter(
+  adaptiveFeeControlFactor: number,
+): OracleFilter {
   return {
     memcmp: {
       offset: 54n,
-      bytes: getBase58Decoder().decode(getU32Encoder().encode(adaptiveFeeControlFactor)),
+      bytes: getBase58Decoder().decode(
+        getU32Encoder().encode(adaptiveFeeControlFactor),
+      ),
       encoding: "base58",
     },
   } as OracleFilter;
@@ -100,11 +109,15 @@ export function oracleTickGroupSizeFilter(tickGroupSize: number): OracleFilter {
   } as OracleFilter;
 }
 
-export function oracleMajorSwapThresholdTicksFilter(majorSwapThresholdTicks: number): OracleFilter {
+export function oracleMajorSwapThresholdTicksFilter(
+  majorSwapThresholdTicks: number,
+): OracleFilter {
   return {
     memcmp: {
       offset: 64n,
-      bytes: getBase58Decoder().decode(getU16Encoder().encode(majorSwapThresholdTicks)),
+      bytes: getBase58Decoder().decode(
+        getU16Encoder().encode(majorSwapThresholdTicks),
+      ),
       encoding: "base58",
     },
   } as OracleFilter;

@@ -39,11 +39,7 @@ pub async fn estimate_compute_units(
             RpcSimulateTransactionConfig {
                 sig_verify: false,
                 replace_recent_blockhash: true,
-                commitment: None,
-                encoding: None,
-                accounts: None,
-                min_context_slot: None,
-                inner_instructions: false,
+                ..Default::default()
             },
         )
         .await;

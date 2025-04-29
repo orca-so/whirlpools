@@ -72,8 +72,14 @@ export function computeSwap(
       feeRateManager.updateVolatilityAccumulator();
 
       const totalFeeRate = feeRateManager.getTotalFeeRate();
-      appliedFeeRateMin = Math.min(appliedFeeRateMin ?? totalFeeRate, totalFeeRate);
-      appliedFeeRateMax = Math.max(appliedFeeRateMax ?? totalFeeRate, totalFeeRate);
+      appliedFeeRateMin = Math.min(
+        appliedFeeRateMin ?? totalFeeRate,
+        totalFeeRate,
+      );
+      appliedFeeRateMax = Math.max(
+        appliedFeeRateMax ?? totalFeeRate,
+        totalFeeRate,
+      );
 
       const { boundedSqrtPriceTarget, adaptiveFeeUpdateSkipped } =
         feeRateManager.getBoundedSqrtPriceTarget(

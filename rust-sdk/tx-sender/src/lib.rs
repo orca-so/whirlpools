@@ -3,12 +3,15 @@ mod config;
 mod fee_config;
 mod jito;
 mod rpc_config;
+mod signer;
 
 pub use compute_budget::*;
 pub use config::*;
 pub use fee_config::*;
 pub use jito::*;
 pub use rpc_config::*;
+pub use signer::*;
+
 use solana_client::nonblocking::rpc_client::RpcClient;
 
 /// Build and send a transaction using the supplied configuration

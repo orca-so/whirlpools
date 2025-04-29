@@ -9,6 +9,41 @@ pub use config::*;
 pub use fee_config::*;
 pub use jito::*;
 pub use rpc_config::*;
+use solana_client::nonblocking::rpc_client::RpcClient;
+
+/// Build and send a transaction using the supplied configuration
+///
+/// This function:
+/// 1. Builds an unsigned transaction with all necessary instructions
+/// 2. Signs the transaction with all provided signers
+/// 3. Sends the transaction and waits for confirmation
+/// 4. Optionally uses address lookup tables for account compression
+pub async fn build_and_send_transaction_with_config(
+    instructions: Vec<Instruction>,
+    signers: &[&dyn Signer],
+    commitment: Option<CommitmentLevel>,
+    address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
+    rpc_client: &RpcClient,
+    rpc_config: &RpcConfig,
+    fee_config: &FeeConfig,
+) -> Result<Signature, String> {
+    // Get the payer (first signer)
+    let payer = signers
+        .first()
+        .ok_or_else(|| "At least one signer is required".to_string())?;
+    // Build transaction with compute budget and priority fees
+    let mut tx =
+        build_transaction_with_config(instructions, signers, address_lookup_tables, rpc_client, rpc_config, fee_config).await?;
+    // Serialize the message once instead of for each signer
+    let serialized_message = tx.message.serialize();
+    tx.signatures = signers
+        .iter()
+        .map(|signer| signer.sign_message(&serialized_message))
+        .collect();
+    // Send with retry logic
+    let rpc_client = config::get_rpc_client()?;
+    send_transaction_with_config(tx, commitment, &rpc_client).await
+}
 
 /// Build and send a transaction using the global configuration
 ///
@@ -23,48 +58,40 @@ pub async fn build_and_send_transaction(
     commitment: Option<CommitmentLevel>,
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<Signature, String> {
-    // Get the payer (first signer)
-    let payer = signers
-        .first()
-        .ok_or_else(|| "At least one signer is required".to_string())?;
-    // Build transaction with compute budget and priority fees
-    let mut tx = build_transaction(instructions, signers, address_lookup_tables).await?;
-    // Serialize the message once instead of for each signer
-    let serialized_message = tx.message.serialize();
-    tx.signatures = signers
-        .iter()
-        .map(|signer| signer.sign_message(&serialized_message))
-        .collect();
-    // Send with retry logic
-    send_transaction(tx, commitment).await
+    let config = config::get_global_config()
+        .read()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let rpc_client = config::get_rpc_client()?;
+    let rpc_config = config.rpc_config.as_ref()
+        .ok_or("RPC config not set".to_string())?;
+    let fee_config = &config.fee_config;
+    build_and_send_transaction_with_config(instructions, signers, commitment, address_lookup_tables, &rpc_client, &rpc_config, &fee_config).await
 }
 
-/// Build a transaction with compute budget and priority fees
+/// Build a transaction with compute budget and priority fees from the supplied configuration
 ///
 /// This function handles:
 /// 1. Building a transaction message with all instructions
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
-pub async fn build_transaction(
+pub async fn build_transaction_with_config(
     mut instructions: Vec<Instruction>,
     signers: &[&dyn Signer],
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
+    rpc_client: &RpcClient,
+    rpc_config: &RpcConfig,
+    fee_config: &FeeConfig,
 ) -> Result<VersionedTransaction, String> {
     // Get the payer (first signer)
     let payer = signers
         .first()
         .ok_or_else(|| "At least one signer is required".to_string())?;
-    let config = config::get_global_config()
-        .read()
-        .map_err(|e| format!("Lock error: {}", e))?;
-    let rpc_client = config::get_rpc_client()?;
 
     let recent_blockhash = rpc_client
         .get_latest_blockhash()
         .await
         .map_err(|e| format!("RPC Error: {}", e))?;
-    let rpc_config = config.rpc_config.as_ref().unwrap();
 
     let writable_accounts = compute_budget::get_writable_accounts(&instructions);
 
@@ -83,7 +110,7 @@ pub async fn build_transaction(
         compute_units,
         &payer.pubkey(),
         rpc_config,
-        &config.fee_config,
+        fee_config,
         &writable_accounts,
     )
     .await?;
@@ -91,11 +118,11 @@ pub async fn build_transaction(
         instructions.insert(i, budget_ix);
     }
     // Check if network is mainnet before adding Jito tip
-    if config.fee_config.jito != JitoFeeStrategy::Disabled {
+    if fee_config.jito != JitoFeeStrategy::Disabled {
         if !rpc_config.is_mainnet() {
             println!("Warning: Jito tips are only supported on mainnet. Skipping Jito tip.");
         } else if let Some(jito_tip_ix) =
-            jito::add_jito_tip_instruction(&config.fee_config, &payer.pubkey()).await?
+            jito::add_jito_tip_instruction(&fee_config, &payer.pubkey()).await?
         {
             instructions.insert(0, jito_tip_ix);
         }
@@ -119,18 +146,39 @@ pub async fn build_transaction(
     })
 }
 
-/// Send a transaction with retry logic using the global configuration
+/// Build a transaction with compute budget and priority fees from the global configuration
+///
+/// This function handles:
+/// 1. Building a transaction message with all instructions
+/// 2. Adding compute budget instructions
+/// 3. Adding any Jito tip instructions
+/// 4. Supporting address lookup tables for account compression
+pub async fn build_transaction(
+    mut instructions: Vec<Instruction>,
+    signers: &[&dyn Signer],
+    address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
+) -> Result<VersionedTransaction, String> {
+    let config = config::get_global_config()
+        .read()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    let rpc_client = config::get_rpc_client()?;
+    let rpc_config = config.rpc_config.as_ref()
+        .ok_or("RPC config not set".to_string())?;
+    let fee_config = &config.fee_config;
+    build_transaction_with_config(instructions, signers, address_lookup_tables, &rpc_client, &rpc_config, &fee_config).await
+}
+
+/// Send a transaction with retry logic using the supplied configuration
 ///
 /// This function handles:
 /// 1. Sending the transaction to the network
 /// 2. Implementing retry logic with exponential backoff
 /// 3. Waiting for transaction confirmation
-pub async fn send_transaction(
+pub async fn send_transaction_with_config(
     transaction: VersionedTransaction,
     commitment: Option<CommitmentLevel>,
+    rpc_client: &RpcClient,
 ) -> Result<Signature, String> {
-    // Get RPC client
-    let rpc_client = config::get_rpc_client()?;
     let sim_result = rpc_client
         .simulate_transaction(&transaction)
         .await
@@ -197,6 +245,20 @@ pub async fn send_transaction(
 
     println!("Transaction send timeout: {}", signature);
     Ok(signature)
+}
+
+/// Send a transaction with retry logic using the global configuration
+///
+/// This function handles:
+/// 1. Sending the transaction to the network
+/// 2. Implementing retry logic with exponential backoff
+/// 3. Waiting for transaction confirmation
+pub async fn send_transaction(
+    transaction: VersionedTransaction,
+    commitment: Option<CommitmentLevel>,
+) -> Result<Signature, String> {
+    let rpc_client = config::get_rpc_client()?;
+    send_transaction_with_config(transaction, commitment, &rpc_client).await
 }
 
 #[cfg(test)]

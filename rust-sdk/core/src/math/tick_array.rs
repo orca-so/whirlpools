@@ -6,7 +6,7 @@ use crate::{
 
 use super::{
     get_initializable_tick_index, get_next_initializable_tick_index,
-    get_prev_initializable_tick_index, get_tick_array_start_tick_index,
+    get_prev_initializable_tick_index,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -145,6 +145,8 @@ fn ticks(tick_array: &Option<TickArrayFacade>) -> &[TickFacade] {
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
+    use crate::get_tick_array_start_tick_index;
+
     use super::*;
 
     fn test_tick(initialized: bool, liquidity_net: i128) -> TickFacade {

@@ -236,7 +236,7 @@ pub fn compute_swap<const SIZE: usize>(
     let mut applied_fee_rate_min: Option<u32> = None;
     let mut applied_fee_rate_max: Option<u32> = None;
 
-    if is_initialized_with_adaptive_fee_tier(&whirlpool) != adaptive_fee_info.is_some() {
+    if whirlpool.is_initialized_with_adaptive_fee_tier() != adaptive_fee_info.is_some() {
         return Err(INVALID_ADAPTIVE_FEE_INFO);
     }
 
@@ -265,8 +265,16 @@ pub fn compute_swap<const SIZE: usize>(
             fee_rate_manager.update_volatility_accumulator();
 
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
-            applied_fee_rate_min = Some(applied_fee_rate_min.unwrap_or(total_fee_rate).min(total_fee_rate));
-            applied_fee_rate_max = Some(applied_fee_rate_max.unwrap_or(total_fee_rate).max(total_fee_rate));
+            applied_fee_rate_min = Some(
+                applied_fee_rate_min
+                    .unwrap_or(total_fee_rate)
+                    .min(total_fee_rate),
+            );
+            applied_fee_rate_max = Some(
+                applied_fee_rate_max
+                    .unwrap_or(total_fee_rate)
+                    .max(total_fee_rate),
+            );
 
             let (bounded_sqrt_price_target, adaptive_fee_update_skipped) = fee_rate_manager
                 .get_bounded_sqrt_price_target(target_sqrt_price, current_liquidity);
@@ -553,10 +561,6 @@ fn try_get_next_sqrt_price(
     }
 }
 
-fn is_initialized_with_adaptive_fee_tier(whirlpool: &WhirlpoolFacade) -> bool {
-    whirlpool.fee_tier_index != whirlpool.tick_spacing
-}
-
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
     use crate::{TickArrayFacade, TICK_ARRAY_SIZE};
@@ -571,7 +575,7 @@ mod tests {
             fee_rate: 3000,
             liquidity,
             sqrt_price,
-            fee_tier_index: 2,
+            fee_tier_index_seed: [2, 0],
             tick_spacing: 2,
             ..WhirlpoolFacade::default()
         }

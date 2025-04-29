@@ -28,6 +28,7 @@ use orca_whirlpools_macros::wasm_expose;
 ///
 /// # Returns
 /// The exact input or output amount for the swap transaction.
+#[allow(clippy::too_many_arguments)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn swap_quote_by_input_token(
     token_in: u64,
@@ -101,6 +102,7 @@ pub fn swap_quote_by_input_token(
 ///
 /// # Returns
 /// The exact input or output amount for the swap transaction.
+#[allow(clippy::too_many_arguments)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn swap_quote_by_output_token(
     token_out: u64,
@@ -569,6 +571,7 @@ mod tests {
             fee_rate: 3000,
             liquidity,
             sqrt_price,
+            fee_tier_index: 2,
             tick_spacing: 2,
             ..WhirlpoolFacade::default()
         }
@@ -776,7 +779,9 @@ mod tests {
             true,
             0,
             test_whirlpool(1 << 64, false),
+            None,
             test_tick_arrays(),
+            now(),
             None,
             None,
         )
@@ -786,7 +791,9 @@ mod tests {
             true,
             0,
             test_whirlpool(1 << 64, false),
+            None,
             test_tick_arrays(),
+            now(),
             None,
             None,
         );

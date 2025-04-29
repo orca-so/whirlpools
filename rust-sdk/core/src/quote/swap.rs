@@ -84,6 +84,8 @@ pub fn swap_quote_by_input_token(
         token_est_out,
         token_min_out,
         trade_fee: swap_result.trade_fee,
+        trade_fee_rate_min: swap_result.applied_fee_rate_min,
+        trade_fee_rate_max: swap_result.applied_fee_rate_max,
     })
 }
 
@@ -158,6 +160,8 @@ pub fn swap_quote_by_output_token(
         token_est_in,
         token_max_in,
         trade_fee: swap_result.trade_fee,
+        trade_fee_rate_min: swap_result.applied_fee_rate_min,
+        trade_fee_rate_max: swap_result.applied_fee_rate_max,
     })
 }
 
@@ -803,6 +807,168 @@ mod tests {
         );
         assert_eq!(result_3428.token_in, 3428);
         assert!(matches!(result_3429, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+    }
+
+    mod adaptive_fee {
+        use crate::{AdaptiveFeeConstantsFacade, AdaptiveFeeVariablesFacade};
+
+        use super::*;
+
+        fn test_whirlpool_with_adaptive_fee(sqrt_price: u128, liquidity: u128) -> WhirlpoolFacade {
+            let tick_current_index = sqrt_price_to_tick_index(sqrt_price);
+            WhirlpoolFacade {
+                tick_current_index,
+                fee_rate: 1000,
+                liquidity,
+                sqrt_price,
+                fee_tier_index_seed: [128 + 64, 0], // u16::from_le_bytes(fee_tier_index_seed) != tick_spacing
+                tick_spacing: 64,
+                ..WhirlpoolFacade::default()
+            }
+        }
+
+        fn test_oracle(
+            trade_enable_timestamp: u64,
+            last_reference_update_timestamp: u64,
+            last_major_swap_timestamp: u64,
+            volatility_reference: u32,
+            tick_group_index_reference: i32,
+            volatility_accumulator: u32,
+        ) -> OracleFacade {
+            let adaptive_fee_constants = AdaptiveFeeConstantsFacade {
+                filter_period: 30,
+                decay_period: 600,
+                adaptive_fee_control_factor: 5_000,
+                reduction_factor: 500,
+                max_volatility_accumulator: 88 * 3 * 10_000,
+                tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
+            };
+            let adaptive_fee_variables = AdaptiveFeeVariablesFacade {
+                last_reference_update_timestamp,
+                last_major_swap_timestamp,
+                volatility_reference,
+                tick_group_index_reference,
+                volatility_accumulator,
+            };
+            OracleFacade {
+                trade_enable_timestamp,
+                adaptive_fee_constants,
+                adaptive_fee_variables,
+            }
+        }
+
+        fn test_empty_tick_array(start_tick_index: i32) -> TickArrayFacade {
+            TickArrayFacade {
+                start_tick_index,
+                ticks: [TickFacade::default(); TICK_ARRAY_SIZE],
+            }
+        }
+    
+        fn test_empty_tick_arrays() -> [TickArrayFacade; 5] {
+            [
+                test_empty_tick_array(0),
+                test_empty_tick_array(5632),
+                test_empty_tick_array(11264),
+                test_empty_tick_array(-5632),
+                test_empty_tick_array(-11264),
+            ]
+        }
+    
+        #[test]
+        fn test_exact_in_a_to_b_simple() {
+            let now = now();
+            let result = swap_quote_by_input_token(
+                150_000,
+                true,
+                1000,
+                test_whirlpool_with_adaptive_fee(tick_index_to_sqrt_price(0), 1_000_000),
+                Some(test_oracle(
+                    now,
+                    now,
+                    now,
+                    0,
+                    0,
+                    0,
+                )),
+                test_empty_tick_arrays().into(), // full-range liquidity
+                now,
+                None,
+                None,
+            )
+            .unwrap();
+
+            assert_eq!(result.token_in, 150_000);
+            assert_eq!(result.token_est_out, 122_534);
+            assert_eq!(result.token_min_out, 110_280);
+            assert_eq!(result.trade_fee, 10312);
+        }
+
+        #[test]
+        fn test_exact_in_a_to_b_decay() {
+            let now = now();
+            let result = swap_quote_by_input_token(
+                150_000,
+                true,
+                1000,
+                test_whirlpool_with_adaptive_fee(tick_index_to_sqrt_price(0), 1_000_000),
+                Some(test_oracle(
+                    now,
+                    now - 600,
+                    now - 600,
+                    100_000,
+                    0,
+                    100_000,
+                )),
+                test_empty_tick_arrays().into(), // full-range liquidity
+                now,
+                None,
+                None,
+            )
+            .unwrap();
+
+            assert_eq!(result.token_in, 150_000);
+            assert_eq!(result.token_est_out, 122_534);
+            assert_eq!(result.token_min_out, 110_280);
+            assert_eq!(result.trade_fee, 10312);
+        }
+
+        #[test]
+        fn test_exact_in_b_to_a_simple() {
+            let now = now();
+
+            let mut tick_arrays = test_empty_tick_arrays();
+            tick_arrays [0].ticks[22] = TickFacade {
+                initialized: true,
+                liquidity_net: -500_000,
+                ..TickFacade::default()
+            };
+
+            let result = swap_quote_by_input_token(
+                150_000,
+                false,
+                1000,
+                test_whirlpool_with_adaptive_fee(tick_index_to_sqrt_price(0), 1_000_000 + 500_000),
+                Some(test_oracle(
+                    now,
+                    now,
+                    now,
+                    0,
+                    0,
+                    0,
+                )),
+                tick_arrays.into(),
+                now,
+                None,
+                None,
+            )
+            .unwrap();
+
+            assert_eq!(result.token_in, 150_000);
+            assert_eq!(result.token_est_out, 129_866);
+            assert_eq!(result.token_min_out, 116_879);
+            assert_eq!(result.trade_fee, 7_456);
+        }
     }
 
     // TODO: add more complex tests that

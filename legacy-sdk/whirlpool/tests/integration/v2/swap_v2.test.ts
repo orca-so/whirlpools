@@ -2962,6 +2962,7 @@ describe("swap_v2", () => {
               whirlpoolDataPre,
               IGNORE_CACHE,
             ),
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(1, 100),
       );

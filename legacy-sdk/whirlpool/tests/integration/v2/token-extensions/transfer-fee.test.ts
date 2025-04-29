@@ -6002,6 +6002,7 @@ describe("TokenExtension/TransferFee", () => {
             IGNORE_CACHE,
           ),
           tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(0, 100), // 0% slippage
       );
@@ -6156,6 +6157,7 @@ describe("TokenExtension/TransferFee", () => {
             IGNORE_CACHE,
           ),
           tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(0, 100), // 0% slippage
       );
@@ -9990,6 +9992,7 @@ describe("TokenExtension/TransferFee", () => {
               IGNORE_CACHE,
             ),
             tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -10024,6 +10027,7 @@ describe("TokenExtension/TransferFee", () => {
               IGNORE_CACHE,
             ),
             tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -10194,6 +10198,7 @@ describe("TokenExtension/TransferFee", () => {
               IGNORE_CACHE,
             ),
             tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -10228,6 +10233,7 @@ describe("TokenExtension/TransferFee", () => {
               IGNORE_CACHE,
             ),
             tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(0, 100),
         );

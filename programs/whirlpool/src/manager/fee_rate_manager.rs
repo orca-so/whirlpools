@@ -1659,7 +1659,7 @@ mod adaptive_fee_rate_manager_tests {
 
         // in core range
         let current_tick_index = 64 * 8 + 32;
-        let fee_rate_manager = FeeRateManager::new(
+        let mut fee_rate_manager = FeeRateManager::new(
             a_to_b,
             current_tick_index,
             timestamp,
@@ -1680,6 +1680,14 @@ mod adaptive_fee_rate_manager_tests {
         let (bounded_sqrt_price, skip) =
             fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(64 * 8)); // should be bounded
+        assert!(!skip);
+
+        fee_rate_manager.advance_tick_group();
+
+        let sqrt_price = MIN_SQRT_PRICE_X64;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(64 * 7)); // should be bounded
         assert!(!skip);
 
         // left side of core range
@@ -1727,42 +1735,42 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 32 + 16);
-        let bounded_sqrt_price = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
-            .0;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
+        assert!(!skip);
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64);
-        let bounded_sqrt_price = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
-            .0;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
+        assert!(!skip);
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64 + 16);
-        let bounded_sqrt_price = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
-            .0;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 + 64));
+        assert!(!skip);
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let bounded_sqrt_price = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
-            .0;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 + 64));
+        assert!(!skip);
 
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let bounded_sqrt_price = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
-            .0;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(
             bounded_sqrt_price,
             sqrt_price_from_tick_index(1024 + 64 + 64)
         );
+        assert!(!skip);
     }
 
     #[test]
@@ -1948,7 +1956,7 @@ mod adaptive_fee_rate_manager_tests {
 
         // in core range
         let current_tick_index = 64 * -8 + 32;
-        let fee_rate_manager = FeeRateManager::new(
+        let mut fee_rate_manager = FeeRateManager::new(
             a_to_b,
             current_tick_index,
             timestamp,
@@ -1969,6 +1977,17 @@ mod adaptive_fee_rate_manager_tests {
         let (bounded_sqrt_price, skip) =
             fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(64 * -8 + 64)); // should be bounded
+        assert!(!skip);
+
+        fee_rate_manager.advance_tick_group();
+
+        let sqrt_price = MAX_SQRT_PRICE_X64;
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        assert_eq!(
+            bounded_sqrt_price,
+            sqrt_price_from_tick_index(64 * -8 + 64 + 64)
+        ); // should be bounded
         assert!(!skip);
 
         // left side of core range

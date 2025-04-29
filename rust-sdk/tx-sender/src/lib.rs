@@ -32,8 +32,15 @@ pub async fn build_and_send_transaction_with_config(
         .first()
         .ok_or_else(|| "At least one signer is required".to_string())?;
     // Build transaction with compute budget and priority fees
-    let mut tx =
-        build_transaction_with_config(instructions, signers, address_lookup_tables, rpc_client, rpc_config, fee_config).await?;
+    let mut tx = build_transaction_with_config(
+        instructions,
+        signers,
+        address_lookup_tables,
+        rpc_client,
+        rpc_config,
+        fee_config,
+    )
+    .await?;
     // Serialize the message once instead of for each signer
     let serialized_message = tx.message.serialize();
     tx.signatures = signers
@@ -62,10 +69,21 @@ pub async fn build_and_send_transaction(
         .read()
         .map_err(|e| format!("Lock error: {}", e))?;
     let rpc_client = config::get_rpc_client()?;
-    let rpc_config = config.rpc_config.as_ref()
+    let rpc_config = config
+        .rpc_config
+        .as_ref()
         .ok_or("RPC config not set".to_string())?;
     let fee_config = &config.fee_config;
-    build_and_send_transaction_with_config(instructions, signers, commitment, address_lookup_tables, &rpc_client, &rpc_config, &fee_config).await
+    build_and_send_transaction_with_config(
+        instructions,
+        signers,
+        commitment,
+        address_lookup_tables,
+        &rpc_client,
+        rpc_config,
+        fee_config,
+    )
+    .await
 }
 
 /// Build a transaction with compute budget and priority fees from the supplied configuration
@@ -98,7 +116,7 @@ pub async fn build_transaction_with_config(
     let address_lookup_tables_clone = address_lookup_tables.clone();
 
     let compute_units = compute_budget::estimate_compute_units(
-        &rpc_client,
+        rpc_client,
         instructions.clone(),
         &payer.pubkey(),
         signers,
@@ -106,7 +124,7 @@ pub async fn build_transaction_with_config(
     )
     .await?;
     let budget_instructions = compute_budget::get_compute_budget_instruction(
-        &rpc_client,
+        rpc_client,
         compute_units,
         &payer.pubkey(),
         rpc_config,
@@ -122,7 +140,7 @@ pub async fn build_transaction_with_config(
         if !rpc_config.is_mainnet() {
             println!("Warning: Jito tips are only supported on mainnet. Skipping Jito tip.");
         } else if let Some(jito_tip_ix) =
-            jito::add_jito_tip_instruction(&fee_config, &payer.pubkey()).await?
+            jito::add_jito_tip_instruction(fee_config, &payer.pubkey()).await?
         {
             instructions.insert(0, jito_tip_ix);
         }
@@ -154,7 +172,7 @@ pub async fn build_transaction_with_config(
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
 pub async fn build_transaction(
-    mut instructions: Vec<Instruction>,
+    instructions: Vec<Instruction>,
     signers: &[&dyn Signer],
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<VersionedTransaction, String> {
@@ -162,10 +180,20 @@ pub async fn build_transaction(
         .read()
         .map_err(|e| format!("Lock error: {}", e))?;
     let rpc_client = config::get_rpc_client()?;
-    let rpc_config = config.rpc_config.as_ref()
+    let rpc_config = config
+        .rpc_config
+        .as_ref()
         .ok_or("RPC config not set".to_string())?;
     let fee_config = &config.fee_config;
-    build_transaction_with_config(instructions, signers, address_lookup_tables, &rpc_client, &rpc_config, &fee_config).await
+    build_transaction_with_config(
+        instructions,
+        signers,
+        address_lookup_tables,
+        &rpc_client,
+        rpc_config,
+        fee_config,
+    )
+    .await
 }
 
 /// Send a transaction with retry logic using the supplied configuration

@@ -16,6 +16,8 @@ import type {
   WhirlpoolData,
   WhirlpoolsConfigData,
   WhirlpoolsConfigExtensionData,
+  AdaptiveFeeTierData,
+  OracleData,
 } from "../../../types/public";
 
 /**
@@ -32,6 +34,8 @@ export type WhirlpoolSupportedTypes =
   | WhirlpoolsConfigExtensionData
   | TokenBadgeData
   | LockConfigData
+  | AdaptiveFeeTierData
+  | OracleData
   | BasicSupportedTypes;
 
 /**
@@ -299,6 +303,45 @@ export interface WhirlpoolAccountFetcherInterface {
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, LockConfigData | null>>;
+
+  /**
+   * Fetch and cache the account for a given AdaptiveFeeTier address
+   * @param address The address of the adaptive fee tier account
+   */
+  getAdaptiveFeeTier(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<AdaptiveFeeTierData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of AdaptiveFeeTier addresses
+   * @param addresses The array of adaptive fee tier account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getAdaptiveFeeTiers(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, AdaptiveFeeTierData | null>>;
+
+  /**
+   * Fetch and cache the account for a given Oracle address
+   * @param address The address of the oracle account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getOracle(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<OracleData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of Oracle addresses
+   * @param addresses The array of oracle account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getOracles(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, OracleData | null>>;
 
   /**
    * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts

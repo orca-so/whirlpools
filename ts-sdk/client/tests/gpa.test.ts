@@ -244,7 +244,7 @@ describe("get program account memcmp filters", () => {
       whirlpoolsConfig: addresses[0],
       whirlpoolBump: [0],
       tickSpacing: 1234,
-      tickSpacingSeed: [1, 2],
+      feeTierIndexSeed: [1, 2],
       feeRate: 4321,
       protocolFeeRate: 5678,
       liquidity: 9012,

@@ -141,6 +141,28 @@ describe("initialize_fee_tier", () => {
     );
   });
 
+  it("fails when tick_spacing is zero", async () => {
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    // invalid
+    const tickSpacing = 0;
+
+    await assert.rejects(
+      initFeeTier(
+        ctx,
+        configInitInfo,
+        configKeypairs.feeAuthorityKeypair,
+        tickSpacing,
+        3_000,
+      ),
+      /0x1774/, // InvalidTickSpacing
+    );
+  });
+
   it("fails when fee authority is not a signer", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
     await toTx(

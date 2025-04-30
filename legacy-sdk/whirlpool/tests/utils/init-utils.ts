@@ -19,6 +19,7 @@ import {
   mintToDestination,
 } from ".";
 import type {
+  AdaptiveFeeConstantsData,
   InitConfigParams,
   InitFeeTierParams,
   InitPoolParams,
@@ -44,6 +45,7 @@ import type {
 } from "./test-builders";
 import {
   generateDefaultConfigParams,
+  generateDefaultInitAdaptiveFeeTierParams,
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
   generateDefaultInitTickArrayParams,
@@ -433,6 +435,45 @@ export async function initFeeTier(
   const tx = toTx(
     ctx,
     WhirlpoolIx.initializeFeeTierIx(ctx.program, params),
+  ).addSigner(feeAuthorityKeypair);
+  if (funder) {
+    tx.addSigner(funder);
+  }
+
+  return {
+    txId: await tx.buildAndExecute(),
+    params,
+  };
+}
+
+export async function initAdaptiveFeeTier(
+  ctx: WhirlpoolContext,
+  configInitInfo: InitConfigParams,
+  feeAuthorityKeypair: Keypair,
+  feeTierIndex: number,
+  tickSpacing: number,
+  defaultBaseFeeRate: number,
+  presetAdaptiveFeeConstants: AdaptiveFeeConstantsData,
+  initializePoolAuthority?: PublicKey,
+  delegatedFeeAuthority?: PublicKey,
+  funder?: Keypair,
+) {
+  const params = generateDefaultInitAdaptiveFeeTierParams(
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
+    configInitInfo.feeAuthority,
+    feeTierIndex,
+    tickSpacing,
+    defaultBaseFeeRate,
+    presetAdaptiveFeeConstants,
+    initializePoolAuthority,
+    delegatedFeeAuthority,
+    funder?.publicKey,
+  );
+
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, params),
   ).addSigner(feeAuthorityKeypair);
   if (funder) {
     tx.addSigner(funder);

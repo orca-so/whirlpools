@@ -57,3 +57,12 @@ export type {
   CollectAllPositionAddressParams,
   CollectAllPositionParams,
 } from "../../instructions/composites";
+export type {
+  InitializeAdaptiveFeeTierParams,
+  InitPoolWithAdaptiveFeeParams,
+  SetDefaultBaseFeeRateParams,
+  SetDelegatedFeeAuthorityParams,
+  SetFeeRateByDelegatedFeeAuthorityParams,
+  SetInitializePoolAuthorityParams,
+  SetPresetAdaptiveFeeConstantsParams,
+} from "../../instructions/adaptive-fee";

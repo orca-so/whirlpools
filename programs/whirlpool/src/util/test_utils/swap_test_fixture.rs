@@ -3,7 +3,7 @@ use crate::math::tick_math::*;
 use crate::state::{
     tick::*, tick_builder::TickBuilder, whirlpool_builder::WhirlpoolBuilder, TickArray, Whirlpool,
 };
-use crate::state::{WhirlpoolRewardInfo, NUM_REWARDS};
+use crate::state::{AdaptiveFeeInfo, WhirlpoolRewardInfo, NUM_REWARDS};
 use crate::util::SwapTickSequence;
 use anchor_lang::prelude::*;
 use std::cell::RefCell;
@@ -21,6 +21,7 @@ pub struct SwapTestFixture {
     pub amount_specified_is_input: bool,
     pub a_to_b: bool,
     pub reward_last_updated_timestamp: u64,
+    pub adaptive_fee_info: Option<AdaptiveFeeInfo>,
 }
 
 #[derive(Default)]
@@ -36,6 +37,7 @@ pub struct SwapTestFixtureInfo<'info> {
     pub tick_spacing: u16,
     pub liquidity: u128,
     pub curr_tick_index: i32,
+    pub curr_sqrt_price_override: Option<u128>,
     pub start_tick_index: i32,
     pub trade_amount: u64,
     pub sqrt_price_limit: u128,
@@ -50,6 +52,7 @@ pub struct SwapTestFixtureInfo<'info> {
     pub array_3_ticks: Option<&'info Vec<TestTickInfo>>,
     pub fee_rate: u16,
     pub protocol_fee_rate: u16,
+    pub adaptive_fee_info: Option<AdaptiveFeeInfo>,
 }
 
 impl Default for SwapTestFixtureInfo<'_> {
@@ -58,6 +61,7 @@ impl Default for SwapTestFixtureInfo<'_> {
             tick_spacing: TS_128,
             liquidity: 0,
             curr_tick_index: 0,
+            curr_sqrt_price_override: None,
             start_tick_index: 0,
             trade_amount: 0,
             sqrt_price_limit: 0,
@@ -76,6 +80,7 @@ impl Default for SwapTestFixtureInfo<'_> {
             array_3_ticks: None,
             fee_rate: 0,
             protocol_fee_rate: 0,
+            adaptive_fee_info: None,
         }
     }
 }
@@ -134,7 +139,10 @@ impl SwapTestFixture {
     pub fn new(info: SwapTestFixtureInfo) -> SwapTestFixture {
         let whirlpool = WhirlpoolBuilder::new()
             .liquidity(info.liquidity)
-            .sqrt_price(sqrt_price_from_tick_index(info.curr_tick_index))
+            .sqrt_price(
+                info.curr_sqrt_price_override
+                    .unwrap_or(sqrt_price_from_tick_index(info.curr_tick_index)),
+            )
             .tick_spacing(info.tick_spacing)
             .tick_current_index(info.curr_tick_index)
             .reward_last_updated_timestamp(info.reward_last_updated_timestamp)
@@ -200,11 +208,12 @@ impl SwapTestFixture {
             amount_specified_is_input: info.amount_specified_is_input,
             a_to_b: info.a_to_b,
             reward_last_updated_timestamp: info.reward_last_updated_timestamp,
+            adaptive_fee_info: info.adaptive_fee_info,
         }
     }
 
     pub fn run(&self, tick_sequence: &mut SwapTickSequence, next_timestamp: u64) -> PostSwapUpdate {
-        swap(
+        *swap(
             &self.whirlpool,
             tick_sequence,
             self.trade_amount,
@@ -212,6 +221,7 @@ impl SwapTestFixture {
             self.amount_specified_is_input,
             self.a_to_b,
             next_timestamp,
+            &self.adaptive_fee_info,
         )
         .unwrap()
     }
@@ -229,6 +239,8 @@ impl SwapTestFixture {
             self.amount_specified_is_input,
             self.a_to_b,
             next_timestamp,
+            &self.adaptive_fee_info,
         )
+        .map(|boxed| *boxed)
     }
 }

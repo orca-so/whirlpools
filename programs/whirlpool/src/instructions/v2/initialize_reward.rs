@@ -1,11 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-use crate::{
-    errors::ErrorCode,
-    state::Whirlpool,
-    util::{is_token_badge_initialized, v2::is_supported_token_mint},
-};
+use crate::{state::Whirlpool, util::verify_supported_token_mint};
 
 #[derive(Accounts)]
 #[instruction(reward_index: u8)]
@@ -44,15 +40,11 @@ pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()>
     let whirlpool = &mut ctx.accounts.whirlpool;
 
     // Don't allow initializing a reward with an unsupported token mint
-    let is_token_badge_initialized = is_token_badge_initialized(
+    verify_supported_token_mint(
+        &ctx.accounts.reward_mint,
         whirlpool.whirlpools_config,
-        ctx.accounts.reward_mint.key(),
         &ctx.accounts.reward_token_badge,
     )?;
-
-    if !is_supported_token_mint(&ctx.accounts.reward_mint, is_token_badge_initialized).unwrap() {
-        return Err(ErrorCode::UnsupportedTokenMint.into());
-    }
 
     whirlpool.initialize_reward(
         reward_index as usize,

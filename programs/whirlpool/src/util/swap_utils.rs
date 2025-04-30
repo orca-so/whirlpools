@@ -14,7 +14,7 @@ pub fn update_and_swap_whirlpool<'info>(
     token_vault_a: &Account<'info, TokenAccount>,
     token_vault_b: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
-    swap_update: PostSwapUpdate,
+    swap_update: &PostSwapUpdate,
     is_token_fee_in_a: bool,
     reward_last_updated_timestamp: u64,
 ) -> Result<()> {

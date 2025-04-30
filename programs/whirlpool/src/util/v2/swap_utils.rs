@@ -21,7 +21,7 @@ pub fn update_and_swap_whirlpool_v2<'info>(
     token_program_a: &Interface<'info, TokenInterface>,
     token_program_b: &Interface<'info, TokenInterface>,
     memo_program: &Program<'info, Memo>,
-    swap_update: PostSwapUpdate,
+    swap_update: &PostSwapUpdate,
     is_token_fee_in_a: bool,
     reward_last_updated_timestamp: u64,
     memo: &[u8],
@@ -153,8 +153,8 @@ fn perform_swap_v2<'info>(
 #[allow(clippy::too_many_arguments)]
 pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
     // update
-    swap_update_one: PostSwapUpdate,
-    swap_update_two: PostSwapUpdate,
+    swap_update_one: &PostSwapUpdate,
+    swap_update_two: &PostSwapUpdate,
     // whirlpool
     whirlpool_one: &mut Account<'info, Whirlpool>,
     whirlpool_two: &mut Account<'info, Whirlpool>,

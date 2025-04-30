@@ -6,6 +6,7 @@ use std::{
 
 use crate::{
     errors::ErrorCode,
+    math::floor_division,
     state::{
         Tick, TickArray, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, TICK_ARRAY_SIZE,
     },
@@ -346,15 +347,6 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
     start_tick_indexes
 }
 
-fn floor_division(dividend: i32, divisor: i32) -> i32 {
-    assert!(divisor != 0, "Divisor cannot be zero.");
-    if dividend % divisor == 0 || dividend.signum() == divisor.signum() {
-        dividend / divisor
-    } else {
-        dividend / divisor - 1
-    }
-}
-
 fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) -> Pubkey {
     Pubkey::find_program_address(
         &[
@@ -370,74 +362,8 @@ fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) 
 #[cfg(test)]
 mod sparse_swap_tick_sequence_tests {
     use super::*;
+    use crate::util::test_utils::account_info_mock::AccountInfoMock;
     use anchor_lang::solana_program::pubkey;
-    use anchor_lang::Discriminator;
-    use std::cell::RefCell;
-
-    struct AccountInfoMock {
-        pub key: Pubkey,
-        pub lamports: u64,
-        pub data: Vec<u8>,
-        pub owner: Pubkey,
-        pub rent_epoch: u64,
-        pub executable: bool,
-    }
-
-    impl AccountInfoMock {
-        pub fn new(key: Pubkey, data: Vec<u8>, owner: Pubkey) -> Self {
-            Self {
-                key,
-                lamports: 0,
-                data,
-                owner,
-                rent_epoch: 0,
-                executable: false,
-            }
-        }
-
-        pub fn new_whirlpool(
-            key: Pubkey,
-            tick_spacing: u16,
-            tick_current_index: i32,
-            owner: Option<Pubkey>,
-        ) -> Self {
-            let whirlpool = Whirlpool {
-                tick_spacing,
-                tick_current_index,
-                ..Whirlpool::default()
-            };
-
-            let mut data = vec![0u8; Whirlpool::LEN];
-            whirlpool.try_serialize(&mut data.as_mut_slice()).unwrap();
-            Self::new(key, data, owner.unwrap_or(Whirlpool::owner()))
-        }
-
-        pub fn new_tick_array(
-            key: Pubkey,
-            whirlpool: Pubkey,
-            start_tick_index: i32,
-            owner: Option<Pubkey>,
-        ) -> Self {
-            let mut data = vec![0u8; TickArray::LEN];
-            data[0..8].copy_from_slice(&TickArray::discriminator());
-            data[8..12].copy_from_slice(&start_tick_index.to_le_bytes());
-            data[9956..9988].copy_from_slice(&whirlpool.to_bytes());
-            Self::new(key, data, owner.unwrap_or(TickArray::owner()))
-        }
-
-        pub fn to_account_info(&mut self, is_writable: bool) -> AccountInfo<'_> {
-            AccountInfo {
-                key: &self.key,
-                is_signer: false,
-                is_writable,
-                lamports: std::rc::Rc::new(RefCell::new(&mut self.lamports)),
-                data: std::rc::Rc::new(RefCell::new(&mut self.data)),
-                owner: &self.owner,
-                rent_epoch: self.rent_epoch,
-                executable: self.executable,
-            }
-        }
-    }
 
     #[test]
     fn test_derive_tick_array_pda() {
@@ -479,25 +405,6 @@ mod sparse_swap_tick_sequence_tests {
             ta_start_11264,
             pubkey!("2ezvsnoXdukw5dAAZ4EkW67bmUo8PHRPX8ZDqf76BKtV")
         );
-    }
-
-    #[test]
-    fn test_floor_division() {
-        assert_eq!(floor_division(0, 64), 0);
-        assert_eq!(floor_division(1, 64), 0);
-        assert_eq!(floor_division(63, 64), 0);
-        assert_eq!(floor_division(64, 64), 1);
-        assert_eq!(floor_division(65, 64), 1);
-        assert_eq!(floor_division(127, 64), 1);
-        assert_eq!(floor_division(128, 64), 2);
-        assert_eq!(floor_division(129, 64), 2);
-        assert_eq!(floor_division(-1, 64), -1);
-        assert_eq!(floor_division(-63, 64), -1);
-        assert_eq!(floor_division(-64, 64), -1);
-        assert_eq!(floor_division(-65, 64), -2);
-        assert_eq!(floor_division(-127, 64), -2);
-        assert_eq!(floor_division(-128, 64), -2);
-        assert_eq!(floor_division(-129, 64), -3);
     }
 
     mod test_get_start_tick_indexes {

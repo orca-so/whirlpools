@@ -101,6 +101,7 @@ pub mod whirlpool {
     ///                        fee tier during initialization.
     ///
     /// #### Special Errors
+    /// - `InvalidTickSpacing` - If the provided tick_spacing is 0.
     /// - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
     pub fn initialize_fee_tier(
         ctx: Context<InitializeFeeTier>,
@@ -666,6 +667,182 @@ pub mod whirlpool {
     /// - `position_authority` - The authority that owns the position token.
     pub fn transfer_locked_position(ctx: Context<TransferLockedPosition>) -> Result<()> {
         instructions::transfer_locked_position::handler(ctx)
+    }
+
+    /// Initializes an adaptive_fee_tier account usable by Whirlpools in a WhirlpoolConfig space.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    ///
+    /// ### Parameters
+    /// - `fee_tier_index` - The index of the fee-tier that this adaptive fee tier will be initialized.
+    /// - `tick_spacing` - The tick-spacing that this fee-tier suggests the default_fee_rate for.
+    /// - `initialize_pool_authority` - The authority that can initialize pools with this adaptive fee-tier.
+    /// - `delegated_fee_authority` - The authority that can set the base fee rate for pools using this adaptive fee-tier.
+    /// - `default_fee_rate` - The default fee rate that a pool will use if the pool uses this
+    ///                        fee tier during initialization.
+    /// - `filter_period` - Period determine high frequency trading time window. (seconds)
+    /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)
+    /// - `reduction_factor` - Adaptive fee rate decrement rate.
+    /// - `adaptive_fee_control_factor` - Adaptive fee control factor.
+    /// - `max_volatility_accumulator` - Max volatility accumulator.
+    /// - `tick_group_size` - Tick group size to define tick group index.
+    /// - `major_swap_threshold_ticks` - Major swap threshold ticks to define major swap.
+    ///
+    /// #### Special Errors
+    /// - `InvalidTickSpacing` - If the provided tick_spacing is 0.
+    /// - `InvalidFeeTierIndex` - If the provided fee_tier_index is same to tick_spacing.
+    /// - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
+    /// - `InvalidAdaptiveFeeConstants` - If the provided adaptive fee constants are invalid.
+    #[allow(clippy::too_many_arguments)]
+    pub fn initialize_adaptive_fee_tier(
+        ctx: Context<InitializeAdaptiveFeeTier>,
+        fee_tier_index: u16,
+        tick_spacing: u16,
+        initialize_pool_authority: Pubkey,
+        delegated_fee_authority: Pubkey,
+        default_base_fee_rate: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
+        major_swap_threshold_ticks: u16,
+    ) -> Result<()> {
+        instructions::initialize_adaptive_fee_tier::handler(
+            ctx,
+            fee_tier_index,
+            tick_spacing,
+            initialize_pool_authority,
+            delegated_fee_authority,
+            default_base_fee_rate,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+            major_swap_threshold_ticks,
+        )
+    }
+
+    /// Set the default_base_fee_rate for an AdaptiveFeeTier
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    ///
+    /// ### Parameters
+    /// - `default_base_fee_rate` - The default base fee rate that a pool will use if the pool uses this
+    ///                             adaptive fee-tier during initialization.
+    ///
+    /// #### Special Errors
+    /// - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
+    pub fn set_default_base_fee_rate(
+        ctx: Context<SetDefaultBaseFeeRate>,
+        default_base_fee_rate: u16,
+    ) -> Result<()> {
+        instructions::set_default_base_fee_rate::handler(ctx, default_base_fee_rate)
+    }
+
+    /// Sets the delegated fee authority for an AdaptiveFeeTier.
+    /// The delegated fee authority can set the fee rate for individual pools initialized with the adaptive fee-tier.
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    pub fn set_delegated_fee_authority(ctx: Context<SetDelegatedFeeAuthority>) -> Result<()> {
+        instructions::set_delegated_fee_authority::handler(ctx)
+    }
+
+    /// Sets the initialize pool authority for an AdaptiveFeeTier.
+    /// Only the initialize pool authority can initialize pools with the adaptive fee-tier.
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    pub fn set_initialize_pool_authority(ctx: Context<SetInitializePoolAuthority>) -> Result<()> {
+        instructions::set_initialize_pool_authority::handler(ctx)
+    }
+
+    /// Sets the adaptive fee constants for an AdaptiveFeeTier.
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    ///
+    /// ### Parameters
+    /// - `filter_period` - Period determine high frequency trading time window. (seconds)
+    /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)
+    /// - `reduction_factor` - Adaptive fee rate decrement rate.
+    /// - `adaptive_fee_control_factor` - Adaptive fee control factor.
+    /// - `max_volatility_accumulator` - Max volatility accumulator.
+    /// - `tick_group_size` - Tick group size to define tick group index.
+    /// - `major_swap_threshold_ticks` - Major swap threshold ticks to define major swap.
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_preset_adaptive_fee_constants(
+        ctx: Context<SetPresetAdaptiveFeeConstants>,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
+        major_swap_threshold_ticks: u16,
+    ) -> Result<()> {
+        instructions::set_preset_adaptive_fee_constants::handler(
+            ctx,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+            major_swap_threshold_ticks,
+        )
+    }
+
+    /// Initializes a Whirlpool account and Oracle account with adaptive fee.
+    ///
+    /// ### Parameters
+    /// - `initial_sqrt_price` - The desired initial sqrt-price for this pool
+    /// - `trade_enable_timestamp` - The timestamp when trading is enabled for this pool (within 72 hours)
+    ///
+    /// #### Special Errors
+    /// `InvalidTokenMintOrder` - The order of mints have to be ordered by
+    /// `SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64
+    /// `InvalidTradeEnableTimestamp` - provided trade_enable_timestamp is not within 72 hours or the adaptive fee-tier is permission-less
+    /// `UnsupportedTokenMint` - The provided token mint is not supported by the program (e.g. it has risky token extensions)
+    ///
+    pub fn initialize_pool_with_adaptive_fee(
+        ctx: Context<InitializePoolWithAdaptiveFee>,
+        initial_sqrt_price: u128,
+        trade_enable_timestamp: Option<u64>,
+    ) -> Result<()> {
+        instructions::initialize_pool_with_adaptive_fee::handler(
+            ctx,
+            initial_sqrt_price,
+            trade_enable_timestamp,
+        )
+    }
+
+    /// Sets the fee rate for a Whirlpool by the delegated fee authority in AdaptiveFeeTier.
+    /// Fee rate is represented as hundredths of a basis point.
+    ///
+    /// ### Authority
+    /// - "delegated_fee_authority" - Set authority that can modify pool fees in the AdaptiveFeeTier
+    ///
+    /// ### Parameters
+    /// - `fee_rate` - The rate that the pool will use to calculate fees going onwards.
+    ///
+    /// #### Special Errors
+    /// - `FeeRateMaxExceeded` - If the provided fee_rate exceeds MAX_FEE_RATE.
+    pub fn set_fee_rate_by_delegated_fee_authority(
+        ctx: Context<SetFeeRateByDelegatedFeeAuthority>,
+        fee_rate: u16,
+    ) -> Result<()> {
+        instructions::set_fee_rate_by_delegated_fee_authority::handler(ctx, fee_rate)
     }
 
     ////////////////////////////////////////////////////////////////////////////////

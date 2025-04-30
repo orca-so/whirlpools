@@ -18,6 +18,10 @@ impl FeeTier {
         tick_spacing: u16,
         default_fee_rate: u16,
     ) -> Result<()> {
+        if tick_spacing == 0 {
+            return Err(ErrorCode::InvalidTickSpacing.into());
+        }
+
         self.whirlpools_config = whirlpools_config.key();
         self.tick_spacing = tick_spacing;
         self.update_default_fee_rate(default_fee_rate)?;

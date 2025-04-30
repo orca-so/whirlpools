@@ -15,7 +15,7 @@ pub struct SwapStepComputation {
 
 pub fn compute_swap(
     amount_remaining: u64,
-    fee_rate: u16,
+    fee_rate: u32,
     liquidity: u128,
     sqrt_price_current: u128,
     sqrt_price_target: u128,
@@ -191,6 +191,8 @@ fn get_amount_unfixed_delta(
 
 #[cfg(test)]
 mod fuzz_tests {
+    use crate::manager::fee_rate_manager::FEE_RATE_HARD_LIMIT;
+
     use super::*;
     use proptest::prelude::*;
 
@@ -199,7 +201,7 @@ mod fuzz_tests {
         fn test_compute_swap(
             amount in 1..u64::MAX,
             liquidity in 1..u32::MAX as u128,
-            fee_rate in 1..u16::MAX,
+            fee_rate in 1..FEE_RATE_HARD_LIMIT,
             price_0 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             price_1 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             amount_specified_is_input in proptest::bool::ANY,
@@ -225,7 +227,13 @@ mod fuzz_tests {
             let fee_amount = swap_computation.fee_amount;
 
             // Amount_in can not exceed maximum amount
-            assert!(amount_in <= u64::MAX - fee_amount);
+            if amount_specified_is_input {
+                assert!(amount_in <= u64::MAX - fee_amount);
+            } else {
+                // in ExactOut mode, input + fee may exceeds u64::MAX
+                // higher fee rate reveals this issue
+                // note: swap_manager will detect this case with checked_add
+            }
 
             // Amounts calculated are less than amount specified
             let amount_used = if amount_specified_is_input {
@@ -249,7 +257,7 @@ mod fuzz_tests {
         fn test_compute_swap_inversion(
             amount in 1..u64::MAX,
             liquidity in 1..u32::MAX as u128,
-            fee_rate in 1..u16::MAX,
+            fee_rate in 1..FEE_RATE_HARD_LIMIT,
             price_0 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             price_1 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             amount_specified_is_input in proptest::bool::ANY,
@@ -275,12 +283,16 @@ mod fuzz_tests {
             let fee_amount = swap_computation.fee_amount;
 
             let inverted_amount = if amount_specified_is_input {
-                amount_out
+                Some(amount_out)
             } else {
-                amount_in + fee_amount
+                // in ExactOut mode, input + fee may exceeds u64::MAX
+                // higher fee rate reveals this issue
+                // note: swap_manager will detect this case with checked_add
+                amount_in.checked_add(fee_amount)
             };
 
-            if inverted_amount != 0 {
+            if let Some(inverted_amount) = inverted_amount {
+                if inverted_amount != 0 {
                 let inverted = compute_swap(
                     inverted_amount,
                     fee_rate,
@@ -379,6 +391,7 @@ mod fuzz_tests {
                     // }
                 }
             }
+        }
         }
     }
 }
@@ -592,7 +605,7 @@ mod unit_tests {
     }
 
     mod test_compute_swap {
-        const TWO_PCT: u16 = 20000;
+        const TWO_PCT: u32 = 20000;
         use std::convert::TryInto;
 
         use super::*;
@@ -959,7 +972,7 @@ mod unit_tests {
     #[allow(clippy::too_many_arguments)]
     fn test_swap(
         amount_remaining: u64,
-        fee_rate: u16,
+        fee_rate: u32,
         liquidity: u128,
         sqrt_price_current: u128,
         sqrt_price_target_limit: u128,

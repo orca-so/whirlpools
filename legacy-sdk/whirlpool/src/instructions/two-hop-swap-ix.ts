@@ -4,6 +4,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
+import invariant from "tiny-invariant";
 
 /**
  * Parameters to execute a two-hop swap on a Whirlpool.
@@ -171,6 +172,14 @@ export function twoHopSwapIx(
       },
     },
   );
+
+  // HACK: to make Oracle account mutable without breaking change
+  // The official way to assemble instructions for pools that use AdaptiveFee is to add remaining accounts with isWritable set to true,
+  // but this hack that overrides the IDL requirements works.
+  invariant(ix.keys[18].pubkey.equals(oracleOne));
+  ix.keys[18].isWritable = true;
+  invariant(ix.keys[19].pubkey.equals(oracleTwo));
+  ix.keys[19].isWritable = true;
 
   return {
     instructions: [ix],

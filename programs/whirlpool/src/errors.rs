@@ -154,6 +154,15 @@ pub enum ErrorCode {
 
     #[msg("Cannot reset position range with same tick range")]
     SameTickRangeNotAllowed, // 0x17ac (6060)
+
+    #[msg("Invalid adaptive fee constants")]
+    InvalidAdaptiveFeeConstants, // 0x17ad (6061)
+    #[msg("Invalid fee tier index")]
+    InvalidFeeTierIndex, // 0x17ae (6062)
+    #[msg("Invalid trade enable timestamp")]
+    InvalidTradeEnableTimestamp, // 0x17af (6063)
+    #[msg("Trade is not enabled yet")]
+    TradeIsNotEnabled, // 0x17b0 (6064)
 }
 
 impl From<TryFromIntError> for ErrorCode {

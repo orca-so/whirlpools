@@ -12,11 +12,11 @@ use solana_sdk::signature::Signer;
 use solana_sdk::transaction::VersionedTransaction;
 
 /// Estimate compute units by simulating a transaction
-pub async fn estimate_compute_units(
+pub async fn estimate_compute_units<S: Signer>(
     rpc_client: &RpcClient,
     instructions: Vec<Instruction>,
     payer: &Pubkey,
-    signers: &[&dyn Signer],
+    signers: &[&S],
     alts: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<u32, String> {
     let alt_accounts = alts.unwrap_or_default();

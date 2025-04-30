@@ -30,10 +30,6 @@ pub async fn build_and_send_transaction_with_config<S: Signer>(
     rpc_config: &RpcConfig,
     fee_config: &FeeConfig,
 ) -> Result<Signature, String> {
-    // Get the payer (first signer)
-    let _payer = signers
-        .first()
-        .ok_or_else(|| "At least one signer is required".to_string())?;
     // Build transaction with compute budget and priority fees
     let mut tx = build_transaction_with_config(
         instructions,

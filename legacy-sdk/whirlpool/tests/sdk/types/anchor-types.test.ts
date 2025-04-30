@@ -14,6 +14,8 @@ describe("anchor-types", () => {
       [AccountName.WhirlpoolsConfigExtension]: 616,
       [AccountName.TokenBadge]: 200,
       [AccountName.LockConfig]: 241,
+      [AccountName.AdaptiveFeeTier]: 256,
+      [AccountName.Oracle]: 254,
     };
     Object.values(AccountName).forEach((name) => {
       try {

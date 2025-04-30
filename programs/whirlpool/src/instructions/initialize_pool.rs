@@ -60,6 +60,8 @@ pub fn handler(
     let whirlpool = &mut ctx.accounts.whirlpool;
     let whirlpools_config = &ctx.accounts.whirlpools_config;
 
+    let fee_tier_index = tick_spacing;
+
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
 
     // ignore the bump passed and use one Anchor derived
@@ -67,6 +69,7 @@ pub fn handler(
 
     whirlpool.initialize(
         whirlpools_config,
+        fee_tier_index,
         bump,
         tick_spacing,
         initial_sqrt_price,

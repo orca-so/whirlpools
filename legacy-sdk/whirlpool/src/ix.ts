@@ -604,6 +604,115 @@ export class WhirlpoolIx {
   }
 
   /**
+   * Initializes an adaptive fee tier account usable by Whirlpools in this WhirlpoolsConfig space.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - InitializeAdaptiveFeeTierParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static initializeAdaptiveFeeTierIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeAdaptiveFeeTierParams,
+  ) {
+    return ix.initializeAdaptiveFeeTierIx(program, params);
+  }
+
+  /**
+   * Initializes a Whirlpool account with adaptive fee.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - InitPoolWithAdaptiveFeeTierParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static initializePoolWithAdaptiveFeeIx(
+    program: Program<Whirlpool>,
+    params: ix.InitPoolWithAdaptiveFeeParams,
+  ) {
+    return ix.initializePoolWithAdaptiveFeeIx(program, params);
+  }
+
+  /**
+   * Updates an adaptive fee tier account with a new default base fee rate. The new rate will not retroactively update
+   * initialized pools.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - SetDefaultBaseFeeRateParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setDefaultBaseFeeRateIx(
+    program: Program<Whirlpool>,
+    params: ix.SetDefaultBaseFeeRateParams,
+  ) {
+    return ix.setDefaultBaseFeeRateIx(program, params);
+  }
+
+  /**
+   * Sets the delegated fee authority for an AdaptiveFeeTier.
+   * Only the fee authority has permission to invoke this instruction.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - SetDelegatedFeeAuthorityParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setDelegatedFeeAuthorityIx(
+    program: Program<Whirlpool>,
+    params: ix.SetDelegatedFeeAuthorityParams,
+  ) {
+    return ix.setDelegatedFeeAuthorityIx(program, params);
+  }
+
+  /**
+   * Sets the fee rate for a Whirlpool by the delegated fee authority.
+   * Only the current delegated fee authority has permission to invoke this instruction.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - SetFeeRateByDelegatedFeeAuthorityParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setFeeRateByDelegatedFeeAuthorityIx(
+    program: Program<Whirlpool>,
+    params: ix.SetFeeRateByDelegatedFeeAuthorityParams,
+  ) {
+    return ix.setFeeRateByDelegatedFeeAuthorityIx(program, params);
+  }
+
+  /**
+   * Sets the initialize pool authority for an AdaptiveFeeTier.
+   * Only the fee authority has permission to invoke this instruction.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - SetInitializePoolAuthorityParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setInitializePoolAuthorityIx(
+    program: Program<Whirlpool>,
+    params: ix.SetInitializePoolAuthorityParams,
+  ) {
+    return ix.setInitializePoolAuthorityIx(program, params);
+  }
+
+  /**
+   * Updates an adaptive fee tier account with new preset adaptive fee constants.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - SetPresetAdaptiveFeeConstantsParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setPresetAdaptiveFeeConstantsIx(
+    program: Program<Whirlpool>,
+    params: ix.SetPresetAdaptiveFeeConstantsParams,
+  ) {
+    return ix.setPresetAdaptiveFeeConstantsIx(program, params);
+  }
+
+  /**
    * Reset a position's range. Requires liquidity to be zero.
    *
    * #### Special Errors

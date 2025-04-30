@@ -34,3 +34,4 @@ export * from "./transfer-locked-position";
 export * from "./two-hop-swap-ix";
 export * from "./update-fees-and-rewards-ix";
 export * from "./v2";
+export * from "./adaptive-fee";

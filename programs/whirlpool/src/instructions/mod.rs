@@ -75,3 +75,6 @@ pub use two_hop_swap::*;
 pub use update_fees_and_rewards::*;
 pub mod v2;
 pub use v2::*;
+
+pub mod adaptive_fee;
+pub use adaptive_fee::*;

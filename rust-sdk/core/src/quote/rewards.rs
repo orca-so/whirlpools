@@ -47,7 +47,7 @@ pub fn collect_rewards_quote(
                 / whirlpool.liquidity;
             reward_growth += <u128>::try_from(reward_growth_delta).unwrap();
         }
-        println!("reward_growth: {}", reward_growth);
+
         let mut reward_growth_below = tick_lower.reward_growths_outside[i];
         let mut reward_growth_above = tick_upper.reward_growths_outside[i];
 
@@ -66,11 +66,9 @@ pub fn collect_rewards_quote(
         let reward_growth_delta =
             reward_growth_inside.wrapping_sub(position.reward_infos[i].growth_inside_checkpoint);
 
-        // Calculate reward_owed_delta using checked_mul_shift_right logic
         let reward_owed_delta = if reward_growth_delta == 0 || position.liquidity == 0 {
             0
         } else {
-            // If multiplication overflows, return 0 (matching on-chain behavior)
             let product = position
                 .liquidity
                 .checked_mul(reward_growth_delta)
@@ -78,7 +76,6 @@ pub fn collect_rewards_quote(
 
             (product >> 64) as u64
         };
-        println!("reward_owed_delta: {}", reward_owed_delta);
         let withdrawable_reward = position.reward_infos[i].amount_owed + reward_owed_delta;
 
         let rewards_owed =

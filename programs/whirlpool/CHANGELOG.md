@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-program
 
+## 0.4.0
+
+### Minor Changes
+
+- [#918](https://github.com/orca-so/whirlpools/pull/918) [`03525a8`](https://github.com/orca-so/whirlpools/commit/03525a880b7fc60c325aa26d26c5ab7dec79c659) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Adaptive Fee feature Contract release
+
 ## 0.3.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-client
 
+## 1.0.7
+
+### Patch Changes
+
+- [#918](https://github.com/orca-so/whirlpools/pull/918) [`03525a8`](https://github.com/orca-so/whirlpools/commit/03525a880b7fc60c325aa26d26c5ab7dec79c659) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Adaptive Fee feature Contract release
+
 ## 1.0.6
 
 ### Patch Changes

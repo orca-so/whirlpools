@@ -1,5 +1,11 @@
 # @orca-so/rust-tx-sender
 
+## 1.0.1
+
+### Patch Changes
+
+- [#924](https://github.com/orca-so/whirlpools/pull/924) [`661acea`](https://github.com/orca-so/whirlpools/commit/661acea57e54627753d9904c05f2784882801eee) Thanks [@wjthieme](https://github.com/wjthieme)! - Overload main functions to make tx-sender usable in a multi-thread environment
+
 ## 1.0.0
 
 ### Major Changes

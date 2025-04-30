@@ -21,9 +21,9 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 /// 2. Signs the transaction with all provided signers
 /// 3. Sends the transaction and waits for confirmation
 /// 4. Optionally uses address lookup tables for account compression
-pub async fn build_and_send_transaction_with_config(
+pub async fn build_and_send_transaction_with_config<S: Signer>(
     instructions: Vec<Instruction>,
-    signers: &[&dyn Signer],
+    signers: &[&S],
     commitment: Option<CommitmentLevel>,
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
     rpc_client: &RpcClient,
@@ -31,7 +31,7 @@ pub async fn build_and_send_transaction_with_config(
     fee_config: &FeeConfig,
 ) -> Result<Signature, String> {
     // Get the payer (first signer)
-    let payer = signers
+    let _payer = signers
         .first()
         .ok_or_else(|| "At least one signer is required".to_string())?;
     // Build transaction with compute budget and priority fees
@@ -61,9 +61,9 @@ pub async fn build_and_send_transaction_with_config(
 /// 2. Signs the transaction with all provided signers
 /// 3. Sends the transaction and waits for confirmation
 /// 4. Optionally uses address lookup tables for account compression
-pub async fn build_and_send_transaction(
+pub async fn build_and_send_transaction<S: Signer>(
     instructions: Vec<Instruction>,
-    signers: &[&dyn Signer],
+    signers: &[&S],
     commitment: Option<CommitmentLevel>,
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<Signature, String> {
@@ -95,9 +95,9 @@ pub async fn build_and_send_transaction(
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
-pub async fn build_transaction_with_config(
+pub async fn build_transaction_with_config<S: Signer>(
     mut instructions: Vec<Instruction>,
-    signers: &[&dyn Signer],
+    signers: &[&S],
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
     rpc_client: &RpcClient,
     rpc_config: &RpcConfig,
@@ -173,9 +173,9 @@ pub async fn build_transaction_with_config(
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
-pub async fn build_transaction(
+pub async fn build_transaction<S: Signer>(
     instructions: Vec<Instruction>,
-    signers: &[&dyn Signer],
+    signers: &[&S],
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<VersionedTransaction, String> {
     let config = config::get_global_config()

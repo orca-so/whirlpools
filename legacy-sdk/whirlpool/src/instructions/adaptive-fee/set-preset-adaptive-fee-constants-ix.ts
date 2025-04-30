@@ -32,7 +32,7 @@ export type SetPresetAdaptiveFeeConstantsParams = {
 };
 
 /**
- * Updates a adaptive fee tier account with new preset adaptive fee constants.
+ * Updates an adaptive fee tier account with new preset adaptive fee constants.
  *
  * #### Special Errors
  * - `InvalidAdaptiveFeeConstants` - If the provided adaptive fee constants are invalid.

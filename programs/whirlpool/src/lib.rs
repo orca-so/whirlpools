@@ -669,7 +669,7 @@ pub mod whirlpool {
         instructions::transfer_locked_position::handler(ctx)
     }
 
-    /// Initializes a adaptive_fee_tier account usable by Whirlpools in a WhirlpoolConfig space.
+    /// Initializes an adaptive_fee_tier account usable by Whirlpools in a WhirlpoolConfig space.
     ///
     /// ### Authority
     /// - "fee_authority" - Set authority in the WhirlpoolConfig
@@ -727,7 +727,7 @@ pub mod whirlpool {
         )
     }
 
-    /// Set the default_base_fee_rate for a AdaptiveFeeTier
+    /// Set the default_base_fee_rate for an AdaptiveFeeTier
     /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
     ///
     /// ### Authority
@@ -746,7 +746,7 @@ pub mod whirlpool {
         instructions::set_default_base_fee_rate::handler(ctx, default_base_fee_rate)
     }
 
-    /// Sets the delegated fee authority for a AdaptiveFeeTier.
+    /// Sets the delegated fee authority for an AdaptiveFeeTier.
     /// The delegated fee authority can set the fee rate for individual pools initialized with the adaptive fee-tier.
     /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
     ///
@@ -756,7 +756,7 @@ pub mod whirlpool {
         instructions::set_delegated_fee_authority::handler(ctx)
     }
 
-    /// Sets the initialize pool authority for a AdaptiveFeeTier.
+    /// Sets the initialize pool authority for an AdaptiveFeeTier.
     /// Only the initialize pool authority can initialize pools with the adaptive fee-tier.
     /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
     ///
@@ -766,7 +766,7 @@ pub mod whirlpool {
         instructions::set_initialize_pool_authority::handler(ctx)
     }
 
-    /// Sets the adaptive fee constants for a AdaptiveFeeTier.
+    /// Sets the adaptive fee constants for an AdaptiveFeeTier.
     /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
     ///
     /// ### Authority

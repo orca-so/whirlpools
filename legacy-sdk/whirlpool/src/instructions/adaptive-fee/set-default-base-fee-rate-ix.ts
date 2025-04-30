@@ -4,7 +4,7 @@ import type { PublicKey } from "@solana/web3.js";
 import type { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
- * Parameters to set the default base fee rate for a AdaptiveFeeTier.
+ * Parameters to set the default base fee rate for an AdaptiveFeeTier.
  *
  * @category Instruction Types
  * @param whirlpoolsConfig - The public key for the WhirlpoolsConfig this fee-tier is initialized in
@@ -20,7 +20,7 @@ export type SetDefaultBaseFeeRateParams = {
 };
 
 /**
- * Updates a adaptive fee tier account with a new default base fee rate. The new rate will not retroactively update
+ * Updates an adaptive fee tier account with a new default base fee rate. The new rate will not retroactively update
  * initialized pools.
  *
  * #### Special Errors

@@ -13,7 +13,7 @@ import type { Whirlpool } from "../../artifacts/whirlpool";
  * @param funder - The account that would fund the creation of this account
  * @param feeAuthority - Authority authorized to initialize fee-tiers and set customs fees.
  * @param feeTierIndex - The index of the fee-tier in the whirlpools config.
- * @param tickSpacing - The tick spacing this fee tier.
+ * @param tickSpacing - The tick spacing of this fee tier.
  * @param initializePoolAuthority - The initialize pool authority in the AdaptiveFeeTier
  * @param delegatedFeeAuthority - The delegated fee authority in the AdaptiveFeeTier
  * @param defaultBaseFeeRate - The default base fee rate for this adaptive fee-tier. Stored as a hundredths of a basis point.

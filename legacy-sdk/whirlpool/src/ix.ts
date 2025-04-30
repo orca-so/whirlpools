@@ -634,7 +634,7 @@ export class WhirlpoolIx {
   }
 
   /**
-   * Updates a adaptive fee tier account with a new default base fee rate. The new rate will not retroactively update
+   * Updates an adaptive fee tier account with a new default base fee rate. The new rate will not retroactively update
    * initialized pools.
    *
    * @category Instructions
@@ -698,7 +698,7 @@ export class WhirlpoolIx {
   }
 
   /**
-   * Updates a adaptive fee tier account with new preset adaptive fee constants.
+   * Updates an adaptive fee tier account with new preset adaptive fee constants.
    *
    * @category Instructions
    * @param context - Context object containing services required to generate the instruction

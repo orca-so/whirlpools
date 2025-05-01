@@ -14,7 +14,7 @@ import {
 } from "@solana/kit";
 import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
-import type { Oracle} from "../generated";
+import type { Oracle } from "../generated";
 import { getOracleDecoder, ORACLE_DISCRIMINATOR } from "../generated";
 
 type OracleFilter = GetProgramAccountsMemcmpFilter & {

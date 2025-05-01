@@ -13,8 +13,7 @@ import {
 } from "@solana/kit";
 import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
-import type {
-  AdaptiveFeeTier} from "../generated";
+import type { AdaptiveFeeTier } from "../generated";
 import {
   ADAPTIVE_FEE_TIER_DISCRIMINATOR,
   getAdaptiveFeeTierDecoder,

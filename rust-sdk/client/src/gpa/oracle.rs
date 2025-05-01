@@ -30,29 +30,38 @@ impl From<OracleFilter> for RpcFilterType {
             OracleFilter::Whirlpool(address) => {
                 RpcFilterType::Memcmp(Memcmp::new_raw_bytes(8, address.to_bytes().to_vec()))
             }
-            OracleFilter::TradeEnableTimestamp(timestamp) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(40, timestamp.to_le_bytes().to_vec()),
+            OracleFilter::TradeEnableTimestamp(timestamp) => {
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(40, timestamp.to_le_bytes().to_vec()))
+            }
+            OracleFilter::FilterPeriod(filter_period) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(48, filter_period.to_le_bytes().to_vec()),
             ),
-            OracleFilter::FilterPeriod(filter_period) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(48, filter_period.to_le_bytes().to_vec()))
-            }
-            OracleFilter::DecayPeriod(decay_period) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(50, decay_period.to_le_bytes().to_vec()))
-            }
-            OracleFilter::ReductionFactor(reduction_factor) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(52, reduction_factor.to_le_bytes().to_vec()))
-            }
+            OracleFilter::DecayPeriod(decay_period) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(50, decay_period.to_le_bytes().to_vec()),
+            ),
+            OracleFilter::ReductionFactor(reduction_factor) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(52, reduction_factor.to_le_bytes().to_vec()),
+            ),
             OracleFilter::AdaptiveFeeControlFactor(adaptive_fee_control_factor) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(54, adaptive_fee_control_factor.to_le_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    54,
+                    adaptive_fee_control_factor.to_le_bytes().to_vec(),
+                ))
             }
             OracleFilter::MaxVolatilityAccumulator(max_volatility_accumulator) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(58, max_volatility_accumulator.to_le_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    58,
+                    max_volatility_accumulator.to_le_bytes().to_vec(),
+                ))
             }
-            OracleFilter::TickGroupSize(tick_group_size) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(62, tick_group_size.to_le_bytes().to_vec()))
-            }
+            OracleFilter::TickGroupSize(tick_group_size) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(62, tick_group_size.to_le_bytes().to_vec()),
+            ),
             OracleFilter::MajorSwapThresholdTicks(major_swap_threshold_ticks) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(64, major_swap_threshold_ticks.to_le_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    64,
+                    major_swap_threshold_ticks.to_le_bytes().to_vec(),
+                ))
             }
         }
     }

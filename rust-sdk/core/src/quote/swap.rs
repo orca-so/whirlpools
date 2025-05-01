@@ -864,7 +864,7 @@ mod tests {
                 ticks: [TickFacade::default(); TICK_ARRAY_SIZE],
             }
         }
-    
+
         fn test_empty_tick_arrays() -> [TickArrayFacade; 5] {
             [
                 test_empty_tick_array(0),
@@ -874,7 +874,7 @@ mod tests {
                 test_empty_tick_array(-11264),
             ]
         }
-    
+
         #[test]
         fn test_exact_in_a_to_b_simple() {
             let now = now();
@@ -883,14 +883,7 @@ mod tests {
                 true,
                 1000,
                 test_whirlpool_with_adaptive_fee(tick_index_to_sqrt_price(0), 1_000_000),
-                Some(test_oracle(
-                    now,
-                    now,
-                    now,
-                    0,
-                    0,
-                    0,
-                )),
+                Some(test_oracle(now, now, now, 0, 0, 0)),
                 test_empty_tick_arrays().into(), // full-range liquidity
                 now,
                 None,
@@ -912,14 +905,7 @@ mod tests {
                 true,
                 1000,
                 test_whirlpool_with_adaptive_fee(tick_index_to_sqrt_price(0), 1_000_000),
-                Some(test_oracle(
-                    now,
-                    now - 600,
-                    now - 600,
-                    100_000,
-                    0,
-                    100_000,
-                )),
+                Some(test_oracle(now, now - 600, now - 600, 100_000, 0, 100_000)),
                 test_empty_tick_arrays().into(), // full-range liquidity
                 now,
                 None,
@@ -938,7 +924,7 @@ mod tests {
             let now = now();
 
             let mut tick_arrays = test_empty_tick_arrays();
-            tick_arrays [0].ticks[22] = TickFacade {
+            tick_arrays[0].ticks[22] = TickFacade {
                 initialized: true,
                 liquidity_net: -500_000,
                 ..TickFacade::default()
@@ -949,14 +935,7 @@ mod tests {
                 false,
                 1000,
                 test_whirlpool_with_adaptive_fee(tick_index_to_sqrt_price(0), 1_000_000 + 500_000),
-                Some(test_oracle(
-                    now,
-                    now,
-                    now,
-                    0,
-                    0,
-                    0,
-                )),
+                Some(test_oracle(now, now, now, 0, 0, 0)),
                 tick_arrays.into(),
                 now,
                 None,

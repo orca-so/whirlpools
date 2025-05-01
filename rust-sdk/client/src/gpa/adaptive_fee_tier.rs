@@ -49,26 +49,35 @@ impl From<AdaptiveFeeTierFilter> for RpcFilterType {
             AdaptiveFeeTierFilter::DefaultBaseFeeRate(fee_rate) => {
                 RpcFilterType::Memcmp(Memcmp::new_raw_bytes(108, fee_rate.to_le_bytes().to_vec()))
             }
-            AdaptiveFeeTierFilter::FilterPeriod(filter_period) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(110, filter_period.to_le_bytes().to_vec()))
-            }
-            AdaptiveFeeTierFilter::DecayPeriod(decay_period) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(112, decay_period.to_le_bytes().to_vec()))
-            }
-            AdaptiveFeeTierFilter::ReductionFactor(reduction_factor) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(114, reduction_factor.to_le_bytes().to_vec()))
-            }
+            AdaptiveFeeTierFilter::FilterPeriod(filter_period) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(110, filter_period.to_le_bytes().to_vec()),
+            ),
+            AdaptiveFeeTierFilter::DecayPeriod(decay_period) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(112, decay_period.to_le_bytes().to_vec()),
+            ),
+            AdaptiveFeeTierFilter::ReductionFactor(reduction_factor) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(114, reduction_factor.to_le_bytes().to_vec()),
+            ),
             AdaptiveFeeTierFilter::AdaptiveFeeControlFactor(adaptive_fee_control_factor) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(116, adaptive_fee_control_factor.to_le_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    116,
+                    adaptive_fee_control_factor.to_le_bytes().to_vec(),
+                ))
             }
             AdaptiveFeeTierFilter::MaxVolatilityAccumulator(max_volatility_accumulator) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(120, max_volatility_accumulator.to_le_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    120,
+                    max_volatility_accumulator.to_le_bytes().to_vec(),
+                ))
             }
-            AdaptiveFeeTierFilter::TickGroupSize(tick_group_size) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(124, tick_group_size.to_le_bytes().to_vec()))
-            }
+            AdaptiveFeeTierFilter::TickGroupSize(tick_group_size) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(124, tick_group_size.to_le_bytes().to_vec()),
+            ),
             AdaptiveFeeTierFilter::MajorSwapThresholdTicks(major_swap_threshold_ticks) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(126, major_swap_threshold_ticks.to_le_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                    126,
+                    major_swap_threshold_ticks.to_le_bytes().to_vec(),
+                ))
             }
         }
     }

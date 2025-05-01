@@ -1,51 +1,47 @@
-import type { AddressLookupTableAccount } from "@solana/web3.js";
-import { PublicKey } from "@solana/web3.js";
+import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
+import type { WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
 import {
   IGNORE_CACHE,
   PoolUtil,
   POSITION_BUNDLE_SIZE,
 } from "@orca-so/whirlpools-sdk";
-import type { WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
-import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { ctx } from "../../utils/provider";
-import { promptConfirm, promptText } from "../../utils/prompt";
-import BN from "bn.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import type { AddressLookupTableAccount } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import type Decimal from "decimal.js";
+import { promptConfirm } from "../../utils/prompt";
+import { ctx } from "../../utils/provider";
 import {
-  checkATAInitialization,
-  checkTickArrayInitialization,
-  checkPositionBundleStateDifference,
-  generateQuotesToSync,
   buildTransactions,
-  sendTransactions,
   calculateBalanceDifference,
-  readPositionBundleStateCsv,
+  checkATAInitialization,
+  checkPositionBundleStateDifference,
+  checkTickArrayInitialization,
+  generateQuotesToSync,
+  readCustomPositionBundleStateCsv,
+  sendTransactions
 } from "./sync_position_bundle_state_impl";
 
 console.info("sync PositionBundle state...");
 
 // prompt
-const positionBundlePubkeyStr = await promptText("positionBundlePubkey");
+const positionBundlePubkeyStr = "2ZChq6FdKxY3Vgqg8PfqByWq4fVBvY9Rbnq5cJ8u2wPo"
 const positionBundlePubkey = new PublicKey(positionBundlePubkeyStr);
-const whirlpoolPubkeyStr = await promptText("whirlpoolPubkey");
+const whirlpoolPubkeyStr = "C2EFirfhqx4f22c5auCwtSZk4YgAzqj41kKuthhr3qQv"
 const whirlpoolPubkey = new PublicKey(whirlpoolPubkeyStr);
 
-const positionBundleTargetStateCsvPath = await promptText(
-  "positionBundleTargetStateCsvPath",
-);
+const positionBundleTargetStateCsvPath = "sample/price.csv";
 
-const commaSeparatedAltPubkeyStrs = await promptText(
-  "commaSeparatedAltPubkeys",
-  "no ALTs",
-);
+const commaSeparatedAltPubkeyStrs = true ? "no ALTs" : "7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i, AnXmyHSfuAaWkCxaUuTW39SN5H5ztH8bBxm647uESgTd, FjTZwDecYM3G66VKFuAaLgw3rY1QitziKdM5Ng4EpoKd";
+
 const noAlts = commaSeparatedAltPubkeyStrs === "no ALTs";
 const altPubkeyStrs = noAlts
   ? []
   : commaSeparatedAltPubkeyStrs
-      .split(",")
-      .map((str) => str.trim())
-      .filter((str) => str.length > 0);
+    .split(",")
+    .map((str) => str.trim())
+    .filter((str) => str.length > 0);
 const altPubkeys = altPubkeyStrs.map((str) => new PublicKey(str));
 
 console.info("check positionBundle...");
@@ -81,7 +77,8 @@ if (altPubkeys.length > 0) {
 
 // read position bundle target state
 console.info("read position bundle target state...");
-const positionBundleTargetState = readPositionBundleStateCsv(
+const positionBundleTargetState = await readCustomPositionBundleStateCsv(
+  whirlpoolPubkey,
   positionBundleTargetStateCsvPath,
   whirlpool.tickSpacing,
 );
@@ -137,6 +134,8 @@ while (true) {
     ctx,
     whirlpool,
   );
+
+  // console.info(JSON.stringify(quotes, null, 2));
 
   console.info("building transactions...");
   const transactions = await buildTransactions(

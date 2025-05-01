@@ -1,0 +1,5 @@
+bundle index,state,min price,max price,token amount
+0,open,0.00001,0.000015,10000
+1,open,0.000015,0.00002,10000
+2,open,0.00002,0.000025,10000
+3,open,0.000005,0.00001,10000

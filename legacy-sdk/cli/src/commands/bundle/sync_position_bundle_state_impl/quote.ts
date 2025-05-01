@@ -1,4 +1,15 @@
-import type { PublicKey } from "@solana/web3.js";
+import { Percentage } from "@orca-so/common-sdk";
+import type {
+  CollectFeesQuote,
+  CollectRewardsQuote,
+  DecreaseLiquidityQuote,
+  IncreaseLiquidityQuote,
+  IncreaseLiquidityQuoteByLiquidityParam,
+  PositionData,
+  TickArrayData,
+  WhirlpoolContext,
+  WhirlpoolData,
+} from "@orca-so/whirlpools-sdk";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -12,20 +23,9 @@ import {
   TickUtil,
   TokenExtensionUtil,
 } from "@orca-so/whirlpools-sdk";
-import type {
-  CollectFeesQuote,
-  CollectRewardsQuote,
-  DecreaseLiquidityQuote,
-  IncreaseLiquidityQuote,
-  IncreaseLiquidityQuoteByLiquidityParam,
-  PositionData,
-  TickArrayData,
-  WhirlpoolContext,
-  WhirlpoolData,
-} from "@orca-so/whirlpools-sdk";
-import { Percentage } from "@orca-so/common-sdk";
-import BN from "bn.js";
 import { adjustForSlippage } from "@orca-so/whirlpools-sdk/dist/utils/position-util";
+import type { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import type { PositionBundleOpenState, PositionBundleStateItem } from "./csv";
 import type { PositionBundleStateDifference } from "./state_difference";
 
@@ -129,14 +129,14 @@ export async function generateQuotesToSync(
       const decrease = position.liquidity.isZero()
         ? undefined
         : decreaseLiquidityQuoteByLiquidityWithParams({
-            liquidity: position.liquidity,
-            sqrtPrice: whirlpool.sqrtPrice,
-            tickCurrentIndex: whirlpool.tickCurrentIndex,
-            tickLowerIndex: position.tickLowerIndex,
-            tickUpperIndex: position.tickUpperIndex,
-            tokenExtensionCtx,
-            slippageTolerance,
-          });
+          liquidity: position.liquidity,
+          sqrtPrice: whirlpool.sqrtPrice,
+          tickCurrentIndex: whirlpool.tickCurrentIndex,
+          tickLowerIndex: position.tickLowerIndex,
+          tickUpperIndex: position.tickUpperIndex,
+          tokenExtensionCtx,
+          slippageTolerance,
+        });
 
       const lowerTickArrayPubkey = PDAUtil.getTickArrayFromTickIndex(
         position.tickLowerIndex,
@@ -188,20 +188,22 @@ export async function generateQuotesToSync(
 
   // open position quotes
   const quotesForOpen = shouldBeOpened.map((bundleIndex) => {
+
     const targetState = positionBundleTargetState[
       bundleIndex
     ] as PositionBundleOpenState;
+    console.log(`open ${bundleIndex} ${targetState.lowerTickIndex} ${targetState.upperTickIndex} ${targetState.liquidity}`);
     const increase = targetState.liquidity.isZero()
       ? undefined
       : increaseLiquidityQuoteByLiquidityWithParamsUsingTokenAmountSlippage({
-          liquidity: targetState.liquidity,
-          sqrtPrice: whirlpool.sqrtPrice,
-          tickCurrentIndex: whirlpool.tickCurrentIndex,
-          tickLowerIndex: targetState.lowerTickIndex,
-          tickUpperIndex: targetState.upperTickIndex,
-          tokenExtensionCtx,
-          slippageTolerance,
-        });
+        liquidity: targetState.liquidity,
+        sqrtPrice: whirlpool.sqrtPrice,
+        tickCurrentIndex: whirlpool.tickCurrentIndex,
+        tickLowerIndex: targetState.lowerTickIndex,
+        tickUpperIndex: targetState.upperTickIndex,
+        tokenExtensionCtx,
+        slippageTolerance,
+      });
 
     return { bundleIndex, increase };
   });

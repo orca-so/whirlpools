@@ -246,7 +246,14 @@ pub fn swap(
         curr_sqrt_price,
     )?;
 
-    Ok(Box::new(PostSwapUpdate {
+   
+    let fee_growth = if a_to_b {
+        0
+    } else {
+        0
+    };
+
+    Ok(PostSwapUpdate {
         amount_a,
         amount_b,
         lp_fee: 0,

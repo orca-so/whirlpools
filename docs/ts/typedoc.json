@@ -1,0 +1,12 @@
+{
+  "entryPoints": [
+    "../../ts-sdk/core",
+    "../../ts-sdk/client",
+    "../../ts-sdk/whirlpool"
+  ],
+  "entryPointStrategy": "packages",
+  "githubPages": false,
+  "skipErrorChecking": true,
+  "out": "dist/ts",
+  "readme": "./README.md"
+}

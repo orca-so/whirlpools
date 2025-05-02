@@ -1,0 +1,1 @@
+pub const BPS_DENOMINATOR: u16 = 10000;

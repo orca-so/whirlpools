@@ -47,5 +47,6 @@ pub fn handler(ctx: Context<CollectProtocolFees>) -> Result<()> {
         whirlpool.protocol_fee_owed_b,
     )?;
 
-    Ok(ctx.accounts.whirlpool.reset_protocol_fees_owed())
+    ctx.accounts.whirlpool.reset_protocol_fees_owed();
+    Ok(())
 }

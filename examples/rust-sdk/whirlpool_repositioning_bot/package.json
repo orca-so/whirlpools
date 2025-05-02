@@ -1,0 +1,16 @@
+{
+  "name": "@orca-so/whirlpools-example-rust-repositioning-bot",
+  "version": "0.2.2",
+  "private": true,
+  "scripts": {
+    "build": "cargo build",
+    "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
+    "lint": "cargo clippy && cargo fmt --check",
+    "clean": "cargo clean"
+  },
+  "devDependencies": {
+    "@orca-so/whirlpools-rust": "*",
+    "@orca-so/whirlpools-rust-client": "*",
+    "@orca-so/whirlpools-rust-core": "*"
+  }
+}

@@ -1,0 +1,11 @@
+[package]
+name = "orca_whirlpools_docs"
+version = "0.2.1"
+publish = false
+edition = "2021"
+
+[dependencies]
+orca_whirlpools_core = { path = "../../rust-sdk/core", features = ["floats"] }
+orca_whirlpools_client = { path = "../../rust-sdk/client", features = ["core-types"] }
+orca_whirlpools = { path = "../../rust-sdk/whirlpool" }
+

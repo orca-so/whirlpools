@@ -3,6 +3,8 @@ use std::convert::TryInto;
 use crate::errors::ErrorCode;
 use crate::math::*;
 
+pub const NO_EXPLICIT_SQRT_PRICE_LIMIT: u128 = 0u128;
+
 #[derive(PartialEq, Debug)]
 pub struct SwapStepComputation {
     pub amount_in: u64,
@@ -13,16 +15,24 @@ pub struct SwapStepComputation {
 
 pub fn compute_swap(
     amount_remaining: u64,
-    fee_rate: u16,
+    fee_rate: u32,
     liquidity: u128,
     sqrt_price_current: u128,
     sqrt_price_target: u128,
     amount_specified_is_input: bool,
     a_to_b: bool,
 ) -> Result<SwapStepComputation, ErrorCode> {
-    let fee_amount;
-
-    let mut amount_fixed_delta = get_amount_fixed_delta(
+    // Since SplashPool (aka FullRange only pool) has only 2 initialized ticks at both ends,
+    // the possibility of exceeding u64 when calculating "delta amount" is higher than concentrated pools.
+    // This problem occurs with ExactIn.
+    // The reason is that in ExactOut, "fixed delta" never exceeds the amount of tokens present in the pool and is clearly within the u64 range.
+    // On the other hand, for ExactIn, "fixed delta" may exceed u64 because it calculates the amount of tokens needed to move the price to the end.
+    // However, the primary purpose of initial calculation of "fixed delta" is to determine whether or not the iteration is "max swap" or not.
+    // So the info that “the amount of tokens required exceeds the u64 range” is sufficient to determine that the iteration is NOT "max swap".
+    //
+    // delta <= u64::MAX: AmountDeltaU64::Valid
+    // delta >  u64::MAX: AmountDeltaU64::ExceedsMax
+    let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         sqrt_price_current,
         sqrt_price_target,
         liquidity,
@@ -40,7 +50,7 @@ pub fn compute_swap(
         .try_into()?;
     }
 
-    let next_sqrt_price = if amount_calc >= amount_fixed_delta {
+    let next_sqrt_price = if initial_amount_fixed_delta.lte(amount_calc) {
         sqrt_price_target
     } else {
         get_next_sqrt_price(
@@ -63,15 +73,19 @@ pub fn compute_swap(
     )?;
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
-    if !is_max_swap {
-        amount_fixed_delta = get_amount_fixed_delta(
+    let amount_fixed_delta = if !is_max_swap || initial_amount_fixed_delta.exceeds_max() {
+        // next_sqrt_price is calculated by get_next_sqrt_price and the result will be in the u64 range.
+        get_amount_fixed_delta(
             sqrt_price_current,
             next_sqrt_price,
             liquidity,
             amount_specified_is_input,
             a_to_b,
-        )?;
-    }
+        )?
+    } else {
+        // the result will be in the u64 range.
+        initial_amount_fixed_delta.value()
+    };
 
     let (amount_in, mut amount_out) = if amount_specified_is_input {
         (amount_fixed_delta, amount_unfixed_delta)
@@ -84,16 +98,16 @@ pub fn compute_swap(
         amount_out = amount_remaining;
     }
 
-    if amount_specified_is_input && !is_max_swap {
-        fee_amount = amount_remaining - amount_in;
+    let fee_amount = if amount_specified_is_input && !is_max_swap {
+        amount_remaining - amount_in
     } else {
-        fee_amount = checked_mul_div_round_up(
+        checked_mul_div_round_up(
             amount_in as u128,
             fee_rate as u128,
             FEE_RATE_MUL_VALUE - fee_rate as u128,
         )?
-        .try_into()?;
-    }
+        .try_into()?
+    };
 
     Ok(SwapStepComputation {
         amount_in,
@@ -119,6 +133,30 @@ fn get_amount_fixed_delta(
         )
     } else {
         get_amount_delta_b(
+            sqrt_price_current,
+            sqrt_price_target,
+            liquidity,
+            amount_specified_is_input,
+        )
+    }
+}
+
+fn try_get_amount_fixed_delta(
+    sqrt_price_current: u128,
+    sqrt_price_target: u128,
+    liquidity: u128,
+    amount_specified_is_input: bool,
+    a_to_b: bool,
+) -> Result<AmountDeltaU64, ErrorCode> {
+    if a_to_b == amount_specified_is_input {
+        try_get_amount_delta_a(
+            sqrt_price_current,
+            sqrt_price_target,
+            liquidity,
+            amount_specified_is_input,
+        )
+    } else {
+        try_get_amount_delta_b(
             sqrt_price_current,
             sqrt_price_target,
             liquidity,
@@ -153,6 +191,8 @@ fn get_amount_unfixed_delta(
 
 #[cfg(test)]
 mod fuzz_tests {
+    use crate::manager::fee_rate_manager::FEE_RATE_HARD_LIMIT;
+
     use super::*;
     use proptest::prelude::*;
 
@@ -161,7 +201,7 @@ mod fuzz_tests {
         fn test_compute_swap(
             amount in 1..u64::MAX,
             liquidity in 1..u32::MAX as u128,
-            fee_rate in 1..u16::MAX,
+            fee_rate in 1..FEE_RATE_HARD_LIMIT,
             price_0 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             price_1 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             amount_specified_is_input in proptest::bool::ANY,
@@ -187,7 +227,13 @@ mod fuzz_tests {
             let fee_amount = swap_computation.fee_amount;
 
             // Amount_in can not exceed maximum amount
-            assert!(amount_in <= u64::MAX - fee_amount);
+            if amount_specified_is_input {
+                assert!(amount_in <= u64::MAX - fee_amount);
+            } else {
+                // in ExactOut mode, input + fee may exceeds u64::MAX
+                // higher fee rate reveals this issue
+                // note: swap_manager will detect this case with checked_add
+            }
 
             // Amounts calculated are less than amount specified
             let amount_used = if amount_specified_is_input {
@@ -211,7 +257,7 @@ mod fuzz_tests {
         fn test_compute_swap_inversion(
             amount in 1..u64::MAX,
             liquidity in 1..u32::MAX as u128,
-            fee_rate in 1..u16::MAX,
+            fee_rate in 1..FEE_RATE_HARD_LIMIT,
             price_0 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             price_1 in MIN_SQRT_PRICE_X64..MAX_SQRT_PRICE_X64,
             amount_specified_is_input in proptest::bool::ANY,
@@ -237,12 +283,16 @@ mod fuzz_tests {
             let fee_amount = swap_computation.fee_amount;
 
             let inverted_amount = if amount_specified_is_input {
-                amount_out
+                Some(amount_out)
             } else {
-                amount_in + fee_amount
+                // in ExactOut mode, input + fee may exceeds u64::MAX
+                // higher fee rate reveals this issue
+                // note: swap_manager will detect this case with checked_add
+                amount_in.checked_add(fee_amount)
             };
 
-            if inverted_amount != 0 {
+            if let Some(inverted_amount) = inverted_amount {
+                if inverted_amount != 0 {
                 let inverted = compute_swap(
                     inverted_amount,
                     fee_rate,
@@ -341,6 +391,7 @@ mod fuzz_tests {
                     // }
                 }
             }
+        }
         }
     }
 }
@@ -554,7 +605,7 @@ mod unit_tests {
     }
 
     mod test_compute_swap {
-        const TWO_PCT: u16 = 20000;
+        const TWO_PCT: u32 = 20000;
         use std::convert::TryInto;
 
         use super::*;
@@ -569,7 +620,7 @@ mod unit_tests {
             let price_limit = 4;
 
             // Calculate fee given fee percentage
-            let fee_amount = div_round_up((amount * u128::from(TWO_PCT)).into(), 1_000_000)
+            let fee_amount = div_round_up(amount * u128::from(TWO_PCT), 1_000_000)
                 .ok()
                 .unwrap();
 
@@ -592,8 +643,8 @@ mod unit_tests {
             let amount_out = init_b - div_round_up(init_liq * init_liq, new_a).ok().unwrap();
             test_swap(
                 100,
-                TWO_PCT,                      // 2 % fee
-                init_liq.try_into().unwrap(), // sqrt(ab)
+                TWO_PCT,  // 2 % fee
+                init_liq, // sqrt(ab)
                 // Current
                 // b = 1296 * 9 => 11664
                 // a = 1296 / 9 => 144
@@ -918,9 +969,10 @@ mod unit_tests {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn test_swap(
         amount_remaining: u64,
-        fee_rate: u16,
+        fee_rate: u32,
         liquidity: u128,
         sqrt_price_current: u128,
         sqrt_price_target_limit: u128,

@@ -1,4 +1,3 @@
-//! A concentrated liquidity AMM contract powered by Orca.
 use anchor_lang::prelude::*;
 
 declare_id!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
@@ -8,20 +7,22 @@ pub mod constants;
 #[doc(hidden)]
 pub mod errors;
 #[doc(hidden)]
+pub mod events;
+#[doc(hidden)]
 pub mod instructions;
 #[doc(hidden)]
 pub mod manager;
 #[doc(hidden)]
 pub mod math;
+#[doc(hidden)]
+pub mod security;
 pub mod state;
 #[doc(hidden)]
 pub mod tests;
 #[doc(hidden)]
 pub mod util;
-#[doc(hidden)]
-pub mod security;
 
-use crate::state::{OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
+use crate::state::{LockType, OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
 use crate::util::RemainingAccountsInfo;
 use instructions::*;
 
@@ -43,13 +44,13 @@ pub mod whirlpool {
         reward_emissions_super_authority: Pubkey,
         default_protocol_fee_rate: u16,
     ) -> Result<()> {
-        return instructions::initialize_config::handler(
+        instructions::initialize_config::handler(
             ctx,
             fee_authority,
             collect_protocol_fees_authority,
             reward_emissions_super_authority,
             default_protocol_fee_rate,
-        );
+        )
     }
 
     /// Initializes a Whirlpool account.
@@ -70,12 +71,7 @@ pub mod whirlpool {
         tick_spacing: u16,
         initial_sqrt_price: u128,
     ) -> Result<()> {
-        return instructions::initialize_pool::handler(
-            ctx,
-            bumps,
-            tick_spacing,
-            initial_sqrt_price,
-        );
+        instructions::initialize_pool::handler(ctx, bumps, tick_spacing, initial_sqrt_price)
     }
 
     /// Initializes a tick_array account to represent a tick-range in a Whirlpool.
@@ -91,7 +87,7 @@ pub mod whirlpool {
         ctx: Context<InitializeTickArray>,
         start_tick_index: i32,
     ) -> Result<()> {
-        return instructions::initialize_tick_array::handler(ctx, start_tick_index);
+        instructions::initialize_tick_array::handler(ctx, start_tick_index)
     }
 
     /// Initializes a fee_tier account usable by Whirlpools in a WhirlpoolConfig space.
@@ -105,13 +101,14 @@ pub mod whirlpool {
     ///                        fee tier during initialization.
     ///
     /// #### Special Errors
+    /// - `InvalidTickSpacing` - If the provided tick_spacing is 0.
     /// - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
     pub fn initialize_fee_tier(
         ctx: Context<InitializeFeeTier>,
         tick_spacing: u16,
         default_fee_rate: u16,
     ) -> Result<()> {
-        return instructions::initialize_fee_tier::handler(ctx, tick_spacing, default_fee_rate);
+        instructions::initialize_fee_tier::handler(ctx, tick_spacing, default_fee_rate)
     }
 
     /// Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.
@@ -128,7 +125,7 @@ pub mod whirlpool {
     ///                          index in this pool, or exceeds NUM_REWARDS, or
     ///                          all reward slots for this pool has been initialized.
     pub fn initialize_reward(ctx: Context<InitializeReward>, reward_index: u8) -> Result<()> {
-        return instructions::initialize_reward::handler(ctx, reward_index);
+        instructions::initialize_reward::handler(ctx, reward_index)
     }
 
     /// Set the reward emissions for a reward in a Whirlpool.
@@ -153,11 +150,7 @@ pub mod whirlpool {
         reward_index: u8,
         emissions_per_second_x64: u128,
     ) -> Result<()> {
-        return instructions::set_reward_emissions::handler(
-            ctx,
-            reward_index,
-            emissions_per_second_x64,
-        );
+        instructions::set_reward_emissions::handler(ctx, reward_index, emissions_per_second_x64)
     }
 
     /// Open a position in a Whirlpool. A unique token will be minted to represent the position
@@ -176,12 +169,7 @@ pub mod whirlpool {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        return instructions::open_position::handler(
-            ctx,
-            bumps,
-            tick_lower_index,
-            tick_upper_index,
-        );
+        instructions::open_position::handler(ctx, bumps, tick_lower_index, tick_upper_index)
     }
 
     /// Open a position in a Whirlpool. A unique token will be minted to represent the position
@@ -201,12 +189,12 @@ pub mod whirlpool {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        return instructions::open_position_with_metadata::handler(
+        instructions::open_position_with_metadata::handler(
             ctx,
             bumps,
             tick_lower_index,
             tick_upper_index,
-        );
+        )
     }
 
     /// Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -229,12 +217,7 @@ pub mod whirlpool {
         token_max_a: u64,
         token_max_b: u64,
     ) -> Result<()> {
-        return instructions::increase_liquidity::handler(
-            ctx,
-            liquidity_amount,
-            token_max_a,
-            token_max_b,
-        );
+        instructions::increase_liquidity::handler(ctx, liquidity_amount, token_max_a, token_max_b)
     }
 
     /// Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -257,12 +240,7 @@ pub mod whirlpool {
         token_min_a: u64,
         token_min_b: u64,
     ) -> Result<()> {
-        return instructions::decrease_liquidity::handler(
-            ctx,
-            liquidity_amount,
-            token_min_a,
-            token_min_b,
-        );
+        instructions::decrease_liquidity::handler(ctx, liquidity_amount, token_min_a, token_min_b)
     }
 
     /// Update the accrued fees and rewards for a position.
@@ -271,7 +249,7 @@ pub mod whirlpool {
     /// - `TickNotFound` - Provided tick array account does not contain the tick for this position.
     /// - `LiquidityZero` - Position has zero liquidity and therefore already has the most updated fees and reward values.
     pub fn update_fees_and_rewards(ctx: Context<UpdateFeesAndRewards>) -> Result<()> {
-        return instructions::update_fees_and_rewards::handler(ctx);
+        instructions::update_fees_and_rewards::handler(ctx)
     }
 
     /// Collect fees accrued for this position.
@@ -279,7 +257,7 @@ pub mod whirlpool {
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
     pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
-        return instructions::collect_fees::handler(ctx);
+        instructions::collect_fees::handler(ctx)
     }
 
     /// Collect rewards accrued for this position.
@@ -287,7 +265,7 @@ pub mod whirlpool {
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
     pub fn collect_reward(ctx: Context<CollectReward>, reward_index: u8) -> Result<()> {
-        return instructions::collect_reward::handler(ctx, reward_index);
+        instructions::collect_reward::handler(ctx, reward_index)
     }
 
     /// Collect the protocol fees accrued in this Whirlpool
@@ -295,7 +273,7 @@ pub mod whirlpool {
     /// ### Authority
     /// - `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees
     pub fn collect_protocol_fees(ctx: Context<CollectProtocolFees>) -> Result<()> {
-        return instructions::collect_protocol_fees::handler(ctx);
+        instructions::collect_protocol_fees::handler(ctx)
     }
 
     /// Perform a swap in this Whirlpool
@@ -327,14 +305,14 @@ pub mod whirlpool {
         amount_specified_is_input: bool,
         a_to_b: bool,
     ) -> Result<()> {
-        return instructions::swap::handler(
+        instructions::swap::handler(
             ctx,
             amount,
             other_amount_threshold,
             sqrt_price_limit,
             amount_specified_is_input,
             a_to_b,
-        );
+        )
     }
 
     /// Close a position in a Whirlpool. Burns the position token in the owner's wallet.
@@ -345,7 +323,7 @@ pub mod whirlpool {
     /// #### Special Errors
     /// - `ClosePositionNotEmpty` - The provided position account is not empty.
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
-        return instructions::close_position::handler(ctx);
+        instructions::close_position::handler(ctx)
     }
 
     /// Set the default_fee_rate for a FeeTier
@@ -364,7 +342,7 @@ pub mod whirlpool {
         ctx: Context<SetDefaultFeeRate>,
         default_fee_rate: u16,
     ) -> Result<()> {
-        return instructions::set_default_fee_rate::handler(ctx, default_fee_rate);
+        instructions::set_default_fee_rate::handler(ctx, default_fee_rate)
     }
 
     /// Sets the default protocol fee rate for a WhirlpoolConfig
@@ -383,10 +361,7 @@ pub mod whirlpool {
         ctx: Context<SetDefaultProtocolFeeRate>,
         default_protocol_fee_rate: u16,
     ) -> Result<()> {
-        return instructions::set_default_protocol_fee_rate::handler(
-            ctx,
-            default_protocol_fee_rate,
-        );
+        instructions::set_default_protocol_fee_rate::handler(ctx, default_protocol_fee_rate)
     }
 
     /// Sets the fee rate for a Whirlpool.
@@ -402,7 +377,7 @@ pub mod whirlpool {
     /// #### Special Errors
     /// - `FeeRateMaxExceeded` - If the provided fee_rate exceeds MAX_FEE_RATE.
     pub fn set_fee_rate(ctx: Context<SetFeeRate>, fee_rate: u16) -> Result<()> {
-        return instructions::set_fee_rate::handler(ctx, fee_rate);
+        instructions::set_fee_rate::handler(ctx, fee_rate)
     }
 
     /// Sets the protocol fee rate for a Whirlpool.
@@ -421,7 +396,7 @@ pub mod whirlpool {
         ctx: Context<SetProtocolFeeRate>,
         protocol_fee_rate: u16,
     ) -> Result<()> {
-        return instructions::set_protocol_fee_rate::handler(ctx, protocol_fee_rate);
+        instructions::set_protocol_fee_rate::handler(ctx, protocol_fee_rate)
     }
 
     /// Sets the fee authority for a WhirlpoolConfig.
@@ -432,7 +407,7 @@ pub mod whirlpool {
     /// ### Authority
     /// - "fee_authority" - Set authority that can modify pool fees in the WhirlpoolConfig
     pub fn set_fee_authority(ctx: Context<SetFeeAuthority>) -> Result<()> {
-        return instructions::set_fee_authority::handler(ctx);
+        instructions::set_fee_authority::handler(ctx)
     }
 
     /// Sets the fee authority to collect protocol fees for a WhirlpoolConfig.
@@ -443,7 +418,7 @@ pub mod whirlpool {
     pub fn set_collect_protocol_fees_authority(
         ctx: Context<SetCollectProtocolFeesAuthority>,
     ) -> Result<()> {
-        return instructions::set_collect_protocol_fees_authority::handler(ctx);
+        instructions::set_collect_protocol_fees_authority::handler(ctx)
     }
 
     /// Set the whirlpool reward authority at the provided `reward_index`.
@@ -457,7 +432,7 @@ pub mod whirlpool {
     ///                          index in this pool, or exceeds NUM_REWARDS, or
     ///                          all reward slots for this pool has been initialized.
     pub fn set_reward_authority(ctx: Context<SetRewardAuthority>, reward_index: u8) -> Result<()> {
-        return instructions::set_reward_authority::handler(ctx, reward_index);
+        instructions::set_reward_authority::handler(ctx, reward_index)
     }
 
     /// Set the whirlpool reward authority at the provided `reward_index`.
@@ -474,7 +449,7 @@ pub mod whirlpool {
         ctx: Context<SetRewardAuthorityBySuperAuthority>,
         reward_index: u8,
     ) -> Result<()> {
-        return instructions::set_reward_authority_by_super_authority::handler(ctx, reward_index);
+        instructions::set_reward_authority_by_super_authority::handler(ctx, reward_index)
     }
 
     /// Set the whirlpool reward super authority for a WhirlpoolConfig
@@ -486,7 +461,7 @@ pub mod whirlpool {
     pub fn set_reward_emissions_super_authority(
         ctx: Context<SetRewardEmissionsSuperAuthority>,
     ) -> Result<()> {
-        return instructions::set_reward_emissions_super_authority::handler(ctx);
+        instructions::set_reward_emissions_super_authority::handler(ctx)
     }
 
     /// Perform a two-hop swap in this Whirlpool
@@ -514,6 +489,7 @@ pub mod whirlpool {
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
     /// - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
     /// - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
+    #[allow(clippy::too_many_arguments)]
     pub fn two_hop_swap(
         ctx: Context<TwoHopSwap>,
         amount: u64,
@@ -524,7 +500,7 @@ pub mod whirlpool {
         sqrt_price_limit_one: u128,
         sqrt_price_limit_two: u128,
     ) -> Result<()> {
-        return instructions::two_hop_swap::handler(
+        instructions::two_hop_swap::handler(
             ctx,
             amount,
             other_amount_threshold,
@@ -533,13 +509,13 @@ pub mod whirlpool {
             a_to_b_two,
             sqrt_price_limit_one,
             sqrt_price_limit_two,
-        );
+        )
     }
 
     /// Initializes a PositionBundle account that bundles several positions.
     /// A unique token will be minted to represent the position bundle in the users wallet.
     pub fn initialize_position_bundle(ctx: Context<InitializePositionBundle>) -> Result<()> {
-        return instructions::initialize_position_bundle::handler(ctx);
+        instructions::initialize_position_bundle::handler(ctx)
     }
 
     /// Initializes a PositionBundle account that bundles several positions.
@@ -548,7 +524,7 @@ pub mod whirlpool {
     pub fn initialize_position_bundle_with_metadata(
         ctx: Context<InitializePositionBundleWithMetadata>,
     ) -> Result<()> {
-        return instructions::initialize_position_bundle_with_metadata::handler(ctx);
+        instructions::initialize_position_bundle_with_metadata::handler(ctx)
     }
 
     /// Delete a PositionBundle account. Burns the position bundle token in the owner's wallet.
@@ -559,7 +535,7 @@ pub mod whirlpool {
     /// ### Special Errors
     /// - `PositionBundleNotDeletable` - The provided position bundle has open positions.
     pub fn delete_position_bundle(ctx: Context<DeletePositionBundle>) -> Result<()> {
-        return instructions::delete_position_bundle::handler(ctx);
+        instructions::delete_position_bundle::handler(ctx)
     }
 
     /// Open a bundled position in a Whirlpool. No new tokens are issued
@@ -584,12 +560,12 @@ pub mod whirlpool {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        return instructions::open_bundled_position::handler(
+        instructions::open_bundled_position::handler(
             ctx,
             bundle_index,
             tick_lower_index,
             tick_upper_index,
-        );
+        )
     }
 
     /// Close a bundled position in a Whirlpool.
@@ -607,7 +583,266 @@ pub mod whirlpool {
         ctx: Context<CloseBundledPosition>,
         bundle_index: u16,
     ) -> Result<()> {
-        return instructions::close_bundled_position::handler(ctx, bundle_index);
+        instructions::close_bundled_position::handler(ctx, bundle_index)
+    }
+
+    /// Open a position in a Whirlpool. A unique token will be minted to represent the position
+    /// in the users wallet. Additional TokenMetadata extension is initialized to identify the token.
+    /// Mint and TokenAccount are based on Token-2022.
+    /// The position will start off with 0 liquidity.
+    ///
+    /// ### Parameters
+    /// - `tick_lower_index` - The tick specifying the lower end of the position range.
+    /// - `tick_upper_index` - The tick specifying the upper end of the position range.
+    /// - `with_token_metadata_extension` - If true, the token metadata extension will be initialized.
+    ///
+    /// #### Special Errors
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    pub fn open_position_with_token_extensions(
+        ctx: Context<OpenPositionWithTokenExtensions>,
+        tick_lower_index: i32,
+        tick_upper_index: i32,
+        with_token_metadata_extension: bool,
+    ) -> Result<()> {
+        instructions::open_position_with_token_extensions::handler(
+            ctx,
+            tick_lower_index,
+            tick_upper_index,
+            with_token_metadata_extension,
+        )
+    }
+
+    /// Close a position in a Whirlpool. Burns the position token in the owner's wallet.
+    /// Mint and TokenAccount are based on Token-2022. And Mint accout will be also closed.
+    ///
+    /// ### Authority
+    /// - "position_authority" - The authority that owns the position token.
+    ///
+    /// #### Special Errors
+    /// - `ClosePositionNotEmpty` - The provided position account is not empty.
+    pub fn close_position_with_token_extensions(
+        ctx: Context<ClosePositionWithTokenExtensions>,
+    ) -> Result<()> {
+        instructions::close_position_with_token_extensions::handler(ctx)
+    }
+
+    /// Lock the position to prevent any liquidity changes.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    ///
+    /// #### Special Errors
+    /// - `PositionAlreadyLocked` - The provided position is already locked.
+    /// - `PositionNotLockable` - The provided position is not lockable (e.g. An empty position).
+    pub fn lock_position(ctx: Context<LockPosition>, lock_type: LockType) -> Result<()> {
+        instructions::lock_position::handler(ctx, lock_type)
+    }
+
+    /// Reset the position range to a new range.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    ///
+    /// ### Parameters
+    /// - `new_tick_lower_index` - The new tick specifying the lower end of the position range.
+    /// - `new_tick_upper_index` - The new tick specifying the upper end of the position range.
+    ///
+    /// #### Special Errors
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    /// - `ClosePositionNotEmpty` - The provided position account is not empty.
+    /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
+    pub fn reset_position_range(
+        ctx: Context<ResetPositionRange>,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+    ) -> Result<()> {
+        instructions::reset_position_range::handler(ctx, new_tick_lower_index, new_tick_upper_index)
+    }
+
+    /// Transfer a locked position to to a different token account.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    pub fn transfer_locked_position(ctx: Context<TransferLockedPosition>) -> Result<()> {
+        instructions::transfer_locked_position::handler(ctx)
+    }
+
+    /// Initializes an adaptive_fee_tier account usable by Whirlpools in a WhirlpoolConfig space.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    ///
+    /// ### Parameters
+    /// - `fee_tier_index` - The index of the fee-tier that this adaptive fee tier will be initialized.
+    /// - `tick_spacing` - The tick-spacing that this fee-tier suggests the default_fee_rate for.
+    /// - `initialize_pool_authority` - The authority that can initialize pools with this adaptive fee-tier.
+    /// - `delegated_fee_authority` - The authority that can set the base fee rate for pools using this adaptive fee-tier.
+    /// - `default_fee_rate` - The default fee rate that a pool will use if the pool uses this
+    ///                        fee tier during initialization.
+    /// - `filter_period` - Period determine high frequency trading time window. (seconds)
+    /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)
+    /// - `reduction_factor` - Adaptive fee rate decrement rate.
+    /// - `adaptive_fee_control_factor` - Adaptive fee control factor.
+    /// - `max_volatility_accumulator` - Max volatility accumulator.
+    /// - `tick_group_size` - Tick group size to define tick group index.
+    /// - `major_swap_threshold_ticks` - Major swap threshold ticks to define major swap.
+    ///
+    /// #### Special Errors
+    /// - `InvalidTickSpacing` - If the provided tick_spacing is 0.
+    /// - `InvalidFeeTierIndex` - If the provided fee_tier_index is same to tick_spacing.
+    /// - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
+    /// - `InvalidAdaptiveFeeConstants` - If the provided adaptive fee constants are invalid.
+    #[allow(clippy::too_many_arguments)]
+    pub fn initialize_adaptive_fee_tier(
+        ctx: Context<InitializeAdaptiveFeeTier>,
+        fee_tier_index: u16,
+        tick_spacing: u16,
+        initialize_pool_authority: Pubkey,
+        delegated_fee_authority: Pubkey,
+        default_base_fee_rate: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
+        major_swap_threshold_ticks: u16,
+    ) -> Result<()> {
+        instructions::initialize_adaptive_fee_tier::handler(
+            ctx,
+            fee_tier_index,
+            tick_spacing,
+            initialize_pool_authority,
+            delegated_fee_authority,
+            default_base_fee_rate,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+            major_swap_threshold_ticks,
+        )
+    }
+
+    /// Set the default_base_fee_rate for an AdaptiveFeeTier
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    ///
+    /// ### Parameters
+    /// - `default_base_fee_rate` - The default base fee rate that a pool will use if the pool uses this
+    ///                             adaptive fee-tier during initialization.
+    ///
+    /// #### Special Errors
+    /// - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
+    pub fn set_default_base_fee_rate(
+        ctx: Context<SetDefaultBaseFeeRate>,
+        default_base_fee_rate: u16,
+    ) -> Result<()> {
+        instructions::set_default_base_fee_rate::handler(ctx, default_base_fee_rate)
+    }
+
+    /// Sets the delegated fee authority for an AdaptiveFeeTier.
+    /// The delegated fee authority can set the fee rate for individual pools initialized with the adaptive fee-tier.
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    pub fn set_delegated_fee_authority(ctx: Context<SetDelegatedFeeAuthority>) -> Result<()> {
+        instructions::set_delegated_fee_authority::handler(ctx)
+    }
+
+    /// Sets the initialize pool authority for an AdaptiveFeeTier.
+    /// Only the initialize pool authority can initialize pools with the adaptive fee-tier.
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    pub fn set_initialize_pool_authority(ctx: Context<SetInitializePoolAuthority>) -> Result<()> {
+        instructions::set_initialize_pool_authority::handler(ctx)
+    }
+
+    /// Sets the adaptive fee constants for an AdaptiveFeeTier.
+    /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
+    ///
+    /// ### Parameters
+    /// - `filter_period` - Period determine high frequency trading time window. (seconds)
+    /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)
+    /// - `reduction_factor` - Adaptive fee rate decrement rate.
+    /// - `adaptive_fee_control_factor` - Adaptive fee control factor.
+    /// - `max_volatility_accumulator` - Max volatility accumulator.
+    /// - `tick_group_size` - Tick group size to define tick group index.
+    /// - `major_swap_threshold_ticks` - Major swap threshold ticks to define major swap.
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_preset_adaptive_fee_constants(
+        ctx: Context<SetPresetAdaptiveFeeConstants>,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
+        major_swap_threshold_ticks: u16,
+    ) -> Result<()> {
+        instructions::set_preset_adaptive_fee_constants::handler(
+            ctx,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+            major_swap_threshold_ticks,
+        )
+    }
+
+    /// Initializes a Whirlpool account and Oracle account with adaptive fee.
+    ///
+    /// ### Parameters
+    /// - `initial_sqrt_price` - The desired initial sqrt-price for this pool
+    /// - `trade_enable_timestamp` - The timestamp when trading is enabled for this pool (within 72 hours)
+    ///
+    /// #### Special Errors
+    /// `InvalidTokenMintOrder` - The order of mints have to be ordered by
+    /// `SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64
+    /// `InvalidTradeEnableTimestamp` - provided trade_enable_timestamp is not within 72 hours or the adaptive fee-tier is permission-less
+    /// `UnsupportedTokenMint` - The provided token mint is not supported by the program (e.g. it has risky token extensions)
+    ///
+    pub fn initialize_pool_with_adaptive_fee(
+        ctx: Context<InitializePoolWithAdaptiveFee>,
+        initial_sqrt_price: u128,
+        trade_enable_timestamp: Option<u64>,
+    ) -> Result<()> {
+        instructions::initialize_pool_with_adaptive_fee::handler(
+            ctx,
+            initial_sqrt_price,
+            trade_enable_timestamp,
+        )
+    }
+
+    /// Sets the fee rate for a Whirlpool by the delegated fee authority in AdaptiveFeeTier.
+    /// Fee rate is represented as hundredths of a basis point.
+    ///
+    /// ### Authority
+    /// - "delegated_fee_authority" - Set authority that can modify pool fees in the AdaptiveFeeTier
+    ///
+    /// ### Parameters
+    /// - `fee_rate` - The rate that the pool will use to calculate fees going onwards.
+    ///
+    /// #### Special Errors
+    /// - `FeeRateMaxExceeded` - If the provided fee_rate exceeds MAX_FEE_RATE.
+    pub fn set_fee_rate_by_delegated_fee_authority(
+        ctx: Context<SetFeeRateByDelegatedFeeAuthority>,
+        fee_rate: u16,
+    ) -> Result<()> {
+        instructions::set_fee_rate_by_delegated_fee_authority::handler(ctx, fee_rate)
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -620,34 +855,34 @@ pub mod whirlpool {
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    pub fn collect_fees_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
+    pub fn collect_fees_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, CollectFeesV2<'info>>,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::collect_fees::handler(ctx, remaining_accounts_info);
+        instructions::v2::collect_fees::handler(ctx, remaining_accounts_info)
     }
 
     /// Collect the protocol fees accrued in this Whirlpool
     ///
     /// ### Authority
     /// - `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees
-    pub fn collect_protocol_fees_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, CollectProtocolFeesV2<'info>>,
+    pub fn collect_protocol_fees_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, CollectProtocolFeesV2<'info>>,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::collect_protocol_fees::handler(ctx, remaining_accounts_info);
+        instructions::v2::collect_protocol_fees::handler(ctx, remaining_accounts_info)
     }
 
     /// Collect rewards accrued for this position.
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    pub fn collect_reward_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
+    pub fn collect_reward_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, CollectRewardV2<'info>>,
         reward_index: u8,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::collect_reward::handler(ctx, reward_index, remaining_accounts_info);
+        instructions::v2::collect_reward::handler(ctx, reward_index, remaining_accounts_info)
     }
 
     /// Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -664,20 +899,20 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
-    pub fn decrease_liquidity_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
+    pub fn decrease_liquidity_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
         token_min_a: u64,
         token_min_b: u64,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::decrease_liquidity::handler(
+        instructions::v2::decrease_liquidity::handler(
             ctx,
             liquidity_amount,
             token_min_a,
             token_min_b,
             remaining_accounts_info,
-        );
+        )
     }
 
     /// Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -694,20 +929,20 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
-    pub fn increase_liquidity_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
+    pub fn increase_liquidity_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::increase_liquidity::handler(
+        instructions::v2::increase_liquidity::handler(
             ctx,
             liquidity_amount,
             token_max_a,
             token_max_b,
             remaining_accounts_info,
-        );
+        )
     }
 
     /// Initializes a Whirlpool account.
@@ -727,11 +962,7 @@ pub mod whirlpool {
         tick_spacing: u16,
         initial_sqrt_price: u128,
     ) -> Result<()> {
-        return instructions::v2::initialize_pool::handler(
-            ctx,
-            tick_spacing,
-            initial_sqrt_price,
-        );
+        instructions::v2::initialize_pool::handler(ctx, tick_spacing, initial_sqrt_price)
     }
 
     /// Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.
@@ -748,7 +979,7 @@ pub mod whirlpool {
     ///                          index in this pool, or exceeds NUM_REWARDS, or
     ///                          all reward slots for this pool has been initialized.
     pub fn initialize_reward_v2(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()> {
-        return instructions::v2::initialize_reward::handler(ctx, reward_index);
+        instructions::v2::initialize_reward::handler(ctx, reward_index)
     }
 
     /// Set the reward emissions for a reward in a Whirlpool.
@@ -773,11 +1004,7 @@ pub mod whirlpool {
         reward_index: u8,
         emissions_per_second_x64: u128,
     ) -> Result<()> {
-        return instructions::v2::set_reward_emissions::handler(
-            ctx,
-            reward_index,
-            emissions_per_second_x64,
-        );
+        instructions::v2::set_reward_emissions::handler(ctx, reward_index, emissions_per_second_x64)
     }
 
     /// Perform a swap in this Whirlpool
@@ -801,8 +1028,8 @@ pub mod whirlpool {
     /// - `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.
     /// - `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
-    pub fn swap_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, SwapV2<'info>>,
+    pub fn swap_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, SwapV2<'info>>,
         amount: u64,
         other_amount_threshold: u64,
         sqrt_price_limit: u128,
@@ -810,7 +1037,7 @@ pub mod whirlpool {
         a_to_b: bool,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::swap::handler(
+        instructions::v2::swap::handler(
             ctx,
             amount,
             other_amount_threshold,
@@ -818,7 +1045,7 @@ pub mod whirlpool {
             amount_specified_is_input,
             a_to_b,
             remaining_accounts_info,
-        );
+        )
     }
 
     /// Perform a two-hop swap in this Whirlpool
@@ -846,8 +1073,9 @@ pub mod whirlpool {
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
     /// - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
     /// - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
-    pub fn two_hop_swap_v2<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, TwoHopSwapV2<'info>>,
+    #[allow(clippy::too_many_arguments)]
+    pub fn two_hop_swap_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, TwoHopSwapV2<'info>>,
         amount: u64,
         other_amount_threshold: u64,
         amount_specified_is_input: bool,
@@ -857,7 +1085,7 @@ pub mod whirlpool {
         sqrt_price_limit_two: u128,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        return instructions::v2::two_hop_swap::handler(
+        instructions::v2::two_hop_swap::handler(
             ctx,
             amount,
             other_amount_threshold,
@@ -867,26 +1095,26 @@ pub mod whirlpool {
             sqrt_price_limit_one,
             sqrt_price_limit_two,
             remaining_accounts_info,
-        );
+        )
     }
 
     pub fn initialize_config_extension(ctx: Context<InitializeConfigExtension>) -> Result<()> {
-        return instructions::v2::initialize_config_extension::handler(ctx);
+        instructions::v2::initialize_config_extension::handler(ctx)
     }
 
     pub fn set_config_extension_authority(ctx: Context<SetConfigExtensionAuthority>) -> Result<()> {
-        return instructions::v2::set_config_extension_authority::handler(ctx);
+        instructions::v2::set_config_extension_authority::handler(ctx)
     }
 
     pub fn set_token_badge_authority(ctx: Context<SetTokenBadgeAuthority>) -> Result<()> {
-        return instructions::v2::set_token_badge_authority::handler(ctx);
+        instructions::v2::set_token_badge_authority::handler(ctx)
     }
 
     pub fn initialize_token_badge(ctx: Context<InitializeTokenBadge>) -> Result<()> {
-        return instructions::v2::initialize_token_badge::handler(ctx);
+        instructions::v2::initialize_token_badge::handler(ctx)
     }
 
     pub fn delete_token_badge(ctx: Context<DeleteTokenBadge>) -> Result<()> {
-        return instructions::v2::delete_token_badge::handler(ctx);
+        instructions::v2::delete_token_badge::handler(ctx)
     }
 }

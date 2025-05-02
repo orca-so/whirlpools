@@ -1,0 +1,318 @@
+---
+sidebar_label: Environment Setup
+hide_table_of_contents: true
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import ReactMarkdown from 'react-markdown';
+
+export const legacyInstallation = `
+# Installation
+
+The legacy Whirlpools Typescript SDK (\`@orca-so/whirlpools-sdk\`) allows for easy interaction with a deployed Whirlpools program and is a solid choice if you are working the Solana Web3.js.
+
+In your project, run:
+
+\`\`\`bash
+yarn add "@orca-so/whirlpools-sdk"
+yarn add "@orca-so/common-sdk"
+yarn add "@coral-xyz/anchor@0.29.0"
+yarn add "@solana/web3.js"
+yarn add "@solana/spl-token"
+yarn add "decimal.js"
+\`\`\`
+`;
+
+# Environment Setup
+
+This document covers the essential setup required to start building on Orca's SDK using the Whirlpools protocol. It includes installation, wallet setup, RPC client configuration, and the basics of interacting with the Solana ecosystem.
+
+<Tabs groupId="sdk-type">
+  <TabItem value="rust" label="Rust">
+    ## Prerequisites
+    
+    Before you start, ensure you have Rust installed. To ensure compatibility with the Solana SDK v1.18, we recommend using `rustc 1.78.0`.
+    
+    ## 1. Initialize a new project
+    
+    Initialize a new Rust project:
+    
+    ```bash
+    cargo new <project-name>
+    ```
+    
+    Add the necessary dependencies to your project:
+    
+    ```bash
+    cargo add orca_whirlpools solana-sdk solana-client tokio serde_json
+    ```
+    
+    **Note**: If you're using the Rust SDK in an already existing project which does not use the latest version of Solana SDK, you may need to apply a patchfile lock with the following command:
+    ```bash
+    cargo update solana-sdk:<current-version> --precise <required-version>
+    ```
+    You might also have to apply lockfile patches for `solana-program`, `solana-client`, `solana-account-decoder`, `spl-token`, `spl-memo`, `spl-token-2022`, `spl-associated-token-account`.
+    
+    ## 2. Wallet Management
+    
+    You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it in your program.
+    
+    ```rust
+    use solana_sdk::signer::keypair::Keypair;
+    use solana_sdk::signature::Signer;
+    use std::fs;
+
+    fn main() {
+        let wallet_string = fs::read_to_string("path/to/wallet.json").unwrap();
+        let keypair_bytes: Vec<u8> = serde_json::from_str(&wallet_string).unwrap();
+        let wallet = Keypair::from_bytes(&keypair_bytes).unwrap();
+    }
+    ```
+    
+    > ⚠️ Important: Never share your private key publicly.
+    
+    ## 3. Configure the Whirlpools SDK for Your Network
+    
+    Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function.
+    
+    ```rust
+    use orca_whirlpools::{WhirlpoolsConfigInput, set_whirlpools_config_address};
+
+    fn main() {
+      set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+      // Rest of the code
+    }
+    ```
+    
+    Available networks are:
+    
+    - solanaMainnet
+    - solanaDevnet
+    - eclipseMainnet
+    - eclipseTestnet
+    
+    > ℹ️ The `set_whirlpools_config_address` function accepts either one of Orca's default network keys or a custom address. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca.
+    
+    ## 4. Airdrop SOL to Your Wallet
+    
+    Once your wallet is created, you will need some SOL to pay for transactions. You can request an airdrop of SOL from the network, but this is only available on **Solana Devnet** and **Ecipse Testnet**.
+    
+    ```rust
+    use solana_client::rpc_client::RpcClient;
+    use solana_sdk::signature::Signer;
+
+    fn main() {
+      // Rest of the code
+      let rpc_client = RpcClient::new("https://api.devnet.solana.com");
+      match rpc_client.request_airdrop(&wallet.pubkey(), 1_000_000_000) {
+          Ok(signature) => println!("Airdrop successful. Transactoin signature: {:?}", signature),
+          Err(e) => println!("Error: {:?}", e),
+      }
+    }
+    ```
+    
+    ## 5. Set the default funder for Transactions
+    
+    After funding your wallet, you can set the wallet as the **FUNDER** for future transactions within the SDK. The funder is the account that will cover the transaction costs for initializing pools, providing liquidity, etc.
+    
+    ```rust
+    use orca_whirlpools::{set_funder};
+    use solana_sdk::signature::Signer;
+
+    fn main() {
+      // Rest of the code
+      set_funder(wallet.pubkey()).unwrap();
+    }
+    ```
+    
+    ## Next steps
+    
+    Once you've completed the setup, you can move on to building more complex functionalities using the Orca SDK, such as creating and managing pools, providing liquidity, etc. Refer to individual function documentation to use this wallet setup in action.
+  </TabItem>
+  
+  <TabItem value="ts-kit" label="TypeScript Kit">
+    ## Prerequisites
+    
+    Before you start, ensure you have Node.js version 20 or higher installed on your machine. Download it from the official website: https://nodejs.org/.
+    
+    ## 1. Initialize a new project
+    
+    Create a new project directory:
+    
+    ```bash
+    mkdir <project-name>
+    cd <project-name>
+    ```
+    
+    Initialize a new Node.js project:
+    
+    ```bash
+    npm init -y
+    ```
+    
+    Install the necessary packages:
+    
+    ```bash
+    npm install typescript @orca-so/whirlpools @solana/kit
+    ```
+    
+    Initialize the project as a TypeScript project:
+    
+    ```bash
+    npx tsc --init
+    ```
+    
+    ## 2. Wallet Management
+    
+    You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it in your program.
+    
+    ```tsx
+    import { createKeyPairSignerFromBytes } from '@solana/kit';
+    import fs from 'fs';
+
+    const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+    const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
+    ```
+    
+    > ⚠️ Important: Never share your private key publicly.
+    
+    ## 3. Configure the Whirlpools SDK for Your Network
+    
+    Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function.
+    
+    ```tsx
+    import { setWhirlpoolsConfig } from '@orca-so/whirlpools';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    ```
+    
+    Available networks are:
+    
+    - solanaMainnet
+    - solanaDevnet
+    - eclipseMainnet
+    - eclipseTestnet
+    
+    > ℹ️ The `setWhirlpoolsConfig` function accepts either one of Orca's default network keys or a custom `Address`. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca.
+    
+    ## 4. Airdrop SOL to Your Wallet
+    
+    Once your wallet is created, you will need some SOL to pay for transactions. You can request an airdrop of SOL from the network, but this is only available on **Solana Devnet** and **Ecipse Testnet**.
+    
+    ```tsx
+    import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/kit';
+
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await generateKeyPairSigner();
+    devnetRpc.requestAirdrop(
+      wallet.address,
+      lamports(1000000000n)
+    ).send()
+    ```
+    
+    ## 5. Set the default funder for Transactions
+    
+    After funding your wallet, you can set the wallet as the **FUNDER** for future transactions within the SDK. The funder is the account that will cover the transaction costs for initializing pools, providing liquidity, etc.
+    
+    ```tsx
+    import { setDefaultFunder } from '@orca-so/whirlpools';
+
+    setDefaultFunder(wallet);
+    ```
+    
+    ## Next steps
+    
+    Once you've completed the setup, you can move on to building more complex functionalities using the Orca SDK, such as creating and managing pools, providing liquidity, etc. Refer to individual function documentation to use this wallet setup in action.
+  </TabItem>
+  
+  <TabItem value="ts-legacy" label="TypeScript Legacy">
+    ## 1. Initialize a new project
+    
+    Create a new project directory:
+    
+    ```bash
+    mkdir <project-name>
+    cd <project-name>
+    ```
+    
+    Initialize a new Node.js project:
+    
+    ```bash
+    npm init -y
+    ```
+    
+    ## 2. Installation
+    
+    The legacy Whirlpools Typescript SDK (`@orca-so/whirlpools-sdk`) allows for easy interaction with a deployed Whirlpools program and is a solid choice if you are working with Solana Web3.js.
+    
+    In your project, run:
+    
+    ```bash
+    yarn add "@orca-so/whirlpools-sdk"
+    yarn add "@orca-so/common-sdk"
+    yarn add "@coral-xyz/anchor@0.29.0"
+    yarn add "@solana/web3.js"
+    yarn add "@solana/spl-token"
+    yarn add "decimal.js"
+    ```
+    
+    ## 3. Setup Whirlpool Context
+    
+    The [WhirlpoolContext](https://dev.orca.so/legacy/classes/WhirlpoolContext.html) object provides the necessary environment information to build and send transactions and is core to running many functions in the SDK.
+
+    ### Setup your context object with environment variables:
+    
+    ```tsx
+    import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID } from "@orca-so/whirlpools-sdk";
+    import { Provider } from "@coral-xyz/anchor";
+    
+    const provider = Provider.env();
+    const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID);
+    ```
+    
+    You can feed in the environment variables like so in bash:
+    
+    ```bash
+    ANCHOR_PROVIDER_URL=<CLUSTER URL> ANCHOR_WALLET=<WALLET PATH> ts-node index.ts
+    ```
+    
+    ### Setup for browser applications
+    
+    The context relies on Anchor's Wallet interface. Implement your own wallet interface or find one of the sample implementations in the community and feed it into the context object.
+    
+    ```tsx
+    // Anchor Wallet Definition
+    export interface Wallet {
+      signTransaction(tx: Transaction): Promise<Transaction>;
+      signAllTransactions(txs: Transaction[]): Promise<Transaction[]>;
+      publicKey: PublicKey;
+    }
+    ```
+    
+    ```tsx
+    const connection = new Connection(url, "confirmed"};
+    const wallet = new Wallet()
+    const ctx = WhirlpoolContext.from(connection, wallet, whirlpoolProgramId);
+    ```
+    
+    ### Setup with Whirlpool Anchor test environment
+    
+    Provided you have set up the anchor environment, you can reference the program directly and build from there.
+    
+    ```tsx
+    const provider = anchor.Provider.local();
+    anchor.setProvider(anchor.Provider.env());
+    const program = anchor.workspace.Whirlpool;
+    const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    ```
+    
+   **Note**: When configuring the network, you'll need to specify the Whirlpools Config address for the network you're using:
+   
+   ```tsx
+   // For Devnet
+   const DEVNET_WHIRLPOOLS_CONFIG = new PublicKey("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
+   // For Mainnet
+   const MAINNET_WHIRLPOOLS_CONFIG = new PublicKey("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ");
+   ```
+  </TabItem>
+</Tabs> 

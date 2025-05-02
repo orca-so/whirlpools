@@ -5,6 +5,7 @@ use crate::{manager::swap_manager::PostSwapUpdate, state::Whirlpool};
 
 use super::{transfer_from_owner_to_vault, transfer_from_vault_to_owner};
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_and_swap_whirlpool<'info>(
     whirlpool: &mut Account<'info, Whirlpool>,
     token_authority: &Signer<'info>,
@@ -13,7 +14,7 @@ pub fn update_and_swap_whirlpool<'info>(
     token_vault_a: &Account<'info, TokenAccount>,
     token_vault_b: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
-    swap_update: PostSwapUpdate,
+    swap_update: &PostSwapUpdate,
     is_token_fee_in_a: bool,
     reward_last_updated_timestamp: u64,
 ) -> Result<()> {
@@ -42,6 +43,7 @@ pub fn update_and_swap_whirlpool<'info>(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn perform_swap<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     token_authority: &Signer<'info>,

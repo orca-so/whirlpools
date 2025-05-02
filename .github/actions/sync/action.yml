@@ -1,0 +1,26 @@
+name: 'Sync Versions'
+description: 'Sync npm verison numbers with other package managers.'
+
+branding:
+  icon: refresh-cw
+  color: green
+
+runs:
+  using: "composite"
+  steps:
+    - name: Sync Cargo Versions
+      run: |
+        find . -type f -name "package.json" -not -path "*/node_modules/*" -exec sh -c '
+          for file do
+            cargo_file=$(dirname "$file")/Cargo.toml
+            version=$(jq -r ".version" "$file")
+            if [ -f "$cargo_file" ]; then
+              awk -v version="$version" '\''
+                /^\[package\]/ { in_package=1 }
+                /^\[/ && !/^\[package\]/ { in_package=0 }
+                in_package && /^version = / { sub(/".*"/, "\"" version "\"") } { print }
+              '\'' "$cargo_file" > tmp.toml && mv tmp.toml "$cargo_file"
+            fi
+          done
+        ' _ {} +
+      shell: bash

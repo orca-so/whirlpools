@@ -1,0 +1,18 @@
+{
+  "name": "@orca-so/whirlpools-docs-ts",
+  "version": "0.2.1",
+  "private": true,
+  "scripts": {
+    "build": "typedoc",
+    "start": "typedoc && open dist/ts/index.html",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@orca-so/whirlpools": "*",
+    "@orca-so/whirlpools-client": "*",
+    "@orca-so/whirlpools-core": "*",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-merge-modules": "^7.0.0",
+    "typescript": "^5.8.2"
+  }
+}

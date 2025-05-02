@@ -1,15 +1,15 @@
 use crate::errors::ErrorCode;
-use crate::math::Q64_RESOLUTION;
+use crate::math::{Q64_MASK, Q64_RESOLUTION};
 
 use super::{
-    checked_mul_shift_right_round_up_if, div_round_up_if, div_round_up_if_u256, mul_u256,
-    U256Muldiv, MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64,
+    div_round_up_if, div_round_up_if_u256, mul_u256, U256Muldiv, MAX_SQRT_PRICE_X64,
+    MIN_SQRT_PRICE_X64,
 };
 
 // Fee rate is represented as hundredths of a basis point.
 // Fee amount = total_amount * fee_rate / 1_000_000.
-// Max fee rate supported is 3%.
-pub const MAX_FEE_RATE: u16 = 30_000;
+// Max fee rate supported is 6%.
+pub const MAX_FEE_RATE: u16 = 60_000;
 
 // Assuming that FEE_RATE is represented as hundredths of a basis point
 // We want FEE_RATE_MUL_VALUE = 1/FEE_RATE_UNIT, so 1e6
@@ -23,6 +23,36 @@ pub const MAX_PROTOCOL_FEE_RATE: u16 = 2_500;
 // Assuming that PROTOCOL_FEE_RATE is represented as a basis point
 // We want PROTOCOL_FEE_RATE_MUL_VALUE = 1/PROTOCOL_FEE_UNIT, so 1e4
 pub const PROTOCOL_FEE_RATE_MUL_VALUE: u128 = 10_000;
+
+#[derive(Debug)]
+pub enum AmountDeltaU64 {
+    Valid(u64),
+    ExceedsMax(ErrorCode),
+}
+
+impl AmountDeltaU64 {
+    pub fn lte(&self, other: u64) -> bool {
+        match self {
+            AmountDeltaU64::Valid(value) => *value <= other,
+            AmountDeltaU64::ExceedsMax(_) => false,
+        }
+    }
+
+    pub fn exceeds_max(&self) -> bool {
+        match self {
+            AmountDeltaU64::Valid(_) => false,
+            AmountDeltaU64::ExceedsMax(_) => true,
+        }
+    }
+
+    pub fn value(self) -> u64 {
+        match self {
+            AmountDeltaU64::Valid(value) => value,
+            // This should never happen
+            AmountDeltaU64::ExceedsMax(_) => panic!("Called unwrap on AmountDeltaU64::ExceedsMax"),
+        }
+    }
+}
 
 //
 // Get change in token_a corresponding to a change in price
@@ -44,6 +74,19 @@ pub fn get_amount_delta_a(
     liquidity: u128,
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
+    match try_get_amount_delta_a(sqrt_price_0, sqrt_price_1, liquidity, round_up) {
+        Ok(AmountDeltaU64::Valid(value)) => Ok(value),
+        Ok(AmountDeltaU64::ExceedsMax(error)) => Err(error),
+        Err(error) => Err(error),
+    }
+}
+
+pub fn try_get_amount_delta_a(
+    sqrt_price_0: u128,
+    sqrt_price_1: u128,
+    liquidity: u128,
+    round_up: bool,
+) -> Result<AmountDeltaU64, ErrorCode> {
     let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
 
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
@@ -57,16 +100,21 @@ pub fn get_amount_delta_a(
     let (quotient, remainder) = numerator.div(denominator, round_up);
 
     let result = if round_up && !remainder.is_zero() {
-        quotient.add(U256Muldiv::new(0, 1)).try_into_u128()?
+        quotient.add(U256Muldiv::new(0, 1)).try_into_u128()
     } else {
-        quotient.try_into_u128()?
+        quotient.try_into_u128()
     };
 
-    if result > u64::MAX as u128 {
-        return Err(ErrorCode::TokenMaxExceeded);
-    }
+    match result {
+        Ok(result) => {
+            if result > u64::MAX as u128 {
+                return Ok(AmountDeltaU64::ExceedsMax(ErrorCode::TokenMaxExceeded));
+            }
 
-    return Ok(result as u64);
+            Ok(AmountDeltaU64::Valid(result as u64))
+        }
+        Err(err) => Ok(AmountDeltaU64::ExceedsMax(err)),
+    }
 }
 
 //
@@ -84,11 +132,50 @@ pub fn get_amount_delta_b(
     liquidity: u128,
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
-    let (price_lower, price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+    match try_get_amount_delta_b(sqrt_price_0, sqrt_price_1, liquidity, round_up) {
+        Ok(AmountDeltaU64::Valid(value)) => Ok(value),
+        Ok(AmountDeltaU64::ExceedsMax(error)) => Err(error),
+        Err(error) => Err(error),
+    }
+}
 
-    // liquidity * (price_upper - price_lower) must be less than 2^128
-    // for the token amount to be less than 2^64
-    checked_mul_shift_right_round_up_if(liquidity, price_upper - price_lower, round_up)
+pub fn try_get_amount_delta_b(
+    sqrt_price_0: u128,
+    sqrt_price_1: u128,
+    liquidity: u128,
+    round_up: bool,
+) -> Result<AmountDeltaU64, ErrorCode> {
+    let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+
+    // customized checked_mul_shift_right_round_up_if
+
+    let n0 = liquidity;
+    let n1 = sqrt_price_upper - sqrt_price_lower;
+
+    if n0 == 0 || n1 == 0 {
+        return Ok(AmountDeltaU64::Valid(0));
+    }
+
+    if let Some(p) = n0.checked_mul(n1) {
+        let result = (p >> Q64_RESOLUTION) as u64;
+
+        let should_round = round_up && (p & Q64_MASK > 0);
+        if should_round && result == u64::MAX {
+            return Ok(AmountDeltaU64::ExceedsMax(
+                ErrorCode::MultiplicationOverflow,
+            ));
+        }
+
+        Ok(AmountDeltaU64::Valid(if should_round {
+            result + 1
+        } else {
+            result
+        }))
+    } else {
+        Ok(AmountDeltaU64::ExceedsMax(
+            ErrorCode::MultiplicationShiftRightOverflow,
+        ))
+    }
 }
 
 pub fn increasing_price_order(sqrt_price_0: u128, sqrt_price_1: u128) -> (u128, u128) {
@@ -365,7 +452,7 @@ mod fuzz_tests {
 
             // Q64.0 << 64 => Q64.64
             let amount_x64 = u128::from(amount) << Q64_RESOLUTION;
-            let delta = div_round_up(amount_x64, liquidity.into()).unwrap();
+            let delta = div_round_up(amount_x64, liquidity).unwrap();
 
             if sqrt_price < delta {
                 // In Case 4, error if sqrt_price < delta
@@ -488,7 +575,7 @@ mod test_get_amount_delta {
     #[test]
     fn test_get_amount_delta_a_overflow() {
         assert!(get_amount_delta_a(1 << 64, 2 << 64, u128::MAX, true).is_err());
-        assert!(get_amount_delta_a(1 << 64, 2 << 64, (u64::MAX as u128) << 1 + 1, true).is_err());
+        assert!(get_amount_delta_a(1 << 64, 2 << 64, (u64::MAX as u128) << (1 + 1), true).is_err());
         assert!(get_amount_delta_a(1 << 64, 2 << 64, (u64::MAX as u128) << 1, true).is_ok());
         assert!(get_amount_delta_a(1 << 64, 2 << 64, u64::MAX as u128, true).is_ok());
     }

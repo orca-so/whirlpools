@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{events::*, state::*};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
@@ -60,13 +60,16 @@ pub fn handler(
     let whirlpool = &mut ctx.accounts.whirlpool;
     let whirlpools_config = &ctx.accounts.whirlpools_config;
 
+    let fee_tier_index = tick_spacing;
+
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
 
     // ignore the bump passed and use one Anchor derived
     let bump = ctx.bumps.whirlpool;
 
-    Ok(whirlpool.initialize(
+    whirlpool.initialize(
         whirlpools_config,
+        fee_tier_index,
         bump,
         tick_spacing,
         initial_sqrt_price,
@@ -75,5 +78,20 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
-    )?)
+    )?;
+
+    emit!(PoolInitialized {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        whirlpools_config: ctx.accounts.whirlpools_config.key(),
+        token_mint_a: ctx.accounts.token_mint_a.key(),
+        token_mint_b: ctx.accounts.token_mint_b.key(),
+        tick_spacing,
+        token_program_a: ctx.accounts.token_program.key(),
+        token_program_b: ctx.accounts.token_program.key(),
+        decimals_a: ctx.accounts.token_mint_a.decimals,
+        decimals_b: ctx.accounts.token_mint_b.decimals,
+        initial_sqrt_price,
+    });
+
+    Ok(())
 }

@@ -1,0 +1,15 @@
+[package]
+name = "orca_whirlpools_core_js_bindings"
+version = "1.0.4"
+publish = false
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+orca_whirlpools_core = { path = "../../rust-sdk/core", features = ["wasm", "floats"] }
+
+[profile.release]
+opt-level = "s"
+strip = true

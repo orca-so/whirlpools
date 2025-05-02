@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# Get the local version from package.json
+package_name=$(jq -r ".name" package.json)
+local_version=$(jq -r ".version" package.json)
+
+# Get the published version from npm
+published_version=$(npm view $package_name version 2>/dev/null || true)
+
+function semver { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
+
+# Compare versions
+if [ "$(semver $local_version)" -le "$(semver $published_version)" ]; then
+  echo "Version $local_version is already published to npm"
+  exit 0
+fi
+
+# Patch version numbers for local dependencies
+local_deps=$(jq -r '.dependencies // {} | to_entries | .[] | select(.value == "*") | .key' package.json)
+if [ -n "$local_deps" ]; then
+  for dep in $local_deps; do
+    latest_version=$(npm view $dep version)
+    jq --arg dep "$dep" --arg version "$latest_version" \
+      '.dependencies[$dep] = $version' package.json > tmp.json && mv tmp.json package.json
+  done
+fi
+
+# Publish to npm
+echo "Publishing version $local_version to npm"
+npm publish --access public

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use anchor_spl::metadata::Metadata;
+use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
 use crate::constants::nft::whirlpool_nft_update_auth::ID as WPB_NFT_UPDATE_AUTH;
 use crate::{state::*, util::mint_position_bundle_token_with_metadata_and_remove_authority};

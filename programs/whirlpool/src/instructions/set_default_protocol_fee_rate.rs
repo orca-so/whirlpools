@@ -15,8 +15,7 @@ pub fn handler(
     ctx: Context<SetDefaultProtocolFeeRate>,
     default_protocol_fee_rate: u16,
 ) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .whirlpools_config
-        .update_default_protocol_fee_rate(default_protocol_fee_rate)?)
+        .update_default_protocol_fee_rate(default_protocol_fee_rate)
 }

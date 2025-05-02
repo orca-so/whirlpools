@@ -9,7 +9,7 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/*.test.ts"
+test = "yarn vitest run --test-timeout 1000000 --no-file-parallelism --globals legacy-sdk"
 
 [test.validator]
 slots_per_epoch = "33"
@@ -23,8 +23,8 @@ url = "https://api.mainnet-beta.solana.com"
 
 [[test.genesis]]
 address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-program = "sdk/tests/external_program/mpl_token_metadata.20240214.so"
+program = "legacy-sdk/whirlpool/tests/external_program/mpl_token_metadata.20240214.so"
 
 [[test.genesis]]
 address = "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
-program = "sdk/tests/external_program/transfer_hook_counter.so"
+program = "legacy-sdk/whirlpool/tests/external_program/transfer_hook_counter.so"

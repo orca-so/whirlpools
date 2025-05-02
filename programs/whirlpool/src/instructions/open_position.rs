@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
-use crate::{state::*, util::mint_position_token_and_remove_authority};
 use crate::state;
+use crate::{state::*, util::mint_position_token_and_remove_authority};
 
 #[derive(Accounts)]
 pub struct OpenPosition<'info> {

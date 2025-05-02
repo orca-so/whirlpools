@@ -18,8 +18,8 @@ pub struct SetTokenBadgeAuthority<'info> {
 
 /// Set the token badge authority. Only the config extension authority has permission to invoke this instruction.
 pub fn handler(ctx: Context<SetTokenBadgeAuthority>) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .whirlpools_config_extension
-        .update_token_badge_authority(ctx.accounts.new_token_badge_authority.key()))
+        .update_token_badge_authority(ctx.accounts.new_token_badge_authority.key());
+    Ok(())
 }

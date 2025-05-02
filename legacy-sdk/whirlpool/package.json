@@ -1,0 +1,53 @@
+{
+  "name": "@orca-so/whirlpools-sdk",
+  "version": "0.13.21",
+  "description": "Typescript SDK to interact with Orca's Whirlpool program.",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "@coral-xyz/anchor": "~0.29.0",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.90.0"
+  },
+  "dependencies": {
+    "@orca-so/common-sdk": "*",
+    "decimal.js": "^10.5.0",
+    "tiny-invariant": "^1.3.1"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "~0.29.0",
+    "@orca-so/whirlpools-program": "*",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.90.0",
+    "@types/bn.js": "~5.1.6",
+    "@types/jest": "^29.5.14",
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
+    "deploy": "../../scripts/deploy-npm",
+    "clean": "rimraf dist"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "../../LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
+  "keywords": [
+    "solana",
+    "crypto",
+    "defi",
+    "dex",
+    "amm"
+  ],
+  "author": "team@orca.so",
+  "bugs": {
+    "url": "https://github.com/orca-so/whirlpools/issues"
+  },
+  "homepage": "https://orca.so"
+}

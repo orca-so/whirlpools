@@ -14,5 +14,5 @@ pub struct SetFeeRate<'info> {
 }
 
 pub fn handler(ctx: Context<SetFeeRate>, fee_rate: u16) -> Result<()> {
-    Ok(ctx.accounts.whirlpool.update_fee_rate(fee_rate)?)
+    ctx.accounts.whirlpool.update_fee_rate(fee_rate)
 }

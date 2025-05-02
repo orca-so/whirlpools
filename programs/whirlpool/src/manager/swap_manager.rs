@@ -77,7 +77,7 @@ pub fn swap(
     } else {
         whirlpool.fee_growth_global_b
     };
-    let mut fee_sum: u64 = 0;
+    //let mut fee_sum: u64 = 0;
 
     let mut fee_rate_manager = FeeRateManager::new(
         a_to_b,
@@ -140,11 +140,11 @@ pub fn swap(
                     .ok_or(ErrorCode::AmountCalcOverflow)?;
             }
 
-            fee_sum = fee_sum
-                .checked_add(swap_computation.fee_amount)
-                .ok_or(ErrorCode::AmountCalcOverflow)?;
+            /*fee_sum = fee_sum
+            .checked_add(swap_computation.fee_amount)
+            .ok_or(ErrorCode::AmountCalcOverflow)?;*/
 
-            let (next_protocol_fee, next_fee_growth_global_input) = calculate_fees(
+            /*let (next_protocol_fee, next_fee_growth_global_input) = calculate_fees(
                 swap_computation.fee_amount,
                 protocol_fee_rate,
                 curr_liquidity,
@@ -152,7 +152,7 @@ pub fn swap(
                 curr_fee_growth_global_input,
             );
             curr_protocol_fee = next_protocol_fee;
-            curr_fee_growth_global_input = next_fee_growth_global_input;
+            curr_fee_growth_global_input = next_fee_growth_global_input;*/
 
             if swap_computation.next_price == next_tick_sqrt_price {
                 let (next_tick, next_tick_initialized) = swap_tick_sequence
@@ -160,28 +160,20 @@ pub fn swap(
                     .map_or_else(|_| (None, false), |tick| (Some(tick), tick.initialized));
 
                 if next_tick_initialized {
-                    let (fee_growth_global_a, fee_growth_global_b) = if a_to_b {
-                        (curr_fee_growth_global_input, whirlpool.fee_growth_global_b)
+                    let signed_liquidity_net = if a_to_b {
+                        -next_tick.unwrap().liquidity_net
                     } else {
-                        (whirlpool.fee_growth_global_a, curr_fee_growth_global_input)
+                        next_tick.unwrap().liquidity_net
                     };
 
-                    let (update, next_liquidity) = calculate_update(
-                        next_tick.unwrap(),
-                        a_to_b,
-                        curr_liquidity,
-                        fee_growth_global_a,
-                        fee_growth_global_b,
-                        &next_reward_infos,
-                    )?;
+                    curr_liquidity = add_liquidity_delta(curr_liquidity, signed_liquidity_net)?;
 
-                    curr_liquidity = next_liquidity;
-                    swap_tick_sequence.update_tick(
+                    /*swap_tick_sequence.update_tick(
                         next_array_index,
                         next_tick_index,
                         tick_spacing,
                         &update,
-                    )?;
+                    )?;*/
                 }
 
                 let tick_offset = swap_tick_sequence.get_tick_offset(
@@ -257,7 +249,7 @@ pub fn swap(
     Ok(Box::new(PostSwapUpdate {
         amount_a,
         amount_b,
-        lp_fee: fee_sum - curr_protocol_fee,
+        lp_fee: 0,
         next_liquidity: curr_liquidity,
         next_tick_index: curr_tick_index,
         next_sqrt_price: curr_sqrt_price,

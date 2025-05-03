@@ -69,7 +69,6 @@ pub fn swap_less_fee(
 
     let tick_spacing = whirlpool.tick_spacing;
     let fee_rate = whirlpool.fee_rate;
-    let next_reward_infos = next_whirlpool_reward_infos(whirlpool, timestamp)?;
 
     let mut amount_remaining: u64 = amount;
     let mut amount_calculated: u64 = 0;

@@ -213,7 +213,7 @@ impl SwapTestFixture {
     }
 
     pub fn run(&self, tick_sequence: &mut SwapTickSequence, next_timestamp: u64) -> PostSwapUpdate {
-        *swap(
+        swap(
             &self.whirlpool,
             tick_sequence,
             self.trade_amount,
@@ -241,6 +241,5 @@ impl SwapTestFixture {
             next_timestamp,
             &self.adaptive_fee_info,
         )
-        .map(|boxed| *boxed)
     }
 }

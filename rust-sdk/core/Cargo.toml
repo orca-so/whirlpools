@@ -12,9 +12,10 @@ authors = ["team@orca.so"]
 edition = "2021"
 
 [features]
-default = ["floats"]
+default = ["floats", "swap"]
 wasm = ["dep:wasm-bindgen", "dep:serde", "dep:serde-big-array", "dep:serde-wasm-bindgen", "dep:js-sys", "dep:tsify"]
 floats = ["dep:libm"]
+swap = []
 
 [dependencies]
 ethnum = { version = "^1.1" }

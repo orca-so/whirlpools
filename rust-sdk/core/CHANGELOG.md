@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-rust-core
 
+## 1.0.8
+
+### Patch Changes
+
+- [#931](https://github.com/orca-so/whirlpools/pull/931) [`9f3a4e6`](https://github.com/orca-so/whirlpools/commit/9f3a4e6c2cc26d62efae8448d97db215339f45ba) Thanks [@wjthieme](https://github.com/wjthieme)! - Add 'swap' feature that enables/disables swap quote. These functions cannot be used on-chain as they would cause a stack overflow. By disabling this feature on-chain you can remove stack-overflow errors when building an on-chain program.
+
+- [#928](https://github.com/orca-so/whirlpools/pull/928) [`cecf391`](https://github.com/orca-so/whirlpools/commit/cecf3915abbadec88c09e84d89587115ca69f4e9) Thanks [@calintje](https://github.com/calintje)! - Fix error in collect_reward_quote where u64 mount owned could overflow. The fix reflects the logic used in the program and Legacy SDK.
+
 ## 1.0.7
 
 ### Patch Changes

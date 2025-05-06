@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_core"
-version = "1.0.7"
+version = "1.0.8"
 description = "Orca's core rust package."
 include = ["src/*"]
 documentation = "https://dev.orca.so/"
@@ -12,9 +12,10 @@ authors = ["team@orca.so"]
 edition = "2021"
 
 [features]
-default = ["floats"]
+default = ["floats", "swap"]
 wasm = ["dep:wasm-bindgen", "dep:serde", "dep:serde-big-array", "dep:serde-wasm-bindgen", "dep:js-sys", "dep:tsify"]
 floats = ["dep:libm"]
+swap = []
 
 [dependencies]
 ethnum = { version = "^1.1" }

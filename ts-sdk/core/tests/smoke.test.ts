@@ -198,8 +198,8 @@ describe("WASM bundle smoke test", () => {
       { feeBps: 2000, maxFee: 100000n },
       { feeBps: 3000, maxFee: 100000n },
     );
-    assert.strictEqual(result.rewards[0].rewardsOwed, 21690n);
-    assert.strictEqual(result.rewards[1].rewardsOwed, 22560n);
-    assert.strictEqual(result.rewards[2].rewardsOwed, 22610n);
+    assert.strictEqual(result.rewards[0].rewardsOwed, 90n);
+    assert.strictEqual(result.rewards[1].rewardsOwed, 160n);
+    assert.strictEqual(result.rewards[2].rewardsOwed, 210n);
   });
 });

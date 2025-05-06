@@ -6,12 +6,14 @@ mod position;
 mod rewards;
 mod swap;
 mod tick;
-mod tick_array;
 mod token;
 mod u128;
 
 #[cfg(feature = "wasm")]
 mod u64;
+
+#[cfg(feature = "swap")]
+mod tick_array;
 
 pub use fees::*;
 pub use liquidity::*;
@@ -21,9 +23,11 @@ pub use position::*;
 pub use rewards::*;
 pub use swap::*;
 pub use tick::*;
-pub use tick_array::*;
 pub use token::*;
 pub use u128::*;
 
 #[cfg(feature = "wasm")]
 pub use u64::*;
+
+#[cfg(feature = "swap")]
+pub use tick_array::*;

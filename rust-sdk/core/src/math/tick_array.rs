@@ -145,9 +145,8 @@ fn ticks(tick_array: &Option<TickArrayFacade>) -> &[TickFacade] {
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
-    use crate::get_tick_array_start_tick_index;
-
     use super::*;
+    use crate::get_tick_array_start_tick_index;
 
     fn test_tick(initialized: bool, liquidity_net: i128) -> TickFacade {
         TickFacade {

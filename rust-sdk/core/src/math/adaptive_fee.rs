@@ -8,7 +8,7 @@ use crate::{
 use ethnum::U256;
 
 #[derive(Debug)]
-pub enum FeeRateManager {
+pub(crate) enum FeeRateManager {
     Adaptive {
         a_to_b: bool,
         tick_group_index: i32,

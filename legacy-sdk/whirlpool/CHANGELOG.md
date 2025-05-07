@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.14.0
+
+### Minor Changes
+
+- [#926](https://github.com/orca-so/whirlpools/pull/926) [`49fa31a`](https://github.com/orca-so/whirlpools/commit/49fa31a042254c4f4a7c16594344f66e9c208c2b) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Adaptive Fee SDK update
+
 ## 0.13.21
 
 ### Patch Changes

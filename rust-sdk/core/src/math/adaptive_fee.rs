@@ -6,6 +6,8 @@ use crate::{
     REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
 use ethnum::U256;
+#[cfg(feature = "wasm")]
+use orca_whirlpools_macros::wasm_expose;
 
 /// Check if the whirlpool is initialized with adaptive fee
 ///

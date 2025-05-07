@@ -1,6 +1,9 @@
 use super::{sqrt_price_to_tick_index, tick_index_to_sqrt_price};
 use crate::{
-    AdaptiveFeeConstantsFacade, AdaptiveFeeInfo, AdaptiveFeeVariablesFacade, CoreError, WhirlpoolFacade, ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, FEE_RATE_HARD_LIMIT, INVALID_TIMESTAMP, MAX_REFERENCE_AGE, MAX_TICK_INDEX, MIN_TICK_INDEX, REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+    AdaptiveFeeConstantsFacade, AdaptiveFeeInfo, AdaptiveFeeVariablesFacade, CoreError,
+    WhirlpoolFacade, ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, FEE_RATE_HARD_LIMIT,
+    INVALID_TIMESTAMP, MAX_REFERENCE_AGE, MAX_TICK_INDEX, MIN_TICK_INDEX,
+    REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
 use ethnum::U256;
 
@@ -12,9 +15,7 @@ use ethnum::U256;
 /// # Returns
 /// - A boolean value indicating if the whirlpool is initialized with adaptive fee
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn is_initialized_with_adaptive_fee(
-    whirlpool: WhirlpoolFacade,
-) -> bool {
+pub fn is_initialized_with_adaptive_fee(whirlpool: WhirlpoolFacade) -> bool {
     whirlpool.is_initialized_with_adaptive_fee()
 }
 

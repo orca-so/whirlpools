@@ -321,7 +321,7 @@ async function getOracleData(
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
 ): Promise<OracleData | null> {
-  if (!PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpool.getData())) {
+  if (!PoolUtil.isInitializedWithAdaptiveFee(whirlpool.getData())) {
     return null;
   }
   return SwapUtils.getOracle(

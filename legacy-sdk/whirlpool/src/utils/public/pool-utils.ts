@@ -337,12 +337,12 @@ export class PoolUtil {
   }
 
   /*
-   * Check if the pool is initialized with an adaptive fee tier.
+   * Check if the pool is initialized with an adaptive fee.
    *
    * @param pool The Whirlpool to check
-   * @returns True if the pool is initialized with an adaptive fee tier, false otherwise.
+   * @returns True if the pool is initialized with an adaptive fee, false otherwise.
    */
-  public static isInitializedWithAdaptiveFeeTier(pool: WhirlpoolData): boolean {
+  public static isInitializedWithAdaptiveFee(pool: WhirlpoolData): boolean {
     return this.getFeeTierIndex(pool) !== pool.tickSpacing;
   }
 }

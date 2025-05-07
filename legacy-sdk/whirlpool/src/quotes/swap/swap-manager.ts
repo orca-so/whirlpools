@@ -46,8 +46,7 @@ export function computeSwap(
     : whirlpoolData.feeGrowthGlobalB;
 
   invariant(
-    PoolUtil.isInitializedWithAdaptiveFee(whirlpoolData) ===
-      !!adaptiveFeeInfo,
+    PoolUtil.isInitializedWithAdaptiveFee(whirlpoolData) === !!adaptiveFeeInfo,
     "adaptiveFeeInfo should be non-null if and only if the pool is initialized with adaptive fee tier",
   );
 

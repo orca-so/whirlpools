@@ -240,7 +240,7 @@ pub fn compute_swap<const SIZE: usize>(
     let mut applied_fee_rate_min: Option<u32> = None;
     let mut applied_fee_rate_max: Option<u32> = None;
 
-    if whirlpool.is_initialized_with_adaptive_fee_tier() != adaptive_fee_info.is_some() {
+    if whirlpool.is_initialized_with_adaptive_fee() != adaptive_fee_info.is_some() {
         return Err(INVALID_ADAPTIVE_FEE_INFO);
     }
 

@@ -28,7 +28,7 @@ impl WhirlpoolFacade {
         u16::from_le_bytes(self.fee_tier_index_seed)
     }
 
-    pub fn is_initialized_with_adaptive_fee_tier(&self) -> bool {
+    pub fn is_initialized_with_adaptive_fee(&self) -> bool {
         self.fee_tier_index() != self.tick_spacing
     }
 }

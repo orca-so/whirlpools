@@ -1,5 +1,6 @@
 mod fees;
 mod liquidity;
+mod oracle;
 mod pool;
 mod position;
 mod rewards;
@@ -16,6 +17,7 @@ mod tick_array;
 
 pub use fees::*;
 pub use liquidity::*;
+pub use oracle::*;
 pub use pool::*;
 pub use position::*;
 pub use rewards::*;

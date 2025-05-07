@@ -1,7 +1,11 @@
 import { describe, it, beforeEach, afterEach, vi } from "vitest";
 import assert from "assert";
 import type { FeeTierArgs } from "../src/generated/accounts/feeTier";
+import type { AdaptiveFeeTierArgs } from "../src/generated/accounts/adaptiveFeeTier";
+import type { OracleArgs } from "../src/generated/accounts/oracle";
 import { getFeeTierEncoder } from "../src/generated/accounts/feeTier";
+import { getAdaptiveFeeTierEncoder } from "../src/generated/accounts/adaptiveFeeTier";
+import { getOracleEncoder } from "../src/generated/accounts/oracle";
 import type {
   Address,
   GetProgramAccountsMemcmpFilter,
@@ -95,6 +99,34 @@ import {
   whirlpoolsConfigExtensionWhirlpoolsConfigFilter,
 } from "../src/gpa/whirlpoolsConfigExtension";
 import { fetchDecodedProgramAccounts } from "../src/gpa/utils";
+import {
+  adaptiveFeeTierAdaptiveFeeControlFactorFilter,
+  adaptiveFeeTierDecayPeriodFilter,
+  adaptiveFeeTierDefaultBaseFeeRateFilter,
+  adaptiveFeeTierDelegatedFeeAuthorityFilter,
+  adaptiveFeeTierFeeTierIndexFilter,
+  adaptiveFeeTierFilterPeriodFilter,
+  adaptiveFeeTierInitializePoolAuthorityFilter,
+  adaptiveFeeTierMajorSwapThresholdTicksFilter,
+  adaptiveFeeTierMaxVolatilityFilter,
+  adaptiveFeeTierReductionFactorFilter,
+  adaptiveFeeTierTickGroupSizeFilter,
+  adaptiveFeeTierTickSpacingFilter,
+  adaptiveFeeTierWhirlpoolsConfigFilter,
+  fetchAllAdaptiveFeeTierWithFilter,
+} from "../src/gpa/adaptiveFeeTier";
+import {
+  fetchAllOracleWithFilter,
+  oracleAdaptiveFeeControlFactorFilter,
+  oracleDecayPeriodFilter,
+  oracleFilterPeriodFilter,
+  oracleMajorSwapThresholdTicksFilter,
+  oracleMaxVolatilityFilter,
+  oracleReductionFactorFilter,
+  oracleTickGroupSizeFilter,
+  oracleTradeEnableTimestampFilter,
+  oracleWhirlpoolFilter,
+} from "../src/gpa/oracle";
 
 describe("get program account memcmp filters", () => {
   const mockRpc = createSolanaRpcFromTransport(
@@ -242,9 +274,9 @@ describe("get program account memcmp filters", () => {
   it("Whirlpool", async () => {
     const whirlpoolStruct: WhirlpoolArgs = {
       whirlpoolsConfig: addresses[0],
-      whirlpoolBump: [0],
+      whirlpoolBump: new Uint8Array([0]),
       tickSpacing: 1234,
-      feeTierIndexSeed: [1, 2],
+      feeTierIndexSeed: new Uint8Array([1, 2]),
       feeRate: 4321,
       protocolFeeRate: 5678,
       liquidity: 9012,
@@ -349,6 +381,108 @@ describe("get program account memcmp filters", () => {
     const data = getWhirlpoolsConfigExtensionEncoder().encode(
       whirlpoolsConfigExtensionStruct,
     );
+    assertFilters(data);
+  });
+
+  it("AdaptiveFeeTier", async () => {
+    const adaptiveFeeTierStruct: AdaptiveFeeTierArgs = {
+      whirlpoolsConfig: addresses[0],
+      feeTierIndex: 1234,
+      tickSpacing: 5678,
+      initializePoolAuthority: addresses[1],
+      delegatedFeeAuthority: addresses[2],
+      defaultBaseFeeRate: 9012,
+      filterPeriod: 3456,
+      decayPeriod: 7890,
+      reductionFactor: 4321,
+      adaptiveFeeControlFactor: 98765432,
+      maxVolatilityAccumulator: 10987654,
+      tickGroupSize: 3210,
+      majorSwapThresholdTicks: 9876,
+    };
+    await fetchAllAdaptiveFeeTierWithFilter(
+      mockRpc,
+      adaptiveFeeTierWhirlpoolsConfigFilter(
+        adaptiveFeeTierStruct.whirlpoolsConfig,
+      ),
+      adaptiveFeeTierFeeTierIndexFilter(adaptiveFeeTierStruct.feeTierIndex),
+      adaptiveFeeTierTickSpacingFilter(adaptiveFeeTierStruct.tickSpacing),
+      adaptiveFeeTierInitializePoolAuthorityFilter(
+        adaptiveFeeTierStruct.initializePoolAuthority,
+      ),
+      adaptiveFeeTierDelegatedFeeAuthorityFilter(
+        adaptiveFeeTierStruct.delegatedFeeAuthority,
+      ),
+      adaptiveFeeTierDefaultBaseFeeRateFilter(
+        adaptiveFeeTierStruct.defaultBaseFeeRate,
+      ),
+      adaptiveFeeTierFilterPeriodFilter(adaptiveFeeTierStruct.filterPeriod),
+      adaptiveFeeTierDecayPeriodFilter(adaptiveFeeTierStruct.decayPeriod),
+      adaptiveFeeTierReductionFactorFilter(
+        adaptiveFeeTierStruct.reductionFactor,
+      ),
+      adaptiveFeeTierAdaptiveFeeControlFactorFilter(
+        adaptiveFeeTierStruct.adaptiveFeeControlFactor,
+      ),
+      adaptiveFeeTierMaxVolatilityFilter(
+        adaptiveFeeTierStruct.maxVolatilityAccumulator,
+      ),
+      adaptiveFeeTierTickGroupSizeFilter(adaptiveFeeTierStruct.tickGroupSize),
+      adaptiveFeeTierMajorSwapThresholdTicksFilter(
+        adaptiveFeeTierStruct.majorSwapThresholdTicks,
+      ),
+    );
+    const data = getAdaptiveFeeTierEncoder().encode(adaptiveFeeTierStruct);
+    assertFilters(data);
+  });
+
+  it("Oracle", async () => {
+    const oracleStruct: OracleArgs = {
+      whirlpool: addresses[0],
+      tradeEnableTimestamp: 12345678n,
+      adaptiveFeeConstants: {
+        filterPeriod: 1234,
+        decayPeriod: 5678,
+        reductionFactor: 9012,
+        adaptiveFeeControlFactor: 34567890,
+        maxVolatilityAccumulator: 98765432,
+        tickGroupSize: 1098,
+        majorSwapThresholdTicks: 7654,
+        reserved: new Uint8Array(16),
+      },
+      adaptiveFeeVariables: {
+        lastMajorSwapTimestamp: 12345678n,
+        lastReferenceUpdateTimestamp: 23456789n,
+        tickGroupIndexReference: 3456,
+        volatilityReference: 45678901,
+        volatilityAccumulator: 56789012,
+        reserved: new Uint8Array(16),
+      },
+      reserved: new Uint8Array(128),
+    };
+    await fetchAllOracleWithFilter(
+      mockRpc,
+      oracleWhirlpoolFilter(oracleStruct.whirlpool),
+      oracleTradeEnableTimestampFilter(oracleStruct.tradeEnableTimestamp),
+      oracleFilterPeriodFilter(oracleStruct.adaptiveFeeConstants.filterPeriod),
+      oracleDecayPeriodFilter(oracleStruct.adaptiveFeeConstants.decayPeriod),
+      oracleReductionFactorFilter(
+        oracleStruct.adaptiveFeeConstants.reductionFactor,
+      ),
+      oracleAdaptiveFeeControlFactorFilter(
+        oracleStruct.adaptiveFeeConstants.adaptiveFeeControlFactor,
+      ),
+      oracleMaxVolatilityFilter(
+        oracleStruct.adaptiveFeeConstants.maxVolatilityAccumulator,
+      ),
+      oracleTickGroupSizeFilter(
+        oracleStruct.adaptiveFeeConstants.tickGroupSize,
+      ),
+      oracleMajorSwapThresholdTicksFilter(
+        oracleStruct.adaptiveFeeConstants.majorSwapThresholdTicks,
+      ),
+    );
+    const data = getOracleEncoder().encode(oracleStruct);
     assertFilters(data);
   });
 });

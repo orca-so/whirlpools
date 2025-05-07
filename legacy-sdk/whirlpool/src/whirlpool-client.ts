@@ -8,7 +8,6 @@ import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "./network/public/fetcher";
-import type { WhirlpoolRouter } from "./router/public";
 import type {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
@@ -42,14 +41,6 @@ export interface WhirlpoolClient {
    * @return an WhirlpoolAccountCacheInterface instance
    */
   getFetcher: () => WhirlpoolAccountFetcherInterface;
-
-  /**
-   * Get a WhirlpoolRouter to help generate the best prices when transacting across a set of pools.
-   * @param poolAddresses the addresses of the Whirlpool account addresses to route through
-   * @returns a {@link WhirlpoolRouter} instance
-   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
-   */
-  getRouter: (poolAddresses: Address[]) => Promise<WhirlpoolRouter>;
 
   /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.

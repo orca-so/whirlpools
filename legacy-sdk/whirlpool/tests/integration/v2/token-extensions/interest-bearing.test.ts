@@ -5,6 +5,7 @@ import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../../../src";
 import {
+  NO_ORACLE_DATA,
   PDAUtil,
   swapQuoteWithParams,
   SwapUtils,
@@ -193,6 +194,7 @@ describe("TokenExtension/InterestBearing", () => {
           whirlpoolData,
           IGNORE_CACHE,
         ),
+        oracleData: NO_ORACLE_DATA,
       },
       Percentage.fromFraction(0, 100),
     );

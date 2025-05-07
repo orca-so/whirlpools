@@ -23,11 +23,12 @@ import {
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
 } from "@orca-so/whirlpools-core";
-import type { Whirlpool } from "@orca-so/whirlpools-client";
+import type { Whirlpool, Oracle } from "@orca-so/whirlpools-client";
 import {
   AccountsType,
   fetchAllMaybeTickArray,
   fetchWhirlpool,
+  fetchOracle,
   getOracleAddress,
   getSwapV2Instruction,
   getTickArrayAddress,
@@ -87,6 +88,9 @@ export type SwapInstructions<T extends SwapParams> = {
 
   /** The swap quote, which includes information about the amounts involved in the swap. */
   quote: SwapQuote<T>;
+
+  /** The timestamp when the trade was enabled. */
+  tradeEnableTimestamp: bigint;
 };
 
 function createUninitializedTickArray(
@@ -160,14 +164,30 @@ async function fetchTickArrayOrDefault(
   return tickArrays;
 }
 
+async function getOracle(
+  rpc: Rpc<GetAccountInfoApi>,
+  oracleAddress: Address,
+  whirlpool: Whirlpool,
+): Promise<Oracle | undefined> {
+  // no need to fetch oracle for non-adaptive fee whirlpools
+  const feeTierIndex =
+    whirlpool.feeTierIndexSeed[0] + whirlpool.feeTierIndexSeed[1] * 256;
+  if (whirlpool.tickSpacing == feeTierIndex) {
+    return undefined;
+  }
+  return (await fetchOracle(rpc, oracleAddress)).data;
+}
+
 function getSwapQuote<T extends SwapParams>(
   params: T,
   whirlpool: Whirlpool,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
   tickArrays: TickArrayFacade[],
+  oracle: Oracle | undefined,
   specifiedTokenA: boolean,
   slippageToleranceBps: number,
+  timestamp: bigint,
 ): SwapQuote<T> {
   if ("inputAmount" in params) {
     return swapQuoteByInputToken(
@@ -175,7 +195,9 @@ function getSwapQuote<T extends SwapParams>(
       specifiedTokenA,
       slippageToleranceBps,
       whirlpool,
+      oracle,
       tickArrays,
+      timestamp,
       transferFeeA,
       transferFeeB,
     ) as SwapQuote<T>;
@@ -186,7 +208,9 @@ function getSwapQuote<T extends SwapParams>(
     specifiedTokenA,
     slippageToleranceBps,
     whirlpool,
+    oracle,
     tickArrays,
+    timestamp,
     transferFeeA,
     transferFeeB,
   ) as SwapQuote<T>;
@@ -252,10 +276,14 @@ export async function swapInstructions<T extends SwapParams>(
   const oracleAddress = await getOracleAddress(whirlpool.address).then(
     (x) => x[0],
   );
+  const oracle = await getOracle(rpc, oracleAddress, whirlpool.data);
 
   const currentEpoch = await rpc.getEpochInfo().send();
   const transferFeeA = getCurrentTransferFee(tokenA, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(tokenB, currentEpoch.epoch);
+
+  const timestamp = BigInt(Math.floor(Date.now() / 1000));
+  const tradeEnableTimestamp = oracle?.tradeEnableTimestamp ?? 0n;
 
   const quote = getSwapQuote<T>(
     params,
@@ -263,8 +291,10 @@ export async function swapInstructions<T extends SwapParams>(
     transferFeeA,
     transferFeeB,
     tickArrays.map((x) => x.data),
+    oracle,
     specifiedTokenA,
     slippageToleranceBps,
+    timestamp,
   );
   const maxInAmount = "tokenIn" in quote ? quote.tokenIn : quote.tokenMaxIn;
   const aToB = specifiedTokenA === specifiedInput;
@@ -323,6 +353,7 @@ export async function swapInstructions<T extends SwapParams>(
   return {
     quote,
     instructions,
+    tradeEnableTimestamp,
   };
 }
 

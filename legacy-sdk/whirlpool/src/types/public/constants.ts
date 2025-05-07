@@ -152,3 +152,33 @@ export const FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD = 32768;
  * @category Constants
  */
 export const SPLASH_POOL_TICK_SPACING = 32896;
+
+/**
+ * The maximum fee rate including base fee rate and adaptive fee rate.
+ * @category Constants
+ */
+export const FEE_RATE_HARD_LIMIT = 100_000; // 10%
+
+/**
+ * This constant is used to scale the value of the volatility accumulator.
+ * @category Constants
+ */
+export const VOLATILITY_ACCUMULATOR_SCALE_FACTOR = 10_000;
+
+/**
+ * The denominator of the reduction factor.
+ * @category Constants
+ */
+export const REDUCTION_FACTOR_DENOMINATOR = 10_000;
+
+/**
+ * The denominator of the adaptive fee control factor.
+ * @category Constants
+ */
+export const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR = 100_000;
+
+/**
+ * The time (in seconds) to forcibly reset the reference if it is not updated for a long time.
+ * @category Constants
+ */
+export const MAX_REFERENCE_AGE = 3_600; // 1 hour

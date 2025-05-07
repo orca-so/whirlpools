@@ -10,7 +10,7 @@ export async function getWhirlpoolAddress(
   whirlpoolsConfig: Address,
   tokenMintA: Address,
   tokenMintB: Address,
-  tickSpacing: number,
+  feeTierIndex: number,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
     programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
@@ -19,7 +19,7 @@ export async function getWhirlpoolAddress(
       getAddressEncoder().encode(whirlpoolsConfig),
       getAddressEncoder().encode(tokenMintA),
       getAddressEncoder().encode(tokenMintB),
-      getU16Encoder().encode(tickSpacing),
+      getU16Encoder().encode(feeTierIndex),
     ],
   });
 }

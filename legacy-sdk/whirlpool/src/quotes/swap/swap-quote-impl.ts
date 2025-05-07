@@ -27,6 +27,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     otherAmountThreshold,
     amountSpecifiedIsInput,
+    timestampInSeconds: optionalTimestampInSeconds,
+    oracleData,
     tokenExtensionCtx,
   } = params;
 
@@ -41,8 +43,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   }
 
   if (
-    (aToB && sqrtPriceLimit.gt(whirlpoolData.sqrtPrice)) ||
-    (!aToB && sqrtPriceLimit.lt(whirlpoolData.sqrtPrice))
+    (aToB && sqrtPriceLimit.gte(whirlpoolData.sqrtPrice)) ||
+    (!aToB && sqrtPriceLimit.lte(whirlpoolData.sqrtPrice))
   ) {
     throw new WhirlpoolsError(
       "Provided SqrtPriceLimit is in the opposite direction of the trade.",
@@ -68,6 +70,22 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     throw new WhirlpoolsError(
       "TickArray at index 0 does not contain the Whirlpool current tick index.",
       SwapErrorCode.TickArraySequenceInvalid,
+    );
+  }
+
+  const adaptiveFeeInfo = !!oracleData
+    ? {
+        adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
+        adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
+      }
+    : null;
+
+  const timestampInSeconds =
+    optionalTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
+  if (oracleData?.tradeEnableTimestamp.gt(timestampInSeconds)) {
+    throw new WhirlpoolsError(
+      "Trade is not enabled yet.",
+      SwapErrorCode.TradeIsNotEnabled,
     );
   }
 
@@ -98,6 +116,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
       sqrtPriceLimit,
       amountSpecifiedIsInput,
       aToB,
+      timestampInSeconds,
+      adaptiveFeeInfo,
     );
 
     // otherAmountThreshold should be applied to transfer fee EXCLUDED output amount.
@@ -145,6 +165,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
       estimatedEndTickIndex: swapResults.nextTickIndex,
       estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
       estimatedFeeAmount: swapResults.totalFeeAmount,
+      estimatedFeeRateMin: swapResults.appliedFeeRateMin,
+      estimatedFeeRateMax: swapResults.appliedFeeRateMax,
       transferFee: {
         deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
         deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,
@@ -179,6 +201,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     amountSpecifiedIsInput,
     aToB,
+    timestampInSeconds,
+    adaptiveFeeInfo,
   );
 
   // otherAmountThreshold should be applied to transfer fee INCLUDED input amount.
@@ -222,6 +246,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     estimatedEndTickIndex: swapResults.nextTickIndex,
     estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
     estimatedFeeAmount: swapResults.totalFeeAmount,
+    estimatedFeeRateMin: swapResults.appliedFeeRateMin,
+    estimatedFeeRateMax: swapResults.appliedFeeRateMax,
     transferFee: {
       deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
       deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,

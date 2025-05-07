@@ -8,6 +8,8 @@ use orca_whirlpools_macros::wasm_expose;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub struct WhirlpoolFacade {
+    #[cfg_attr(feature = "wasm", tsify(type = "ReadonlyUint8Array"))]
+    pub fee_tier_index_seed: [u8; 2],
     pub tick_spacing: u16,
     pub fee_rate: u16,
     pub protocol_fee_rate: u16,
@@ -19,6 +21,16 @@ pub struct WhirlpoolFacade {
     pub reward_last_updated_timestamp: u64,
     #[cfg_attr(feature = "wasm", tsify(type = "WhirlpoolRewardInfoFacade[]"))]
     pub reward_infos: [WhirlpoolRewardInfoFacade; NUM_REWARDS],
+}
+
+impl WhirlpoolFacade {
+    pub fn fee_tier_index(&self) -> u16 {
+        u16::from_le_bytes(self.fee_tier_index_seed)
+    }
+
+    pub fn is_initialized_with_adaptive_fee(&self) -> bool {
+        self.fee_tier_index() != self.tick_spacing
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]

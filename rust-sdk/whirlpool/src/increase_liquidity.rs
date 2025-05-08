@@ -593,8 +593,8 @@ pub async fn open_full_range_position_instructions(
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_price` - The lower bound of the price range for the position.
-/// * `upper_price` - The upper bound of the price range for the position.
+/// * `lower_price` - The lower bound of the price range for the position. It have to be greater than 0.0.
+/// * `upper_price` - The upper bound of the price range for the position. It have to be greater than 0.0.
 /// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
@@ -615,6 +615,7 @@ pub async fn open_full_range_position_instructions(
 /// - The pool or token mint accounts are not found or invalid.
 /// - Any RPC request fails.
 /// - The pool is a Splash Pool, as they only support full-range positions.
+/// - The lower or upper price is 0.0.
 ///
 /// # Example
 ///
@@ -658,6 +659,9 @@ pub async fn open_position_instructions(
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    if lower_price == 0.0 || upper_price == 0.0 {
+        return Err("Price cannot be zero".into());
+    }
     let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
@@ -717,7 +721,7 @@ mod tests {
     };
 
     use crate::{
-        increase_liquidity_instructions,
+        increase_liquidity_instructions, open_position_instructions,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
@@ -1018,6 +1022,47 @@ mod tests {
         assert!(
             err_str.contains("Insufficient balance")
                 || err_str.contains("Error processing Instruction 0"),
+            "Unexpected error message: {}",
+            err_str
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_open_position_instructions_fails_if_price_is_zero() -> Result<(), Box<dyn Error>>
+    {
+        let ctx = RpcContext::new().await;
+
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let mint_a_key = minted.get("A").unwrap();
+        let mint_b_key = minted.get("B").unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+
+        // Attempt
+        let res = open_position_instructions(
+            &ctx.rpc,
+            pool_pubkey,
+            0.0,
+            100.0,
+            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await;
+
+        assert!(
+            res.is_err(),
+            "Should fail if user tries to open position with price 0.0"
+        );
+        let err_str = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_str.contains("Price cannot be zero"),
             "Unexpected error message: {}",
             err_str
         );

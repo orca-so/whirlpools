@@ -593,8 +593,8 @@ pub async fn open_full_range_position_instructions(
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_price` - The lower bound of the price range for the position. It have to be greater than 0.0.
-/// * `upper_price` - The upper bound of the price range for the position. It have to be greater than 0.0.
+/// * `lower_price` - The lower bound of the price range for the position. It has to be greater than 0.0.
+/// * `upper_price` - The upper bound of the price range for the position. It has to be greater than 0.0.
 /// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.

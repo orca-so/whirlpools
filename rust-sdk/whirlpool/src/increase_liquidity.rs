@@ -681,15 +681,8 @@ pub async fn open_position_instructions(
     let decimals_a = mint_a.decimals;
     let decimals_b = mint_b.decimals;
 
-    let lower_sqrt_price = price_to_sqrt_price(lower_price, decimals_a, decimals_b);
-    let upper_sqrt_price = price_to_sqrt_price(upper_price, decimals_a, decimals_b);
-
-    if lower_sqrt_price < MIN_SQRT_PRICE || upper_sqrt_price > MAX_SQRT_PRICE {
-        return Err("Price out of range".into());
-    }
-
-    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b);
-    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b);
+    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b)?;
+    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b)?;
 
     internal_open_position(
         rpc,

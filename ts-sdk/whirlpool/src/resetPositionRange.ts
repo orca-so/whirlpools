@@ -22,12 +22,25 @@ import type {
  * @param whirlpool - PublicKey for the whirlpool that the position belongs to.
  */
 export type ResetPositionRangeParams = {
+  /** The wallet of signer that will pay for the transaction. */
   funder: TransactionSigner<Address>;
+
+  /** The authority that owns the token corresponding to this desired position. */
   positionAuthority: TransactionSigner<Address>;
+
+  /** The address of the position to reset. */
   position: Address;
+
+  /** The associated token address for the position token in the owner's wallet. */
   positionTokenAccount: Address;
+
+  /** The tick specifying the lower end of the position range. */
   newTickLowerIndex: number;
+
+  /** The tick specifying the upper end of the position range. */
   newTickUpperIndex: number;
+
+  /** The address of the whirlpool that the position belongs to. */
   whirlpool: Address;
 };
 

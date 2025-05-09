@@ -1,10 +1,11 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
+import type {
+  AdaptiveFeeConstantsData} from "@orca-so/whirlpools-sdk";
 import {
   PDAUtil,
   WhirlpoolIx,
   PoolUtil,
-  PriceMath,
-  AdaptiveFeeConstantsData,
+  PriceMath
 } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
@@ -21,14 +22,14 @@ type WithAdaptiveFee = {
   feeTierPubkey: PublicKey;
   feeRate: number;
   adaptiveFeeConstants: AdaptiveFeeConstantsData;
-}
+};
 type WithoutAdaptiveFee = {
   useAdaptiveFee: false;
   feeTierIndex: number;
   tickSpacing: number;
   feeTierPubkey: PublicKey;
   feeRate: number;
-}
+};
 type FeeTierInfo = WithAdaptiveFee | WithoutAdaptiveFee;
 
 // prompt
@@ -70,7 +71,7 @@ if (!withAdaptiveFeeYesno) {
   if (!feeTier) {
     throw new Error("FeeTier for the tickSpacing not found");
   }
-  
+
   feeTierInfo = {
     useAdaptiveFee: false,
     feeTierIndex: tickSpacing,
@@ -101,9 +102,9 @@ if (!withAdaptiveFeeYesno) {
     feeTierPubkey,
     feeRate: feeTier.defaultBaseFeeRate,
     adaptiveFeeConstants: {
-      ...feeTier
+      ...feeTier,
     },
-  }
+  };
 }
 
 const pda = PDAUtil.getWhirlpool(
@@ -238,10 +239,7 @@ if (!feeTierInfo.useAdaptiveFee) {
     }),
   );
 } else {
-  const oraclePda = PDAUtil.getOracle(
-    ctx.program.programId,
-    pda.publicKey,
-  );
+  const oraclePda = PDAUtil.getOracle(ctx.program.programId, pda.publicKey);
   builder.addInstruction(
     WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
       whirlpoolPda: pda,

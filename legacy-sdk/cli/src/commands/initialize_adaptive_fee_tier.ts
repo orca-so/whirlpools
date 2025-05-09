@@ -22,9 +22,7 @@ const defaultBaseFeeRate = Number.parseInt(defaultBaseFeeRatePer1000000Str);
 
 // This is not contract restriction, just to reserve spaces.
 if (feeTierIndex <= 1024 || feeTierIndex >= 32768) {
-  throw new Error(
-    "feeTierIndex must be in the range of [1025, 32767]",
-  );
+  throw new Error("feeTierIndex must be in the range of [1025, 32767]");
 }
 
 const pda = PDAUtil.getFeeTier(
@@ -61,15 +59,21 @@ console.info("adaptive fee constants...");
 const filterPeriodStr = await promptText("filterPeriod");
 const decayPeriodStr = await promptText("decayPeriod");
 const reductionFactorPer10000Str = await promptText("reductionFactorPer10000");
-const adaptiveFeeControlFactorPer100000Str = await promptText("adaptiveFeeControlFactorPer100000");
-const maxVolatilityAccumulatorStr = await promptText("maxVolatilityAccumulator");
+const adaptiveFeeControlFactorPer100000Str = await promptText(
+  "adaptiveFeeControlFactorPer100000",
+);
+const maxVolatilityAccumulatorStr = await promptText(
+  "maxVolatilityAccumulator",
+);
 const tickGroupSizeStr = await promptText("tickGroupSize");
 const majorSwapThresholdTicksStr = await promptText("majorSwapThresholdTicks");
 
 const filterPeriod = Number.parseInt(filterPeriodStr);
 const decayPeriod = Number.parseInt(decayPeriodStr);
 const reductionFactorPer10000 = Number.parseInt(reductionFactorPer10000Str);
-const adaptiveFeeControlFactorPer100000 = Number.parseInt(adaptiveFeeControlFactorPer100000Str);
+const adaptiveFeeControlFactorPer100000 = Number.parseInt(
+  adaptiveFeeControlFactorPer100000Str,
+);
 const maxVolatilityAccumulator = Number.parseInt(maxVolatilityAccumulatorStr);
 const tickGroupSize = Number.parseInt(tickGroupSizeStr);
 const majorSwapThresholdTicks = Number.parseInt(majorSwapThresholdTicksStr);

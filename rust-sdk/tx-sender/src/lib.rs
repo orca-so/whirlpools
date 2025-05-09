@@ -115,7 +115,7 @@ pub async fn build_transaction_with_config(
 
     let compute_units = compute_budget::estimate_compute_units(
         rpc_client,
-        instructions.clone(),
+        &instructions,
         &payer,
         address_lookup_tables_clone,
     )

@@ -594,8 +594,8 @@ pub async fn open_full_range_position_instructions(
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_price` - The lower bound of the price range for the position. It may return error if the sqrt price is less than MIN_SQRT_PRICE.
-/// * `upper_price` - The upper bound of the price range for the position. It may return error if the sqrt price is more than MAX_SQRT_PRICE.
+/// * `lower_price` - The lower bound of the price range for the position. It returns error if the sqrt price is less than MIN_SQRT_PRICE.
+/// * `upper_price` - The upper bound of the price range for the position. It returns error if the sqrt price is more than MAX_SQRT_PRICE.
 /// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
@@ -616,7 +616,8 @@ pub async fn open_full_range_position_instructions(
 /// - The pool or token mint accounts are not found or invalid.
 /// - Any RPC request fails.
 /// - The pool is a Splash Pool, as they only support full-range positions.
-/// - The lower or upper price is 0.0.
+/// - The sqrt of lower price is less than MIN_SQRT_PRICE.
+/// - The sqrt upper price is greater than MAX_SQRT_PRICE.
 ///
 /// # Example
 ///

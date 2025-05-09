@@ -1,5 +1,6 @@
 use crate::fee_config::{FeeConfig, Percentile, PriorityFeeStrategy};
 use crate::rpc_config::RpcConfig;
+use borsh::BorshDeserialize;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSimulateTransactionConfig;
 use solana_program::instruction::Instruction;
@@ -9,8 +10,6 @@ use solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::message::{v0::Message, VersionedMessage};
 use solana_sdk::transaction::VersionedTransaction;
-
-const SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR: u8 = 0x02;
 
 /// Estimate compute units by simulating a transaction
 pub async fn estimate_compute_units(
@@ -27,10 +26,7 @@ pub async fn estimate_compute_units(
 
     let mut simulation_instructions = instructions.to_vec();
     if extract_compute_unit_limit(&instructions).is_none() {
-        simulation_instructions.insert(
-            0,
-            ComputeBudgetInstruction::set_compute_unit_limit(1_400_000),
-        );
+        simulation_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
     }
 
     let message = Message::try_compile(payer, &simulation_instructions, &alt_accounts, blockhash)
@@ -217,11 +213,11 @@ pub fn get_writable_accounts(instructions: &[Instruction]) -> Vec<Pubkey> {
 fn extract_compute_unit_limit(instructions: &[Instruction]) -> Option<u32> {
     for ix in instructions {
         if ix.program_id == solana_sdk::compute_budget::ID {
-            if ix.data.first() == Some(&SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR) {
-                let limit_bytes_array: [u8; 4] = ix.data.get(1..5)?.try_into().ok()?;
-                return Some(u32::from_le_bytes(limit_bytes_array));
-            } else {
-                return None;
+            match ComputeBudgetInstruction::deserialize(&mut ix.data.as_slice()) {
+                Ok(ComputeBudgetInstruction::SetComputeUnitLimit(limit)) => {
+                    return Some(limit);
+                }
+                _ => {}
             }
         }
     }

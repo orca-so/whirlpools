@@ -17,12 +17,25 @@ import { wrapFunctionWithExecution } from "./actionHelpers";
  * Parameters for transferring a locked position.
  */
 export type TransferLockedPositionParam = {
+  /** The address of the position to transfer. */
   position: Address;
+
+  /** The address of the position mint. */
   positionMint: Address;
+
+  /** The address of the position token account. */
   positionTokenAccount: Address;
+
+  /** The address of the destination token account. */
   detinationTokenAccount: Address;
+
+  /** The address of the lock config. */
   lockConfig: Address;
+
+  /** The address of the position authority. */
   positionAuthority: Address;
+
+  /** The address of the receiver. */
   receiver: Address;
 };
 
@@ -30,6 +43,7 @@ export type TransferLockedPositionParam = {
  * Instructions for transferring a locked position.
  */
 export type TransferLockedPositionInstructions = {
+  /** The instructions for transferring a locked position. */
   instructions: IInstruction[];
 };
 

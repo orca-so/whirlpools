@@ -10,7 +10,7 @@ import {
   getSetTransferFeeInstruction,
   getInitializeScaledUiAmountMintInstruction,
 } from "@solana-program/token-2022";
-import type { Address, IInstruction } from "@solana/kit";
+import type { Address, IInstruction, KeyPairSigner } from "@solana/kit";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import { DEFAULT_ADDRESS } from "../../src/config";
@@ -18,11 +18,12 @@ import { getNextKeypair } from "./keypair";
 
 export async function setupAtaTE(
   mint: Address,
-  config: { amount?: number | bigint } = {},
+  config: { amount?: number | bigint; signer?: KeyPairSigner } = {},
 ): Promise<Address> {
+  const owner = config.signer ?? signer;
   const ata = await findAssociatedTokenPda({
     mint,
-    owner: signer.address,
+    owner: owner.address,
     tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
   });
 
@@ -31,7 +32,7 @@ export async function setupAtaTE(
   instructions.push(
     getCreateAssociatedTokenIdempotentInstruction({
       mint,
-      owner: signer.address,
+      owner: owner.address,
       ata: ata[0],
       payer: signer,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
@@ -43,7 +44,7 @@ export async function setupAtaTE(
       getMintToInstruction({
         mint,
         token: ata[0],
-        mintAuthority: signer,
+        mintAuthority: owner,
         amount: config.amount,
       }),
     );

@@ -11,6 +11,7 @@ import type {
   TransactionSigner,
 } from "@solana/kit";
 import { FUNDER } from "./config";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 /**
  * Parameters for transferring a locked position.
@@ -94,3 +95,9 @@ export async function transferLockedPositionInstructions(
     instructions,
   };
 }
+
+// -------- ACTIONS --------
+
+export const transferLockedPosition = wrapFunctionWithExecution(
+  transferLockedPositionInstructions,
+);

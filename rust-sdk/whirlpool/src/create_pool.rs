@@ -219,7 +219,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let decimals_b = mint_b.base.decimals;
     let token_program_b = mint_b_info.owner;
 
-    let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
+    let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b)?;
 
     let pool_address = get_whirlpool_address(
         &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,

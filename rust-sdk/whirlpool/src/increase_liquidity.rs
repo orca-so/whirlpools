@@ -593,8 +593,8 @@ pub async fn open_full_range_position_instructions(
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_price` - The lower bound of the price range for the position.
-/// * `upper_price` - The upper bound of the price range for the position.
+/// * `lower_price` - The lower bound of the price range for the position. It returns error if the sqrt price is less than MIN_SQRT_PRICE.
+/// * `upper_price` - The upper bound of the price range for the position. It returns error if the sqrt price is more than MAX_SQRT_PRICE.
 /// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
@@ -615,6 +615,8 @@ pub async fn open_full_range_position_instructions(
 /// - The pool or token mint accounts are not found or invalid.
 /// - Any RPC request fails.
 /// - The pool is a Splash Pool, as they only support full-range positions.
+/// - The sqrt of lower price is less than MIN_SQRT_PRICE.
+/// - The sqrt upper price is greater than MAX_SQRT_PRICE.
 ///
 /// # Example
 ///
@@ -678,8 +680,20 @@ pub async fn open_position_instructions(
     let decimals_a = mint_a.decimals;
     let decimals_b = mint_b.decimals;
 
-    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b);
-    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b);
+    let lower_tick_index =
+        price_to_tick_index(lower_price, decimals_a, decimals_b).map_err(|e| {
+            format!(
+                "lower_price must be greater than 0, you entered {}",
+                lower_price
+            )
+        })?;
+    let upper_tick_index =
+        price_to_tick_index(upper_price, decimals_a, decimals_b).map_err(|e| {
+            format!(
+                "upper_price must be greater than 0, you entered {}",
+                upper_price
+            )
+        })?;
 
     internal_open_position(
         rpc,
@@ -717,7 +731,7 @@ mod tests {
     };
 
     use crate::{
-        increase_liquidity_instructions,
+        increase_liquidity_instructions, open_position_instructions,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
@@ -1018,6 +1032,88 @@ mod tests {
         assert!(
             err_str.contains("Insufficient balance")
                 || err_str.contains("Error processing Instruction 0"),
+            "Unexpected error message: {}",
+            err_str
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_open_position_fails_if_lower_price_is_zero() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let mint_a_key = minted.get("A").unwrap();
+        let mint_b_key = minted.get("B").unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+
+        // Attempt
+        let lower_price = 0.0; // if price is 0.0, open_position_instructions will be failed
+        let res = open_position_instructions(
+            &ctx.rpc,
+            pool_pubkey,
+            lower_price,
+            100.0,
+            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await;
+
+        assert!(
+            res.is_err(),
+            "Should fail if user tries to open position with price is very small"
+        );
+        let err_str = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_str.contains("lower_price must be greater than 0"),
+            "Unexpected error message: {}",
+            err_str
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_open_position_fails_if_upper_price_is_zero() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let mint_a_key = minted.get("A").unwrap();
+        let mint_b_key = minted.get("B").unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+
+        // Attempt
+        let upper_price = 0.0; // if price is 0.0, open_position_instructions will be failed
+        let res = open_position_instructions(
+            &ctx.rpc,
+            pool_pubkey,
+            0.1,
+            upper_price,
+            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await;
+
+        assert!(
+            res.is_err(),
+            "Should fail if user tries to open position with price is very small"
+        );
+        let err_str = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_str.contains("upper_price must be greater than 0"),
             "Unexpected error message: {}",
             err_str
         );

@@ -1,4 +1,8 @@
-import { getResetPositionRangeInstruction } from "@orca-so/whirlpools-client";
+import {
+  fetchPosition,
+  getPositionAddress,
+  getResetPositionRangeInstruction,
+} from "@orca-so/whirlpools-client";
 import type {
   Address,
   GetAccountInfoApi,
@@ -9,39 +13,27 @@ import type {
   IInstruction,
   TransactionSigner,
 } from "@solana/kit";
+import { DEFAULT_ADDRESS, FUNDER } from "./config";
+import { fetchMaybeMint } from "@solana-program/token-2022";
+import { findAssociatedTokenPda } from "@solana-program/token";
+import assert from "assert";
 
 /**
  * Parameters to reset position range.
  *
- * @param funder - The account that create original position.
- * @param positionAuthority - Authority that owns the token corresponding to this desired position.
- * @param position - PublicKey for the position which will be reset.
- * @param positionTokenAccount - The associated token address for the	position token in the owners wallet.
+ * @param positionMintAddress - The address of the position mint.
  * @param newTickLowerIndex - The tick specifying the lower end of the position range.
  * @param newTickUpperIndex - The tick specifying the upper end of the position range.
- * @param whirlpool - PublicKey for the whirlpool that the position belongs to.
  */
 export type ResetPositionRangeParams = {
-  /** The wallet of signer that will pay for the transaction. */
-  funder: TransactionSigner<Address>;
-
-  /** The authority that owns the token corresponding to this desired position. */
-  positionAuthority: TransactionSigner<Address>;
-
-  /** The address of the position to reset. */
-  position: Address;
-
-  /** The associated token address for the position token in the owner's wallet. */
-  positionTokenAccount: Address;
+  /** The address of the position mint. */
+  positionMintAddress: Address;
 
   /** The tick specifying the lower end of the position range. */
   newTickLowerIndex: number;
 
   /** The tick specifying the upper end of the position range. */
   newTickUpperIndex: number;
-
-  /** The address of the whirlpool that the position belongs to. */
-  whirlpool: Address;
 };
 
 /**
@@ -56,6 +48,7 @@ export type ResetPositionRageInstructions = {
  *
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {ResetPositionRangeParams} params - The parameters for resetting a position range.
+ * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction. Defaults to a predefined funder.
  * @returns {Promise<ResetPositionRageInstructions>} A promise that resolves to an object containing instructions.
  *
  * @example
@@ -66,23 +59,18 @@ export type ResetPositionRageInstructions = {
  * const devnetRpc = createSolanaRpc(devnet("https://api.devnet.solana.com"));
  * const wallet = await loadWallet();
  *
- * const position = address("5uiTr6jPdCXNfBWyfhAS9HScpkhGpoPEsaKcYUDMB2Nw");
- * const positionTokenAccount = address("2t3H9fSEJftE6TS7kgTYqRbnhdRUkCRfxdULybFTgWPu");
- * const whirlpool = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
+ * const positionMintAddress = address("5uiTr6jPdCXNfBWyfhAS9HScpkhGpoPEsaKcYUDMB2Nw");
  * const newTickLowerIndex = 300_000;
  * const newTickUpperIndex = 400_000;
  *
  * const instructions = await resetPositionRangeInstructions(
  *   devnetRpc,
  *   {
- *     funder: wallet,
- *     positionAuthority: wallet,
- *     position,
- *     positionTokenAccount,
+ *     positionMintAddress,
  *     newTickLowerIndex,
  *     newTickUpperIndex,
- *     whirlpool,
- *   }
+ *   },
+ *   wallet,
  * );
  */
 export async function resetPositionRangeInstructions(
@@ -93,18 +81,36 @@ export async function resetPositionRangeInstructions(
       GetEpochInfoApi
   >,
   params: ResetPositionRangeParams,
+  authority: TransactionSigner = FUNDER,
 ): Promise<ResetPositionRageInstructions> {
+  assert(
+    authority.address !== DEFAULT_ADDRESS,
+    "Either supply an authority or set the default funder",
+  );
+
   const instructions: IInstruction[] = [];
+
+  const positionAddress = await getPositionAddress(params.positionMintAddress);
+  const position = await fetchPosition(rpc, positionAddress[0]);
+  const positionMint = await fetchMaybeMint(rpc, position.data.positionMint);
+
+  assert(positionMint.exists, "Position mint not found");
+
+  const positionTokenAccount = await findAssociatedTokenPda({
+    owner: authority.address,
+    mint: params.positionMintAddress,
+    tokenProgram: positionMint.programAddress,
+  });
 
   instructions.push(
     getResetPositionRangeInstruction({
-      funder: params.funder,
-      positionAuthority: params.positionAuthority,
-      position: params.position,
-      positionTokenAccount: params.positionTokenAccount,
+      funder: authority,
+      positionAuthority: authority,
+      position: position.address,
+      positionTokenAccount: positionTokenAccount[0],
       newTickLowerIndex: params.newTickLowerIndex,
       newTickUpperIndex: params.newTickUpperIndex,
-      whirlpool: params.whirlpool,
+      whirlpool: position.data.whirlpool,
     }),
   );
 

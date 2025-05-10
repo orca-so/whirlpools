@@ -13,10 +13,6 @@ import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import { getInitializableTickIndex } from "@orca-so/whirlpools-core";
 import { resetPositionRangeInstructions } from "../src/resetPositionRange";
-import {
-  findAssociatedTokenPda,
-  TOKEN_2022_PROGRAM_ADDRESS,
-} from "@solana-program/token-2022";
 import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
 
 const mintTypes = new Map([
@@ -42,7 +38,7 @@ const poolTypes = new Map([
   ["A-TEFee", setupWhirlpool],
 ]);
 
-describe("Open Position Instructions", () => {
+describe("Reset Position Range Instructions", () => {
   const tickSpacing = 64;
   const tokenBalance = 1_000_000n;
   const mints: Map<string, Address> = new Map();
@@ -96,12 +92,6 @@ describe("Open Position Instructions", () => {
 
     await sendTransaction(decreaseLiquidityIx);
 
-    const positionTokenAccount = await findAssociatedTokenPda({
-      owner: signer.address,
-      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
-      mint: positionMint,
-    });
-
     // 3. Reset the position range with initializable tick index
     const initializableLowerTickIndex = getInitializableTickIndex(
       -400,
@@ -115,15 +105,15 @@ describe("Open Position Instructions", () => {
     );
 
     const { instructions: resetInstructions } =
-      await resetPositionRangeInstructions(rpc, {
-        funder: signer,
-        positionAuthority: signer,
-        position: positionAddress[0],
-        positionTokenAccount: positionTokenAccount[0],
-        newTickLowerIndex: initializableLowerTickIndex,
-        newTickUpperIndex: initializableUpperTickIndex,
-        whirlpool: whirlpool,
-      });
+      await resetPositionRangeInstructions(
+        rpc,
+        {
+          positionMintAddress: positionMint,
+          newTickLowerIndex: initializableLowerTickIndex,
+          newTickUpperIndex: initializableUpperTickIndex,
+        },
+        signer,
+      );
 
     await sendTransaction(resetInstructions);
 

@@ -10,8 +10,7 @@ use orca_whirlpools_client::{IncreaseLiquidityV2, IncreaseLiquidityV2Instruction
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
     increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
-    order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote,
-    TransferFee,
+    order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote, TransferFee,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::account::Account;
@@ -681,10 +680,20 @@ pub async fn open_position_instructions(
     let decimals_a = mint_a.decimals;
     let decimals_b = mint_b.decimals;
 
-    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b)
-        .map_err(|e| format!("lower_price must be greater than 0, you entered {}", lower_price))?;
-    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b)
-        .map_err(|e| format!("upper_price must be greater than 0, you entered {}", upper_price))?;
+    let lower_tick_index =
+        price_to_tick_index(lower_price, decimals_a, decimals_b).map_err(|e| {
+            format!(
+                "lower_price must be greater than 0, you entered {}",
+                lower_price
+            )
+        })?;
+    let upper_tick_index =
+        price_to_tick_index(upper_price, decimals_a, decimals_b).map_err(|e| {
+            format!(
+                "upper_price must be greater than 0, you entered {}",
+                upper_price
+            )
+        })?;
 
     internal_open_position(
         rpc,
@@ -1037,7 +1046,7 @@ mod tests {
 
         let minted = setup_all_mints(&ctx).await?;
         let user_atas = setup_all_atas(&ctx, &minted).await?;
-        
+
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
         let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
@@ -1078,7 +1087,7 @@ mod tests {
 
         let minted = setup_all_mints(&ctx).await?;
         let user_atas = setup_all_atas(&ctx, &minted).await?;
-        
+
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
         let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;

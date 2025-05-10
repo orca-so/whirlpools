@@ -116,6 +116,7 @@ mod tests {
         assert_eq!(price_to_sqrt_price(100.0, 6, 6)?, 184467440737095516160);
         assert_eq!(price_to_sqrt_price(100.0111, 6, 8)?, 1844776783959692673024);
 
+        // should error because price is 0.0
         assert!(price_to_sqrt_price(0.0, 8, 6).is_err());
 
         Ok(())
@@ -138,6 +139,9 @@ mod tests {
         assert_relative_eq!(invert_price(100.0, 6, 6)?, 0.01, epsilon = 1e-5);
         assert_relative_eq!(invert_price(100.0111, 6, 8)?, 9.99e-7, epsilon = 1e-5);
 
+        // should error because price is 0.0
+        assert!(invert_price(0.0, 6, 8).is_err());
+
         Ok(())
     }
 
@@ -153,6 +157,9 @@ mod tests {
         assert_eq!(price_to_tick_index(0.009998, 8, 6)?, -92111);
         assert_eq!(price_to_tick_index(1.0, 6, 6)?, 0);
         assert_eq!(price_to_tick_index(99.999912, 6, 8)?, 92108);
+
+        // should error because price is 0.0
+        assert!(price_to_tick_index(0.0, 6, 8).is_err());
 
         Ok(())
     }

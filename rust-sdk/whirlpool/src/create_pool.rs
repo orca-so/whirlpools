@@ -219,7 +219,8 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let decimals_b = mint_b.base.decimals;
     let token_program_b = mint_b_info.owner;
 
-    let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b)?;
+    let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b)
+        .map_err(|e| format!("Initial price has to be greater than 0, you entered {}", initial_price))?;
 
     let pool_address = get_whirlpool_address(
         &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,
@@ -359,7 +360,7 @@ mod tests {
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 9, 9);
+        let sqrt_price = price_to_sqrt_price(price, 9, 9).expect("Failed to convert price to sqrt price (is price zero?)");;
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
@@ -410,7 +411,7 @@ mod tests {
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+        let sqrt_price = price_to_sqrt_price(price, 9, 6).expect("Failed to convert price to sqrt price (is price zero?)");;
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
@@ -461,7 +462,7 @@ mod tests {
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 6, 6);
+        let sqrt_price = price_to_sqrt_price(price, 6, 6).expect("Failed to convert price to sqrt price (is price zero?)");;
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
@@ -512,7 +513,7 @@ mod tests {
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+        let sqrt_price = price_to_sqrt_price(price, 9, 6).expect("Failed to convert price to sqrt price (is price zero?)");;
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
@@ -563,7 +564,7 @@ mod tests {
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 9, 9);
+        let sqrt_price = price_to_sqrt_price(price, 9, 9).expect("Failed to convert price to sqrt price (is price zero?)");
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
@@ -615,7 +616,7 @@ mod tests {
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+        let sqrt_price = price_to_sqrt_price(price, 9, 6).expect("Failed to convert price to sqrt price (is price zero?)");
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
@@ -667,7 +668,7 @@ mod tests {
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 6, 6);
+        let sqrt_price = price_to_sqrt_price(price, 6, 6).expect("Failed to convert price to sqrt price (is price zero?)");
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
@@ -719,7 +720,7 @@ mod tests {
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
         let price = 10.0;
-        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+        let sqrt_price = price_to_sqrt_price(price, 9, 6).expect("Failed to convert price to sqrt price (is price zero?)");
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,

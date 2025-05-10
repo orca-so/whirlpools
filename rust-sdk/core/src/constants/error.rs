@@ -54,4 +54,5 @@ pub const INVALID_TICK_ARRAY_SEQUENCE: CoreError = "Invalid tick array sequence"
 pub const INVALID_ADAPTIVE_FEE_INFO: CoreError = "Invalid adaptive fee info";
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub const INVALID_PRICE: CoreError = "Price represented in floating point has to be greater than 0";
+pub const INVALID_FLOAT_PRICE: CoreError =
+    "Price represented in floating point has to be greater than 0";

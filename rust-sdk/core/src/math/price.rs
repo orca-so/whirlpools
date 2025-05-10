@@ -3,9 +3,9 @@ use orca_whirlpools_macros::wasm_expose;
 
 use libm::{floor, pow, sqrt};
 
-use crate::U128;
-use crate::{INVALID_PRICE, CoreError};
 use super::{invert_tick_index, sqrt_price_to_tick_index, tick_index_to_sqrt_price};
+use crate::U128;
+use crate::{CoreError, INVALID_FLOAT_PRICE};
 
 const Q64_RESOLUTION: f64 = 18446744073709551616.0;
 
@@ -23,7 +23,7 @@ const Q64_RESOLUTION: f64 = 18446744073709551616.0;
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn price_to_sqrt_price(price: f64, decimals_a: u8, decimals_b: u8) -> Result<U128, CoreError> {
     if price <= 0.0 {
-        return Err(INVALID_PRICE);
+        return Err(INVALID_FLOAT_PRICE);
     }
     let power = pow(10f64, decimals_a as f64 - decimals_b as f64);
     Ok((floor(sqrt(price / power) * Q64_RESOLUTION) as u128).into())
@@ -63,7 +63,11 @@ pub fn sqrt_price_to_price(sqrt_price: U128, decimals_a: u8, decimals_b: u8) -> 
 pub fn invert_price(price: f64, decimals_a: u8, decimals_b: u8) -> Result<f64, CoreError> {
     let tick_index = price_to_tick_index(price, decimals_a, decimals_b)?;
     let inverted_tick_index = invert_tick_index(tick_index);
-    Ok(tick_index_to_price(inverted_tick_index, decimals_a, decimals_b))
+    Ok(tick_index_to_price(
+        inverted_tick_index,
+        decimals_a,
+        decimals_b,
+    ))
 }
 
 /// Convert a tick index into a price

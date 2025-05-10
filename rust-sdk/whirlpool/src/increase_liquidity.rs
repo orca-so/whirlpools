@@ -10,8 +10,8 @@ use orca_whirlpools_client::{IncreaseLiquidityV2, IncreaseLiquidityV2Instruction
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
     increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
-    order_tick_indexes, price_to_sqrt_price, price_to_tick_index, IncreaseLiquidityQuote,
-    TransferFee, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
+    order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote,
+    TransferFee,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::account::Account;

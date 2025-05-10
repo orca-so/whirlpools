@@ -681,8 +681,10 @@ pub async fn open_position_instructions(
     let decimals_a = mint_a.decimals;
     let decimals_b = mint_b.decimals;
 
-    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b)?;
-    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b)?;
+    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b)
+        .map_err(|e| format!("lower_price must be greater than 0, you entered {}", lower_price))?;
+    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b)
+        .map_err(|e| format!("upper_price must be greater than 0, you entered {}", upper_price))?;
 
     internal_open_position(
         rpc,
@@ -1030,13 +1032,12 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_open_position_instructions_fails_if_sqrt_price_is_less_than_min_sqrt_price(
-    ) -> Result<(), Box<dyn Error>> {
+    async fn test_open_position_fails_if_lower_price_is_zero() -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new().await;
 
         let minted = setup_all_mints(&ctx).await?;
         let user_atas = setup_all_atas(&ctx, &minted).await?;
-
+        
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
         let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
@@ -1044,7 +1045,7 @@ mod tests {
         let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
         // Attempt
-        let lower_price = 5.41e-20; // if price is 5.41e-20, sqrt price is less than MIN_SQRT_PRICE
+        let lower_price = 0.0; // if price is 0.0, open_position_instructions will be failed
         let res = open_position_instructions(
             &ctx.rpc,
             pool_pubkey,
@@ -1062,7 +1063,7 @@ mod tests {
         );
         let err_str = format!("{:?}", res.err().unwrap());
         assert!(
-            err_str.contains("Price out of range"),
+            err_str.contains("lower_price must be greater than 0"),
             "Unexpected error message: {}",
             err_str
         );
@@ -1072,13 +1073,12 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_open_position_instructions_fails_if_sqrt_price_is_greater_than_max_sqrt_price(
-    ) -> Result<(), Box<dyn Error>> {
+    async fn test_open_position_fails_if_upper_price_is_zero() -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new().await;
 
         let minted = setup_all_mints(&ctx).await?;
         let user_atas = setup_all_atas(&ctx, &minted).await?;
-
+        
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
         let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
@@ -1086,11 +1086,11 @@ mod tests {
         let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
         // Attempt
-        let upper_price = 1.85e19; // if price is 1.85e19, sqrt price is greater than MAX_SQRT_PRICE
+        let upper_price = 0.0; // if price is 0.0, open_position_instructions will be failed
         let res = open_position_instructions(
             &ctx.rpc,
             pool_pubkey,
-            100.0,
+            0.1,
             upper_price,
             IncreaseLiquidityParam::TokenA(2_000_000_000),
             Some(100),
@@ -1104,7 +1104,7 @@ mod tests {
         );
         let err_str = format!("{:?}", res.err().unwrap());
         assert!(
-            err_str.contains("Price out of range"),
+            err_str.contains("upper_price must be greater than 0"),
             "Unexpected error message: {}",
             err_str
         );

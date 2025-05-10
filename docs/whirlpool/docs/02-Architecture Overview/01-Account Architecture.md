@@ -6,7 +6,7 @@
 
 ## WhirlpoolsConfig
 
-The owner of a Config account has the authority to define the many authorities over the pools that it owns (ex. default fees, collect protocol fees etc) . Whirlpools visible on the ORCA UI are all derived and controlled by a WhirlpoolsConfig account owned by the ORCA foundation. To learn more about managing pools, start [here](../03-SDKs/03-Whirlpool%20Management/01-Create%20Pool.mdx).
+The owner of a Config account has the authority to define the many authorities over the pools that it owns (ex. default fees, collect protocol fees etc.). Whirlpools visible on the ORCA UI are all derived and controlled by a WhirlpoolsConfig account owned by the ORCA foundation. To learn more about managing pools, start [here](../03-SDKs/03-Whirlpool%20Management/01-Create%20Pool.mdx).
 
 Users and other protocols are free to deploy their own WhirlpoolsConfig account on our Whirlpool program to spawn their own set of liquidity pools.
 
@@ -31,11 +31,11 @@ Users are able to perform position management and fee/reward collection operatio
 
 ## TickArray
 
-To learn about TickArry, read [Understanding Tick Arrays](./03-Understanding%20Tick%20Arrays.md)
+To learn about TickArray, read [Understanding Tick Arrays](./03-Understanding%20Tick%20Arrays.md)
 
 ## Position
 
-Positions represents a set of liquidity distributed on a price range within a single Whirlpool. To learn more, read [Tokenized Positions](./04-Tokenized%20Positions.md)
+Positions represent a set of liquidity distributed on a price range within a single Whirlpool. To learn more, read [Tokenized Positions](./04-Tokenized%20Positions.md)
 
 ## PositionBundle
 

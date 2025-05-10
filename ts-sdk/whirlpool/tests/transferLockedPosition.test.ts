@@ -111,8 +111,6 @@ describe("Create TransferLockedPosition instructions", () => {
 
     assert(positionMint.exists, "Position mint not found");
 
-    console.log("positionMint", positionMint);
-
     const [positionTokenAccountAddress] = await findAssociatedTokenPda({
       owner: signer.address,
       mint: positionMintAddress,
@@ -132,7 +130,6 @@ describe("Create TransferLockedPosition instructions", () => {
     });
 
     await sendTransaction(lockPositionInstruction.instructions);
-    console.log("Position Locked!");
 
     // 2. Then, transfer the position to the new owner
     const receiver = getNextKeypair();

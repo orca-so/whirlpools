@@ -6,8 +6,11 @@ import {
   setupMintTE,
   setupMintTEFee,
 } from "./utils/tokenExtensions";
-import { setupWhirlpool } from "./utils/program";
-import { openPositionInstructions } from "../src/increaseLiquidity";
+import {
+  setupPosition,
+  setupTEPosition,
+  setupWhirlpool,
+} from "./utils/program";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
 import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
 import assert from "assert";
@@ -38,12 +41,20 @@ const poolTypes = new Map([
   ["A-TEFee", setupWhirlpool],
 ]);
 
+const positionTypes = new Map([
+  ["equally centered", { tickLower: -100, tickUpper: 100 }],
+  ["one sided A", { tickLower: -100, tickUpper: -1 }],
+  ["one sided B", { tickLower: 1, tickUpper: 100 }],
+]);
+
 describe("Reset Position Range Instructions", () => {
   const tickSpacing = 64;
   const tokenBalance = 1_000_000n;
+  const initialLiquidity = 100_000n;
   const mints: Map<string, Address> = new Map();
   const atas: Map<string, Address> = new Map();
   const pools: Map<string, Address> = new Map();
+  const positions: Map<string, Address> = new Map();
 
   beforeAll(async () => {
     for (const [name, setup] of mintTypes) {
@@ -61,33 +72,35 @@ describe("Reset Position Range Instructions", () => {
       const mintB = mints.get(mintBKey)!;
       pools.set(name, await setup(mintA, mintB, tickSpacing));
     }
+
+    // setup position
+    for (const [poolName, poolAddress] of pools) {
+      for (const [positionTypeName, tickRange] of positionTypes) {
+        const position = await setupPosition(poolAddress, {
+          ...tickRange,
+          liquidity: initialLiquidity,
+        });
+        positions.set(`${poolName} ${positionTypeName}`, position);
+
+        const positionTE = await setupTEPosition(poolAddress, {
+          ...tickRange,
+          liquidity: initialLiquidity,
+        });
+        positions.set(`TE ${poolName} ${positionTypeName}`, positionTE);
+      }
+    }
   });
 
-  const testOpenPositionInstructions = async (
+  const testResetPositionRange = async (
     poolName: string,
-    lowerPrice: number,
-    upperPrice: number,
+    positionName: string,
   ) => {
-    const whirlpool = pools.get(poolName)!;
-    const param = { liquidity: 10_000n };
+    // 1. Decrease liquidity to 0, because we can reset only empty position
+    const positionMintAddress = positions.get(positionName)!;
 
-    // 1. Open a new position
-    const { instructions, positionMint } = await openPositionInstructions(
-      rpc,
-      whirlpool,
-      param,
-      lowerPrice,
-      upperPrice,
-    );
-
-    const positionAddress = await getPositionAddress(positionMint);
-
-    await sendTransaction(instructions);
-
-    // 2. Decrease liquidity to 0, because we can reset only empty position
     const { instructions: decreaseLiquidityIx } =
-      await decreaseLiquidityInstructions(rpc, positionMint, {
-        liquidity: 10_000n,
+      await decreaseLiquidityInstructions(rpc, positionMintAddress, {
+        liquidity: initialLiquidity,
       });
 
     await sendTransaction(decreaseLiquidityIx);
@@ -108,7 +121,7 @@ describe("Reset Position Range Instructions", () => {
       await resetPositionRangeInstructions(
         rpc,
         {
-          positionMintAddress: positionMint,
+          positionMintAddress: positionMintAddress,
           newTickLowerIndex: initializableLowerTickIndex,
           newTickUpperIndex: initializableUpperTickIndex,
         },
@@ -118,6 +131,7 @@ describe("Reset Position Range Instructions", () => {
     await sendTransaction(resetInstructions);
 
     // verfiy if position is reset to index range user set
+    const positionAddress = await getPositionAddress(positionMintAddress);
     const positionAfter = await fetchPosition(rpc, positionAddress[0]);
     assert.strictEqual(
       positionAfter.data.tickLowerIndex,
@@ -130,8 +144,11 @@ describe("Reset Position Range Instructions", () => {
   };
 
   for (const poolName of poolTypes.keys()) {
-    it(`Should reset a position with a specific price range for ${poolName}`, async () => {
-      await testOpenPositionInstructions(poolName, 0.95, 1.05);
-    });
+    for (const positionTypeName of positionTypes.keys()) {
+      const positionName = `${poolName} ${positionTypeName}`;
+      it(`Should reset a position for ${positionName}`, async () => {
+        await testResetPositionRange(poolName, positionName);
+      });
+    }
   }
 });

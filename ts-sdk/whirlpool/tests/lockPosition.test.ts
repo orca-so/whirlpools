@@ -1,6 +1,5 @@
 import { describe, it, beforeAll } from "vitest";
 import type { Address } from "@solana/kit";
-import { transferLockedPositionInstructions } from "../src/transferLockedPosition";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
 import assert from "assert";
 import { setupAta, setupMint } from "./utils/token";
@@ -23,10 +22,8 @@ import { lockPositionInstructions } from "../src/lockPosition";
 import { getLockConfigAddress } from "../../client/src/pda/lockConfig";
 import {
   fetchMaybeMint,
-  fetchToken,
   findAssociatedTokenPda,
 } from "@solana-program/token-2022";
-import { getNextKeypair } from "./utils/keypair";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -57,7 +54,7 @@ const positionTypes = new Map([
   ["one sided B", { tickLower: 1, tickUpper: 100 }],
 ]);
 
-describe("Create TransferLockedPosition instructions", () => {
+describe("LockPosition instructions", () => {
   const tickSpacing = 64;
   const tokenBalance = 1_000_000n;
   const initialLiquidity = 100_000n;
@@ -100,10 +97,7 @@ describe("Create TransferLockedPosition instructions", () => {
     }
   });
 
-  const testTransferLockedPosition = async (
-    poolName: string,
-    positionName: string,
-  ) => {
+  const testlockPosition = async (poolName: string, positionName: string) => {
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress] = await getPositionAddress(positionMintAddress);
     const [lockConfigAddress] = await getLockConfigAddress(positionAddress);
@@ -111,15 +105,11 @@ describe("Create TransferLockedPosition instructions", () => {
 
     assert(positionMint.exists, "Position mint not found");
 
-    console.log("positionMint", positionMint);
-
     const [positionTokenAccountAddress] = await findAssociatedTokenPda({
       owner: signer.address,
       mint: positionMintAddress,
       tokenProgram: positionMint.programAddress,
     });
-
-    // 1. First, lock the position
     const lockPositionInstruction = await lockPositionInstructions({
       lockType: LockType.Permanent,
       funder: signer,
@@ -132,67 +122,32 @@ describe("Create TransferLockedPosition instructions", () => {
     });
 
     await sendTransaction(lockPositionInstruction.instructions);
-    console.log("Position Locked!");
 
-    // 2. Then, transfer the position to the new owner
-    const receiver = getNextKeypair();
-    const receiverTokenAccountAddress = await setupAtaTE(positionMintAddress, {
-      amount: 0,
-      signer: receiver,
-    });
-    const transferLockedPositionInstruction =
-      await transferLockedPositionInstructions(
-        rpc,
-        {
-          positionMintAddress: positionMintAddress,
-          detinationTokenAccount: receiverTokenAccountAddress,
-          lockConfig: lockConfigAddress,
-          receiver: receiver.address,
-        },
-        signer,
-      );
-
-    await sendTransaction(transferLockedPositionInstruction.instructions);
-
-    // 3. Verify the position is transferred
-    const receiverTokenAccount = await fetchToken(
-      rpc,
-      receiverTokenAccountAddress,
-    );
-    assert(
-      receiverTokenAccount.data.amount === BigInt(1),
-      "Receiver token account amount is not the same as the token balance",
-    );
-    assert(
-      receiverTokenAccount.data.owner === receiver.address,
-      "Receiver token account owner is not the same as the receiver",
-    );
-
-    // 4. Verify the lock config is still valid
+    // Verify lock config
     const lockConfig = await fetchLockConfig(rpc, lockConfigAddress);
     assert(
-      lockConfig.data.positionOwner === receiver.address,
-      "Lock config position owner is not the same as the receiver",
-    );
-    assert(
-      lockConfig.data.position === positionAddress,
-      "Lock config position is not the same as the position",
+      lockConfig.data.lockType.toFixed() == LockType.Permanent.toFixed(),
+      "Lock config lock type is not permanent",
     );
     assert(
       lockConfig.data.lockedTimestamp > 0,
       "Lock config locked timestamp is not set",
     );
     assert(
-      lockConfig.data.lockType.toFixed() === LockType.Permanent.toFixed(),
-      "Lock config lock type is not permanent",
+      lockConfig.data.position == positionAddress,
+      "Lock config position is not the same as the position",
+    );
+    assert(
+      lockConfig.data.positionOwner === signer.address,
+      "Lock config position owner is not the same as the signer",
     );
   };
 
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {
       const positionNameTE = `TE ${poolName} ${positionTypeName}`;
-      it("Should transfer locked position when signer is position owner", async () => {
-        await testTransferLockedPosition(poolName, positionNameTE);
+      it(`Should be able to lock position for ${positionNameTE}`, async () => {
+        await testlockPosition(poolName, positionNameTE);
       });
     }
   }

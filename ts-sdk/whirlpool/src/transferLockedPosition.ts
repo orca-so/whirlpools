@@ -1,5 +1,12 @@
-import { getTransferLockedPositionInstruction } from "@orca-so/whirlpools-client";
-import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import {
+  fetchPosition,
+  getPositionAddress,
+  getTransferLockedPositionInstruction,
+} from "@orca-so/whirlpools-client";
+import {
+  fetchMaybeMint,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "@solana-program/token-2022";
 import type {
   Address,
   GetMultipleAccountsApi,
@@ -12,28 +19,21 @@ import type {
 } from "@solana/kit";
 import { FUNDER } from "./config";
 import { wrapFunctionWithExecution } from "./actionHelpers";
+import assert from "assert";
+import { findAssociatedTokenPda } from "@solana-program/token";
 
 /**
  * Parameters for transferring a locked position.
  */
 export type TransferLockedPositionParam = {
-  /** The address of the position to transfer. */
-  position: Address;
-
   /** The address of the position mint. */
-  positionMint: Address;
-
-  /** The address of the position token account. */
-  positionTokenAccount: Address;
+  positionMintAddress: Address;
 
   /** The address of the destination token account. */
   detinationTokenAccount: Address;
 
   /** The address of the lock config. */
   lockConfig: Address;
-
-  /** The address of the position authority. */
-  positionAuthority: Address;
 
   /** The address of the receiver. */
   receiver: Address;
@@ -92,13 +92,25 @@ export async function transferLockedPositionInstructions(
 ): Promise<TransferLockedPositionInstructions> {
   const instructions: IInstruction[] = [];
 
+  const positionAddress = await getPositionAddress(param.positionMintAddress);
+  const position = await fetchPosition(rpc, positionAddress[0]);
+  const positionMint = await fetchMaybeMint(rpc, position.data.positionMint);
+
+  assert(positionMint.exists, "Position mint not found");
+
+  const positionMintTokenAccount = await findAssociatedTokenPda({
+    owner: authority.address,
+    mint: param.positionMintAddress,
+    tokenProgram: positionMint.programAddress,
+  });
+
   instructions.push(
     getTransferLockedPositionInstruction({
       positionAuthority: authority,
       receiver: param.receiver,
-      position: param.position,
-      positionTokenAccount: param.positionTokenAccount,
-      positionMint: param.positionMint,
+      position: position.address,
+      positionTokenAccount: positionMintTokenAccount[0],
+      positionMint: param.positionMintAddress,
       destinationTokenAccount: param.detinationTokenAccount,
       lockConfig: param.lockConfig,
       token2022Program: TOKEN_2022_PROGRAM_ADDRESS,

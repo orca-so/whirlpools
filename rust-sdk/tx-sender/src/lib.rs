@@ -109,29 +109,16 @@ pub async fn build_transaction_with_config(
         .await
         .map_err(|e| format!("RPC Error: {}", e))?;
 
-    let writable_accounts = compute_budget::get_writable_accounts(&instructions);
-
-    let address_lookup_tables_clone = address_lookup_tables.clone();
-
-    let compute_units = compute_budget::estimate_compute_units(
+    let budget_ixs = compute_budget::get_compute_budget_instructions(
         rpc_client,
         &instructions,
-        &payer,
-        address_lookup_tables_clone,
-    )
-    .await?;
-    let budget_instructions = compute_budget::get_compute_budget_instruction(
-        rpc_client,
-        compute_units,
-        &payer,
+        payer,
+        address_lookup_tables.clone(),
         rpc_config,
         fee_config,
-        &writable_accounts,
     )
     .await?;
-    for (i, budget_ix) in budget_instructions.into_iter().enumerate() {
-        instructions.insert(i, budget_ix);
-    }
+    budget_ixs.into_iter().for_each(|ix| instructions.push(ix));
     // Check if network is mainnet before adding Jito tip
     if fee_config.jito != JitoFeeStrategy::Disabled {
         if !rpc_config.is_mainnet() {
@@ -141,11 +128,11 @@ pub async fn build_transaction_with_config(
         }
     }
     // Create versioned transaction message based on whether ALTs are provided
-    let message = if let Some(address_lookup_tables_clone) = address_lookup_tables {
+    let message = if let Some(address_lookup_tables) = address_lookup_tables {
         Message::try_compile(
             &payer,
             &instructions,
-            &address_lookup_tables_clone,
+            &address_lookup_tables,
             recent_blockhash,
         )
         .map_err(|e| format!("Failed to compile message with ALTs: {}", e))?
@@ -287,26 +274,6 @@ pub async fn send_transaction(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compute_budget;
-    use solana_sdk::signature::{Keypair, Signer};
-    use solana_sdk::system_instruction;
-
-    #[test]
-    fn test_get_writable_accounts() {
-        let keypair = Keypair::new();
-        let recipient = Keypair::new().pubkey();
-
-        let instructions = vec![system_instruction::transfer(
-            &keypair.pubkey(),
-            &recipient,
-            1_000_000,
-        )];
-
-        let writable_accounts = compute_budget::get_writable_accounts(&instructions);
-        assert_eq!(writable_accounts.len(), 2);
-        assert!(writable_accounts.contains(&keypair.pubkey()));
-        assert!(writable_accounts.contains(&recipient));
-    }
 
     #[test]
     fn test_fee_config_default() {

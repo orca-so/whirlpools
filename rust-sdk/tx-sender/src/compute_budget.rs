@@ -11,6 +11,53 @@ use solana_sdk::message::{v0::Message, VersionedMessage};
 use solana_sdk::transaction::VersionedTransaction;
 
 const SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR: u8 = 0x02;
+const SET_COMPUTE_UNIT_PRICE_DISCRIMINATOR: u8 = 0x03;
+
+/// Calculate and return compute budget instructions for a transaction
+pub async fn get_compute_budget_instructions(
+    rpc_client: &RpcClient,
+    instructions: &[Instruction],
+    payer: &Pubkey,
+    alts: Option<Vec<AddressLookupTableAccount>>,
+    rpc_config: &RpcConfig,
+    fee_config: &FeeConfig,
+) -> Result<Vec<Instruction>, String> {
+    let existing = extract_compute_budget_ixs(instructions);
+    let has_unit_limit = existing
+        .iter()
+        .any(|ix| matches!(ix, ComputeBudgetInstruction::SetComputeUnitLimit(_)));
+    let has_unit_price = existing
+        .iter()
+        .any(|ix| matches!(ix, ComputeBudgetInstruction::SetComputeUnitPrice(_)));
+    if has_unit_limit && has_unit_price {
+        return Ok(Vec::new());
+    }
+
+    let mut compute_budget_instructions = Vec::with_capacity(2);
+    if !has_unit_limit {
+        let compute_units =
+            estimate_compute_units(rpc_client, instructions, payer, alts.clone()).await?;
+        compute_budget_instructions.push(generate_compute_unit_limit_ix(
+            compute_units,
+            fee_config.compute_unit_margin_multiplier,
+        ));
+    }
+
+    if !has_unit_price {
+        if let Some(price_ix) = generate_compute_unit_price_ix(
+            rpc_client,
+            rpc_config,
+            &get_writable_accounts(instructions),
+            &fee_config.priority_fee,
+        )
+        .await?
+        {
+            compute_budget_instructions.push(price_ix);
+        }
+    }
+
+    Ok(compute_budget_instructions)
+}
 
 /// Estimate compute units by simulating a transaction
 pub async fn estimate_compute_units(
@@ -26,7 +73,11 @@ pub async fn estimate_compute_units(
         .map_err(|e| format!("Failed to get recent blockhash: {}", e))?;
 
     let mut simulation_instructions = instructions.to_vec();
-    if extract_compute_unit_limit(&instructions).is_none() {
+    let compute_budget_instructions = extract_compute_budget_ixs(instructions);
+    let has_unit_limit = compute_budget_instructions
+        .iter()
+        .any(|ix| matches!(ix, ComputeBudgetInstruction::SetComputeUnitLimit(_)));
+    if !has_unit_limit {
         simulation_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
     }
 
@@ -65,51 +116,6 @@ pub async fn estimate_compute_units(
         }
         Err(e) => Err(format!("Transaction simulation failed: {}", e)),
     }
-}
-
-/// Calculate and return compute budget instructions for a transaction
-pub async fn get_compute_budget_instruction(
-    client: &RpcClient,
-    compute_units: u32,
-    _payer: &Pubkey,
-    rpc_config: &RpcConfig,
-    fee_config: &FeeConfig,
-    writable_accounts: &[Pubkey],
-) -> Result<Vec<Instruction>, String> {
-    let mut budget_instructions = Vec::new();
-    let compute_units_with_margin =
-        (compute_units as f64 * (fee_config.compute_unit_margin_multiplier)) as u32;
-
-    budget_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(
-        compute_units_with_margin,
-    ));
-
-    match &fee_config.priority_fee {
-        PriorityFeeStrategy::Dynamic {
-            percentile,
-            max_lamports,
-        } => {
-            let fee =
-                calculate_dynamic_priority_fee(client, rpc_config, writable_accounts, *percentile)
-                    .await?;
-            let clamped_fee = std::cmp::min(fee, *max_lamports);
-
-            if clamped_fee > 0 {
-                budget_instructions.push(ComputeBudgetInstruction::set_compute_unit_price(
-                    clamped_fee,
-                ));
-            }
-        }
-        PriorityFeeStrategy::Exact(lamports) => {
-            if *lamports > 0 {
-                budget_instructions
-                    .push(ComputeBudgetInstruction::set_compute_unit_price(*lamports));
-            }
-        }
-        PriorityFeeStrategy::Disabled => {}
-    }
-
-    Ok(budget_instructions)
 }
 
 /// Calculate dynamic priority fee based on recent fees
@@ -210,37 +216,135 @@ pub fn get_writable_accounts(instructions: &[Instruction]) -> Vec<Pubkey> {
     writable.into_iter().collect()
 }
 
-/// Extract the compute unit limit from a list of instructions
-fn extract_compute_unit_limit(instructions: &[Instruction]) -> Option<u32> {
-    for ix in instructions {
-        if ix.program_id == solana_sdk::compute_budget::ID {
-            if ix.data.first() == Some(&SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR) {
-                let limit_bytes_array: [u8; 4] = ix.data.get(1..5)?.try_into().ok()?;
-                return Some(u32::from_le_bytes(limit_bytes_array));
+/// Return ComputeBudgetInstruction enum variants from a list of instructions
+pub fn extract_compute_budget_ixs(instructions: &[Instruction]) -> Vec<ComputeBudgetInstruction> {
+    instructions
+        .iter()
+        .filter(|ix| ix.program_id == solana_sdk::compute_budget::ID)
+        .map(to_compute_budget_instruction)
+        .filter_map(|ix| ix)
+        .collect()
+}
+
+/// Manually convert an instruction to a compute budget instruction, avoid
+fn to_compute_budget_instruction(ix: &Instruction) -> Option<ComputeBudgetInstruction> {
+    let discriminator = ix.data.first();
+    if discriminator == Some(&SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR) {
+        let limit_bytes_array: [u8; 4] = ix.data.get(1..5)?.try_into().ok()?;
+        return Some(ComputeBudgetInstruction::SetComputeUnitLimit(
+            u32::from_le_bytes(limit_bytes_array),
+        ));
+    } else if discriminator == Some(&SET_COMPUTE_UNIT_PRICE_DISCRIMINATOR) {
+        let price_bytes_array: [u8; 8] = ix.data.get(1..9)?.try_into().ok()?;
+        return Some(ComputeBudgetInstruction::SetComputeUnitPrice(
+            u64::from_le_bytes(price_bytes_array),
+        ));
+    } else {
+        return None;
+    }
+}
+
+/// Create a compute budget unit limit instruction
+fn generate_compute_unit_limit_ix(compute_units: u32, margin_multiplier: f64) -> Instruction {
+    let units_with_margin = (compute_units as f64 * margin_multiplier) as u32;
+    ComputeBudgetInstruction::set_compute_unit_limit(units_with_margin)
+}
+
+/// Create a compute budget unit price instruction
+async fn generate_compute_unit_price_ix(
+    client: &RpcClient,
+    rpc_config: &RpcConfig,
+    writable_accounts: &[Pubkey],
+    priority_fee: &PriorityFeeStrategy,
+) -> Result<Option<Instruction>, String> {
+    match priority_fee {
+        PriorityFeeStrategy::Disabled => Ok(None),
+
+        PriorityFeeStrategy::Exact(lamports) => {
+            if *lamports > 0 {
+                Ok(Some(ComputeBudgetInstruction::set_compute_unit_price(
+                    *lamports,
+                )))
             } else {
-                return None;
+                Ok(None)
+            }
+        }
+
+        PriorityFeeStrategy::Dynamic {
+            percentile,
+            max_lamports,
+        } => {
+            let fee =
+                calculate_dynamic_priority_fee(client, rpc_config, writable_accounts, *percentile)
+                    .await?;
+            let clamped = std::cmp::min(fee, *max_lamports);
+            if clamped > 0 {
+                Ok(Some(ComputeBudgetInstruction::set_compute_unit_price(
+                    clamped,
+                )))
+            } else {
+                Ok(None)
             }
         }
     }
-    None
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use solana_sdk::signature::Signer;
+    use solana_sdk::signer::keypair::Keypair;
+    use solana_sdk::system_instruction;
+    use solana_sdk::system_program;
 
-    #[tokio::test]
-    async fn test_extract_compute_unit_limit() {
-        let instructions = vec![];
-        let compute_unit_limit = extract_compute_unit_limit(&instructions);
-        assert_eq!(compute_unit_limit, None);
+    #[test]
+    fn test_get_writable_accounts() {
+        let keypair = Keypair::new();
+        let recipient = Keypair::new().pubkey();
+
+        let instructions = vec![system_instruction::transfer(
+            &keypair.pubkey(),
+            &recipient,
+            1_000_000,
+        )];
+
+        let writable_accounts = get_writable_accounts(&instructions);
+        assert_eq!(writable_accounts.len(), 2);
+        assert!(writable_accounts.contains(&keypair.pubkey()));
+        assert!(writable_accounts.contains(&recipient));
     }
 
-    #[tokio::test]
-    async fn test_extract_compute_unit_limit_with_limit() {
-        let instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(1_400_000)];
+    #[test]
+    fn test_to_compute_budget_instruction_none() {
+        let non_cb_ix = Instruction {
+            program_id: system_program::id(),
+            accounts: vec![],
+            data: vec![],
+        };
+        assert!(to_compute_budget_instruction(&non_cb_ix).is_none());
+    }
 
-        let compute_unit_limit = extract_compute_unit_limit(&instructions);
-        assert_eq!(compute_unit_limit, Some(1_400_000));
+    #[test]
+    fn test_to_compute_budget_instruction_set_compute_unit_limit() {
+        let limit = 1_500_000u32;
+        let ix = ComputeBudgetInstruction::set_compute_unit_limit(limit);
+
+        let result = to_compute_budget_instruction(&ix);
+        assert_eq!(
+            result,
+            Some(ComputeBudgetInstruction::SetComputeUnitLimit(limit))
+        );
+    }
+
+    #[test]
+    fn test_to_compute_budget_instruction_set_compute_unit_price() {
+        let price = 5_000u64;
+        let ix = ComputeBudgetInstruction::set_compute_unit_price(price);
+
+        let result = to_compute_budget_instruction(&ix);
+        assert_eq!(
+            result,
+            Some(ComputeBudgetInstruction::SetComputeUnitPrice(price))
+        );
     }
 }

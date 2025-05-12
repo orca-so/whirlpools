@@ -1,5 +1,6 @@
 import {
   fetchPosition,
+  fetchWhirlpool,
   getPositionAddress,
   getResetPositionRangeInstruction,
 } from "@orca-so/whirlpools-client";
@@ -17,6 +18,7 @@ import { DEFAULT_ADDRESS, FUNDER } from "./config";
 import { fetchMaybeMint } from "@solana-program/token-2022";
 import { findAssociatedTokenPda } from "@solana-program/token";
 import assert from "assert";
+import { getInitializableTickIndex } from "@orca-so/whirlpools-core";
 
 /**
  * Parameters to reset position range.
@@ -29,11 +31,17 @@ export type ResetPositionRangeParams = {
   /** The address of the position mint. */
   positionMintAddress: Address;
 
-  /** The tick specifying the lower end of the position range. */
-  newTickLowerIndex: number;
+  // /** The tick specifying the lower end of the position range. */
+  // newTickLowerIndex: number;
 
-  /** The tick specifying the upper end of the position range. */
-  newTickUpperIndex: number;
+  // /** The tick specifying the upper end of the position range. */
+  // newTickUpperIndex: number;
+
+  /** The new lower price of the position range. */
+  newLowerPrice: number;
+
+  /** The new upper price of the position range. */
+  newUpperPrice: number;
 };
 
 /**
@@ -60,15 +68,15 @@ export type ResetPositionRageInstructions = {
  * const wallet = await loadWallet();
  *
  * const positionMintAddress = address("5uiTr6jPdCXNfBWyfhAS9HScpkhGpoPEsaKcYUDMB2Nw");
- * const newTickLowerIndex = 300_000;
- * const newTickUpperIndex = 400_000;
+ * const newLowerPrice = 300;
+ * const newUpperPrice = 400;
  *
  * const instructions = await resetPositionRangeInstructions(
  *   devnetRpc,
  *   {
  *     positionMintAddress,
- *     newTickLowerIndex,
- *     newTickUpperIndex,
+ *     newLowerPrice,
+ *     newUpperPrice,
  *   },
  *   wallet,
  * );
@@ -95,12 +103,26 @@ export async function resetPositionRangeInstructions(
   const positionMint = await fetchMaybeMint(rpc, position.data.positionMint);
 
   assert(positionMint.exists, "Position mint not found");
+  assert(position.data.liquidity === BigInt(0), "Position must be empty");
 
   const positionTokenAccount = await findAssociatedTokenPda({
     owner: authority.address,
     mint: params.positionMintAddress,
     tokenProgram: positionMint.programAddress,
   });
+  const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
+  const tickSpacing = whirlpool.data.tickSpacing;
+
+  const newTickLowerIndex = getInitializableTickIndex(
+    params.newLowerPrice,
+    tickSpacing,
+    false,
+  );
+  const newTickUpperIndex = getInitializableTickIndex(
+    params.newUpperPrice,
+    tickSpacing,
+    true,
+  );
 
   instructions.push(
     getResetPositionRangeInstruction({
@@ -108,8 +130,8 @@ export async function resetPositionRangeInstructions(
       positionAuthority: authority,
       position: position.address,
       positionTokenAccount: positionTokenAccount[0],
-      newTickLowerIndex: params.newTickLowerIndex,
-      newTickUpperIndex: params.newTickUpperIndex,
+      newTickLowerIndex: newTickLowerIndex,
+      newTickUpperIndex: newTickUpperIndex,
       whirlpool: position.data.whirlpool,
     }),
   );

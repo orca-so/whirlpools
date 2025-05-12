@@ -12,8 +12,8 @@ use crate::{
 pub struct InitializePoolWithAdaptiveFee<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
-    pub token_mint_a: InterfaceAccount<'info, Mint>,
-    pub token_mint_b: InterfaceAccount<'info, Mint>,
+    pub token_mint_a: Box<InterfaceAccount<'info, Mint>>,
+    pub token_mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(seeds = [b"token_badge", whirlpools_config.key().as_ref(), token_mint_a.key().as_ref()], bump)]
     /// CHECK: checked in the handler
@@ -64,7 +64,7 @@ pub struct InitializePoolWithAdaptiveFee<'info> {
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(has_one = whirlpools_config)]
-    pub adaptive_fee_tier: Account<'info, AdaptiveFeeTier>,
+    pub adaptive_fee_tier: Box<Account<'info, AdaptiveFeeTier>>,
 
     #[account(address = *token_mint_a.to_account_info().owner)]
     pub token_program_a: Interface<'info, TokenInterface>,

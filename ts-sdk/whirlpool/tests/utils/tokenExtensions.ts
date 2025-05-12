@@ -18,12 +18,12 @@ import { getNextKeypair } from "./keypair";
 
 export async function setupAtaTE(
   mint: Address,
-  config: { amount?: number | bigint; signer?: KeyPairSigner } = {},
+  config: { amount?: number | bigint; owner?: Address } = {},
 ): Promise<Address> {
-  const owner = config.signer ?? signer;
+  const ownerAddress = config.owner ?? signer.address;
   const ata = await findAssociatedTokenPda({
     mint,
-    owner: owner.address,
+    owner: ownerAddress,
     tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
   });
 
@@ -32,7 +32,7 @@ export async function setupAtaTE(
   instructions.push(
     getCreateAssociatedTokenIdempotentInstruction({
       mint,
-      owner: owner.address,
+      owner: ownerAddress,
       ata: ata[0],
       payer: signer,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,

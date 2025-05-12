@@ -135,7 +135,7 @@ describe("Create TransferLockedPosition instructions", () => {
     const receiver = getNextKeypair();
     const receiverTokenAccountAddress = await setupAtaTE(positionMintAddress, {
       amount: 0,
-      signer: receiver,
+      owner: receiver.address,
     });
     const transferLockedPositionInstruction =
       await transferLockedPositionInstructions(

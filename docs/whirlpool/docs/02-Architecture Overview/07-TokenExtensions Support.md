@@ -133,7 +133,7 @@ To clarify the context of accounts passed as `remaining_accounts`, the v2 instru
 #### Security notes
 - In solana, indirect re-entrance will be rejected. So transfer hook program cannot call Whirlpool program.
 - TransferHook program cannot modify transfer amount. It will be called AFTER token transfer processing.
-- Token-2022 program remove signer and writable flag of the source, destination and owner when calling the TransferHo[ok program even if they are passed as extra accounts. The source and destination are not updated and the owner's signature is not used unintentionally.
+- Token-2022 program remove signer and writable flag of the source, destination and owner when calling the TransferHook program even if they are passed as extra accounts. The source and destination are not updated and the owner's signature is not used unintentionally.
 
 #### TokenBadge request
 The TransferHook extension is a relatively new feature in the ecosystem, and its use cases are still being explored.

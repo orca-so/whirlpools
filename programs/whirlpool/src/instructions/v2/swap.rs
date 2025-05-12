@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::util::{
     calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount,
-    parse_remaining_accounts, token, AccountsType, RemainingAccountsInfo,
+    parse_remaining_accounts, AccountsType, RemainingAccountsInfo,
 };
 use crate::{
     constants::transfer_memo,

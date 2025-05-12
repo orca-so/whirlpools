@@ -105,7 +105,23 @@ describe("Reset Position Range Instructions", () => {
 
     await sendTransaction(decreaseLiquidityIx);
 
-    // 3. Reset the position range with initializable tick index
+    // 3. Reset the position range with new price range
+    const { instructions: resetInstructions } =
+      await resetPositionRangeInstructions(
+        rpc,
+        {
+          positionMintAddress: positionMintAddress,
+          newLowerPrice: -400,
+          newUpperPrice: 300,
+        },
+        signer,
+      );
+
+    await sendTransaction(resetInstructions);
+
+    // verfiy if position is reset to index range user set
+    const positionAddress = await getPositionAddress(positionMintAddress);
+    const positionAfter = await fetchPosition(rpc, positionAddress[0]);
     const initializableLowerTickIndex = getInitializableTickIndex(
       -400,
       tickSpacing,
@@ -116,23 +132,6 @@ describe("Reset Position Range Instructions", () => {
       tickSpacing,
       true,
     );
-
-    const { instructions: resetInstructions } =
-      await resetPositionRangeInstructions(
-        rpc,
-        {
-          positionMintAddress: positionMintAddress,
-          newTickLowerIndex: initializableLowerTickIndex,
-          newTickUpperIndex: initializableUpperTickIndex,
-        },
-        signer,
-      );
-
-    await sendTransaction(resetInstructions);
-
-    // verfiy if position is reset to index range user set
-    const positionAddress = await getPositionAddress(positionMintAddress);
-    const positionAfter = await fetchPosition(rpc, positionAddress[0]);
     assert.strictEqual(
       positionAfter.data.tickLowerIndex,
       initializableLowerTickIndex,

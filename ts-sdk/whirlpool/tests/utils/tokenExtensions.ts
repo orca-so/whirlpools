@@ -43,7 +43,7 @@ export async function setupAtaTE(
       getMintToInstruction({
         mint,
         token: ata[0],
-        mintAuthority: owner,
+        mintAuthority: signer,
         amount: config.amount,
       }),
     );

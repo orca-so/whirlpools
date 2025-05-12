@@ -593,8 +593,8 @@ pub async fn open_full_range_position_instructions(
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_price` - The lower bound of the price range for the position. It returns error if the sqrt price is less than MIN_SQRT_PRICE.
-/// * `upper_price` - The upper bound of the price range for the position. It returns error if the sqrt price is more than MAX_SQRT_PRICE.
+/// * `lower_price` - The lower bound of the price range for the position. It returns error if the lower_price <= 0.0.
+/// * `upper_price` - The upper bound of the price range for the position. It returns error if the upper_price <= 0.0.
 /// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
@@ -615,8 +615,8 @@ pub async fn open_full_range_position_instructions(
 /// - The pool or token mint accounts are not found or invalid.
 /// - Any RPC request fails.
 /// - The pool is a Splash Pool, as they only support full-range positions.
-/// - The sqrt of lower price is less than MIN_SQRT_PRICE.
-/// - The sqrt upper price is greater than MAX_SQRT_PRICE.
+/// - The lower price is less or equal to 0.0.
+/// - The upper price is less or equal to 0.0.
 ///
 /// # Example
 ///
@@ -660,6 +660,9 @@ pub async fn open_position_instructions(
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    if lower_price <= 0.0 || upper_price <= 0.0 {
+        return Err("Floating price must be greater than 0.0".into());
+    }
     let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
@@ -680,20 +683,8 @@ pub async fn open_position_instructions(
     let decimals_a = mint_a.decimals;
     let decimals_b = mint_b.decimals;
 
-    let lower_tick_index =
-        price_to_tick_index(lower_price, decimals_a, decimals_b).map_err(|e| {
-            format!(
-                "lower_price must be greater than 0, you entered {}",
-                lower_price
-            )
-        })?;
-    let upper_tick_index =
-        price_to_tick_index(upper_price, decimals_a, decimals_b).map_err(|e| {
-            format!(
-                "upper_price must be greater than 0, you entered {}",
-                upper_price
-            )
-        })?;
+    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b);
+    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b);
 
     internal_open_position(
         rpc,
@@ -1072,7 +1063,7 @@ mod tests {
         );
         let err_str = format!("{:?}", res.err().unwrap());
         assert!(
-            err_str.contains("lower_price must be greater than 0"),
+            err_str.contains("Floating price must be greater than 0.0"),
             "Unexpected error message: {}",
             err_str
         );
@@ -1113,7 +1104,7 @@ mod tests {
         );
         let err_str = format!("{:?}", res.err().unwrap());
         assert!(
-            err_str.contains("upper_price must be greater than 0"),
+            err_str.contains("Floating price must be greater than 0.0"),
             "Unexpected error message: {}",
             err_str
         );

@@ -10,7 +10,7 @@ import {
   getSetTransferFeeInstruction,
   getInitializeScaledUiAmountMintInstruction,
 } from "@solana-program/token-2022";
-import type { Address, IInstruction, KeyPairSigner } from "@solana/kit";
+import type { Address, IInstruction } from "@solana/kit";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import { DEFAULT_ADDRESS } from "../../src/config";

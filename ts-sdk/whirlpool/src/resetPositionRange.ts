@@ -35,9 +35,9 @@ export type ResetPositionRageInstructions = {
  * Generates instructions to reset a position range.
  *
  * @param {SolanaRpc} rpc - The Solana RPC client.
- * @param positionMintAddress - The address of the position mint.
- * @param newTickLowerIndex - The tick specifying the lower end of the position range.
- * @param newTickUpperIndex - The tick specifying the upper end of the position range.
+ * @param {Address} positionMintAddress - The address of the position mint.
+ * @param {number} newLowerPrice - The new lower price of the position.
+ * @param {number} newUpperPrice - The new upper price of the position.
  * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction. Defaults to a predefined funder.
  * @returns {Promise<ResetPositionRageInstructions>} A promise that resolves to an object containing instructions.
  *

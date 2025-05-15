@@ -12,11 +12,19 @@ import {
   setupWhirlpool,
 } from "./utils/program";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
-import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
+import {
+  fetchPosition,
+  fetchWhirlpool,
+  getPositionAddress,
+} from "@orca-so/whirlpools-client";
 import assert from "assert";
-import { getInitializableTickIndex } from "@orca-so/whirlpools-core";
+import {
+  getInitializableTickIndex,
+  priceToTickIndex,
+} from "@orca-so/whirlpools-core";
 import { resetPositionRangeInstructions } from "../src/resetPositionRange";
 import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
+import { fetchAllMint } from "@solana-program/token-2022";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -109,11 +117,9 @@ describe("Reset Position Range Instructions", () => {
     const { instructions: resetInstructions } =
       await resetPositionRangeInstructions(
         rpc,
-        {
-          positionMintAddress: positionMintAddress,
-          newLowerPrice: -400,
-          newUpperPrice: 300,
-        },
+        positionMintAddress,
+        300,
+        400,
         signer,
       );
 
@@ -122,13 +128,30 @@ describe("Reset Position Range Instructions", () => {
     // verfiy if position is reset to index range user set
     const positionAddress = await getPositionAddress(positionMintAddress);
     const positionAfter = await fetchPosition(rpc, positionAddress[0]);
+
+    const whirlpool = await fetchWhirlpool(rpc, positionAfter.data.whirlpool);
+
+    const [mintA, mintB] = await fetchAllMint(rpc, [
+      whirlpool.data.tokenMintA,
+      whirlpool.data.tokenMintB,
+    ]);
+    const lowerTickIndex = priceToTickIndex(
+      300,
+      mintA.data.decimals,
+      mintB.data.decimals,
+    );
+    const upperTickIndex = priceToTickIndex(
+      400,
+      mintA.data.decimals,
+      mintB.data.decimals,
+    );
     const initializableLowerTickIndex = getInitializableTickIndex(
-      -400,
+      lowerTickIndex,
       tickSpacing,
       false,
     );
     const initializableUpperTickIndex = getInitializableTickIndex(
-      300,
+      upperTickIndex,
       tickSpacing,
       true,
     );

@@ -7,42 +7,22 @@ import {
 import type {
   Address,
   GetAccountInfoApi,
-  GetEpochInfoApi,
-  GetMinimumBalanceForRentExemptionApi,
-  GetMultipleAccountsApi,
   Rpc,
   IInstruction,
   TransactionSigner,
+  GetMultipleAccountsApi,
 } from "@solana/kit";
 import { DEFAULT_ADDRESS, FUNDER } from "./config";
-import { fetchMaybeMint } from "@solana-program/token-2022";
-import { findAssociatedTokenPda } from "@solana-program/token";
+import {
+  fetchAllMint,
+  fetchMaybeMint,
+  findAssociatedTokenPda,
+} from "@solana-program/token-2022";
 import assert from "assert";
-import { getInitializableTickIndex } from "@orca-so/whirlpools-core";
-
-/**
- * Parameters to reset position range.
- *
- * @param positionMintAddress - The address of the position mint.
- * @param newTickLowerIndex - The tick specifying the lower end of the position range.
- * @param newTickUpperIndex - The tick specifying the upper end of the position range.
- */
-export type ResetPositionRangeParams = {
-  /** The address of the position mint. */
-  positionMintAddress: Address;
-
-  // /** The tick specifying the lower end of the position range. */
-  // newTickLowerIndex: number;
-
-  // /** The tick specifying the upper end of the position range. */
-  // newTickUpperIndex: number;
-
-  /** The new lower price of the position range. */
-  newLowerPrice: number;
-
-  /** The new upper price of the position range. */
-  newUpperPrice: number;
-};
+import {
+  getInitializableTickIndex,
+  priceToTickIndex,
+} from "@orca-so/whirlpools-core";
 
 /**
  * Represents the instructions for resetting a position range.
@@ -55,7 +35,9 @@ export type ResetPositionRageInstructions = {
  * Generates instructions to reset a position range.
  *
  * @param {SolanaRpc} rpc - The Solana RPC client.
- * @param {ResetPositionRangeParams} params - The parameters for resetting a position range.
+ * @param positionMintAddress - The address of the position mint.
+ * @param newTickLowerIndex - The tick specifying the lower end of the position range.
+ * @param newTickUpperIndex - The tick specifying the upper end of the position range.
  * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction. Defaults to a predefined funder.
  * @returns {Promise<ResetPositionRageInstructions>} A promise that resolves to an object containing instructions.
  *
@@ -73,22 +55,17 @@ export type ResetPositionRageInstructions = {
  *
  * const instructions = await resetPositionRangeInstructions(
  *   devnetRpc,
- *   {
- *     positionMintAddress,
- *     newLowerPrice,
- *     newUpperPrice,
- *   },
+ *   positionMintAddress,
+ *   newLowerPrice,
+ *   newUpperPrice,
  *   wallet,
  * );
  */
 export async function resetPositionRangeInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
-  params: ResetPositionRangeParams,
+  rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
+  positionMintAddress: Address,
+  newLowerPrice: number,
+  newUpperPrice: number,
   authority: TransactionSigner = FUNDER,
 ): Promise<ResetPositionRageInstructions> {
   assert(
@@ -98,7 +75,7 @@ export async function resetPositionRangeInstructions(
 
   const instructions: IInstruction[] = [];
 
-  const positionAddress = await getPositionAddress(params.positionMintAddress);
+  const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);
   const positionMint = await fetchMaybeMint(rpc, position.data.positionMint);
 
@@ -107,19 +84,35 @@ export async function resetPositionRangeInstructions(
 
   const positionTokenAccount = await findAssociatedTokenPda({
     owner: authority.address,
-    mint: params.positionMintAddress,
+    mint: positionMintAddress,
     tokenProgram: positionMint.programAddress,
   });
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
   const tickSpacing = whirlpool.data.tickSpacing;
 
-  const newTickLowerIndex = getInitializableTickIndex(
-    params.newLowerPrice,
+  const [tokenA, tokenB] = await fetchAllMint(rpc, [
+    whirlpool.data.tokenMintA,
+    whirlpool.data.tokenMintB,
+  ]);
+
+  const newLowerTickIndex = priceToTickIndex(
+    newLowerPrice,
+    tokenA.data.decimals,
+    tokenB.data.decimals,
+  );
+  const newUpperTickIndex = priceToTickIndex(
+    newUpperPrice,
+    tokenA.data.decimals,
+    tokenB.data.decimals,
+  );
+
+  const newInitializableTickLowerIndex = getInitializableTickIndex(
+    newLowerTickIndex,
     tickSpacing,
     false,
   );
-  const newTickUpperIndex = getInitializableTickIndex(
-    params.newUpperPrice,
+  const newInitializableTickUpperIndex = getInitializableTickIndex(
+    newUpperTickIndex,
     tickSpacing,
     true,
   );
@@ -130,8 +123,8 @@ export async function resetPositionRangeInstructions(
       positionAuthority: authority,
       position: position.address,
       positionTokenAccount: positionTokenAccount[0],
-      newTickLowerIndex: newTickLowerIndex,
-      newTickUpperIndex: newTickUpperIndex,
+      newTickLowerIndex: newInitializableTickLowerIndex,
+      newTickUpperIndex: newInitializableTickUpperIndex,
       whirlpool: position.data.whirlpool,
     }),
   );

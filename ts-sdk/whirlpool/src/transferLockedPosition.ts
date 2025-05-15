@@ -1,43 +1,27 @@
 import {
+  fetchMaybeLockConfig,
   fetchPosition,
   getPositionAddress,
   getTransferLockedPositionInstruction,
+  WHIRLPOOL_PROGRAM_ADDRESS,
 } from "@orca-so/whirlpools-client";
 import {
   fetchMaybeMint,
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
-import type {
-  Address,
-  GetMultipleAccountsApi,
-  GetAccountInfoApi,
-  IInstruction,
-  Rpc,
-  GetMinimumBalanceForRentExemptionApi,
-  GetEpochInfoApi,
-  TransactionSigner,
+import {
+  type Address,
+  type GetAccountInfoApi,
+  type IInstruction,
+  type Rpc,
+  type TransactionSigner,
+  getProgramDerivedAddress,
+  getAddressCodec,
 } from "@solana/kit";
 import { FUNDER } from "./config";
 import { wrapFunctionWithExecution } from "./actionHelpers";
 import assert from "assert";
 import { findAssociatedTokenPda } from "@solana-program/token";
-
-/**
- * Parameters for transferring a locked position.
- */
-export type TransferLockedPositionParam = {
-  /** The address of the position mint. */
-  positionMintAddress: Address;
-
-  /** The address of the destination token account. */
-  detinationTokenAccount: Address;
-
-  /** The address of the lock config. */
-  lockConfig: Address;
-
-  /** The address of the receiver. */
-  receiver: Address;
-};
 
 /**
  * Instructions for transferring a locked position.
@@ -63,36 +47,25 @@ export type TransferLockedPositionInstructions = {
  * await setWhirlpoolsConfig('solanaDevnet');
  * const wallet = await loadWallet();
  * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
- * const param = {
- *   position: positionMint,
- *   positionMint: positionMint,
- *   positionTokenAccount: positionMint,
- *   detinationTokenAccount: positionMint,
- *   lockConfig: positionMint,
- *   positionAuthority: positionMint,
- *   receiver: positionMint,
- * };
+ *
  * const { instructions } = await transferLockedPositionInstructions(
  *   devnetRpc,
- *   param,
+ *   positionMint,
+ *   receiverAddress,
  *   wallet
  * );
  *
  * console.log(`Instructions: ${instructions}`);
  */
 export async function transferLockedPositionInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
-  param: TransferLockedPositionParam,
+  rpc: Rpc<GetAccountInfoApi>,
+  positionMintAddress: Address,
+  receiver: Address,
   authority: TransactionSigner = FUNDER,
 ): Promise<TransferLockedPositionInstructions> {
   const instructions: IInstruction[] = [];
 
-  const positionAddress = await getPositionAddress(param.positionMintAddress);
+  const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);
   const positionMint = await fetchMaybeMint(rpc, position.data.positionMint);
 
@@ -100,19 +73,36 @@ export async function transferLockedPositionInstructions(
 
   const positionMintTokenAccount = await findAssociatedTokenPda({
     owner: authority.address,
-    mint: param.positionMintAddress,
+    mint: positionMintAddress,
     tokenProgram: positionMint.programAddress,
   });
+
+  const destinationTokenAccount = await findAssociatedTokenPda({
+    owner: receiver,
+    mint: positionMintAddress,
+    tokenProgram: positionMint.programAddress,
+  });
+
+  const lockConfigPda = await getProgramDerivedAddress({
+    seeds: [
+      Buffer.from("lock_config"),
+      getAddressCodec().encode(positionAddress[0]),
+    ],
+    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
+  });
+
+  const lockConfig = await fetchMaybeLockConfig(rpc, lockConfigPda[0]);
+  assert(lockConfig.exists, "Lock config not found");
 
   instructions.push(
     getTransferLockedPositionInstruction({
       positionAuthority: authority,
-      receiver: param.receiver,
+      receiver: receiver,
       position: position.address,
       positionTokenAccount: positionMintTokenAccount[0],
-      positionMint: param.positionMintAddress,
-      destinationTokenAccount: param.detinationTokenAccount,
-      lockConfig: param.lockConfig,
+      positionMint: positionMintAddress,
+      destinationTokenAccount: destinationTokenAccount[0],
+      lockConfig: lockConfig.address,
       token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
     }),
   );

@@ -35,7 +35,8 @@ export type TransferLockedPositionInstructions = {
  * Generates instructions to transfer a locked position.
  *
  * @param {SolanaRpc} rpc - The Solana RPC client.
- * @param {TransferLockedPositionParam} param - The parameters for transferring a locked position.
+ * @param {Address} positionMintAddress - The address of the position mint.
+ * @param {Address} receiver - The address of the receiver.
  * @param {TransactionSigner} [authority=FUNDER] - The authority for the transfer.
  * @returns {Promise<TransferLockedPositionInstructions>} - A promise that resolves to an object containing instructions.
  *

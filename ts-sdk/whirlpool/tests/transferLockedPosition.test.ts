@@ -140,12 +140,8 @@ describe("Create TransferLockedPosition instructions", () => {
     const transferLockedPositionInstruction =
       await transferLockedPositionInstructions(
         rpc,
-        {
-          positionMintAddress: positionMintAddress,
-          detinationTokenAccount: receiverTokenAccountAddress,
-          lockConfig: lockConfigAddress,
-          receiver: receiver.address,
-        },
+        positionMintAddress,
+        receiver.address,
         signer,
       );
 

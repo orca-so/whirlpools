@@ -23,6 +23,7 @@ Token-2022 tokens are acceptable 👍
 - `yarn start initializeConfig`: initialize new WhirlpoolsConfig account
 - `yarn start initializeConfigExtension`: initialize new WhirlpoolsConfigExtension account
 - `yarn start initializeFeeTier`: initialize new FeeTier account
+- `yarn start initializeAdaptiveFeeTier`: initialize new AdaptiveFeeTier account
 
 ### update
 - `yarn start setTokenBadgeAuthority`: set new TokenBadge authority on WhirlpoolsConfigExtension

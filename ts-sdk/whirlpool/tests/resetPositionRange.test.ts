@@ -1,4 +1,4 @@
-import { describe, it, beforeAll } from "vitest";
+import { describe, it, beforeAll, expect } from "vitest";
 import type { Address } from "@solana/kit";
 import { setupAta, setupMint } from "./utils/token";
 import {
@@ -21,6 +21,7 @@ import assert from "assert";
 import {
   getInitializableTickIndex,
   priceToTickIndex,
+  tickIndexToPrice,
 } from "@orca-so/whirlpools-core";
 import { resetPositionRangeInstructions } from "../src/resetPositionRange";
 import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
@@ -165,11 +166,90 @@ describe("Reset Position Range Instructions", () => {
     );
   };
 
+  const testResetPositionRangeShouldFailWhenPositionIsNotEmpty = async (
+    poolName: string,
+    positionName: string,
+  ) => {
+    const positionMintAddress = positions.get(positionName)!;
+
+    // Try to reset the position range with new price range, and assert will be executed.
+    await expect(
+      resetPositionRangeInstructions(
+        rpc,
+        positionMintAddress,
+        1000,
+        5000,
+        signer,
+      ),
+    ).rejects.toThrow("Position must be empty");
+  };
+
+  const testResetPositionRangeShouldFailWithSameTickIndex = async (
+    poolName: string,
+    positionName: string,
+  ) => {
+    const positionMintAddress = positions.get(positionName)!;
+    const positionAddress = await getPositionAddress(positionMintAddress);
+    const position = await fetchPosition(rpc, positionAddress[0]);
+    const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
+    const [mintA, mintB] = await fetchAllMint(rpc, [
+      whirlpool.data.tokenMintA,
+      whirlpool.data.tokenMintB,
+    ]);
+
+    // 1. Try to reset the position range with same tick index
+    const lowerPrice = tickIndexToPrice(
+      position.data.tickLowerIndex,
+      mintA.data.decimals,
+      mintB.data.decimals,
+    );
+    const upperPrice = tickIndexToPrice(
+      position.data.tickUpperIndex,
+      mintA.data.decimals,
+      mintB.data.decimals,
+    );
+    const { instructions: resetInstructions } =
+      await resetPositionRangeInstructions(
+        rpc,
+        positionMintAddress,
+        lowerPrice,
+        upperPrice,
+        signer,
+      );
+
+    // 2. Send the transaction and expect it to fail
+    await expect(sendTransaction(resetInstructions)).rejects.toThrow("0x17ac");
+  };
+
+  for (const poolName of poolTypes.keys()) {
+    for (const positionTypeName of positionTypes.keys()) {
+      const positionName = `${poolName} ${positionTypeName}`;
+      it(`Should fail to reset a position for ${positionName} when position is not empty`, async () => {
+        await testResetPositionRangeShouldFailWhenPositionIsNotEmpty(
+          poolName,
+          positionName,
+        );
+      });
+    }
+  }
+
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {
       const positionName = `${poolName} ${positionTypeName}`;
       it(`Should reset a position for ${positionName}`, async () => {
         await testResetPositionRange(poolName, positionName);
+      });
+    }
+  }
+
+  for (const poolName of poolTypes.keys()) {
+    for (const positionTypeName of positionTypes.keys()) {
+      const positionName = `${poolName} ${positionTypeName}`;
+      it(`Should fail to reset a position for ${positionName} when tick index is the same`, async () => {
+        await testResetPositionRangeShouldFailWithSameTickIndex(
+          poolName,
+          positionName,
+        );
       });
     }
   }

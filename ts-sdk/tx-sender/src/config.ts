@@ -111,7 +111,7 @@ const setGlobalConfig = (config: {
 export async function setRpc(
   url: string,
   supportsPriorityFeePercentile: boolean = false,
-) {
+): Promise<Rpc<SolanaRpcApi>> {
   const rpc = rpcFromUrl(url);
   const chainId = await getChainIdFromGenesisHash(rpc);
 
@@ -123,6 +123,8 @@ export async function setRpc(
       chainId,
     },
   });
+
+  return rpc;
 }
 
 async function getChainIdFromGenesisHash(

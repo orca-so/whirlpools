@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.3
+
+### Patch Changes
+
+- [#956](https://github.com/orca-so/whirlpools/pull/956) [`1a751ba`](https://github.com/orca-so/whirlpools/commit/1a751ba4d059ab6b3ab6ecb9188e17e26bbd6894) Thanks [@odcheung](https://github.com/odcheung)! - Changing the API docs to point to https://api.orca.so/docs
+
 ## 0.2.2
 
 ### Patch Changes

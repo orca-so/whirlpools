@@ -143,11 +143,47 @@ describe("LockPosition instructions", () => {
     );
   };
 
+  const testNonTEshouldFailedLockPosition = async (poolName: string, positionName: string) => {
+    const positionMintAddress = positions.get(positionName)!;
+    const [positionAddress] = await getPositionAddress(positionMintAddress);
+    const [lockConfigAddress] = await getLockConfigAddress(positionAddress);
+    const positionMint = await fetchMaybeMint(rpc, positionMintAddress);
+
+    assert(positionMint.exists, "Position mint not found");
+
+    const [positionTokenAccountAddress] = await findAssociatedTokenPda({
+      owner: signer.address,
+      mint: positionMintAddress,
+      tokenProgram: positionMint.programAddress,
+    });
+    const lockPositionInstruction = await lockPositionInstructions({
+      lockType: LockType.Permanent,
+      funder: signer,
+      positionAuthority: signer,
+      position: positionAddress,
+      positionMint: positionMintAddress,
+      positionTokenAccount: positionTokenAccountAddress,
+      lockConfigPda: lockConfigAddress,
+      whirlpool: pools.get(poolName)!,
+    });
+
+    await assert.rejects(sendTransaction(lockPositionInstruction.instructions));
+  }
+
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {
       const positionNameTE = `TE ${poolName} ${positionTypeName}`;
       it(`Should be able to lock position for ${positionNameTE}`, async () => {
         await testlockPosition(poolName, positionNameTE);
+      });
+    }
+  }
+
+  for (const poolName of poolTypes.keys()) {
+    for (const positionTypeName of positionTypes.keys()) {
+      const positionName = `${poolName} ${positionTypeName}`;
+      it(`Should failed to lock position for ${positionName}`, async () => {
+        await testNonTEshouldFailedLockPosition(poolName, positionName);
       });
     }
   }

@@ -171,8 +171,8 @@ describe("LockPosition instructions", () => {
     await assert.rejects(sendTransaction(lockPositionInstruction.instructions));
   }
 
-  const shouldFailedWhenOwnerIsNotFunder = async (poolName: string, positionName: string) => {
-    const funder = getNextKeypair();
+  const shouldFailedAnotherWalletNotOwnPosition = async (poolName: string, positionName: string) => {
+    const anotherFunder = getNextKeypair();
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress] = await getPositionAddress(positionMintAddress);
     const [lockConfigAddress] = await getLockConfigAddress(positionAddress);
@@ -187,7 +187,35 @@ describe("LockPosition instructions", () => {
     });
     const lockPositionInstruction = await lockPositionInstructions({
       lockType: LockType.Permanent,
-      funder: funder,
+      funder: anotherFunder,
+      positionAuthority: signer,
+      position: positionAddress,
+      positionMint: positionMintAddress,
+      positionTokenAccount: positionTokenAccountAddress,
+      lockConfigPda: lockConfigAddress,
+      whirlpool: pools.get(poolName)!,
+    });
+
+    await assert.rejects(sendTransaction(lockPositionInstruction.instructions));
+  }
+
+  const shouldFailedAnotherWalletOwnsPosition = async (poolName: string, positionName: string) => {
+    const anotherPositionOwner = getNextKeypair();
+    const positionMintAddress = positions.get(positionName)!;
+    const [positionAddress] = await getPositionAddress(positionMintAddress);
+    const [lockConfigAddress] = await getLockConfigAddress(positionAddress);
+    const positionMint = await fetchMaybeMint(rpc, positionMintAddress);
+    
+    assert(positionMint.exists, "Position mint not found");
+
+    const [positionTokenAccountAddress] = await findAssociatedTokenPda({
+      owner: anotherPositionOwner.address,
+      mint: positionMintAddress,
+      tokenProgram: positionMint.programAddress,
+    });
+    const lockPositionInstruction = await lockPositionInstructions({
+      lockType: LockType.Permanent,
+      funder: signer,
       positionAuthority: signer,
       position: positionAddress,
       positionMint: positionMintAddress,
@@ -212,7 +240,7 @@ describe("LockPosition instructions", () => {
     for (const positionTypeName of positionTypes.keys()) {
       const positionNameTE = `TE ${poolName} ${positionTypeName}`;
       it(`Should fail when position owner is not funder ${positionNameTE}`, async () => {
-        await shouldFailedWhenOwnerIsNotFunder(poolName, positionNameTE);
+        await shouldFailedAnotherWalletNotOwnPosition(poolName, positionNameTE);
       });
     }
   }
@@ -222,6 +250,15 @@ describe("LockPosition instructions", () => {
       const positionName = `${poolName} ${positionTypeName}`;
       it(`Should fail to lock position for ${positionName}`, async () => {
         await testNonTEshouldFailedLockPosition(poolName, positionName);
+      });
+    }
+  }
+
+  for (const poolName of poolTypes.keys()) {
+    for (const positionTypeName of positionTypes.keys()) {
+      const positionName = `${poolName} ${positionTypeName}`;
+      it(`Should fail to lock position for ${positionName}`, async () => {
+        await shouldFailedAnotherWalletOwnsPosition(poolName, positionName);
       });
     }
   }

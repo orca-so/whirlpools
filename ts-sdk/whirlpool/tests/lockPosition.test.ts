@@ -144,7 +144,10 @@ describe("LockPosition instructions", () => {
     );
   };
 
-  const testNonTEshouldFailedLockPosition = async (poolName: string, positionName: string) => {
+  const testNonTEshouldFailedLockPosition = async (
+    poolName: string,
+    positionName: string,
+  ) => {
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress] = await getPositionAddress(positionMintAddress);
     const [lockConfigAddress] = await getLockConfigAddress(positionAddress);
@@ -169,9 +172,12 @@ describe("LockPosition instructions", () => {
     });
 
     await assert.rejects(sendTransaction(lockPositionInstruction.instructions));
-  }
+  };
 
-  const shouldFailedAnotherWalletNotOwnPosition = async (poolName: string, positionName: string) => {
+  const shouldFailedAnotherWalletNotOwnPosition = async (
+    poolName: string,
+    positionName: string,
+  ) => {
     const anotherFunder = getNextKeypair();
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress] = await getPositionAddress(positionMintAddress);
@@ -197,15 +203,18 @@ describe("LockPosition instructions", () => {
     });
 
     await assert.rejects(sendTransaction(lockPositionInstruction.instructions));
-  }
+  };
 
-  const shouldFailedAnotherWalletOwnsPosition = async (poolName: string, positionName: string) => {
+  const shouldFailedAnotherWalletOwnsPosition = async (
+    poolName: string,
+    positionName: string,
+  ) => {
     const anotherPositionOwner = getNextKeypair();
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress] = await getPositionAddress(positionMintAddress);
     const [lockConfigAddress] = await getLockConfigAddress(positionAddress);
     const positionMint = await fetchMaybeMint(rpc, positionMintAddress);
-    
+
     assert(positionMint.exists, "Position mint not found");
 
     const [positionTokenAccountAddress] = await findAssociatedTokenPda({
@@ -225,7 +234,7 @@ describe("LockPosition instructions", () => {
     });
 
     await assert.rejects(sendTransaction(lockPositionInstruction.instructions));
-  }
+  };
 
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {

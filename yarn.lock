@@ -3991,7 +3991,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/tx-sender@workspace:ts-sdk/tx-sender":
+"@orca-so/test-tx-sender-error-handling@workspace:examples/ts-sdk/test-tx-sender":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/test-tx-sender-error-handling@workspace:examples/ts-sdk/test-tx-sender"
+  dependencies:
+    "@orca-so/tx-sender": "npm:*"
+    "@orca-so/whirlpools": "npm:*"
+    "@orca-so/whirlpools-client": "npm:*"
+    "@orca-so/whirlpools-core": "npm:*"
+    "@solana-program/system": "npm:^0.7.0"
+    "@solana-program/token": "npm:^0.5.1"
+    "@solana-program/token-2022": "npm:^0.4.0"
+    "@solana/kit": "npm:^2.1.0"
+    "@types/node": "npm:^22.14.0"
+    tsx: "npm:^4.19.3"
+    typescript: "npm:^5.8.2"
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/tx-sender@npm:*, @orca-so/tx-sender@workspace:ts-sdk/tx-sender":
   version: 0.0.0-use.local
   resolution: "@orca-so/tx-sender@workspace:ts-sdk/tx-sender"
   dependencies:

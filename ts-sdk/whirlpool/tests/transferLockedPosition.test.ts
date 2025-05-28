@@ -131,7 +131,20 @@ describe("Create TransferLockedPosition instructions", () => {
 
     await sendTransaction(lockPositionInstruction.instructions);
 
-    // 2. Then, transfer the position to the new owner
+    // 2. Then, transfer the position to the signer itself, should failed
+    const transferLockedPositionInstructionToMyself =
+      await transferLockedPositionInstructions(
+        rpc,
+        positionMintAddress,
+        signer.address,
+        signer,
+      );
+
+    await assert.rejects(
+      sendTransaction(transferLockedPositionInstructionToMyself.instructions),
+    );
+
+    // 3. Then, transfer the position to the new owner, should success
     const receiver = getNextKeypair();
     const receiverTokenAccountAddress = await setupAtaTE(positionMintAddress, {
       amount: 0,
@@ -147,7 +160,7 @@ describe("Create TransferLockedPosition instructions", () => {
 
     await sendTransaction(transferLockedPositionInstruction.instructions);
 
-    // 3. Verify the position is transferred
+    // 4. Verify the position is transferred
     const receiverTokenAccount = await fetchToken(
       rpc,
       receiverTokenAccountAddress,
@@ -161,7 +174,7 @@ describe("Create TransferLockedPosition instructions", () => {
       "Receiver token account owner is not the same as the receiver",
     );
 
-    // 4. Verify the lock config is still valid
+    // 5. Verify the lock config is still valid
     const lockConfig = await fetchLockConfig(rpc, lockConfigAddress);
     assert(
       lockConfig.data.positionOwner === receiver.address,

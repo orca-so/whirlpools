@@ -129,7 +129,7 @@ describe("Send Transaction", async () => {
       simulateTransaction: vi.fn().mockReturnValue({
         send: vi.fn().mockResolvedValue({
           value: {
-            err: "Simulation failed",
+            err: { InstructionError: [0, { Custom: 1 }] },
           },
         }),
       }),
@@ -147,7 +147,7 @@ describe("Send Transaction", async () => {
     );
     await expect(
       buildAndSendTransaction([transferInstruction], signer),
-    ).rejects.toThrow("Transaction simulation failed: Simulation failed");
+    ).rejects.toThrow('Transaction simulation failed: {"InstructionError":[0,{"Custom":1}]}');
   });
 
   it("Should reject invalid transaction", async () => {

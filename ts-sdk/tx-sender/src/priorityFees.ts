@@ -10,9 +10,7 @@ import type {
   TransactionMessageWithBlockhashLifetime,
   TransactionVersion,
 } from "@solana/kit";
-import {
-  getComputeUnitEstimateForTransactionMessageFactory,
-} from "@solana/kit";
+import { getComputeUnitEstimateForTransactionMessageFactory } from "@solana/kit";
 import { getJitoConfig, getRpcConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { processJitoTipForTxMessage } from "./jito";
@@ -24,13 +22,13 @@ export type TxMessage = ITransactionMessageWithFeePayerSigner<
 > &
   Omit<
     TransactionMessageWithBlockhashLifetime &
-    Readonly<{
-      instructions: readonly IInstruction<
-        string,
-        readonly (IAccountLookupMeta<string, string> | IAccountMeta<string>)[]
-      >[];
-      version: TransactionVersion;
-    }>,
+      Readonly<{
+        instructions: readonly IInstruction<
+          string,
+          readonly (IAccountLookupMeta<string, string> | IAccountMeta<string>)[]
+        >[];
+        version: TransactionVersion;
+      }>,
     "feePayer"
   >;
 

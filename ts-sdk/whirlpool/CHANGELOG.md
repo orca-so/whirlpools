@@ -1,5 +1,15 @@
 # @orca-so/whirlpools
 
+## 2.1.0
+
+### Minor Changes
+
+- [#943](https://github.com/orca-so/whirlpools/pull/943) [`8a76634`](https://github.com/orca-so/whirlpools/commit/8a76634176e716c902dd9a23694c5a029b23de7a) Thanks [@boosik-sol](https://github.com/boosik-sol)! - Implements resetPositionRange instruction for ts-sdk
+
+### Patch Changes
+
+- [#958](https://github.com/orca-so/whirlpools/pull/958) [`63a5323`](https://github.com/orca-so/whirlpools/commit/63a5323425d22840bc226039db3e5faae7232a94) Thanks [@boosik-sol](https://github.com/boosik-sol)! - return rpc object on setRpc
+
 ## 2.0.0
 
 ### Major Changes

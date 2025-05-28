@@ -147,7 +147,9 @@ describe("Send Transaction", async () => {
     );
     await expect(
       buildAndSendTransaction([transferInstruction], signer),
-    ).rejects.toThrow('Transaction simulation failed: {"InstructionError":[0,{"Custom":1}]}');
+    ).rejects.toThrow(
+      'Transaction simulation failed: {"InstructionError":[0,{"Custom":1}]}',
+    );
   });
 
   it("Should reject invalid transaction", async () => {

@@ -29,9 +29,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@orca-so/tx-sender": "*",
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
-    "@orca-so/tx-sender": "*",
     "@solana-program/memo": "^0.7.0",
     "@solana-program/system": "^0.7.0",
     "@solana-program/token": "^0.5.1",

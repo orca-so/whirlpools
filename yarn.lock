@@ -4277,7 +4277,6 @@ __metadata:
     solana-bankrun: "npm:^0.4.0"
     typescript: "npm:^5.8.2"
   peerDependencies:
-    "@orca-so/tx-sender": "*"
     "@solana/kit": ^2.1.0
   languageName: unknown
   linkType: soft

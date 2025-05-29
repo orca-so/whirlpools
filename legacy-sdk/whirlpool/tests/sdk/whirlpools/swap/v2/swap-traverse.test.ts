@@ -8,6 +8,7 @@ import {
   MAX_TICK_INDEX,
   MIN_SQRT_PRICE,
   MIN_TICK_INDEX,
+  NO_ORACLE_DATA,
   PriceMath,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
@@ -1634,6 +1635,7 @@ describe("swap traversal tests", () => {
                 otherAmountThreshold:
                   SwapUtils.getDefaultOtherAmountThreshold(true),
                 tokenExtensionCtx,
+                oracleData: NO_ORACLE_DATA,
               },
               slippageTolerance,
             ),
@@ -1701,6 +1703,7 @@ describe("swap traversal tests", () => {
                 otherAmountThreshold:
                   SwapUtils.getDefaultOtherAmountThreshold(true),
                 tokenExtensionCtx,
+                oracleData: NO_ORACLE_DATA,
               },
               slippageTolerance,
             ),

@@ -3,7 +3,7 @@ import type { Percentage } from "@orca-so/common-sdk";
 import { AddressUtil, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import type { WhirlpoolContext } from "../..";
+import type { OracleData, WhirlpoolContext } from "../..";
 import { TickUtil } from "../..";
 import type {
   WhirlpoolAccountFetchOptions,
@@ -37,6 +37,12 @@ export interface TickArrayRequest {
   tickCurrentIndex: number;
   tickSpacing: number;
 }
+
+/*
+ * An alias for null indicating that the oracle data does not exist.
+ * @category Whirlpool Utils
+ */
+export const NO_ORACLE_DATA = null;
 
 /**
  * @category Whirlpool Utils
@@ -156,7 +162,7 @@ export class SwapUtils {
    * @param aToB - The direction of the trade.
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
-   * @param cache - WhirlpoolAccountCacheInterface object to fetch solana accounts
+   * @param fetcher - WhirlpoolAccountCacheInterface object to fetch solana accounts
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns An array of PublicKey[] for the tickArray accounts that this swap may traverse across.
    */
@@ -179,9 +185,38 @@ export class SwapUtils {
   }
 
   /**
+   * Fetch the oracle data for a given whirlpool.
+   *
+   * @category Whirlpool Utils
+   * @param programId - The Whirlpool programId which the Whirlpool lives on.
+   * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
+   * @param fetcher - WhirlpoolAccountCacheInterface object to fetch solana accounts
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
+   * @returns OracleData object containing the trade enable timestamp and adaptive fee constants and variables if the oracle is initialized, otherwise null.
+   */
+  public static async getOracle(
+    programId: PublicKey,
+    whirlpoolAddress: PublicKey,
+    fetcher: WhirlpoolAccountFetcherInterface,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<OracleData | null> {
+    const oracleAddress = PDAUtil.getOracle(
+      programId,
+      whirlpoolAddress,
+    ).publicKey;
+
+    const oracleData = await fetcher.getOracle(oracleAddress, opts);
+    if (!oracleData) {
+      return NO_ORACLE_DATA;
+    }
+
+    return oracleData;
+  }
+
+  /**
    * Fetch a batch of tick-arrays for a set of TA requests.
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
-   * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
+   * @param fetcher - WhirlpoolAccountCacheInterface instance to fetch solana accounts
    * @param tickArrayRequests - An array of {@link TickArrayRequest} of tick-arrays to request for.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A array of request indicies mapped to an array of resulting PublicKeys.

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-program
 
+## 0.4.1
+
+### Patch Changes
+
+- [#946](https://github.com/orca-so/whirlpools/pull/946) [`d014eac`](https://github.com/orca-so/whirlpools/commit/d014eac11e55a9abdbff042b2a124149f543fac9) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Reduce stack usage in initializePoolWithAdaptiveFee
+
 ## 0.4.0
 
 ### Minor Changes

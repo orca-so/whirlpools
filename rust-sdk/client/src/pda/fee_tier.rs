@@ -4,12 +4,12 @@ use solana_program::pubkey::Pubkey;
 
 pub fn get_fee_tier_address(
     whirlpools_config: &Pubkey,
-    tick_spacing: u16,
+    fee_tier_index: u16,
 ) -> Result<(Pubkey, u8), ProgramError> {
     let seeds = &[
         b"fee_tier",
         whirlpools_config.as_ref(),
-        &tick_spacing.to_le_bytes(),
+        &fee_tier_index.to_le_bytes(),
     ];
 
     Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)

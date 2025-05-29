@@ -29,6 +29,7 @@ function testWhirlpool(): WhirlpoolFacade {
     liquidity: 265000n,
     sqrtPrice: 1n << 64n,
     tickSpacing: 2,
+    feeTierIndexSeed: [2, 0],
     rewardLastUpdatedTimestamp: 0n,
     rewardInfos: [
       {
@@ -94,13 +95,22 @@ function testPosition(): PositionFacade {
 
 describe("WASM bundle smoke test", () => {
   it("SwapIn", async () => {
-    const result = swapQuoteByInputToken(1000n, false, 1000, testWhirlpool(), [
-      testTickArray(0),
-      testTickArray(176),
-      testTickArray(352),
-      testTickArray(-176),
-      testTickArray(-352),
-    ]);
+    const timestamp = BigInt(Math.floor(Date.now() / 1000));
+    const result = swapQuoteByInputToken(
+      1000n,
+      false,
+      1000,
+      testWhirlpool(),
+      undefined,
+      [
+        testTickArray(0),
+        testTickArray(176),
+        testTickArray(352),
+        testTickArray(-176),
+        testTickArray(-352),
+      ],
+      timestamp,
+    );
     assert.strictEqual(result.tokenIn, 1000n);
     assert.strictEqual(result.tokenEstOut, 918n);
     assert.strictEqual(result.tokenMinOut, 826n);
@@ -108,13 +118,22 @@ describe("WASM bundle smoke test", () => {
   });
 
   it("SwapOut", async () => {
-    const result = swapQuoteByOutputToken(1000n, true, 1000, testWhirlpool(), [
-      testTickArray(0),
-      testTickArray(176),
-      testTickArray(352),
-      testTickArray(-176),
-      testTickArray(-352),
-    ]);
+    const timestamp = BigInt(Math.floor(Date.now() / 1000));
+    const result = swapQuoteByOutputToken(
+      1000n,
+      true,
+      1000,
+      testWhirlpool(),
+      undefined,
+      [
+        testTickArray(0),
+        testTickArray(176),
+        testTickArray(352),
+        testTickArray(-176),
+        testTickArray(-352),
+      ],
+      timestamp,
+    );
     assert.strictEqual(result.tokenOut, 1000n);
     assert.strictEqual(result.tokenEstIn, 1088n);
     assert.strictEqual(result.tokenMaxIn, 1197n);
@@ -179,8 +198,8 @@ describe("WASM bundle smoke test", () => {
       { feeBps: 2000, maxFee: 100000n },
       { feeBps: 3000, maxFee: 100000n },
     );
-    assert.strictEqual(result.rewards[0].rewardsOwed, 21690n);
-    assert.strictEqual(result.rewards[1].rewardsOwed, 22560n);
-    assert.strictEqual(result.rewards[2].rewardsOwed, 22610n);
+    assert.strictEqual(result.rewards[0].rewardsOwed, 90n);
+    assert.strictEqual(result.rewards[1].rewardsOwed, 160n);
+    assert.strictEqual(result.rewards[2].rewardsOwed, 210n);
   });
 });

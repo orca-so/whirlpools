@@ -18,7 +18,7 @@ What follows is an overview of our SDK suite, distinguishing between the various
 The High-Level SDKs are our top recommendation for anyone who wants to integrate with the Whirlpool Program. These SDKs abstract many of the underlying complexities, such as tick array management, and makes managing pools and positions, and executing swaps much simpler. It is suitable for developers who need efficient, high-level functionalities and want to minimize manual configuration and management.
 
 - **Rust**: [orca_whirlpools](https://crates.io/crates/orca_whirlpools)
-  - Compatible with Solana SDK versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+  - Compatible with Solana SDK versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependency issues when using older versions. To solve this you can apply a lockfile patch with the following command:
     ```bash
     cargo update solana-program:<current-version> --precise <required-version>
     ```
@@ -35,7 +35,7 @@ The Core SDKs provide essential utilities for **math operations** and **quotes**
 - **Rust**: [orca_whirlpools_core](https://crates.io/crates/orca_whirlpools_core)
 - **TypeScript Kit**: [@orca-so/whirlpools-core](https://www.npmjs.com/package/@orca-so/whirlpools-core)
 - **TypeScript Legacy**: [@orca-so/whirlpools-sdk](https://www.npmjs.com/package/@orca-so/whirlpools-sdk)
-  - The Legacy SDK has has separate utility classes for certain math operations such as `PoolUtil`, `TickUtil`, `TickArrayUtil`, and `SwapUtils`. For quotes, there are separate functions exported, such as `decreaseLiquidityQuoteByLiquidity`, `increaseLiquidityQuoteByInputToken`, `swapQuoteByInputToken`, `collectFeesQuote`, `collectRewardsQuote`, and more. Check out the reference docs in the navbor for more details.
+  - The Legacy SDK has separate utility classes for certain math operations such as `PoolUtil`, `TickUtil`, `TickArrayUtil`, and `SwapUtils`. For quotes, there are separate functions exported, such as `decreaseLiquidityQuoteByLiquidity`, `increaseLiquidityQuoteByInputToken`, `swapQuoteByInputToken`, `collectFeesQuote`, `collectRewardsQuote`, and more. Check out the reference docs in the navbor for more details.
 
 ## 3. Low-Level SDKs
 
@@ -46,7 +46,7 @@ This SDK provides direct program interactions and is designed for developers who
     ```bash
     cargo update anchor:<current-version> --precise 0.29
     ```
-  - Compatible with `solana-program` versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+  - Compatible with `solana-program` versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependency issues when using older versions. To solve this you can apply a lockfile patch with the following command:
     ```bash
     cargo update solana-program:<current-version> --precise <required-version>
     ```

@@ -22,20 +22,13 @@ export enum SwapErrorCode {
   TickArraySequenceInvalid = `TickArraySequenceInvalid`,
   AmountRemainingOverflow = `AmountRemainingOverflow`,
   AmountCalcOverflow = `AmountCalcOverflow`,
-}
-
-export enum RouteQueryErrorCode {
-  RouteDoesNotExist = "RouteDoesNotExist",
-  TradeAmountTooHigh = "TradeAmountTooHigh",
-  ZeroInputAmount = "ZeroInputAmount",
-  General = "General",
+  TradeIsNotEnabled = `TradeIsNotEnabled`,
 }
 
 export type WhirlpoolsErrorCode =
   | TokenErrorCode
   | SwapErrorCode
-  | MathErrorCode
-  | RouteQueryErrorCode;
+  | MathErrorCode;
 
 export class WhirlpoolsError extends Error {
   message: string;

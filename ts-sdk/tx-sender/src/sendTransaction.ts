@@ -85,7 +85,12 @@ export async function sendTransaction(
     .send();
 
   if (simResult.value.err) {
-    throw new Error(`Transaction simulation failed: ${simResult.value.err}`);
+    throw new Error(
+      `Transaction simulation failed: ${JSON.stringify(
+        simResult.value.err,
+        (key, value) => (typeof value === "bigint" ? value.toString() : value),
+      )}`,
+    );
   }
 
   const expiryTime = Date.now() + 90_000;

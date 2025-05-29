@@ -1,5 +1,17 @@
 # @orca-so/whirlpools-rust
 
+## 3.0.1
+
+### Patch Changes
+
+- [#938](https://github.com/orca-so/whirlpools/pull/938) [`1a72924`](https://github.com/orca-so/whirlpools/commit/1a72924533b793203db780dbec5526dc58bcc1a7) Thanks [@boosik-sol](https://github.com/boosik-sol)! - Checking if sqrt price is less than MIN_SQRT_PRICE or greater than MAX_SQRT_PRICE in rust-sdk
+
+## 3.0.0
+
+### Major Changes
+
+- [#926](https://github.com/orca-so/whirlpools/pull/926) [`49fa31a`](https://github.com/orca-so/whirlpools/commit/49fa31a042254c4f4a7c16594344f66e9c208c2b) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Adaptive Fee SDK update
+
 ## 2.0.4
 
 ### Patch Changes

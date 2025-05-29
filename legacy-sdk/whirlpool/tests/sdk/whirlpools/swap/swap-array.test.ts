@@ -3,6 +3,7 @@ import { AddressUtil, Percentage, ZERO } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import {
+  NO_ORACLE_DATA,
   PriceMath,
   SwapUtils,
   TICK_ARRAY_SIZE,
@@ -746,6 +747,7 @@ describe("swap arrays test", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
             tokenExtensionCtx,
+            oracleData: NO_ORACLE_DATA,
           },
           slippageTolerance,
         ),
@@ -813,6 +815,7 @@ describe("swap arrays test", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
             tokenExtensionCtx,
+            oracleData: NO_ORACLE_DATA,
           },
           slippageTolerance,
         ),
@@ -879,6 +882,7 @@ describe("swap arrays test", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
             tokenExtensionCtx,
+            oracleData: NO_ORACLE_DATA,
           },
           slippageTolerance,
         ),
@@ -945,6 +949,7 @@ describe("swap arrays test", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
             tokenExtensionCtx,
+            oracleData: NO_ORACLE_DATA,
           },
           slippageTolerance,
         ),
@@ -1005,6 +1010,7 @@ describe("swap arrays test", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
             tokenExtensionCtx,
+            oracleData: NO_ORACLE_DATA,
           },
           slippageTolerance,
         ),
@@ -1070,6 +1076,7 @@ describe("swap arrays test", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
             tokenExtensionCtx,
+            oracleData: NO_ORACLE_DATA,
           },
           slippageTolerance,
         ),
@@ -1134,6 +1141,7 @@ describe("swap arrays test", () => {
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
         otherAmountThreshold: ZERO,
         tokenExtensionCtx,
+        oracleData: NO_ORACLE_DATA,
       },
       slippageTolerance,
     );
@@ -1209,6 +1217,7 @@ describe("swap arrays test", () => {
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
         otherAmountThreshold: ZERO,
         tokenExtensionCtx,
+        oracleData: NO_ORACLE_DATA,
       },
       slippageTolerance,
     );

@@ -30,10 +30,15 @@ pub async fn build_and_send_transaction_with_config<S: Signer>(
     rpc_config: &RpcConfig,
     fee_config: &FeeConfig,
 ) -> Result<Signature, String> {
+    // Get the payer (first signer)
+    let payer = signers
+        .first()
+        .ok_or_else(|| "At least one signer is required".to_string())?;
+
     // Build transaction with compute budget and priority fees
     let mut tx = build_transaction_with_config(
         instructions,
-        signers,
+        &payer.pubkey(),
         address_lookup_tables,
         rpc_client,
         rpc_config,
@@ -91,19 +96,14 @@ pub async fn build_and_send_transaction<S: Signer>(
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
-pub async fn build_transaction_with_config<S: Signer>(
+pub async fn build_transaction_with_config(
     mut instructions: Vec<Instruction>,
-    signers: &[&S],
+    payer: &Pubkey,
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
     rpc_client: &RpcClient,
     rpc_config: &RpcConfig,
     fee_config: &FeeConfig,
 ) -> Result<VersionedTransaction, String> {
-    // Get the payer (first signer)
-    let payer = signers
-        .first()
-        .ok_or_else(|| "At least one signer is required".to_string())?;
-
     let recent_blockhash = rpc_client
         .get_latest_blockhash()
         .await
@@ -115,16 +115,15 @@ pub async fn build_transaction_with_config<S: Signer>(
 
     let compute_units = compute_budget::estimate_compute_units(
         rpc_client,
-        instructions.clone(),
-        &payer.pubkey(),
-        signers,
+        &instructions,
+        &payer,
         address_lookup_tables_clone,
     )
     .await?;
     let budget_instructions = compute_budget::get_compute_budget_instruction(
         rpc_client,
         compute_units,
-        &payer.pubkey(),
+        &payer,
         rpc_config,
         fee_config,
         &writable_accounts,
@@ -137,23 +136,21 @@ pub async fn build_transaction_with_config<S: Signer>(
     if fee_config.jito != JitoFeeStrategy::Disabled {
         if !rpc_config.is_mainnet() {
             println!("Warning: Jito tips are only supported on mainnet. Skipping Jito tip.");
-        } else if let Some(jito_tip_ix) =
-            jito::add_jito_tip_instruction(fee_config, &payer.pubkey()).await?
-        {
+        } else if let Some(jito_tip_ix) = jito::add_jito_tip_instruction(fee_config, payer).await? {
             instructions.insert(0, jito_tip_ix);
         }
     }
     // Create versioned transaction message based on whether ALTs are provided
     let message = if let Some(address_lookup_tables_clone) = address_lookup_tables {
         Message::try_compile(
-            &payer.pubkey(),
+            &payer,
             &instructions,
             &address_lookup_tables_clone,
             recent_blockhash,
         )
         .map_err(|e| format!("Failed to compile message with ALTs: {}", e))?
     } else {
-        Message::try_compile(&payer.pubkey(), &instructions, &[], recent_blockhash)
+        Message::try_compile(&payer, &instructions, &[], recent_blockhash)
             .map_err(|e| format!("Failed to compile message: {}", e))?
     };
     Ok(VersionedTransaction {
@@ -169,9 +166,9 @@ pub async fn build_transaction_with_config<S: Signer>(
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
-pub async fn build_transaction<S: Signer>(
+pub async fn build_transaction(
     instructions: Vec<Instruction>,
-    signers: &[&S],
+    payer: &Pubkey,
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<VersionedTransaction, String> {
     let config = config::get_global_config()
@@ -185,7 +182,7 @@ pub async fn build_transaction<S: Signer>(
     let fee_config = &config.fee_config;
     build_transaction_with_config(
         instructions,
-        signers,
+        payer,
         address_lookup_tables,
         &rpc_client,
         rpc_config,

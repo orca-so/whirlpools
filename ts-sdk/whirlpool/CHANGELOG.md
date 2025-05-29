@@ -1,5 +1,27 @@
 # @orca-so/whirlpools
 
+## 2.1.0
+
+### Minor Changes
+
+- [#943](https://github.com/orca-so/whirlpools/pull/943) [`8a76634`](https://github.com/orca-so/whirlpools/commit/8a76634176e716c902dd9a23694c5a029b23de7a) Thanks [@boosik-sol](https://github.com/boosik-sol)! - Implements resetPositionRange instruction for ts-sdk
+
+### Patch Changes
+
+- [#958](https://github.com/orca-so/whirlpools/pull/958) [`63a5323`](https://github.com/orca-so/whirlpools/commit/63a5323425d22840bc226039db3e5faae7232a94) Thanks [@boosik-sol](https://github.com/boosik-sol)! - return rpc object on setRpc
+
+## 2.0.0
+
+### Major Changes
+
+- [#926](https://github.com/orca-so/whirlpools/pull/926) [`49fa31a`](https://github.com/orca-so/whirlpools/commit/49fa31a042254c4f4a7c16594344f66e9c208c2b) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Adaptive Fee SDK update
+
+### Patch Changes
+
+- Updated dependencies [[`49fa31a`](https://github.com/orca-so/whirlpools/commit/49fa31a042254c4f4a7c16594344f66e9c208c2b)]:
+  - @orca-so/whirlpools-client@2.0.0
+  - @orca-so/whirlpools-core@2.0.0
+
 ## 1.1.2
 
 ### Patch Changes

@@ -17,6 +17,7 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
   MEMO_PROGRAM_ADDRESS,
+  NO_ORACLE_DATA,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
@@ -2130,6 +2131,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolData,
               IGNORE_CACHE,
             ),
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(100, 100), // 100% slippage
       );
@@ -2157,6 +2159,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolData,
               IGNORE_CACHE,
             ),
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(100, 100), // 100% slippage
       );
@@ -2484,6 +2487,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolDataOne,
               IGNORE_CACHE,
             ),
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(1, 100),
       );
@@ -2512,6 +2516,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolDataTwo,
               IGNORE_CACHE,
             ),
+          oracleData: NO_ORACLE_DATA,
         },
         Percentage.fromFraction(1, 100),
       );
@@ -2997,6 +3002,7 @@ describe("TokenExtension/TransferHook", () => {
                 whirlpoolData,
                 IGNORE_CACHE,
               ),
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(1, 100),
         );
@@ -3118,6 +3124,7 @@ describe("TokenExtension/TransferHook", () => {
                 whirlpoolData,
                 IGNORE_CACHE,
               ),
+            oracleData: NO_ORACLE_DATA,
           },
           Percentage.fromFraction(1, 100),
         );

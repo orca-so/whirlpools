@@ -6,15 +6,15 @@ pub fn get_whirlpool_address(
     whirlpools_config: &Pubkey,
     token_mint_a: &Pubkey,
     token_mint_b: &Pubkey,
-    tick_spacing: u16,
+    fee_tier_index: u16,
 ) -> Result<(Pubkey, u8), ProgramError> {
-    let tick_spacing_bytes = tick_spacing.to_le_bytes();
+    let fee_tier_index_bytes = fee_tier_index.to_le_bytes();
     let seeds = &[
         b"whirlpool",
         whirlpools_config.as_ref(),
         token_mint_a.as_ref(),
         token_mint_b.as_ref(),
-        tick_spacing_bytes.as_ref(),
+        fee_tier_index_bytes.as_ref(),
     ];
 
     Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)

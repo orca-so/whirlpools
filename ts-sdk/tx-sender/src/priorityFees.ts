@@ -46,13 +46,6 @@ export async function addPriorityInstructions(
   }
   let computeUnits = await getComputeUnitsForTxMessage(rpc, message);
 
-  if (!computeUnits) {
-    console.warn(
-      "Transaction simulation failed, using 1,400,000 compute units",
-    );
-    computeUnits = 1_400_000;
-  }
-
   return processComputeBudgetForTxMessage(message, computeUnits);
 }
 
@@ -63,6 +56,14 @@ async function getComputeUnitsForTxMessage(
   const estimator = getComputeUnitEstimateForTransactionMessageFactory({
     rpc,
   });
-  const estimate = await estimator(txMessage);
-  return estimate;
+
+  try {
+    const estimate = await estimator(txMessage);
+    return estimate;
+  } catch {
+    console.warn(
+      "Transaction simulation failed, using 1,400,000 compute units",
+    );
+    return 1_400_000;
+  }
 }

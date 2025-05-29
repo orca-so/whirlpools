@@ -47,14 +47,14 @@ pub(crate) async fn get_token_accounts_for_owner(
     for account in accounts {
         if let UiAccountData::Json(data) = account.account.data {
             let token_program = match data.program.as_str() {
-                "spl-token" => &spl_token::ID.to_string(),
-                "spl-token-2022" => &spl_token_2022::ID.to_string(),
-                pubkey => pubkey,
+                "spl-token" => spl_token::ID.to_string(),
+                "spl-token-2022" => spl_token_2022::ID.to_string(),
+                pubkey => pubkey.to_string(),
             };
             let token: Parsed = from_value(data.parsed)?;
             token_accounts.push(ParsedTokenAccount {
                 pubkey: Pubkey::from_str(&account.pubkey)?,
-                token_program: Pubkey::from_str(token_program)?,
+                token_program: Pubkey::from_str(&token_program)?,
                 mint: Pubkey::from_str(&token.info.mint)?,
                 amount: token.info.token_amount.amount.parse::<u64>()?,
             });

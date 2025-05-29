@@ -38,6 +38,7 @@
     "@solana/sysvars": "^2.1.0"
   },
   "peerDependencies": {
+    "@orca-so/tx-sender": "*",
     "@solana/kit": "^2.1.0"
   },
   "devDependencies": {

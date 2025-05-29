@@ -97,15 +97,16 @@ const setGlobalConfig = (config: {
 };
 
 /**
- * Initializes the global RPC configuration.
+ * Initializes the global RPC configuration and returns an RPC instance.
  *
  * @param {string} url - The Solana RPC endpoint URL.
  * @param {boolean} [supportsPriorityFeePercentile=false] - Whether the RPC supports percentile-based priority fees. Set this to true if the RPC provider is Triton.
- * @returns {Promise<void>} Resolves once the configuration has been set.
+ * @returns {Promise<Rpc<SolanaRpcApi>>} A Promise that resolves to an RPC instance configured for the specified endpoint.
  *
  * @example
  * ```ts
- * await setRpc("https://api.mainnet-beta.solana.com");
+ * const rpc = await setRpc("https://api.mainnet-beta.solana.com");
+ * const slot = await rpc.getSlot().send();
  * ```
  */
 export async function setRpc(
@@ -124,7 +125,18 @@ export async function setRpc(
     },
   });
 
-  return rpc;
+  // Create a wrapper Proxy that makes the RPC non-thenable
+  // This prevents the RPC's .then from interfering with Promise resolution
+  const nonThenableRpc = new Proxy(rpc, {
+    get(target, prop, receiver) {
+      if (prop === 'then') {
+        return undefined; // Make it non-thenable
+      }
+      return Reflect.get(target, prop, receiver);
+    }
+  });
+
+  return nonThenableRpc;
 }
 
 async function getChainIdFromGenesisHash(
@@ -247,16 +259,16 @@ export function setPriorityFeePercentile(percentile: Percentile) {
 
 type FeeSetting =
   | {
-      type: "dynamic";
-      maxCapLamports?: bigint;
-    }
+    type: "dynamic";
+    maxCapLamports?: bigint;
+  }
   | {
-      type: "exact";
-      amountLamports: bigint;
-    }
+    type: "exact";
+    amountLamports: bigint;
+  }
   | {
-      type: "none";
-    };
+    type: "none";
+  };
 
 /**
  * Configuration for transaction fees, including Jito and priority fee settings.

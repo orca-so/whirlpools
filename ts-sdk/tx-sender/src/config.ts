@@ -129,11 +129,11 @@ export async function setRpc(
   // This prevents the RPC's .then from interfering with Promise resolution
   const nonThenableRpc = new Proxy(rpc, {
     get(target, prop, receiver) {
-      if (prop === 'then') {
+      if (prop === "then") {
         return undefined; // Make it non-thenable
       }
       return Reflect.get(target, prop, receiver);
-    }
+    },
   });
 
   return nonThenableRpc;
@@ -259,16 +259,16 @@ export function setPriorityFeePercentile(percentile: Percentile) {
 
 type FeeSetting =
   | {
-    type: "dynamic";
-    maxCapLamports?: bigint;
-  }
+      type: "dynamic";
+      maxCapLamports?: bigint;
+    }
   | {
-    type: "exact";
-    amountLamports: bigint;
-  }
+      type: "exact";
+      amountLamports: bigint;
+    }
   | {
-    type: "none";
-  };
+      type: "none";
+    };
 
 /**
  * Configuration for transaction fees, including Jito and priority fee settings.

@@ -126,7 +126,7 @@ describe("Build Transaction", async () => {
   });
 
   it("Should build basic transaction with no priority fees", async () => {
-    await setRpc(rpcUrl, false);
+    const _rpc = await setRpc(rpcUrl, false); // testing that returning the rpc works
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(

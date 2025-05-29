@@ -101,7 +101,7 @@ describe("Send Transaction", async () => {
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
   const amount = 1_000_000n;
 
-  await setRpc(rpcUrl, false);
+  const _rpc = await setRpc(rpcUrl, false); // testing that returning the rpc works
   setPriorityFeeSetting({ type: "none" });
   setJitoTipSetting({ type: "none" });
   setComputeUnitMarginMultiplier(1.05);

@@ -24,6 +24,7 @@ import {
 } from "../src/config";
 import { encodeTransaction } from "./utils";
 import { buildTransaction } from "../src/buildTransaction";
+import { setupMockRpc, createErrorMockRpc, mockRpc } from "./utils/mockRpc";
 
 vi.mock("@solana/kit", async () => {
   const actual = await vi.importActual("@solana/kit");
@@ -43,56 +44,9 @@ vi.mock("@solana/kit", async () => {
   };
 });
 
+setupMockRpc();
+
 const rpcUrl = "https://api.mainnet-beta.solana.com";
-
-const mockRpc = {
-  getLatestBlockhash: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue({
-      value: {
-        blockhash: "123456789abcdef",
-        lastValidBlockHeight: 123456789,
-      },
-    }),
-  }),
-  sendTransaction: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue({
-      value: {
-        signature: "mock_transaction_signature",
-      },
-    }),
-  }),
-  getRecentPrioritizationFees: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue([
-      {
-        prioritizationFee: BigInt(1000),
-        slot: 123456789n,
-      },
-    ]),
-  }),
-  simulateTransaction: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue({
-      value: {
-        err: null,
-      },
-    }),
-  }),
-  getSignatureStatuses: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue({
-      value: [
-        {
-          slot: 123456789n,
-          confirmations: 1,
-          err: null,
-          confirmationStatus: "confirmed",
-        },
-      ],
-    }),
-  }),
-} as const satisfies Partial<Rpc<SolanaRpcApi>>;
-
-vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-  mockRpc as unknown as Rpc<SolanaRpcApi>,
-);
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 
@@ -114,6 +68,8 @@ describe("Send Transaction", async () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset to default mock before each test
+    setupMockRpc();
   });
 
   it("Should send signed transaction without websocket url", async () => {
@@ -124,24 +80,7 @@ describe("Send Transaction", async () => {
   });
 
   it("Should handle RPC errors gracefully", async () => {
-    const errorMockRpc = {
-      ...mockRpc,
-      simulateTransaction: vi.fn().mockReturnValue({
-        send: vi.fn().mockResolvedValue({
-          value: {
-            err: { InstructionError: [0, { Custom: 1 }] },
-          },
-        }),
-      }),
-      sendTransaction: vi.fn().mockReturnValue({
-        send: vi.fn().mockRejectedValue(new Error("RPC Error")),
-      }),
-      getSignatureStatuses: vi.fn().mockReturnValue({
-        send: vi.fn().mockResolvedValue({
-          value: [null],
-        }),
-      }),
-    };
+    const errorMockRpc = createErrorMockRpc();
     vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
       errorMockRpc as unknown as Rpc<SolanaRpcApi>,
     );

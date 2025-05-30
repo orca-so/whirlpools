@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildTransaction } from "../src/buildTransaction";
 import { vi } from "vitest";
-import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
 import type {
   IInstruction,
@@ -25,17 +24,11 @@ import {
 } from "../src/config";
 import { decodeTransaction, encodeTransaction } from "./utils";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
+import { setupMockRpc, mockRpc } from "./utils/mockRpc";
 
 const rpcUrl = "https://api.mainnet-beta.solana.com";
 const computeUnitProgramId = "ComputeBudget111111111111111111111111111111";
 const systemProgramId = "11111111111111111111111111111111";
-
-const getLatestBlockhashMockRpcResponse = {
-  value: {
-    blockhash: "123456789abcdef",
-    lastValidBlockHeight: 123456789,
-  },
-};
 
 vi.mock("@solana-program/address-lookup-table", async () => {
   const actual = await vi.importActual("@solana-program/address-lookup-table");
@@ -75,28 +68,7 @@ vi.mock("@solana/kit", async () => {
   };
 });
 
-const mockRpc = {
-  getLatestBlockhash: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue(getLatestBlockhashMockRpcResponse),
-  }),
-  getRecentPrioritizationFees: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue([
-      {
-        prioritizationFee: BigInt(1000),
-        slot: 123456789n,
-      },
-    ]),
-  }),
-  getGenesisHash: vi.fn().mockReturnValue({
-    send: vi
-      .fn()
-      .mockResolvedValue("5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"),
-  }),
-} as const satisfies Partial<Rpc<SolanaRpcApi>>;
-
-vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-  mockRpc as unknown as Rpc<SolanaRpcApi>,
-);
+setupMockRpc();
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 
@@ -126,7 +98,7 @@ describe("Build Transaction", async () => {
   });
 
   it("Should build basic transaction with no priority fees", async () => {
-    const _rpc = await setRpc(rpcUrl, false); // testing that returning the rpc works
+    await setRpc(rpcUrl, false);
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(

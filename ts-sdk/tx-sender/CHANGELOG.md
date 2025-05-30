@@ -1,5 +1,11 @@
 # @orca-so/tx-sender
 
+## 1.0.2
+
+### Patch Changes
+
+- [#963](https://github.com/orca-so/whirlpools/pull/963) [`49cc8c8`](https://github.com/orca-so/whirlpools/commit/49cc8c86c99428ea0feb1fbf2d8bff0c396637ba) Thanks [@calintje](https://github.com/calintje)! - Fix RPC Proxy thenable interference in setRpc function.
+
 ## 1.0.1
 
 ### Patch Changes

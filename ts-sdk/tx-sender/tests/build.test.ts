@@ -5,8 +5,6 @@ import * as jito from "../src/jito";
 import type {
   IInstruction,
   ITransactionMessageWithFeePayerSigner,
-  Rpc,
-  SolanaRpcApi,
   Address,
 } from "@solana/kit";
 import {

@@ -129,8 +129,13 @@ describe("Config Tests", () => {
         const rpc = await setRpc(rpcUrl, false);
 
         assert.strictEqual(
-          (rpc as any).then,
-          undefined,
+          Object.hasOwnProperty.call(rpc, "then"),
+          false,
+          "RPC object should not have a 'then' property",
+        );
+        assert.strictEqual(
+          "then" in rpc,
+          false,
           "RPC object should not be thenable",
         );
       });

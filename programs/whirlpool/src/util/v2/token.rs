@@ -277,15 +277,6 @@ pub fn is_supported_token_mint(
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }
-
-                // reject if default state is not Initialized even if it has token badge
-                let default_state = token_mint_unpacked
-                    .get_extension::<extension::default_account_state::DefaultAccountState>(
-                )?;
-                let initialized: u8 = AccountState::Initialized.into();
-                if default_state.state != initialized {
-                    return Ok(false);
-                }
             }
             // No possibility to support the following extensions
             extension::ExtensionType::NonTransferable => {

@@ -14,7 +14,7 @@ edition = "2021"
 [features]
 default = ["core-types"]
 anchor = ["dep:anchor-lang"]
-anchor-idl-build = []
+anchor-idl-build = ["dep:anchor-lang", "anchor-lang/idl-build"]
 core-types = ["dep:orca_whirlpools_core"]
 serde = ["dep:serde", "dep:serde_with", "dep:serde-big-array"]
 fetch = ["dep:solana-client", "dep:solana-sdk", "dep:solana-account-decoder"]

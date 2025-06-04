@@ -188,7 +188,7 @@ const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 
 if (initLowerTickArray) {
   builder.addInstruction(
-    WhirlpoolIx.initTickArrayIx(ctx.program, {
+    WhirlpoolIx.initDynamicTickArrayIx(ctx.program, {
       whirlpool: whirlpoolPubkey,
       funder: ctx.wallet.publicKey,
       startTick: TickUtil.getStartTickIndex(lowerTickIndex, tickSpacing),
@@ -202,7 +202,7 @@ if (
   !upperTickArrayPda.publicKey.equals(lowerTickArrayPda.publicKey)
 ) {
   builder.addInstruction(
-    WhirlpoolIx.initTickArrayIx(ctx.program, {
+    WhirlpoolIx.initDynamicTickArrayIx(ctx.program, {
       whirlpool: whirlpoolPubkey,
       funder: ctx.wallet.publicKey,
       startTick: TickUtil.getStartTickIndex(upperTickIndex, tickSpacing),

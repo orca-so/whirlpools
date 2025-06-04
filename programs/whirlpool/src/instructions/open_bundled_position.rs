@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
-use crate::{state::*, util::verify_position_bundle_authority};
+use crate::{
+    manager::tick_array_manager::collect_rent_for_ticks_in_position, state::*,
+    util::verify_position_bundle_authority,
+};
 
 #[derive(Accounts)]
 #[instruction(bundle_index: u16)]
@@ -52,6 +55,12 @@ pub fn handler(
     verify_position_bundle_authority(
         &ctx.accounts.position_bundle_token_account,
         &ctx.accounts.position_bundle_authority,
+    )?;
+
+    collect_rent_for_ticks_in_position(
+        &ctx.accounts.funder,
+        position,
+        &ctx.accounts.system_program,
     )?;
 
     position_bundle.open_bundled_position(bundle_index)?;

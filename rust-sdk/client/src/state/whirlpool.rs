@@ -1,0 +1,1 @@
+pub const WHIRLPOOL_DISCRIMINATOR: &[u8] = &[63, 149, 209, 12, 225, 128, 99, 9];

@@ -1,0 +1,1 @@
+pub const FEE_TIER_DISCRIMINATOR: &[u8] = &[56, 75, 159, 76, 142, 68, 190, 105];

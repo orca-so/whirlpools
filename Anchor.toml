@@ -12,7 +12,8 @@ wallet = "~/.config/solana/id.json"
 test = "yarn vitest run --test-timeout 1000000 --no-file-parallelism --globals legacy-sdk"
 
 [test.validator]
-slots_per_epoch = "33"
+# If we use slot_per_epoch = "33", rent for Position account (216 byte) was not 0.00239424 but 0.002394239
+slots_per_epoch = "32"
 ticks_per_slot = 7
 url = "https://api.mainnet-beta.solana.com"
 
@@ -28,3 +29,46 @@ program = "legacy-sdk/whirlpool/tests/external_program/mpl_token_metadata.202402
 [[test.genesis]]
 address = "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
 program = "legacy-sdk/whirlpool/tests/external_program/transfer_hook_counter.so"
+
+# For reset_position_range test
+# Now, it is impossible to initialize position account without additional rent for ticks.
+# So we need to load test old position account without the additional rent.
+[[test.validator.account]]
+address = "4GQ4VQZKPt4fLxGCusfdBZia2ge5hUZpfwwr3pqxUrmf"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/owner_wallet.json"
+[[test.validator.account]]
+address = "Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_a.json"
+[[test.validator.account]]
+address = "BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b.json"
+[[test.validator.account]]
+address = "EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/whirlpool.json"
+[[test.validator.account]]
+address = "GedZgiHw8dJpR6Fyt1PNgSwYznEyh18qgZvobuxYxMQ3"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/vault_a.json"
+[[test.validator.account]]
+address = "4KDudC7XagDiZZbd9Xzabcy5yZMC8bvz7c8q7Bb9vXTa"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/vault_b.json"
+[[test.validator.account]]
+address = "AihMywzP74pU2riq1ihFW2YSVcc1itT3yiP7minvkxDs"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/fixed_tick_array_lower.json"
+[[test.validator.account]]
+address = "F4h3qr6uBgdLDJyTms4YiebiaiuCEvC5C9LJE8scA1LV"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/fixed_tick_array_upper.json"
+[[test.validator.account]]
+address = "CzKujYEJWNCvFHhjCBcv5gKnnTdvXrQ3b9ecxyZQV6sg"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position_mint.json"
+[[test.validator.account]]
+address = "J6DFYFKUsoMYgxkbeAqVnpSb8fniA9tHR44ZQu8KBgMS"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position.json"
+[[test.validator.account]]
+address = "6wGj2VeDPPP1ni6TJA1KuwExFXCWKsvXLyJZvfBsfgWY"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position_ata.json"
+[[test.validator.account]]
+address = "oH6UWXaG2uvePMcqR9bih8E2Gt9eS4jhYx5VyAEC4k1"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_a_ata.json"
+[[test.validator.account]]
+address = "7kshCxjaA7uY2C77X733ZZjM1EE31FhceM9dm4QXrxqZ"
+filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b_ata.json"

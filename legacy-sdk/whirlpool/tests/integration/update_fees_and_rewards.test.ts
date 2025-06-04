@@ -202,7 +202,7 @@ describe("update_fees_and_rewards", () => {
           tickArrayUpper: tickArrayPda.publicKey,
         }),
       ).buildAndExecute(),
-      /0xbbf/, // AccountOwnedByWrongProgram
+      /0x7d1/, // ConstraintHasOne
     );
   });
 

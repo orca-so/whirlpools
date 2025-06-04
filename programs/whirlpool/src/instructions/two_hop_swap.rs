@@ -120,29 +120,27 @@ pub fn handler(
         return Err(ErrorCode::InvalidIntermediaryMint.into());
     }
 
-    let builder_one = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool_one,
-        a_to_b_one,
+    let swap_tick_sequence_builder_one = SparseSwapTickSequenceBuilder::new(
         vec![
             ctx.accounts.tick_array_one_0.to_account_info(),
             ctx.accounts.tick_array_one_1.to_account_info(),
             ctx.accounts.tick_array_one_2.to_account_info(),
         ],
         None,
-    )?;
-    let mut swap_tick_sequence_one = builder_one.build()?;
+    );
+    let mut swap_tick_sequence_one =
+        swap_tick_sequence_builder_one.try_build(whirlpool_one, a_to_b_one)?;
 
-    let builder_two = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool_two,
-        a_to_b_two,
+    let swap_tick_sequence_builder_two = SparseSwapTickSequenceBuilder::new(
         vec![
             ctx.accounts.tick_array_two_0.to_account_info(),
             ctx.accounts.tick_array_two_1.to_account_info(),
             ctx.accounts.tick_array_two_2.to_account_info(),
         ],
         None,
-    )?;
-    let mut swap_tick_sequence_two = builder_two.build()?;
+    );
+    let mut swap_tick_sequence_two =
+        swap_tick_sequence_builder_two.try_build(whirlpool_two, a_to_b_two)?;
 
     let oracle_accessor_one =
         OracleAccessor::new(whirlpool_one, ctx.accounts.oracle_one.to_account_info())?;

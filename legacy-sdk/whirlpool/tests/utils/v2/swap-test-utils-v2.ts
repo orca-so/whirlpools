@@ -11,7 +11,7 @@ import type {
 import { PoolUtil, PriceMath } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import type { FundedPositionV2Params, TokenTrait } from "./init-utils-v2";
-import { initTestPoolWithTokensV2 } from "./init-utils-v2";
+import { initTestPoolWithTokensV2, useMaxCU } from "./init-utils-v2";
 
 export interface SwapTestPoolParams {
   ctx: WhirlpoolContext;
@@ -92,7 +92,7 @@ export async function fundPositionsWithClient(
           tokenMaxB: tokenB,
         },
       );
-      await tx.buildAndExecute();
+      await tx.addInstruction(useMaxCU()).buildAndExecute();
     }),
   );
 }

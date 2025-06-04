@@ -26,7 +26,7 @@ pub async fn estimate_compute_units(
         .map_err(|e| format!("Failed to get recent blockhash: {}", e))?;
 
     let mut simulation_instructions = instructions.to_vec();
-    if extract_compute_unit_limit(&instructions).is_none() {
+    if extract_compute_unit_limit(instructions).is_none() {
         simulation_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
     }
 

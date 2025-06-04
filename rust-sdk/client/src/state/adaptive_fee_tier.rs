@@ -1,0 +1,1 @@
+pub const ADAPTIVE_FEE_TIER_DISCRIMINATOR: &[u8] = &[147, 16, 144, 116, 47, 146, 149, 46];

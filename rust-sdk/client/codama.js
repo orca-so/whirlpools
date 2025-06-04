@@ -1,4 +1,4 @@
-import { createFromRoot } from "codama";
+import { createFromRoot, updateAccountsVisitor } from "codama";
 import { renderVisitor } from "@codama/renderers-rust";
 import { rootNodeFromAnchor } from "@codama/nodes-from-anchor";
 import { readFileSync } from "fs";
@@ -14,4 +14,11 @@ const node = rootNodeFromAnchor({
 });
 const visitor = renderVisitor("./src/generated");
 const codama = createFromRoot(node);
+codama.update(
+  updateAccountsVisitor({
+    TickArray: {
+      name: "FixedTickArray",
+    },
+  }),
+);
 codama.accept(visitor);

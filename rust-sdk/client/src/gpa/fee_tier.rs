@@ -6,10 +6,9 @@ use std::error::Error;
 
 use crate::generated::shared::DecodedAccount;
 use crate::FeeTier;
+use crate::FEE_TIER_DISCRIMINATOR;
 
 use super::utils::fetch_decoded_program_accounts;
-
-pub const FEE_TIER_DISCRIMINATOR: &[u8] = &[56, 75, 159, 76, 142, 68, 190, 105];
 
 #[derive(Debug, Clone)]
 pub enum FeeTierFilter {

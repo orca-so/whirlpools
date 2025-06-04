@@ -3,16 +3,16 @@ use anchor_spl::memo::Memo;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::swap_with_transfer_fee_extension;
-use crate::util::{
-    calculate_transfer_fee_excluded_amount, parse_remaining_accounts,
-    update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo,
-};
 use crate::{
     constants::transfer_memo,
     errors::ErrorCode,
     events::*,
     state::{OracleAccessor, Whirlpool},
-    util::{to_timestamp_u64, SparseSwapTickSequenceBuilder},
+    util::{
+        calculate_transfer_fee_excluded_amount, parse_remaining_accounts, to_timestamp_u64,
+        update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo,
+        SparseSwapTickSequenceBuilder,
+    },
 };
 
 #[derive(Accounts)]
@@ -152,29 +152,25 @@ pub fn handler<'info>(
         ],
     )?;
 
-    let builder_one = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool_one,
-        a_to_b_one,
+    let swap_tick_sequence_one = SparseSwapTickSequenceBuilder::new(
         vec![
             ctx.accounts.tick_array_one_0.to_account_info(),
             ctx.accounts.tick_array_one_1.to_account_info(),
             ctx.accounts.tick_array_one_2.to_account_info(),
         ],
         remaining_accounts.supplemental_tick_arrays_one,
-    )?;
-    let mut swap_tick_sequence_one = builder_one.build()?;
+    );
+    let mut swap_tick_sequence_one = swap_tick_sequence_one.try_build(whirlpool_one, a_to_b_one)?;
 
-    let builder_two = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool_two,
-        a_to_b_two,
+    let swap_tick_sequence_two = SparseSwapTickSequenceBuilder::new(
         vec![
             ctx.accounts.tick_array_two_0.to_account_info(),
             ctx.accounts.tick_array_two_1.to_account_info(),
             ctx.accounts.tick_array_two_2.to_account_info(),
         ],
         remaining_accounts.supplemental_tick_arrays_two,
-    )?;
-    let mut swap_tick_sequence_two = builder_two.build()?;
+    );
+    let mut swap_tick_sequence_two = swap_tick_sequence_two.try_build(whirlpool_two, a_to_b_two)?;
 
     let oracle_accessor_one =
         OracleAccessor::new(whirlpool_one, ctx.accounts.oracle_one.to_account_info())?;

@@ -225,6 +225,7 @@ export interface Whirlpool {
     ticks: number[],
     funder?: Address,
     opts?: WhirlpoolAccountFetchOptions,
+    tickArrayType?: "dynamic" | "fixed",
   ) => Promise<TransactionBuilder | null>;
 
   /**

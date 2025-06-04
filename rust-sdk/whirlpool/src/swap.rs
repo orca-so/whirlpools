@@ -5,8 +5,8 @@ use std::{
 };
 
 use orca_whirlpools_client::{
-    get_oracle_address, get_tick_array_address, AccountsType, Oracle, RemainingAccountsInfo,
-    RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, TickArray, Whirlpool,
+    get_oracle_address, get_tick_array_address, AccountsType, FixedTickArray, Oracle,
+    RemainingAccountsInfo, RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, Whirlpool,
 };
 use orca_whirlpools_core::{
     get_tick_array_start_tick_index, swap_quote_by_input_token, swap_quote_by_output_token,
@@ -100,7 +100,10 @@ async fn fetch_tick_arrays_or_default(
 
     let maybe_tick_arrays: Vec<Option<TickArrayFacade>> = tick_array_infos
         .iter()
-        .map(|x| x.as_ref().and_then(|y| TickArray::from_bytes(&y.data).ok()))
+        .map(|x| {
+            x.as_ref()
+                .and_then(|y| FixedTickArray::from_bytes(&y.data).ok())
+        })
         .map(|x| x.map(|y| y.into()))
         .collect();
 

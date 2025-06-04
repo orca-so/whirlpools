@@ -2,9 +2,9 @@ use std::error::Error;
 use std::str::FromStr;
 
 use orca_whirlpools_client::{
-    get_position_address, get_tick_array_address, InitializeTickArray,
-    InitializeTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
-    OpenPositionWithTokenExtensionsInstructionArgs, Position, TickArray, Whirlpool,
+    get_position_address, get_tick_array_address, DynamicTickArray, InitializeDynamicTickArray,
+    InitializeDynamicTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
+    OpenPositionWithTokenExtensionsInstructionArgs, Position, Whirlpool,
 };
 use orca_whirlpools_client::{IncreaseLiquidityV2, IncreaseLiquidityV2InstructionArgs};
 use orca_whirlpools_core::{
@@ -398,32 +398,34 @@ async fn internal_open_position(
 
     if tick_array_infos[0].is_none() {
         instructions.push(
-            InitializeTickArray {
+            InitializeDynamicTickArray {
                 whirlpool: pool_address,
                 funder,
                 tick_array: lower_tick_array_address,
                 system_program: solana_sdk::system_program::id(),
             }
-            .instruction(InitializeTickArrayInstructionArgs {
+            .instruction(InitializeDynamicTickArrayInstructionArgs {
                 start_tick_index: lower_tick_start_index,
+                idempotent: false,
             }),
         );
-        non_refundable_rent += rent.minimum_balance(TickArray::LEN);
+        non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
     if tick_array_infos[1].is_none() && lower_tick_start_index != upper_tick_start_index {
         instructions.push(
-            InitializeTickArray {
+            InitializeDynamicTickArray {
                 whirlpool: pool_address,
                 funder,
                 tick_array: upper_tick_array_address,
                 system_program: solana_sdk::system_program::id(),
             }
-            .instruction(InitializeTickArrayInstructionArgs {
+            .instruction(InitializeDynamicTickArrayInstructionArgs {
                 start_tick_index: upper_tick_start_index,
+                idempotent: false,
             }),
         );
-        non_refundable_rent += rent.minimum_balance(TickArray::LEN);
+        non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
     let token_owner_account_a = token_accounts

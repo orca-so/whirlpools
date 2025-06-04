@@ -1,4 +1,4 @@
-use crate::state::{AdaptiveFeeConstants, Oracle, TickArray, Whirlpool};
+use crate::state::{AdaptiveFeeConstants, FixedTickArray, Oracle, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 use std::cell::RefCell;
@@ -47,11 +47,11 @@ impl AccountInfoMock {
         start_tick_index: i32,
         owner: Option<Pubkey>,
     ) -> Self {
-        let mut data = vec![0u8; TickArray::LEN];
-        data[0..8].copy_from_slice(&TickArray::discriminator());
+        let mut data = vec![0u8; FixedTickArray::LEN];
+        data[0..8].copy_from_slice(&FixedTickArray::discriminator());
         data[8..12].copy_from_slice(&start_tick_index.to_le_bytes());
         data[9956..9988].copy_from_slice(&whirlpool.to_bytes());
-        Self::new(key, data, owner.unwrap_or(TickArray::owner()))
+        Self::new(key, data, owner.unwrap_or(FixedTickArray::owner()))
     }
 
     pub fn new_oracle(

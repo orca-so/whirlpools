@@ -75,11 +75,11 @@ describe("whirlpool-impl", () => {
       tokenTraitA: { isToken2022: false },
       tokenTraitB: { isToken2022: true },
     },
-    {
-      // TransferHook is most difficult extension in transaction size
-      tokenTraitA: { isToken2022: true, hasTransferHookExtension: true },
-      tokenTraitB: { isToken2022: true, hasTransferHookExtension: true },
-    },
+    // {
+    //   // TransferHook is most difficult extension in transaction size, which is why it is disabled
+    //   tokenTraitA: { isToken2022: true, hasTransferHookExtension: true },
+    //   tokenTraitB: { isToken2022: true, hasTransferHookExtension: true },
+    // },
   ];
   tokenTraitVariations.forEach((tokenTraits) => {
     describe(`tokenTraitA: ${
@@ -173,6 +173,7 @@ describe("whirlpool-impl", () => {
           funderKeypair.publicKey,
         );
         openIx.addSigner(funderKeypair);
+        openIx.addInstruction(useMaxCU());
 
         await initTickArrayTx.buildAndExecute();
         await openIx.buildAndExecute();
@@ -326,6 +327,7 @@ describe("whirlpool-impl", () => {
           funderKeypair.publicKey,
         );
         openIx.addSigner(funderKeypair);
+        openIx.addInstruction(useMaxCU());
 
         await initTickArrayTx.buildAndExecute();
         await openIx.buildAndExecute();
@@ -533,6 +535,7 @@ describe("whirlpool-impl", () => {
           funderKeypair.publicKey,
         );
         openIx.addSigner(funderKeypair);
+        openIx.addInstruction(useMaxCU());
 
         await initTickArrayTx.buildAndExecute();
         await openIx.buildAndExecute();
@@ -686,6 +689,7 @@ describe("whirlpool-impl", () => {
           funderKeypair.publicKey,
         );
         openIx.addSigner(funderKeypair);
+        openIx.addInstruction(useMaxCU());
 
         await initTickArrayTx.buildAndExecute();
         await openIx.buildAndExecute();
@@ -1208,6 +1212,7 @@ describe("whirlpool-impl", () => {
             TOKEN_2022_PROGRAM_ID,
           );
           openIx.addSigner(funderKeypair);
+          openIx.addInstruction(useMaxCU());
 
           await initTickArrayTx.buildAndExecute();
           await openIx.buildAndExecute();

@@ -746,9 +746,9 @@ describe("initialize_reward_v2", () => {
       });
     });
 
-    it("Token-2022: [FAIL] with TokenBadge with DefaultAccountState(Frozen)", async () => {
+    it("Token-2022: with TokenBadge with DefaultAccountState(Frozen)", async () => {
       await runTest({
-        supported: false,
+        supported: true, // relaxed
         createTokenBadge: true,
         tokenTrait: {
           isToken2022: true,

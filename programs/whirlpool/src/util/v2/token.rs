@@ -243,6 +243,7 @@ pub fn is_supported_token_mint(
             TokenExtensionType::InterestBearingConfig => {}
             TokenExtensionType::TokenMetadata => {}
             TokenExtensionType::MetadataPointer => {}
+            TokenExtensionType::ScaledUiAmount => {}
             // partially supported
             TokenExtensionType::ConfidentialTransferMint => {
                 // Supported, but non-confidential transfer only
@@ -275,6 +276,11 @@ pub fn is_supported_token_mint(
                 }
             }
             TokenExtensionType::DefaultAccountState => {
+                if !is_token_badge_initialized {
+                    return Ok(false);
+                }
+            }
+            TokenExtensionType::Pausable => {
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }

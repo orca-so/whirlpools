@@ -2825,6 +2825,7 @@ dependencies = [
  "arrayref",
  "borsh 0.9.3",
  "bytemuck",
+ "num_enum 0.7.2",
  "proptest",
  "serde",
  "serde_json",

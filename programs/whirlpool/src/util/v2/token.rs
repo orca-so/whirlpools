@@ -11,9 +11,9 @@ use anchor_spl::token::Token;
 use anchor_spl::token_2022::spl_token_2022::{
     self,
     extension::{self, StateWithExtensions},
-    state::AccountState,
 };
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use num_enum::TryFromPrimitive;
 use spl_transfer_hook_interface;
 
 #[allow(clippy::too_many_arguments)]
@@ -230,20 +230,16 @@ pub fn is_supported_token_mint(
         return Ok(false);
     }
 
-    let token_mint_data = token_mint_info.try_borrow_data()?;
-    let token_mint_unpacked =
-        StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
-
-    let extensions = token_mint_unpacked.get_extension_types()?;
+    let extensions = get_token_extension_types(&token_mint_info)?;
     for extension in extensions {
         match extension {
             // supported
-            extension::ExtensionType::TransferFeeConfig => {}
-            extension::ExtensionType::InterestBearingConfig => {}
-            extension::ExtensionType::TokenMetadata => {}
-            extension::ExtensionType::MetadataPointer => {}
+            TokenExtensionType::TransferFeeConfig => {}
+            TokenExtensionType::InterestBearingConfig => {}
+            TokenExtensionType::TokenMetadata => {}
+            TokenExtensionType::MetadataPointer => {}
             // partially supported
-            extension::ExtensionType::ConfidentialTransferMint => {
+            TokenExtensionType::ConfidentialTransferMint => {
                 // Supported, but non-confidential transfer only
                 //
                 // WhirlpoolProgram invokes TransferChecked instruction and it supports non-confidential transfer only.
@@ -252,34 +248,34 @@ pub fn is_supported_token_mint(
                 // it is impossible to send tokens directly to the vault accounts confidentially.
                 // Note: Only the owner (Whirlpool account) can call ConfidentialTransferInstruction::ConfigureAccount.
             }
-            extension::ExtensionType::ConfidentialTransferFeeConfig => {
+            TokenExtensionType::ConfidentialTransferFeeConfig => {
                 // Supported, but non-confidential transfer only
                 // When both TransferFeeConfig and ConfidentialTransferMint are initialized,
                 // ConfidentialTransferFeeConfig is also initialized to store encrypted transfer fee amount.
             }
             // supported if token badge is initialized
-            extension::ExtensionType::PermanentDelegate => {
+            TokenExtensionType::PermanentDelegate => {
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }
             }
-            extension::ExtensionType::TransferHook => {
+            TokenExtensionType::TransferHook => {
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }
             }
-            extension::ExtensionType::MintCloseAuthority => {
+            TokenExtensionType::MintCloseAuthority => {
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }
             }
-            extension::ExtensionType::DefaultAccountState => {
+            TokenExtensionType::DefaultAccountState => {
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }
             }
             // No possibility to support the following extensions
-            extension::ExtensionType::NonTransferable => {
+            TokenExtensionType::NonTransferable => {
                 return Ok(false);
             }
             // mint has unknown or unsupported extensions
@@ -429,6 +425,140 @@ pub fn get_epoch_transfer_fee(
     }
 
     Ok(None)
+}
+
+// clone from spl-token-2022 (v9.0.0)
+// https://github.com/solana-program/token-2022/blob/1c1a20cfa930058a853e15821112571b383c3e70/program/src/extension/mod.rs#L1059
+// We still use Anchor 0.29.0 and old spl-token-2022 which doesn't support newer extensions.
+#[repr(u16)]
+#[derive(Clone, Copy, Debug, PartialEq, TryFromPrimitive)]
+enum TokenExtensionType {
+    /// Used as padding if the account size would otherwise be 355, same as a
+    /// multisig
+    Uninitialized,
+    /// Includes transfer fee rate info and accompanying authorities to withdraw
+    /// and set the fee
+    TransferFeeConfig,
+    /// Includes withheld transfer fees
+    TransferFeeAmount,
+    /// Includes an optional mint close authority
+    MintCloseAuthority,
+    /// Auditor configuration for confidential transfers
+    ConfidentialTransferMint,
+    /// State for confidential transfers
+    ConfidentialTransferAccount,
+    /// Specifies the default Account::state for new Accounts
+    DefaultAccountState,
+    /// Indicates that the Account owner authority cannot be changed
+    ImmutableOwner,
+    /// Require inbound transfers to have memo
+    MemoTransfer,
+    /// Indicates that the tokens from this mint can't be transferred
+    NonTransferable,
+    /// Tokens accrue interest over time,
+    InterestBearingConfig,
+    /// Locks privileged token operations from happening via CPI
+    CpiGuard,
+    /// Includes an optional permanent delegate
+    PermanentDelegate,
+    /// Indicates that the tokens in this account belong to a non-transferable
+    /// mint
+    NonTransferableAccount,
+    /// Mint requires a CPI to a program implementing the "transfer hook"
+    /// interface
+    TransferHook,
+    /// Indicates that the tokens in this account belong to a mint with a
+    /// transfer hook
+    TransferHookAccount,
+    /// Includes encrypted withheld fees and the encryption public that they are
+    /// encrypted under
+    ConfidentialTransferFeeConfig,
+    /// Includes confidential withheld transfer fees
+    ConfidentialTransferFeeAmount,
+    /// Mint contains a pointer to another account (or the same account) that
+    /// holds metadata
+    MetadataPointer,
+    /// Mint contains token-metadata
+    TokenMetadata,
+    /// Mint contains a pointer to another account (or the same account) that
+    /// holds group configurations
+    GroupPointer,
+    /// Mint contains token group configurations
+    TokenGroup,
+    /// Mint contains a pointer to another account (or the same account) that
+    /// holds group member configurations
+    GroupMemberPointer,
+    /// Mint contains token group member configurations
+    TokenGroupMember,
+    /// Mint allowing the minting and burning of confidential tokens
+    ConfidentialMintBurn,
+    /// Tokens whose UI amount is scaled by a given amount
+    ScaledUiAmount,
+    /// Tokens where minting / burning / transferring can be paused
+    Pausable,
+    /// Indicates that the account belongs to a pausable mint
+    PausableAccount,
+}
+
+fn read_u16_le_from_slice(slice: &[u8]) -> Result<u16> {
+    if slice.len() < 2 {
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+    Ok(u16::from_le_bytes(
+        slice[0..2]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidAccountData)?,
+    ))
+}
+
+// reference implementation: get_tlv_data_info
+// https://github.com/solana-program/token-2022/blob/1c1a20cfa930058a853e15821112571b383c3e70/program/src/extension/mod.rs#L203
+fn get_token_extension_types(token_mint_info: &AccountInfo<'_>) -> Result<Vec<TokenExtensionType>> {
+    const TLV_TYPE_LENGTH: usize = 2;
+    const TLV_LENGTH_LENGTH: usize = 2;
+
+    let token_mint_data = token_mint_info.try_borrow_data()?;
+    let token_mint_unpacked =
+        StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
+
+    let tlv_data = token_mint_unpacked.get_tlv_data();
+    let mut extension_types = Vec::new();
+    let mut cursor = 0;
+
+    while cursor < tlv_data.len() {
+        let tlv_type_start = cursor;
+        let tlv_length_start = tlv_type_start + TLV_TYPE_LENGTH;
+        let tlv_value_start = tlv_length_start + TLV_LENGTH_LENGTH;
+
+        if tlv_data.len() < tlv_length_start {
+            return Ok(extension_types);
+        }
+
+        let extension_type_num =
+            read_u16_le_from_slice(&tlv_data[tlv_type_start..tlv_length_start])?;
+        let extension_type = TokenExtensionType::try_from(extension_type_num)
+            .map_err(|_| ProgramError::InvalidAccountData)?;
+
+        if extension_type == TokenExtensionType::Uninitialized {
+            return Ok(extension_types);
+        } else {
+            if tlv_data.len() < tlv_value_start {
+                // not enough bytes to store the length, malformed
+                return Err(ProgramError::InvalidAccountData.into());
+            }
+            extension_types.push(extension_type);
+            let length = read_u16_le_from_slice(&tlv_data[tlv_length_start..tlv_value_start])?;
+
+            let value_end_index = tlv_value_start.saturating_add(usize::from(length));
+            if value_end_index > tlv_data.len() {
+                // value blows past the size of the slice, malformed
+                return Err(ProgramError::InvalidAccountData.into());
+            }
+            cursor = value_end_index;
+        }
+    }
+
+    Ok(extension_types)
 }
 
 // special thanks for OtterSec

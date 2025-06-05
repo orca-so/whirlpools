@@ -300,15 +300,7 @@ export class PoolUtil {
           if (!isTokenBadgeInitialized) {
             return false;
           }
-
-          const defaultAccountState =
-            getDefaultAccountState(mintWithTokenProgram)!;
-          if (defaultAccountState.state !== AccountState.Initialized) {
-            return false;
-          }
-
           continue;
-
         // not supported
         case ExtensionType.NonTransferable:
           return false;

@@ -1,6 +1,6 @@
 # Whirlpools
 
-Whirpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
+Whirlpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
 This repository contains the Rust smart contract and SDKs to interact with a deployed program.
 
 The official deployment of the whirlpool contract can be found at the `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` address on:
@@ -15,6 +15,7 @@ The program has been audited several times by different security firms.
 * Jan 28th, 2022 - [Kudelski Security](/.audits/2022-01-28.pdf)
 * May 5th, 2022 - [Neodyme](/.audits/2022-05-05.pdf)
 * Aug 21st, 2024 - [OtterSec](/.audits/2024-08-21.pdf)
+* Feb 28th, 2025 - [The Sec3](/.audits/2025-02-28.pdf)
 
 ## Usage
 
@@ -65,7 +66,7 @@ These instructions are for setting up a development environment on a Mac. If you
 
 This repository uses NX to manage the Rust and Typescript codebases. This allows us to have a monorepo with multiple packages and share code between them. Dependencies between packages are automatically resolved by NX, so you don't have to worry about managing that yourself.
 
-This repository is split up into sevaral parts. The following is a (non-exhaustive) list of the components and their purpose.
+This repository is split up into several parts. The following is a (non-exhaustive) list of the components and their purpose.
 
 * **`/programs/*`** - Rust programs that are deployed on Solana.
 * **`/ts-sdk/*`** - Typescript SDKs for interacting with the programs.

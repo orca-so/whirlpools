@@ -26,7 +26,7 @@ import {
   getAddressEncoder,
   lamports,
 } from "@solana/kit";
-import { NATIVE_MINT_WRAPPING_STRATEGY } from "./config";
+import { NATIVE_MINT_WRAPPING_STRATEGY, ENFORCE_TOKEN_BALANCE_CHECK } from "./config";
 import {
   getCreateAccountInstruction,
   getCreateAccountWithSeedInstruction,
@@ -85,8 +85,8 @@ function mintFilter(x: Address) {
 export async function prepareTokenAccountsInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+    GetMultipleAccountsApi &
+    GetMinimumBalanceForRentExemptionApi
   >,
   owner: TransactionSigner,
   spec: Address[] | Record<Address, bigint | number>,
@@ -143,10 +143,12 @@ export async function prepareTokenAccountsInstructions(
       const existingBalance = tokenAccount.exists
         ? tokenAccount.data.amount
         : 0n;
-      assert(
-        BigInt(spec[mint.address]) <= existingBalance,
-        `Token account for ${mint.address} does not have the required balance`,
-      );
+      if (ENFORCE_TOKEN_BALANCE_CHECK) {
+        assert(
+          BigInt(spec[mint.address]) <= existingBalance,
+          `Token account for ${mint.address} does not have the required balance`,
+        );
+      }
     }
   }
 

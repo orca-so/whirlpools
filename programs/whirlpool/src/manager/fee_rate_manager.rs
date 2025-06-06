@@ -2162,7 +2162,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(32),
                 sqrt_price_from_tick_index(32),
                 32,
-                RIGHT_SHIFT,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(64)
@@ -2172,7 +2172,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(64),
                 sqrt_price_from_tick_index(64),
                 64,
-                RIGHT_SHIFT,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(65)
@@ -2274,7 +2274,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(32 - 1),
                 sqrt_price_from_tick_index(32),
                 32,
-                RIGHT_SHIFT,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(64)
@@ -2284,7 +2284,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(64 - 1),
                 sqrt_price_from_tick_index(64),
                 64,
-                RIGHT_SHIFT,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(65)
@@ -2294,7 +2294,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(65 - 1),
                 sqrt_price_from_tick_index(65),
                 65,
-                RIGHT_SHIFT,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(127)

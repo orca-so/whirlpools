@@ -455,7 +455,7 @@ pub fn close_empty_token_account_2022<'info>(
 
 // Initializes a vault token account for a Whirlpool.
 // This works for both Token and Token-2022 programs.
-pub fn initialize_vault_token_account_token_interface<'info>(
+pub fn initialize_vault_token_account<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     vault_token_account: &Signer<'info>,
     vault_mint: &InterfaceAccount<'info, Mint>,

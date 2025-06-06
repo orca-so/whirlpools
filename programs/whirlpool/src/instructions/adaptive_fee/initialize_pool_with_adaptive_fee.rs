@@ -5,7 +5,7 @@ use crate::{
     errors::ErrorCode,
     events::*,
     state::*,
-    util::{to_timestamp_u64, verify_supported_token_mint},
+    util::{initialize_vault_token_account, to_timestamp_u64, verify_supported_token_mint},
 };
 
 #[derive(Accounts)]
@@ -49,19 +49,13 @@ pub struct InitializePoolWithAdaptiveFee<'info> {
         space = Oracle::LEN)]
     pub oracle: AccountLoader<'info, Oracle>,
 
-    #[account(init,
-      payer = funder,
-      token::token_program = token_program_a,
-      token::mint = token_mint_a,
-      token::authority = whirlpool)]
-    pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_a: Signer<'info>,
 
-    #[account(init,
-      payer = funder,
-      token::token_program = token_program_b,
-      token::mint = token_mint_b,
-      token::authority = whirlpool)]
-    pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_b: Signer<'info>,
 
     #[account(has_one = whirlpools_config)]
     pub adaptive_fee_tier: Box<Account<'info, AdaptiveFeeTier>>,
@@ -116,6 +110,23 @@ pub fn handler(
     ) {
         return Err(ErrorCode::InvalidTradeEnableTimestamp.into());
     }
+
+    initialize_vault_token_account(
+      whirlpool,
+      &ctx.accounts.token_vault_a,
+      &ctx.accounts.token_mint_a,
+      &ctx.accounts.funder,
+      &ctx.accounts.token_program_a,
+      &ctx.accounts.system_program,
+    )?;
+    initialize_vault_token_account(
+      whirlpool,
+      &ctx.accounts.token_vault_b,
+      &ctx.accounts.token_mint_b,
+      &ctx.accounts.funder,
+      &ctx.accounts.token_program_b,      
+      &ctx.accounts.system_program,
+    )?;
 
     whirlpool.initialize(
         whirlpools_config,

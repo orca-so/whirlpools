@@ -20,7 +20,7 @@ use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, error::Error};
 
-use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY};
+use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY, ENFORCE_TOKEN_BALANCE_CHECK};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum TokenAccountStrategy {
@@ -124,7 +124,8 @@ pub(crate) async fn prepare_token_accounts_instructions(
             0
         };
 
-        if existing_balance < required_balance {
+        let enforce_balance_check = *ENFORCE_TOKEN_BALANCE_CHECK.try_lock()?;
+        if enforce_balance_check && existing_balance < required_balance {
             return Err(format!("Insufficient balance for mint {}", mint_addresses[i]).into());
         }
     }
@@ -460,10 +461,10 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_insufficient_balance() {
+    async fn test_insufficient_balance_check_not_enforced() {
         let ctx = RpcContext::new().await;
 
-        // Create a mint and token account with small balance using token.rs helpers
+        // Create a mint and token account with small balance
         let mint = setup_mint(&ctx).await.unwrap();
         let initial_amount = 1_000u64;
         let _ata = setup_ata_with_amount(&ctx, mint, initial_amount)
@@ -479,12 +480,87 @@ mod tests {
         )
         .await;
 
-        // Should fail due to insufficient balance
+        // Should succeed because balance checking is disabled
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_insufficient_balance_check_enforced() {
+        let ctx = RpcContext::new().await;
+        crate::set_enforce_token_balance_check(true).unwrap();
+
+        // Create a mint and token account with small balance
+        let mint = setup_mint(&ctx).await.unwrap();
+        let initial_amount = 1_000u64;
+        let _ata = setup_ata_with_amount(&ctx, mint, initial_amount)
+            .await
+            .unwrap();
+
+        // Try to prepare instructions requiring more balance
+        let required_amount = 2_000u64;
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(mint, required_amount)],
+        )
+        .await;
+
+        // Should fail due to insufficient balance when checking is enabled
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
             .to_string()
             .contains("Insufficient balance"));
+        crate::reset_configuration().unwrap();
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_nonexistent_token_account_balance_check_not_enforced() {
+        let ctx = RpcContext::new().await;
+
+        // Create a mint but no token account
+        let mint = setup_mint(&ctx).await.unwrap();
+
+        // Try to prepare instructions requiring balance for non-existent account
+        let required_amount = 1_000u64;
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(mint, required_amount)],
+        )
+        .await;
+
+        // Should succeed because balance checking is disabled
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_nonexistent_token_account_balance_check_enforced() {
+        let ctx = RpcContext::new().await;
+        crate::set_enforce_token_balance_check(true).unwrap();
+
+        // Create a mint but no token account
+        let mint = setup_mint(&ctx).await.unwrap();
+
+        // Try to prepare instructions requiring balance for non-existent account
+        let required_amount = 1_000u64;
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(mint, required_amount)],
+        )
+        .await;
+
+        // Should fail due to insufficient balance (0) when checking is enabled
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Insufficient balance"));
+        crate::reset_configuration().unwrap();
     }
 
     #[tokio::test]

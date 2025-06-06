@@ -138,6 +138,25 @@ pub fn set_native_mint_wrapping_strategy(
     Ok(())
 }
 
+/// The default setting for enforcing balance checks during token account preparation.
+pub const DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK: bool = false;
+
+/// The currently selected setting for enforcing balance checks during token account preparation.
+/// When true, the system will assert that token accounts have sufficient balance before proceeding.
+/// When false, balance checks are skipped, allowing users to get quotes and instructions even with insufficient balance.
+pub static ENFORCE_TOKEN_BALANCE_CHECK: Mutex<bool> =
+    Mutex::new(DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK);
+
+/// Sets whether to enforce balance checks during token account preparation.
+///
+/// # Arguments
+///
+/// * `enforce_balance_check` - When true, the system will assert that token accounts have sufficient balance. When false, balance checks are skipped.
+pub fn set_enforce_token_balance_check(enforce_balance_check: bool) -> Result<(), Box<dyn Error>> {
+    *ENFORCE_TOKEN_BALANCE_CHECK.try_lock()? = enforce_balance_check;
+    Ok(())
+}
+
 /// Resets the configuration to its default values.
 pub fn reset_configuration() -> Result<(), Box<dyn Error>> {
     *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS;
@@ -146,6 +165,7 @@ pub fn reset_configuration() -> Result<(), Box<dyn Error>> {
     *FUNDER.try_lock()? = DEFAULT_FUNDER;
     *NATIVE_MINT_WRAPPING_STRATEGY.try_lock()? = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
     *SLIPPAGE_TOLERANCE_BPS.try_lock()? = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
+    *ENFORCE_TOKEN_BALANCE_CHECK.try_lock()? = DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK;
     Ok(())
 }
 
@@ -216,6 +236,18 @@ mod tests {
 
     #[test]
     #[serial]
+    fn test_set_enforce_token_balance_check() {
+        set_enforce_token_balance_check(true).unwrap();
+        assert_eq!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(), true);
+
+        set_enforce_token_balance_check(false).unwrap();
+        assert_eq!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(), false);
+
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    #[serial]
     fn test_reset_configuration() {
         let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
         let extension = Pubkey::from_str("777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH").unwrap();
@@ -231,5 +263,6 @@ mod tests {
             NativeMintWrappingStrategy::Keypair
         );
         assert_eq!(*SLIPPAGE_TOLERANCE_BPS.lock().unwrap(), 100);
+        assert_eq!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(), false);
     }
 }

@@ -6,8 +6,8 @@ use anchor_spl::token_2022::spl_token_2022::extension::{
 use anchor_spl::token_2022::spl_token_2022::{
     self, extension::ExtensionType, instruction::AuthorityType,
 };
-use anchor_spl::token_2022::Token2022;
-use anchor_spl::token_interface::{Mint, TokenAccount};
+use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token2022};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::system_instruction::{create_account, transfer};
 
@@ -447,6 +447,88 @@ pub fn close_empty_token_account_2022<'info>(
             token_account.to_account_info(),
             receiver.to_account_info(),
             token_authority.to_account_info(),
+        ],
+    )?;
+
+    Ok(())
+}
+
+// Initializes a vault token account for a Whirlpool.
+// This works for both Token and Token-2022 programs.
+pub fn initialize_vault_token_account_token_interface<'info>(
+    whirlpool: &Account<'info, Whirlpool>,
+    vault_token_account: &Signer<'info>,
+    vault_mint: &InterfaceAccount<'info, Mint>,
+    funder: &Signer<'info>,
+    token_program: &Interface<'info, TokenInterface>,
+    system_program: &Program<'info, System>,
+) -> Result<()> {
+    let is_token_2022 = token_program.key() == spl_token_2022::ID;
+
+    let space = get_account_data_size(
+        CpiContext::new(
+            token_program.to_account_info(),
+            GetAccountDataSize {
+                mint: vault_mint.to_account_info(),
+            }
+        ),
+        // Needless to say, the program will never attempt to change the owner of the vault.
+        // However, since the ImmutableOwner extension only increases the account size by 4 bytes, the overhead of always including it is negligible.
+        // On the other hand, it makes it easier to comply with cases where ImmutableOwner is required, and it adds a layer of safety from a security standpoint.
+        // Therefore, we'll include it by default going forward. (Vaults initialized after this change will have the ImmutableOwner extension.)
+        if is_token_2022 {
+            &[ExtensionType::ImmutableOwner]
+        } else {
+            &[]
+        },
+    )?;
+
+    let lamports = Rent::get()?.minimum_balance(space as usize);
+
+    // create account
+    invoke(
+        &create_account(
+            funder.key,
+            vault_token_account.key,
+            lamports,
+            space as u64,
+            token_program.key,
+        ),
+        &[
+            funder.to_account_info(),
+            vault_token_account.to_account_info(),
+            token_program.to_account_info(),
+            system_program.to_account_info(),
+        ],
+    )?;
+
+    if is_token_2022 {
+        // initialize ImmutableOwner extension
+        invoke(
+            &spl_token_2022::instruction::initialize_immutable_owner(
+                token_program.key,
+                vault_token_account.key,
+            )?,
+            &[
+                token_program.to_account_info(),
+                vault_token_account.to_account_info(),
+            ],
+        )?;
+    }
+
+    // initialize token account
+    invoke(
+        &spl_token_2022::instruction::initialize_account3(
+            token_program.key,
+            vault_token_account.key,
+            &vault_mint.key(),
+            &whirlpool.key(),
+        )?,
+        &[
+            token_program.to_account_info(),
+            vault_token_account.to_account_info(),
+            vault_mint.to_account_info(),
+            whirlpool.to_account_info(),
         ],
     )?;
 

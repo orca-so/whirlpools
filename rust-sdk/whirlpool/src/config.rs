@@ -263,6 +263,9 @@ mod tests {
             NativeMintWrappingStrategy::Keypair
         );
         assert_eq!(*SLIPPAGE_TOLERANCE_BPS.lock().unwrap(), 100);
-        assert!(!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap()));
+        assert_eq!(
+            *ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(),
+            DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK
+        );
     }
 }

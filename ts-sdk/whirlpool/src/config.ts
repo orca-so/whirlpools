@@ -66,7 +66,7 @@ export async function setWhirlpoolsConfig(
   } else {
     WHIRLPOOLS_CONFIG_ADDRESS =
       DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[
-      config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
+        config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
       ];
   }
 
@@ -190,7 +190,9 @@ export let ENFORCE_TOKEN_BALANCE_CHECK = DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK;
  *
  * @param {boolean} enforceBalanceCheck - When true, the system will assert that token accounts have sufficient balance. When false, balance checks are skipped.
  */
-export function setEnforceTokenBalanceCheck(enforceBalanceCheck: boolean): void {
+export function setEnforceTokenBalanceCheck(
+  enforceBalanceCheck: boolean,
+): void {
   ENFORCE_TOKEN_BALANCE_CHECK = enforceBalanceCheck;
 }
 

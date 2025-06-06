@@ -238,10 +238,10 @@ mod tests {
     #[serial]
     fn test_set_enforce_token_balance_check() {
         set_enforce_token_balance_check(true).unwrap();
-        assert_eq!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(), true);
+        assert!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap());
 
         set_enforce_token_balance_check(false).unwrap();
-        assert_eq!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(), false);
+        assert!(!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap()));
 
         reset_configuration().unwrap();
     }
@@ -263,6 +263,6 @@ mod tests {
             NativeMintWrappingStrategy::Keypair
         );
         assert_eq!(*SLIPPAGE_TOLERANCE_BPS.lock().unwrap(), 100);
-        assert_eq!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(), false);
+        assert!(!(*ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap()));
     }
 }

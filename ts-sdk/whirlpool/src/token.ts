@@ -26,7 +26,10 @@ import {
   getAddressEncoder,
   lamports,
 } from "@solana/kit";
-import { NATIVE_MINT_WRAPPING_STRATEGY, ENFORCE_TOKEN_BALANCE_CHECK } from "./config";
+import {
+  NATIVE_MINT_WRAPPING_STRATEGY,
+  ENFORCE_TOKEN_BALANCE_CHECK,
+} from "./config";
 import {
   getCreateAccountInstruction,
   getCreateAccountWithSeedInstruction,
@@ -85,8 +88,8 @@ function mintFilter(x: Address) {
 export async function prepareTokenAccountsInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
-    GetMultipleAccountsApi &
-    GetMinimumBalanceForRentExemptionApi
+      GetMultipleAccountsApi &
+      GetMinimumBalanceForRentExemptionApi
   >,
   owner: TransactionSigner,
   spec: Address[] | Record<Address, bigint | number>,

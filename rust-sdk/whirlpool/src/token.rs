@@ -20,7 +20,9 @@ use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, error::Error};
 
-use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY, ENFORCE_TOKEN_BALANCE_CHECK};
+use crate::{
+    NativeMintWrappingStrategy, ENFORCE_TOKEN_BALANCE_CHECK, NATIVE_MINT_WRAPPING_STRATEGY,
+};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum TokenAccountStrategy {

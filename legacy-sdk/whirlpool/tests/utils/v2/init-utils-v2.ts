@@ -76,6 +76,9 @@ export interface TokenTrait {
   hasGroupPointerExtension?: boolean;
   hasGroupMemberExtension?: boolean;
   hasGroupMemberPointerExtension?: boolean;
+  hasScaledUiAmountExtension?: boolean;
+  scaledUiAmountMultiplier?: number; // f64
+  hasPausableExtension?: boolean;
 }
 
 interface TestPoolV2Params {

@@ -406,10 +406,61 @@ async function createMintInstructions(
       );
     }
 
+    // if fixedLengthExtensions is empty, the size of mint account will be 82.
+    // but if we want to add newer extensions, we need to patch the size of mint account.
+    let hasNewerFixedLengthExtensions = false;
+
+    // ScaledUiAmount
+    let scaledUiAmountSizePatch = 0;
+    if (tokenTrait.hasScaledUiAmountExtension) {
+      hasNewerFixedLengthExtensions = true;
+
+      // old spl-token package cannot handle ScaledUiAmount
+      scaledUiAmountSizePatch = 2 + 2 + 56; // type + length + data(fixed length)
+
+      const multiplier = tokenTrait.scaledUiAmountMultiplier ?? 1;
+      const data = Buffer.alloc(1 + 1 + 32 + 8);
+      data.writeUInt8(0x2B, 0); // ScaledUiAmount
+      data.writeUInt8(0x00, 1); // Initialize
+      authority.toBuffer().copy(data, 2);
+      data.writeDoubleLE(multiplier, 34);
+
+      extensions.push({
+        programId: TEST_TOKEN_2022_PROGRAM_ID,
+        data,
+        keys: [
+          { pubkey: mint, isSigner: false, isWritable: true },
+        ],
+      })
+    }
+
+    // Pausable
+    let pausableSizePatch = 0;
+    if (tokenTrait.hasPausableExtension) {
+      hasNewerFixedLengthExtensions = true;
+
+      // old spl-token package cannot handle Pausable
+      pausableSizePatch = 2 + 2 + 33; // type + length + data(fixed length)
+
+      const data = Buffer.alloc(1 + 1 + 32);
+      data.writeUInt8(0x2C, 0); // Pausable
+      data.writeUInt8(0x00, 1); // Initialize
+      authority.toBuffer().copy(data, 2);
+
+      extensions.push({
+        programId: TEST_TOKEN_2022_PROGRAM_ID,
+        data,
+        keys: [
+          { pubkey: mint, isSigner: false, isWritable: true },
+        ],
+      });
+    }
+
     const space =
-      getMintLen(fixedLengthExtensions) +
+      Math.max(getMintLen(fixedLengthExtensions), hasNewerFixedLengthExtensions ? (165 + 1) : 0) +
       confidentialTransferMintSizePatch +
-      confidentialTransferFeeConfigSizePatch;
+      confidentialTransferFeeConfigSizePatch +
+      scaledUiAmountSizePatch + pausableSizePatch;
     const rentOnlySpace = rentReservedSpace.reduce((sum, n) => {
       return sum + n;
     }, 0);

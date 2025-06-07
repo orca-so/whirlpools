@@ -934,6 +934,35 @@ export async function asyncAssertTokenVaultV2(
   const parsedAccount = AccountLayout.decode(accountInfo.data);
   assert.ok(parsedAccount.mint.equals(expectedMint));
   assert.ok(parsedAccount.owner.equals(expectedAccountOwner));
+
+  if (expectedTokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID)) {
+    const tokenAccount = await getAccount(provider.connection, account, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+
+    // token account should always have ImmutableOwner extension
+    const accountExtensions =  getExtensionTypes(tokenAccount.tlvData);
+    assert.ok(accountExtensions.includes(ExtensionType.ImmutableOwner));
+
+    const tokenMint = await getMint(
+      provider.connection,
+      expectedMint, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+
+    const mintExtensions = getExtensionTypes(tokenMint.tlvData);
+    for (const extension of mintExtensions) {
+      switch (extension) {
+        case ExtensionType.TransferFeeConfig:
+          assert.ok(accountExtensions.includes(ExtensionType.TransferFeeAmount));
+          break;
+        case ExtensionType.TransferHook:
+          assert.ok(accountExtensions.includes(ExtensionType.TransferHookAccount));
+          break;
+        case ExtensionType.PausableConfig:
+          assert.ok(
+            accountExtensions.includes(ExtensionType.PausableAccount),
+          );
+          break;
+      }
+    }
+  }
 }
 
 export async function asyncAssertOwnerProgram(

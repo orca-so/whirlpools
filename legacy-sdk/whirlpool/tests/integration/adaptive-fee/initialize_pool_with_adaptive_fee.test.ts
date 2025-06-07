@@ -1501,6 +1501,18 @@ describe("initialize_pool_with_adaptive_fee", () => {
         });
       });
 
+      it("Token-2022: with ScaledUiAmount", async () => {
+        await runTest({
+          supported: true,
+          createTokenBadge: false,
+          tokenTrait: {
+            isToken2022: true,
+            hasScaledUiAmountExtension: true,
+            scaledUiAmountMultiplier: 2,
+          },
+        });
+      });
+
       it("Token-2022: with MetadataPointer & TokenMetadata", async () => {
         await runTest({
           supported: true,
@@ -1555,6 +1567,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
           tokenTrait: {
             isToken2022: true,
             hasPermanentDelegate: true,
+          },
+        });
+      });
+
+      it("Token-2022: with TokenBadge with Pausable", async () => {
+        await runTest({
+          supported: true,
+          createTokenBadge: true,
+          tokenTrait: {
+            isToken2022: true,
+            hasPausableExtension: true,
           },
         });
       });
@@ -1624,6 +1647,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
           tokenTrait: {
             isToken2022: true,
             hasPermanentDelegate: true,
+          },
+        });
+      });
+
+      it("Token-2022: [FAIL] without TokenBadge with Pausable", async () => {
+        await runTest({
+          supported: false,
+          createTokenBadge: false,
+          tokenTrait: {
+            isToken2022: true,
+            hasPausableExtension: true,
           },
         });
       });

@@ -465,6 +465,9 @@ pub fn initialize_vault_token_account<'info>(
 ) -> Result<()> {
     let is_token_2022 = token_program.key() == spl_token_2022::ID;
 
+    // The size required for extensions that are mandatory on the TokenAccount side — based on the TokenExtensions enabled on the Mint —
+    // is automatically accounted for. For non-mandatory extensions, however, they must be explicitly added,
+    // so we specify ImmutableOwner explicitly.
     let space = get_account_data_size(
         CpiContext::new(
             token_program.to_account_info(),

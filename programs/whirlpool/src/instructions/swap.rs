@@ -65,17 +65,15 @@ pub fn handler(
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
-    let builder = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool,
-        a_to_b,
+    let swap_tick_sequence_builder = SparseSwapTickSequenceBuilder::new(
         vec![
             ctx.accounts.tick_array_0.to_account_info(),
             ctx.accounts.tick_array_1.to_account_info(),
             ctx.accounts.tick_array_2.to_account_info(),
         ],
         None,
-    )?;
-    let mut swap_tick_sequence = builder.build()?;
+    );
+    let mut swap_tick_sequence = swap_tick_sequence_builder.try_build(whirlpool, a_to_b)?;
 
     let oracle_accessor = OracleAccessor::new(whirlpool, ctx.accounts.oracle.to_account_info())?;
     if !oracle_accessor.is_trade_enabled(timestamp)? {

@@ -1,24 +1,22 @@
-import type {
-  Account,
-  Address,
-  GetProgramAccountsApi,
-  GetProgramAccountsMemcmpFilter,
-  Rpc,
-} from "@solana/kit";
+import type { Account, Address, GetProgramAccountsApi, Rpc } from "@solana/kit";
+import type { DynamicTickArrayFilter } from "./dynamicTickArray";
 import {
-  getAddressEncoder,
-  getBase58Decoder,
-  getI32Encoder,
-} from "@solana/kit";
-import type { TickArray } from "../generated/accounts/tickArray";
+  dynamicTickArrayStartTickIndexFilter,
+  dynamicTickArrayWhirlpoolFilter,
+  fetchAllDynamicTickArrayWithFilter,
+} from "./dynamicTickArray";
+import type { TickArray } from "../state/tickArray";
+import { consolidateTickArray } from "../state/tickArray";
+import type { FixedTickArrayFilter } from "./fixedTickArray";
 import {
-  TICK_ARRAY_DISCRIMINATOR,
-  getTickArrayDecoder,
-} from "../generated/accounts/tickArray";
-import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
+  fetchAllFixedTickArrayWithFilter,
+  fixedTickArrayStartTickIndexFilter,
+  fixedTickArrayWhirlpoolFilter,
+} from "./fixedTickArray";
 
-export type TickArrayFilter = GetProgramAccountsMemcmpFilter & {
+export type TickArrayFilter = {
+  fixed: FixedTickArrayFilter;
+  dynamic: DynamicTickArrayFilter;
   readonly __kind: unique symbol;
 };
 
@@ -26,21 +24,15 @@ export function tickArrayStartTickIndexFilter(
   startTickIndex: number,
 ): TickArrayFilter {
   return {
-    memcmp: {
-      offset: 8n,
-      bytes: getBase58Decoder().decode(getI32Encoder().encode(startTickIndex)),
-      encoding: "base58",
-    },
+    fixed: fixedTickArrayStartTickIndexFilter(startTickIndex),
+    dynamic: dynamicTickArrayStartTickIndexFilter(startTickIndex),
   } as TickArrayFilter;
 }
 
 export function tickArrayWhirlpoolFilter(address: Address): TickArrayFilter {
   return {
-    memcmp: {
-      offset: 9956n,
-      bytes: getBase58Decoder().decode(getAddressEncoder().encode(address)),
-      encoding: "base58",
-    },
+    fixed: fixedTickArrayWhirlpoolFilter(address),
+    dynamic: dynamicTickArrayWhirlpoolFilter(address),
   } as TickArrayFilter;
 }
 
@@ -48,18 +40,22 @@ export async function fetchAllTickArrayWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: TickArrayFilter[]
 ): Promise<Account<TickArray>[]> {
-  const discriminator = getBase58Decoder().decode(TICK_ARRAY_DISCRIMINATOR);
-  const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
-    memcmp: {
-      offset: 0n,
-      bytes: discriminator,
-      encoding: "base58",
-    },
-  };
-  return fetchDecodedProgramAccounts(
+  const fixedAccounts = await fetchAllFixedTickArrayWithFilter(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
-    [discriminatorFilter, ...filters],
-    getTickArrayDecoder(),
+    ...filters.map((filter) => filter.fixed),
   );
+  const dynamicAccounts = await fetchAllDynamicTickArrayWithFilter(
+    rpc,
+    ...filters.map((filter) => filter.dynamic),
+  );
+
+  const tickArrays: Account<TickArray>[] = [];
+  for (const account of fixedAccounts) {
+    tickArrays.push(consolidateTickArray(account));
+  }
+  for (const account of dynamicAccounts) {
+    tickArrays.push(consolidateTickArray(account));
+  }
+
+  return tickArrays;
 }

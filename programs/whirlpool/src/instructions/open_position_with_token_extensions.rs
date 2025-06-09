@@ -1,3 +1,4 @@
+use crate::manager::tick_array_manager::collect_rent_for_ticks_in_position;
 use crate::state::*;
 use crate::util::build_position_token_metadata;
 use anchor_lang::prelude::*;
@@ -65,6 +66,12 @@ pub fn handler(
         position_mint.key.as_ref(),
         &[ctx.bumps.position],
     ];
+
+    collect_rent_for_ticks_in_position(
+        &ctx.accounts.funder,
+        position,
+        &ctx.accounts.system_program,
+    )?;
 
     position.open_position(
         whirlpool,

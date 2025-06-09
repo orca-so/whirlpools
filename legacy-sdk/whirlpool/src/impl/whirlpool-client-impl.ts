@@ -3,7 +3,7 @@ import { AddressUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import type { WhirlpoolContext } from "../context";
-import { initTickArrayIx } from "../instructions";
+import { initDynamicTickArrayIx } from "../instructions";
 import {
   collectAllForPositionAddressesTxns,
   collectProtocolFees,
@@ -373,7 +373,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
 
     txBuilder.addInstruction(
-      initTickArrayIx(this.ctx.program, {
+      initDynamicTickArrayIx(this.ctx.program, {
         startTick: startInitializableTickIndex,
         tickArrayPda: startTickArrayPda,
         whirlpool: whirlpoolPda.publicKey,
@@ -382,7 +382,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
 
     txBuilder.addInstruction(
-      initTickArrayIx(this.ctx.program, {
+      initDynamicTickArrayIx(this.ctx.program, {
         startTick: endInitializableTickIndex,
         tickArrayPda: endTickArrayPda,
         whirlpool: whirlpoolPda.publicKey,
@@ -503,7 +503,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
 
     txBuilder.addInstruction(initPoolIx);
     txBuilder.addInstruction(
-      initTickArrayIx(this.ctx.program, {
+      initDynamicTickArrayIx(this.ctx.program, {
         startTick: initialTickArrayStartTick,
         tickArrayPda: initialTickArrayPda,
         whirlpool: whirlpoolPda.publicKey,

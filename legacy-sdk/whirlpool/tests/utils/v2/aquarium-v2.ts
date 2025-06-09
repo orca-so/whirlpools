@@ -53,6 +53,7 @@ interface InitTestTickArrayRangeV2Params {
   startTickIndex: number;
   arrayCount: number;
   aToB: boolean;
+  dynamicTickArrays?: boolean;
 }
 
 interface InitTestPositionV2Params {
@@ -328,8 +329,13 @@ export async function buildTestAquariumsV2(
 
     const tickArrays = await Promise.all(
       initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const { poolIndex, startTickIndex, arrayCount, aToB } =
-          initTickArrayRangeParam;
+        const {
+          poolIndex,
+          startTickIndex,
+          arrayCount,
+          aToB,
+          dynamicTickArrays,
+        } = initTickArrayRangeParam;
         const pool = pools[poolIndex];
         const pdas = await initTickArrayRange(
           ctx,
@@ -338,6 +344,7 @@ export async function buildTestAquariumsV2(
           arrayCount,
           pool.tickSpacing,
           aToB,
+          dynamicTickArrays,
         );
         return {
           params: initTickArrayRangeParam,

@@ -156,7 +156,7 @@ while (true) {
 
   const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
   builder.addInstruction(
-    WhirlpoolIx.initTickArrayIx(ctx.program, {
+    WhirlpoolIx.initDynamicTickArrayIx(ctx.program, {
       funder: ctx.wallet.publicKey,
       whirlpool: whirlpoolPubkey,
       startTick: which.startTickIndex,

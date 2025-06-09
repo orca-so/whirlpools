@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
 import {
   NATIVE_MINT,
@@ -8,7 +8,7 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
-import { Keypair } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
 import Decimal from "decimal.js";
 import {
@@ -45,6 +45,7 @@ import type {
 } from "./test-builders";
 import {
   generateDefaultConfigParams,
+  generateDefaultInitDynamicTickArrayParams,
   generateDefaultInitAdaptiveFeeTierParams,
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
@@ -88,6 +89,7 @@ interface InitTestTickArrayRangeParams {
   startTickIndex: number;
   arrayCount: number;
   aToB: boolean;
+  dynamicTickArrays?: boolean;
 }
 
 interface InitTestPositionParams {
@@ -265,8 +267,13 @@ export async function buildTestAquariums(
 
     const tickArrays = await Promise.all(
       initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const { poolIndex, startTickIndex, arrayCount, aToB } =
-          initTickArrayRangeParam;
+        const {
+          poolIndex,
+          startTickIndex,
+          arrayCount,
+          aToB,
+          dynamicTickArrays,
+        } = initTickArrayRangeParam;
         const pool = pools[poolIndex];
         const pdas = await initTickArrayRange(
           ctx,
@@ -275,6 +282,7 @@ export async function buildTestAquariums(
           arrayCount,
           pool.tickSpacing,
           aToB,
+          dynamicTickArrays,
         );
         return {
           params: initTickArrayRangeParam,
@@ -702,6 +710,25 @@ export async function initTickArray(
   return { txId: await tx.buildAndExecute(), params };
 }
 
+export async function initDynamicTickArray(
+  ctx: WhirlpoolContext,
+  whirlpool: PublicKey,
+  startTickIndex: number,
+  funder?: Keypair,
+): Promise<{ txId: string; params: InitTickArrayParams }> {
+  const params = generateDefaultInitDynamicTickArrayParams(
+    ctx,
+    whirlpool,
+    startTickIndex,
+    funder?.publicKey,
+  );
+  const tx = toTx(ctx, WhirlpoolIx.initDynamicTickArrayIx(ctx.program, params));
+  if (funder) {
+    tx.addSigner(funder);
+  }
+  return { txId: await tx.buildAndExecute(), params };
+}
+
 export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
@@ -760,18 +787,28 @@ export async function initTickArrayRange(
   arrayCount: number,
   tickSpacing: number,
   aToB: boolean,
+  dynamicTickArrays?: boolean,
 ): Promise<PDA[]> {
   const ticksInArray = tickSpacing * TICK_ARRAY_SIZE;
   const direction = aToB ? -1 : 1;
   const result: PDA[] = [];
 
   for (let i = 0; i < arrayCount; i++) {
-    const { params } = await initTickArray(
-      ctx,
-      whirlpool,
-      startTickIndex + direction * ticksInArray * i,
-    );
-    result.push(params.tickArrayPda);
+    if (dynamicTickArrays) {
+      const { params } = await initDynamicTickArray(
+        ctx,
+        whirlpool,
+        startTickIndex + direction * ticksInArray * i,
+      );
+      result.push(params.tickArrayPda);
+    } else {
+      const { params } = await initTickArray(
+        ctx,
+        whirlpool,
+        startTickIndex + direction * ticksInArray * i,
+      );
+      result.push(params.tickArrayPda);
+    }
   }
 
   return result;
@@ -921,6 +958,7 @@ export async function fundPositionsWithClient(
         undefined,
         tokenProgramId,
       );
+      tx.addInstruction(useMaxCU());
       await tx.buildAndExecute();
     }),
   );
@@ -990,7 +1028,9 @@ export async function fundPositions(
             tickArrayLower,
             tickArrayUpper,
           }),
-        ).buildAndExecute();
+        )
+          .addInstruction(useMaxCU())
+          .buildAndExecute();
       }
       return {
         initParams: positionInfo,
@@ -1173,4 +1213,20 @@ export async function openBundledPosition(
   }
   const txId = await tx.buildAndExecute();
   return { txId, params };
+}
+
+export function useCU(cu: number): Instruction {
+  return {
+    cleanupInstructions: [],
+    signers: [],
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: cu,
+      }),
+    ],
+  };
+}
+
+export function useMaxCU(): Instruction {
+  return useCU(1_400_000);
 }

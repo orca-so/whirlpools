@@ -33,6 +33,7 @@ import {
   buildTestAquariums,
   getDefaultAquarium,
   initTestPoolWithTokens,
+  useMaxCU,
 } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import { buildTickArrayData } from "../../utils/testDataTypes";
@@ -1670,7 +1671,9 @@ describe("sparse swap tests", () => {
           !v2
             ? WhirlpoolIx.twoHopSwapIx(testCtx.whirlpoolCtx.program, params)
             : WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params),
-        ).buildAndExecute(undefined, { skipPreflight: true });
+        )
+          .addInstruction(useMaxCU())
+          .buildAndExecute(undefined, { skipPreflight: true });
         assert.ok(
           (await pool0.refreshData()).tickCurrentIndex >= targetTickIndex,
         );
@@ -2007,7 +2010,9 @@ describe("sparse swap tests", () => {
           !v2
             ? WhirlpoolIx.twoHopSwapIx(testCtx.whirlpoolCtx.program, params)
             : WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params),
-        ).buildAndExecute(undefined, { skipPreflight: true });
+        )
+          .addInstruction(useMaxCU())
+          .buildAndExecute(undefined, { skipPreflight: true });
         assert.ok(
           (await pool0.refreshData()).tickCurrentIndex <= targetTickIndex,
         );
@@ -2706,7 +2711,9 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx.program,
             paramsWithSupplemental,
           ),
-        ).buildAndExecute();
+        )
+          .addInstruction(useMaxCU())
+          .buildAndExecute();
         assert.ok(
           (await pool0.refreshData()).tickCurrentIndex >= targetTickIndex,
         );
@@ -3353,7 +3360,9 @@ describe("sparse swap tests", () => {
             supplementalTickArraysOne: [taStartNeg5632One],
             supplementalTickArraysTwo: [taStartNeg5632Two],
           }),
-        ).buildAndExecute();
+        )
+          .addInstruction(useMaxCU())
+          .buildAndExecute();
 
         const postOutputBalance =
           await testCtx.whirlpoolCtx.connection.getTokenAccountBalance(

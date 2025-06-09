@@ -116,14 +116,14 @@ pub async fn build_transaction_with_config(
     let compute_units = compute_budget::estimate_compute_units(
         rpc_client,
         &instructions,
-        &payer,
+        payer,
         address_lookup_tables_clone,
     )
     .await?;
     let budget_instructions = compute_budget::get_compute_budget_instruction(
         rpc_client,
         compute_units,
-        &payer,
+        payer,
         rpc_config,
         fee_config,
         &writable_accounts,
@@ -143,14 +143,14 @@ pub async fn build_transaction_with_config(
     // Create versioned transaction message based on whether ALTs are provided
     let message = if let Some(address_lookup_tables_clone) = address_lookup_tables {
         Message::try_compile(
-            &payer,
+            payer,
             &instructions,
             &address_lookup_tables_clone,
             recent_blockhash,
         )
         .map_err(|e| format!("Failed to compile message with ALTs: {}", e))?
     } else {
-        Message::try_compile(&payer, &instructions, &[], recent_blockhash)
+        Message::try_compile(payer, &instructions, &[], recent_blockhash)
             .map_err(|e| format!("Failed to compile message: {}", e))?
     };
     Ok(VersionedTransaction {

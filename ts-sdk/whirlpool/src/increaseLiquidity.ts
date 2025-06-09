@@ -4,11 +4,11 @@ import {
   fetchPosition,
   fetchWhirlpool,
   getIncreaseLiquidityV2Instruction,
-  getInitializeTickArrayInstruction,
+  getInitializeDynamicTickArrayInstruction,
   getOpenPositionWithTokenExtensionsInstruction,
   getPositionAddress,
   getTickArrayAddress,
-  getTickArraySize,
+  getDynamicTickArrayMinSize,
 } from "@orca-so/whirlpools-client";
 import type {
   IncreaseLiquidityQuote,
@@ -386,31 +386,33 @@ async function internalOpenPositionInstructions(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool.address,
         funder,
         tickArray: lowerTickArrayAddress,
         startTickIndex: lowerTickArrayIndex,
+        idempotent: false,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,
-      getTickArraySize(),
+      getDynamicTickArrayMinSize(),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool.address,
         funder,
         tickArray: upperTickArrayAddress,
         startTickIndex: upperTickArrayIndex,
+        idempotent: false,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,
-      getTickArraySize(),
+      getDynamicTickArrayMinSize(),
     );
   }
 

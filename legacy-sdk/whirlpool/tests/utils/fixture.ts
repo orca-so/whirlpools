@@ -11,6 +11,7 @@ import { TickUtil } from "../../src";
 import type { FundedPositionInfo, FundedPositionParams } from "./init-utils";
 import {
   fundPositions,
+  initDynamicTickArray,
   initRewardAndSetEmissions,
   initTestPoolWithTokens,
   initTickArray,
@@ -19,6 +20,7 @@ import {
 interface InitFixtureParams {
   tickSpacing: number;
   initialSqrtPrice?: BN;
+  dynamicTickArray?: boolean;
   positions?: FundedPositionParams[];
   rewards?: RewardParam[];
   tokenAIsNative?: boolean;
@@ -53,6 +55,7 @@ export class WhirlpoolTestFixture {
     const {
       tickSpacing,
       initialSqrtPrice,
+      dynamicTickArray,
       positions,
       rewards,
       tokenAIsNative,
@@ -79,7 +82,11 @@ export class WhirlpoolTestFixture {
     this.tokenAccountB = tokenAccountB;
 
     if (positions) {
-      await initTickArrays(this.ctx, poolInitInfo, positions);
+      if (dynamicTickArray) {
+        await initDynamicTickArrays(this.ctx, poolInitInfo, positions);
+      } else {
+        await initTickArrays(this.ctx, poolInitInfo, positions);
+      }
 
       this.positions = await fundPositions(
         this.ctx,
@@ -145,6 +152,28 @@ async function initTickArrays(
   return Promise.all(
     Array.from(startTickSet).map((startTick) =>
       initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
+    ),
+  );
+}
+
+async function initDynamicTickArrays(
+  ctx: WhirlpoolContext,
+  poolInitInfo: InitPoolParams,
+  positions: FundedPositionParams[],
+) {
+  const startTickSet = new Set<number>();
+  positions.forEach((p) => {
+    startTickSet.add(
+      TickUtil.getStartTickIndex(p.tickLowerIndex, poolInitInfo.tickSpacing),
+    );
+    startTickSet.add(
+      TickUtil.getStartTickIndex(p.tickUpperIndex, poolInitInfo.tickSpacing),
+    );
+  });
+
+  return Promise.all(
+    Array.from(startTickSet).map((startTick) =>
+      initDynamicTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
     ),
   );
 }

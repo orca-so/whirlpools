@@ -1,6 +1,6 @@
 import type { Address } from "@coral-xyz/anchor";
 import { BN, translateAddress } from "@coral-xyz/anchor";
-import type { Percentage } from "@orca-so/common-sdk";
+import type { Instruction, Percentage } from "@orca-so/common-sdk";
 import {
   AddressUtil,
   TokenUtil,
@@ -27,6 +27,7 @@ import {
   closePositionWithTokenExtensionsIx,
   increaseLiquidityIx,
   increaseLiquidityV2Ix,
+  initDynamicTickArrayIx,
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
@@ -162,6 +163,7 @@ export class WhirlpoolImpl implements Whirlpool {
     ticks: number[],
     funder?: Address,
     opts = IGNORE_CACHE,
+    tickArrayType: "dynamic" | "fixed" = "dynamic",
   ) {
     const initTickArrayStartPdas =
       await TickArrayUtil.getUninitializedArraysPDAs(
@@ -183,16 +185,30 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.txBuilderOpts,
     );
     initTickArrayStartPdas.forEach((initTickArrayInfo) => {
-      txBuilder.addInstruction(
-        initTickArrayIx(this.ctx.program, {
-          startTick: initTickArrayInfo.startIndex,
-          tickArrayPda: initTickArrayInfo.pda,
-          whirlpool: this.address,
-          funder: !!funder
-            ? AddressUtil.toPubKey(funder)
-            : this.ctx.provider.wallet.publicKey,
-        }),
-      );
+      let instruction: Instruction;
+      switch (tickArrayType) {
+        case "dynamic":
+          instruction = initDynamicTickArrayIx(this.ctx.program, {
+            startTick: initTickArrayInfo.startIndex,
+            tickArrayPda: initTickArrayInfo.pda,
+            whirlpool: this.address,
+            funder: !!funder
+              ? AddressUtil.toPubKey(funder)
+              : this.ctx.provider.wallet.publicKey,
+          });
+          break;
+        case "fixed":
+          instruction = initTickArrayIx(this.ctx.program, {
+            startTick: initTickArrayInfo.startIndex,
+            tickArrayPda: initTickArrayInfo.pda,
+            whirlpool: this.address,
+            funder: !!funder
+              ? AddressUtil.toPubKey(funder)
+              : this.ctx.provider.wallet.publicKey,
+          });
+          break;
+      }
+      txBuilder.addInstruction(instruction);
     });
     return txBuilder;
   }

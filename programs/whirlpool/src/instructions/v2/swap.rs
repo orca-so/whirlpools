@@ -2,10 +2,6 @@ use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-use crate::util::{
-    calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount,
-    parse_remaining_accounts, AccountsType, RemainingAccountsInfo,
-};
 use crate::{
     constants::transfer_memo,
     errors::ErrorCode,
@@ -13,8 +9,9 @@ use crate::{
     manager::swap_manager::*,
     state::*,
     util::{
-        to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SparseSwapTickSequenceBuilder,
-        SwapTickSequence,
+        calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount,
+        parse_remaining_accounts, to_timestamp_u64, v2::update_and_swap_whirlpool_v2, AccountsType,
+        RemainingAccountsInfo, SparseSwapTickSequenceBuilder, SwapTickSequence,
     },
 };
 
@@ -93,17 +90,15 @@ pub fn handler<'info>(
         ],
     )?;
 
-    let builder = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool,
-        a_to_b,
+    let swap_tick_sequence_builder = SparseSwapTickSequenceBuilder::new(
         vec![
             ctx.accounts.tick_array_0.to_account_info(),
             ctx.accounts.tick_array_1.to_account_info(),
             ctx.accounts.tick_array_2.to_account_info(),
         ],
         remaining_accounts.supplemental_tick_arrays,
-    )?;
-    let mut swap_tick_sequence = builder.build()?;
+    );
+    let mut swap_tick_sequence = swap_tick_sequence_builder.try_build(whirlpool, a_to_b)?;
 
     let oracle_accessor = OracleAccessor::new(whirlpool, ctx.accounts.oracle.to_account_info())?;
     if !oracle_accessor.is_trade_enabled(timestamp)? {

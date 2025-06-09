@@ -35,7 +35,7 @@ import {
   mintToDestination,
   systemTransferTx,
 } from "../utils";
-import { defaultConfirmOptions } from "../utils/const";
+import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
 import { MetaplexHttpClient } from "../utils/metaplex";
@@ -222,6 +222,24 @@ describe("open_position_with_metadata", () => {
       ),
       /0x5/, // the total supply of this token is fixed
     );
+  });
+
+  it("should reserve some rent for tick initialization", async () => {
+    const positionInitInfo = await openPositionWithMetadata(
+      ctx,
+      whirlpoolPda.publicKey,
+      tickLowerIndex,
+      tickUpperIndex,
+      provider.wallet.publicKey,
+    );
+
+    const positionPda = positionInitInfo.params.positionPda.publicKey;
+    const position = await ctx.connection.getAccountInfo(positionPda);
+    assert.ok(position);
+    const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
+      position.data.length,
+    );
+    assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
 
   it("user must pass the valid token ATA account", async () => {

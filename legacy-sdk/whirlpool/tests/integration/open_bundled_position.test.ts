@@ -32,7 +32,7 @@ import {
   transferToken,
   ZERO_BN,
 } from "../utils";
-import { defaultConfirmOptions } from "../utils/const";
+import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../utils/const";
 import {
   initializePositionBundle,
   initTestPool,
@@ -254,6 +254,32 @@ describe("open_bundled_position", () => {
       IGNORE_CACHE,
     )) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
+  });
+
+  it("should reserve some rent for tick initialization", async () => {
+    const positionBundleInfo = await initializePositionBundle(
+      ctx,
+      ctx.wallet.publicKey,
+    );
+
+    const positionInitInfo = await openBundledPosition(
+      ctx,
+      whirlpoolPda.publicKey,
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
+      0,
+      tickLowerIndex,
+      tickUpperIndex,
+      ctx.wallet.publicKey,
+      funderKeypair,
+    );
+
+    const positionPda = positionInitInfo.params.bundledPositionPda.publicKey;
+    const position = await ctx.connection.getAccountInfo(positionPda);
+    assert.ok(position);
+    const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
+      position.data.length,
+    );
+    assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
 
   it("successfully opens multiple bundled position and verify bitmap", async () => {

@@ -57,11 +57,12 @@ pub fn handler(
         &ctx.accounts.position_bundle_authority,
     )?;
 
-    collect_rent_for_ticks_in_position(
-        &ctx.accounts.funder,
-        position,
-        &ctx.accounts.system_program,
-    )?;
+    // For Partial upgrade, we disable collecting rent for ticks
+    // collect_rent_for_ticks_in_position(
+    //     &ctx.accounts.funder,
+    //     position,
+    //     &ctx.accounts.system_program,
+    // )?;
 
     position_bundle.open_bundled_position(bundle_index)?;
 

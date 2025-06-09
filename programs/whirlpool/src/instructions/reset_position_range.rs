@@ -40,11 +40,12 @@ pub fn handler(
         &ctx.accounts.position_authority,
     )?;
 
-    ensure_position_has_enough_rent_for_ticks(
-        &ctx.accounts.funder,
-        &ctx.accounts.position,
-        &ctx.accounts.system_program,
-    )?;
+    // For Partial upgrade, we disable collecting rent for ticks
+    // ensure_position_has_enough_rent_for_ticks(
+    //     &ctx.accounts.funder,
+    //     &ctx.accounts.position,
+    //     &ctx.accounts.system_program,
+    // )?;
 
     ctx.accounts.position.reset_position_range(
         &ctx.accounts.whirlpool,

@@ -14,11 +14,9 @@ import type { WhirlpoolContext } from "../..";
 import { PDAUtil } from "../..";
 import invariant from "tiny-invariant";
 import {
-  AccountState,
   ExtensionType,
   NATIVE_MINT_2022,
   TOKEN_PROGRAM_ID,
-  getDefaultAccountState,
   getExtensionTypes,
 } from "@solana/spl-token";
 
@@ -284,6 +282,7 @@ export class PoolUtil {
         case ExtensionType.InterestBearingConfig:
         case ExtensionType.TokenMetadata:
         case ExtensionType.MetadataPointer:
+        case ExtensionType.ScaledUiAmountConfig:
         case ExtensionType.ConfidentialTransferMint:
         case EXTENSION_TYPE_CONFIDENTIAL_TRANSFER_FEE_CONFIG:
           continue;
@@ -292,21 +291,11 @@ export class PoolUtil {
         case ExtensionType.PermanentDelegate:
         case ExtensionType.TransferHook:
         case ExtensionType.MintCloseAuthority:
-          if (!isTokenBadgeInitialized) {
-            return false;
-          }
-          continue;
         case ExtensionType.DefaultAccountState:
+        case ExtensionType.PausableConfig:
           if (!isTokenBadgeInitialized) {
             return false;
           }
-
-          const defaultAccountState =
-            getDefaultAccountState(mintWithTokenProgram)!;
-          if (defaultAccountState.state !== AccountState.Initialized) {
-            return false;
-          }
-
           continue;
 
         // not supported

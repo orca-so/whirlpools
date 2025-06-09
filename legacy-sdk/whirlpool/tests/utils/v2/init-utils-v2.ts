@@ -76,6 +76,9 @@ export interface TokenTrait {
   hasGroupPointerExtension?: boolean;
   hasGroupMemberExtension?: boolean;
   hasGroupMemberPointerExtension?: boolean;
+  hasScaledUiAmountExtension?: boolean;
+  scaledUiAmountMultiplier?: number; // f64
+  hasPausableExtension?: boolean;
 }
 
 interface TestPoolV2Params {
@@ -1163,6 +1166,7 @@ export function isTokenBadgeRequired(tokenTrait: TokenTrait): boolean {
   if (tokenTrait.hasFreezeAuthority) return true;
   if (tokenTrait.hasPermanentDelegate) return true;
   if (tokenTrait.hasTransferHookExtension) return true;
+  if (tokenTrait.hasPausableExtension) return true;
   return false;
 }
 

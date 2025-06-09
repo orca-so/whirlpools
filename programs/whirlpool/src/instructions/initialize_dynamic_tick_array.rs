@@ -5,12 +5,18 @@ use solana_program::{program::invoke_signed, system_instruction};
 
 use crate::{state::*, ID};
 
+mod orca_test_wallet {
+    use super::*;
+    declare_id!("9ar6ByCBqCYyH7VWSNah7h5hR2FcHtig5Dnhcq5UTFR7");
+}
+use orca_test_wallet::ID as ORCA_TEST_WALLET;
+
 #[derive(Accounts)]
 #[instruction(start_tick_index: i32)]
 pub struct InitializeDynamicTickArray<'info> {
     pub whirlpool: Account<'info, Whirlpool>,
 
-    #[account(mut)]
+    #[account(mut, address = ORCA_TEST_WALLET)]
     pub funder: Signer<'info>,
 
     // We cannot use init_if_needed here because it requires a space constraint which

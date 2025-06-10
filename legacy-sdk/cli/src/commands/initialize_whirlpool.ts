@@ -1,4 +1,5 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
+import type { AdaptiveFeeConstantsData } from "@orca-so/whirlpools-sdk";
 import {
   PDAUtil,
   WhirlpoolIx,
@@ -13,16 +14,31 @@ import { promptText, promptConfirm } from "../utils/prompt";
 
 console.info("initialize Whirlpool...");
 
+type WithAdaptiveFee = {
+  useAdaptiveFee: true;
+  feeTierIndex: number;
+  tickSpacing: number;
+  feeTierPubkey: PublicKey;
+  feeRate: number;
+  adaptiveFeeConstants: AdaptiveFeeConstantsData;
+};
+type WithoutAdaptiveFee = {
+  useAdaptiveFee: false;
+  feeTierIndex: number;
+  tickSpacing: number;
+  feeTierPubkey: PublicKey;
+  feeRate: number;
+};
+type FeeTierInfo = WithAdaptiveFee | WithoutAdaptiveFee;
+
 // prompt
 const whirlpoolsConfigPubkeyStr = await promptText("whirlpoolsConfigPubkey");
 const tokenMint0PubkeyStr = await promptText("tokenMint0Pubkey");
 const tokenMint1PubkeyStr = await promptText("tokenMint1Pubkey");
-const tickSpacingStr = await promptText("tickSpacing");
 
 const whirlpoolsConfigPubkey = new PublicKey(whirlpoolsConfigPubkeyStr);
 const tokenMint0Pubkey = new PublicKey(tokenMint0PubkeyStr);
 const tokenMint1Pubkey = new PublicKey(tokenMint1PubkeyStr);
-const tickSpacing = Number.parseInt(tickSpacingStr);
 
 const [tokenMintAAddress, tokenMintBAddress] = PoolUtil.orderMints(
   tokenMint0Pubkey,
@@ -35,18 +51,67 @@ if (tokenMintAAddress.toString() !== tokenMint0Pubkey.toBase58()) {
 const tokenMintAPubkey = new PublicKey(tokenMintAAddress);
 const tokenMintBPubkey = new PublicKey(tokenMintBAddress);
 
-const feeTierPubkey = PDAUtil.getFeeTier(
-  ctx.program.programId,
-  whirlpoolsConfigPubkey,
-  tickSpacing,
-).publicKey;
+console.info(`if you want to initialize pool with adaptive fee, enter YES`);
+const withAdaptiveFeeYesno = await promptConfirm("YES");
+
+let feeTierInfo: FeeTierInfo;
+if (!withAdaptiveFeeYesno) {
+  // without adaptive fee (normal FeeTier)
+  const tickSpacingStr = await promptText("tickSpacing");
+  const tickSpacing = Number.parseInt(tickSpacingStr);
+
+  const feeTierPubkey = PDAUtil.getFeeTier(
+    ctx.program.programId,
+    whirlpoolsConfigPubkey,
+    tickSpacing,
+  ).publicKey;
+
+  const feeTier = await ctx.fetcher.getFeeTier(feeTierPubkey);
+  if (!feeTier) {
+    throw new Error("FeeTier for the tickSpacing not found");
+  }
+
+  feeTierInfo = {
+    useAdaptiveFee: false,
+    feeTierIndex: tickSpacing,
+    tickSpacing,
+    feeTierPubkey,
+    feeRate: feeTier.defaultFeeRate,
+  };
+} else {
+  // with adaptive fee (AdaptiveFeeTier)
+  const feeTierIndexStr = await promptText("feeTierIndex");
+  const feeTierIndex = Number.parseInt(feeTierIndexStr);
+
+  const feeTierPubkey = PDAUtil.getFeeTier(
+    ctx.program.programId,
+    whirlpoolsConfigPubkey,
+    feeTierIndex,
+  ).publicKey;
+
+  const feeTier = await ctx.fetcher.getAdaptiveFeeTier(feeTierPubkey);
+  if (!feeTier) {
+    throw new Error("AdaptiveFeeTier with the feeTierIndex not found");
+  }
+
+  feeTierInfo = {
+    useAdaptiveFee: true,
+    feeTierIndex,
+    tickSpacing: feeTier.tickSpacing,
+    feeTierPubkey,
+    feeRate: feeTier.defaultBaseFeeRate,
+    adaptiveFeeConstants: {
+      ...feeTier,
+    },
+  };
+}
 
 const pda = PDAUtil.getWhirlpool(
   ctx.program.programId,
   whirlpoolsConfigPubkey,
   tokenMintAPubkey,
   tokenMintBPubkey,
-  tickSpacing,
+  feeTierInfo.feeTierIndex,
 );
 const tokenVaultAKeypair = Keypair.generate();
 const tokenVaultBKeypair = Keypair.generate();
@@ -113,7 +178,9 @@ console.info(
   `(${tokenProgramB})`,
   tokenBadgeBInitialized ? "with badge" : "without badge",
   "\n\ttickSpacing",
-  tickSpacing,
+  feeTierInfo.tickSpacing,
+  "\n\tfeeRate",
+  feeTierInfo.feeRate,
   "\n\tinitPrice",
   initPrice.toFixed(mintB.decimals),
   "B/A",
@@ -121,31 +188,77 @@ console.info(
   tokenVaultAKeypair.publicKey.toBase58(),
   "\n\ttokenVaultB(gen)",
   tokenVaultBKeypair.publicKey.toBase58(),
+  "\n\twithAdaptiveFee",
+  feeTierInfo.useAdaptiveFee ? "WITH AdaptiveFee" : "WITHOUT AdaptiveFee",
 );
+if (feeTierInfo.useAdaptiveFee) {
+  console.info(
+    "\n\tfeeTierIndex",
+    feeTierInfo.feeTierIndex,
+    "\n\tadaptiveFeeConstants",
+    "\n\t\tfilterPeriod",
+    feeTierInfo.adaptiveFeeConstants.filterPeriod,
+    "\n\t\tdecayPeriod",
+    feeTierInfo.adaptiveFeeConstants.decayPeriod,
+    "\n\t\treductionFactorPer10000",
+    feeTierInfo.adaptiveFeeConstants.reductionFactor,
+    "\n\t\tadaptiveFeeControlFactorPer100000",
+    feeTierInfo.adaptiveFeeConstants.adaptiveFeeControlFactor,
+    "\n\t\tmaxVolatilityAccumulator",
+    feeTierInfo.adaptiveFeeConstants.maxVolatilityAccumulator,
+    "\n\t\ttickGroupSize",
+    feeTierInfo.adaptiveFeeConstants.tickGroupSize,
+    "\n\t\tmajorSwapThresholdTicks",
+    feeTierInfo.adaptiveFeeConstants.majorSwapThresholdTicks,
+  );
+}
 const yesno = await promptConfirm("if the above is OK, enter YES");
 if (!yesno) {
   throw new Error("stopped");
 }
 
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-builder.addInstruction(
-  WhirlpoolIx.initializePoolV2Ix(ctx.program, {
-    whirlpoolPda: pda,
-    funder: ctx.wallet.publicKey,
-    whirlpoolsConfig: whirlpoolsConfigPubkey,
-    tokenMintA: tokenMintAPubkey,
-    tokenMintB: tokenMintBPubkey,
-    tokenProgramA: mintA.tokenProgram,
-    tokenProgramB: mintB.tokenProgram,
-    tokenBadgeA: tokenBadgeAPubkey,
-    tokenBadgeB: tokenBadgeBPubkey,
-    tickSpacing,
-    feeTierKey: feeTierPubkey,
-    tokenVaultAKeypair,
-    tokenVaultBKeypair,
-    initSqrtPrice,
-  }),
-);
+if (!feeTierInfo.useAdaptiveFee) {
+  builder.addInstruction(
+    WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+      whirlpoolPda: pda,
+      funder: ctx.wallet.publicKey,
+      whirlpoolsConfig: whirlpoolsConfigPubkey,
+      tokenMintA: tokenMintAPubkey,
+      tokenMintB: tokenMintBPubkey,
+      tokenProgramA: mintA.tokenProgram,
+      tokenProgramB: mintB.tokenProgram,
+      tokenBadgeA: tokenBadgeAPubkey,
+      tokenBadgeB: tokenBadgeBPubkey,
+      tickSpacing: feeTierInfo.tickSpacing,
+      feeTierKey: feeTierInfo.feeTierPubkey,
+      tokenVaultAKeypair,
+      tokenVaultBKeypair,
+      initSqrtPrice,
+    }),
+  );
+} else {
+  const oraclePda = PDAUtil.getOracle(ctx.program.programId, pda.publicKey);
+  builder.addInstruction(
+    WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
+      whirlpoolPda: pda,
+      funder: ctx.wallet.publicKey,
+      whirlpoolsConfig: whirlpoolsConfigPubkey,
+      tokenMintA: tokenMintAPubkey,
+      tokenMintB: tokenMintBPubkey,
+      tokenProgramA: mintA.tokenProgram,
+      tokenProgramB: mintB.tokenProgram,
+      tokenBadgeA: tokenBadgeAPubkey,
+      tokenBadgeB: tokenBadgeBPubkey,
+      initializePoolAuthority: ctx.wallet.publicKey,
+      oraclePda,
+      adaptiveFeeTierKey: feeTierInfo.feeTierPubkey,
+      tokenVaultAKeypair,
+      tokenVaultBKeypair,
+      initSqrtPrice,
+    }),
+  );
+}
 
 const landed = await sendTransaction(builder);
 if (landed) {

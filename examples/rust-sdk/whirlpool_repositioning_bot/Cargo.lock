@@ -2343,7 +2343,7 @@ dependencies = [
  "spl-associated-token-account",
  "spl-memo 5.0.0",
  "spl-token 6.0.0",
- "spl-token-2022 4.0.0",
+ "spl-token-2022 7.0.0",
 ]
 
 [[package]]

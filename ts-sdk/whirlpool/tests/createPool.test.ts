@@ -9,7 +9,11 @@ import {
   SPLASH_POOL_TICK_SPACING,
 } from "../src/config";
 import { setupMint } from "./utils/token";
-import { setupMintTE, setupMintTEFee, setupMintTEScaledUiAmount } from "./utils/tokenExtensions";
+import {
+  setupMintTE,
+  setupMintTEFee,
+  setupMintTEScaledUiAmount,
+} from "./utils/tokenExtensions";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
 import { fetchMaybeWhirlpool } from "@orca-so/whirlpools-client";
 import assert from "assert";

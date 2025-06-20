@@ -57,12 +57,14 @@ pub async fn setup_mint_te(
         }
 
         if extension == &ExtensionType::ScaledUiAmount {
-            instructions.push(spl_token_2022::extension::scaled_ui_amount::instruction::initialize(
-                &TOKEN_2022_PROGRAM_ID,
-                &mint.pubkey(),
-                None,
-                1f64,
-            )?);
+            instructions.push(
+                spl_token_2022::extension::scaled_ui_amount::instruction::initialize(
+                    &TOKEN_2022_PROGRAM_ID,
+                    &mint.pubkey(),
+                    None,
+                    1f64,
+                )?,
+            );
         }
     }
 

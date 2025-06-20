@@ -306,7 +306,9 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
 #[cfg(test)]
 mod tests {
-    use crate::tests::{setup_mint, setup_mint_te, setup_mint_te_fee, setup_mint_te_sua, RpcContext};
+    use crate::tests::{
+        setup_mint, setup_mint_te, setup_mint_te_fee, setup_mint_te_sua, RpcContext,
+    };
 
     use super::*;
     use serial_test::serial;

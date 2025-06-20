@@ -31,7 +31,7 @@ import {
   toTx,
 } from "../../src";
 import { ONE_SOL, TickSpacing, ZERO_BN, systemTransferTx } from "../utils";
-import { defaultConfirmOptions } from "../utils/const";
+import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
 import type { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
@@ -345,6 +345,33 @@ describe("open_position_with_token_extensions", () => {
     );
     assert.ok(tokenAccount !== null);
     assert.ok(tokenAccount.owner.equals(ownerKeypair.publicKey));
+  });
+
+  it("should reserve some rent for tick initialization", async () => {
+    // open position
+    const { params, mint } =
+      await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        whirlpoolPda.publicKey,
+        true,
+        tickLowerIndex,
+        tickUpperIndex,
+        provider.wallet.publicKey,
+      );
+    await toTx(
+      ctx,
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+    )
+      .addSigner(mint)
+      .buildAndExecute();
+
+    const positionPda = params.positionPda.publicKey;
+    const position = await ctx.connection.getAccountInfo(positionPda);
+    assert.ok(position);
+    const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
+      position.data.length,
+    );
+    assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
 
   it("should be failed: mint one more position token", async () => {

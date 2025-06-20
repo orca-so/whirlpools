@@ -194,7 +194,11 @@ describe("Open Position Instructions", () => {
       1.05,
     );
 
-    assert.strictEqual(initializationCost, 70407360n);
+    // Fixed tick array: 9988 bytes, rent = 0.070407360 SOL / tick array
+    // Dynamic tick array: 148 bytes, rent = 0.001920960 SOL / tick array
+    // difference: 0.068486400 SOL / tick array
+    // assert.strictEqual(initializationCost, 70407360n); // Fixed tick array
+    assert.strictEqual(initializationCost, 1920960n); // Dynamic tick array
   });
 
   it("Should compute correct initialization costs if no tick arrays are already initialized", async () => {
@@ -208,7 +212,11 @@ describe("Open Position Instructions", () => {
       5,
     );
 
-    assert.strictEqual(initializationCost, 140814720n);
+    // Fixed tick array: 9988 bytes, rent = 0.070407360 SOL / tick array
+    // Dynamic tick array: 148 bytes, rent = 0.001920960 SOL / tick array
+    // difference: 0.068486400 SOL / tick array
+    // assert.strictEqual(initializationCost, 140814720n); // Fixed tick array
+    assert.strictEqual(initializationCost, 3841920n); // Dynamic tick array
   });
 
   it("Should throw an error if openPositionInstructions is called on a splash pool", async () => {

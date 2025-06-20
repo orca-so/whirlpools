@@ -163,6 +163,9 @@ pub enum ErrorCode {
     InvalidTradeEnableTimestamp, // 0x17af (6063)
     #[msg("Trade is not enabled yet")]
     TradeIsNotEnabled, // 0x17b0 (6064)
+
+    #[msg("Rent calculation error")]
+    RentCalculationError, // 0x17b1 (6065)
 }
 
 impl From<TryFromIntError> for ErrorCode {

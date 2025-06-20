@@ -764,6 +764,97 @@ describe("swap", () => {
     );
   });
 
+  it("swaps across one dynamic tick array", async () => {
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+    const aToB = false;
+    await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      22528, // to 33792
+      3,
+      TickSpacing.Standard,
+      aToB,
+      true,
+    );
+
+    const fundParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: new anchor.BN(10_000_000),
+        tickLowerIndex: 29440,
+        tickUpperIndex: 33536,
+      },
+    ];
+
+    await fundPositions(
+      ctx,
+      poolInitInfo,
+      tokenAccountA,
+      tokenAccountB,
+      fundParams,
+    );
+
+    const tokenVaultABefore = new anchor.BN(
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      ),
+    );
+    const tokenVaultBBefore = new anchor.BN(
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      ),
+    );
+
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
+
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
+    const whirlpoolData = whirlpool.getData();
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new BN(100000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      }),
+    ).buildAndExecute();
+
+    assert.equal(
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      ),
+      tokenVaultABefore.sub(quote.estimatedAmountOut).toString(),
+    );
+    assert.equal(
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      ),
+      tokenVaultBBefore.add(quote.estimatedAmountIn).toString(),
+    );
+  });
+
   it("swaps aToB across initialized tick with no movement", async () => {
     const startingTick = 91720;
     const tickSpacing = TickSpacing.Stable;

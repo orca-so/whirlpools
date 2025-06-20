@@ -5,10 +5,14 @@ import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 import type { TickSpacing } from ".";
 import type { Whirlpool, WhirlpoolClient, WhirlpoolContext } from "../../src";
-import { TICK_ARRAY_SIZE } from "../../src";
+import { TICK_ARRAY_SIZE, TickUtil } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import type { FundedPositionParams } from "./init-utils";
-import { fundPositionsWithClient, initTestPoolWithTokens } from "./init-utils";
+import {
+  fundPositionsWithClient,
+  initTestPoolWithTokens,
+  initTickArray,
+} from "./init-utils";
 
 export interface SwapTestPoolParams {
   ctx: WhirlpoolContext;
@@ -50,9 +54,10 @@ export async function setupSwapTest(
     IGNORE_CACHE,
   );
 
-  await (
-    await whirlpool.initTickArrayForTicks(setup.initArrayStartTicks)
-  )?.buildAndExecute();
+  for (const tick of setup.initArrayStartTicks) {
+    const startTick = TickUtil.getStartTickIndex(tick, setup.tickSpacing);
+    await initTickArray(setup.ctx, whirlpoolPda.publicKey, startTick);
+  }
 
   await fundPositionsWithClient(
     setup.client,

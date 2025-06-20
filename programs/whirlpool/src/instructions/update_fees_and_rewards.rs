@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 
 use crate::{
@@ -12,10 +14,10 @@ pub struct UpdateFeesAndRewards<'info> {
     #[account(mut, has_one = whirlpool)]
     pub position: Account<'info, Position>,
 
-    #[account(has_one = whirlpool)]
-    pub tick_array_lower: AccountLoader<'info, TickArray>,
-    #[account(has_one = whirlpool)]
-    pub tick_array_upper: AccountLoader<'info, TickArray>,
+    /// CHECK: Checked by the tick array loader
+    pub tick_array_lower: UncheckedAccount<'info>,
+    /// CHECK: Checked by the tick array loader
+    pub tick_array_upper: UncheckedAccount<'info>,
 }
 
 pub fn handler(ctx: Context<UpdateFeesAndRewards>) -> Result<()> {
@@ -24,11 +26,14 @@ pub fn handler(ctx: Context<UpdateFeesAndRewards>) -> Result<()> {
     let clock = Clock::get()?;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
+    let lower_tick_array = load_tick_array(&ctx.accounts.tick_array_lower, &whirlpool.key())?;
+    let upper_tick_array = load_tick_array(&ctx.accounts.tick_array_upper, &whirlpool.key())?;
+
     let (position_update, reward_infos) = calculate_fee_and_reward_growths(
         whirlpool,
         position,
-        &ctx.accounts.tick_array_lower,
-        &ctx.accounts.tick_array_upper,
+        lower_tick_array.deref(),
+        upper_tick_array.deref(),
         timestamp,
     )?;
 

@@ -14,8 +14,7 @@ import {
   requestAirdrop,
 } from "../../test-context";
 import { expectMintEquals } from "../../utils/expectations";
-
-jest.setTimeout(100 * 1000 /* ms */);
+import { vi } from "vitest";
 
 describe("simple-account-fetcher", () => {
   let ctx: TestContext = createTestContext();
@@ -34,12 +33,12 @@ describe("simple-account-fetcher", () => {
 
   beforeEach(() => {
     ctx = createTestContext();
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
     // jest.resetAllMocks doesn't work (I guess that jest.spyOn rewrite prototype of Connection)
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe("getAccount", () => {

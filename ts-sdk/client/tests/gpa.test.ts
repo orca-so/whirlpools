@@ -47,14 +47,22 @@ import {
   fetchAllPositionBundleWithFilter,
   positionBundleMintFilter,
 } from "../src/gpa/positionBundle";
-import type { TickArrayArgs } from "../src/generated/accounts/tickArray";
-import { getTickArrayEncoder } from "../src/generated/accounts/tickArray";
+import type { FixedTickArrayArgs } from "../src/generated/accounts/fixedTickArray";
+import { getFixedTickArrayEncoder } from "../src/generated/accounts/fixedTickArray";
 import {
-  fetchAllTickArrayWithFilter,
-  tickArrayStartTickIndexFilter,
-  tickArrayWhirlpoolFilter,
-} from "../src/gpa/tickArray";
+  fetchAllFixedTickArrayWithFilter,
+  fixedTickArrayStartTickIndexFilter,
+  fixedTickArrayWhirlpoolFilter,
+} from "../src/gpa/fixedTickArray";
 import type { TickArgs } from "../src/generated/types/tick";
+import type { DynamicTickArrayArgs } from "../src/generated/accounts/dynamicTickArray";
+import { getDynamicTickArrayEncoder } from "../src/generated/accounts/dynamicTickArray";
+import {
+  fetchAllDynamicTickArrayWithFilter,
+  dynamicTickArrayStartTickIndexFilter,
+  dynamicTickArrayWhirlpoolFilter,
+} from "../src/gpa/dynamicTickArray";
+import type { DynamicTickArgs } from "../src/generated/types/dynamicTick";
 import type { TokenBadgeArgs } from "../src/generated/accounts/tokenBadge";
 import { getTokenBadgeEncoder } from "../src/generated/accounts/tokenBadge";
 import {
@@ -99,6 +107,11 @@ import {
   whirlpoolsConfigExtensionWhirlpoolsConfigFilter,
 } from "../src/gpa/whirlpoolsConfigExtension";
 import { fetchDecodedProgramAccounts } from "../src/gpa/utils";
+import {
+  fetchAllTickArrayWithFilter,
+  tickArrayStartTickIndexFilter,
+  tickArrayWhirlpoolFilter,
+} from "../src/gpa/tickArray";
 import {
   adaptiveFeeTierAdaptiveFeeControlFactorFilter,
   adaptiveFeeTierDecayPeriodFilter,
@@ -147,10 +160,11 @@ describe("get program account memcmp filters", () => {
     vi.restoreAllMocks();
   });
 
-  function assertFilters(data: ReadonlyUint8Array) {
+  function assertFilters(data: ReadonlyUint8Array, index: number = 0) {
     const mockFetch = vi.mocked(fetchDecodedProgramAccounts);
-    const filters = mockFetch.mock
-      .calls[0][2] as GetProgramAccountsMemcmpFilter[];
+    const filters = mockFetch.mock.calls[
+      index
+    ][2] as GetProgramAccountsMemcmpFilter[];
     for (const filter of filters) {
       const offset = Number(filter.memcmp.offset);
       const actual = getBase58Encoder().encode(filter.memcmp.bytes);
@@ -234,7 +248,54 @@ describe("get program account memcmp filters", () => {
     assertFilters(data);
   });
 
-  it("TickArray", async () => {
+  // fetchAllTickArrayWithFilter doesn't work well with mockRpc because it returns undefined
+  it.skip("TickArray", async () => {
+    const fixedTickStruct: TickArgs = {
+      initialized: true,
+      liquidityNet: 1234,
+      liquidityGross: 5678,
+      feeGrowthOutsideA: 9012,
+      feeGrowthOutsideB: 3456,
+      rewardGrowthsOutside: [1234, 5678, 9012],
+    };
+    const fixedTickArrayStruct: FixedTickArrayArgs = {
+      startTickIndex: 1234,
+      ticks: Array(88).fill(fixedTickStruct),
+      whirlpool: addresses[0],
+    };
+
+    const dynamicTickStruct: DynamicTickArgs = {
+      __kind: "Initialized",
+      fields: [
+        {
+          liquidityNet: 1234,
+          liquidityGross: 5678,
+          feeGrowthOutsideA: 9012,
+          feeGrowthOutsideB: 3456,
+          rewardGrowthsOutside: [1234, 5678, 9012],
+        },
+      ],
+    };
+    const dynamicTickArrayStruct: DynamicTickArrayArgs = {
+      startTickIndex: 1234,
+      ticks: Array(88).fill(dynamicTickStruct),
+      tickBitmap: 309485009821345068724781055n, // 2^88 - 1
+      whirlpool: addresses[0],
+    };
+    await fetchAllTickArrayWithFilter(
+      mockRpc,
+      tickArrayStartTickIndexFilter(fixedTickArrayStruct.startTickIndex),
+      tickArrayWhirlpoolFilter(fixedTickArrayStruct.whirlpool),
+    );
+    const fixedData = getFixedTickArrayEncoder().encode(fixedTickArrayStruct);
+    assertFilters(fixedData, 0);
+    const dynamicData = getDynamicTickArrayEncoder().encode(
+      dynamicTickArrayStruct,
+    );
+    assertFilters(dynamicData, 1);
+  });
+
+  it("FixedTickArray", async () => {
     const tickStruct: TickArgs = {
       initialized: true,
       liquidityNet: 1234,
@@ -243,17 +304,45 @@ describe("get program account memcmp filters", () => {
       feeGrowthOutsideB: 3456,
       rewardGrowthsOutside: [1234, 5678, 9012],
     };
-    const tickArrayStruct: TickArrayArgs = {
+    const fixedTickArrayStruct: FixedTickArrayArgs = {
       startTickIndex: 1234,
       ticks: Array(88).fill(tickStruct),
       whirlpool: addresses[0],
     };
-    await fetchAllTickArrayWithFilter(
+    await fetchAllFixedTickArrayWithFilter(
       mockRpc,
-      tickArrayStartTickIndexFilter(tickArrayStruct.startTickIndex),
-      tickArrayWhirlpoolFilter(tickArrayStruct.whirlpool),
+      fixedTickArrayStartTickIndexFilter(fixedTickArrayStruct.startTickIndex),
+      fixedTickArrayWhirlpoolFilter(fixedTickArrayStruct.whirlpool),
     );
-    const data = getTickArrayEncoder().encode(tickArrayStruct);
+    const data = getFixedTickArrayEncoder().encode(fixedTickArrayStruct);
+    assertFilters(data);
+  });
+
+  it("DynamicTickArray", async () => {
+    const tickStruct: DynamicTickArgs = {
+      __kind: "Initialized",
+      fields: [
+        {
+          liquidityNet: 1234,
+          liquidityGross: 5678,
+          feeGrowthOutsideA: 9012,
+          feeGrowthOutsideB: 3456,
+          rewardGrowthsOutside: [1234, 5678, 9012],
+        },
+      ],
+    };
+    const tickArrayStruct: DynamicTickArrayArgs = {
+      startTickIndex: 1234,
+      ticks: Array(88).fill(tickStruct),
+      tickBitmap: 309485009821345068724781055n, // 2^88 - 1
+      whirlpool: addresses[0],
+    };
+    await fetchAllDynamicTickArrayWithFilter(
+      mockRpc,
+      dynamicTickArrayStartTickIndexFilter(tickArrayStruct.startTickIndex),
+      dynamicTickArrayWhirlpoolFilter(tickArrayStruct.whirlpool),
+    );
+    const data = getDynamicTickArrayEncoder().encode(tickArrayStruct);
     assertFilters(data);
   });
 

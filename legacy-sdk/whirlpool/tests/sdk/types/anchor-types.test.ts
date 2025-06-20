@@ -8,6 +8,7 @@ describe("anchor-types", () => {
       [AccountName.WhirlpoolsConfig]: 108,
       [AccountName.Position]: 216,
       [AccountName.TickArray]: 9988,
+      [AccountName.DynamicTickArray]: 10004,
       [AccountName.Whirlpool]: 653,
       [AccountName.FeeTier]: 44,
       [AccountName.PositionBundle]: 136,

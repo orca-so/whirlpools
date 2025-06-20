@@ -5,9 +5,8 @@ use solana_client::rpc_filter::{Memcmp, RpcFilterType};
 use solana_program::pubkey::Pubkey;
 
 use super::fetch_decoded_program_accounts;
+use crate::TOKEN_BADGE_DISCRIMINATOR;
 use crate::{generated::shared::DecodedAccount, TokenBadge};
-
-pub const TOKEN_BADGE_DISCRIMINATOR: &[u8] = &[116, 219, 204, 229, 249, 116, 255, 150];
 
 #[derive(Debug, Clone)]
 pub enum TokenBadgeFilter {

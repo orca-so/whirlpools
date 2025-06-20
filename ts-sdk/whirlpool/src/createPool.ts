@@ -1,9 +1,9 @@
 import {
   getFeeTierAddress,
   getInitializePoolV2Instruction,
-  getInitializeTickArrayInstruction,
+  getInitializeDynamicTickArrayInstruction,
   getTickArrayAddress,
-  getTickArraySize,
+  getDynamicTickArrayMinSize,
   getTokenBadgeAddress,
   getWhirlpoolAddress,
   getWhirlpoolSize,
@@ -253,16 +253,17 @@ export async function createConcentratedLiquidityPoolInstructions(
 
   for (let i = 0; i < tickArrayIndexes.length; i++) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: poolAddress,
         funder,
         tickArray: tickArrayAddresses[i],
         startTickIndex: tickArrayIndexes[i],
+        idempotent: false,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,
-      getTickArraySize(),
+      getDynamicTickArrayMinSize(),
     );
   }
 

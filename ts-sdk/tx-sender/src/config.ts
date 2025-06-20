@@ -97,21 +97,22 @@ const setGlobalConfig = (config: {
 };
 
 /**
- * Initializes the global RPC configuration.
+ * Initializes the global RPC configuration and returns an RPC instance.
  *
  * @param {string} url - The Solana RPC endpoint URL.
  * @param {boolean} [supportsPriorityFeePercentile=false] - Whether the RPC supports percentile-based priority fees. Set this to true if the RPC provider is Triton.
- * @returns {Promise<void>} Resolves once the configuration has been set.
+ * @returns {Promise<Rpc<SolanaRpcApi>>} A Promise that resolves to an RPC instance configured for the specified endpoint.
  *
  * @example
  * ```ts
- * await setRpc("https://api.mainnet-beta.solana.com");
+ * const rpc = await setRpc("https://api.mainnet-beta.solana.com");
+ * const slot = await rpc.getSlot().send();
  * ```
  */
 export async function setRpc(
   url: string,
   supportsPriorityFeePercentile: boolean = false,
-) {
+): Promise<Rpc<SolanaRpcApi>> {
   const rpc = rpcFromUrl(url);
   const chainId = await getChainIdFromGenesisHash(rpc);
 
@@ -123,6 +124,19 @@ export async function setRpc(
       chainId,
     },
   });
+
+  // Create a wrapper Proxy that makes the RPC non-thenable
+  // This prevents the RPC's .then from interfering with Promise resolution
+  const nonThenableRpc = new Proxy(rpc, {
+    get(target, prop, receiver) {
+      if (prop === "then") {
+        return undefined; // Make it non-thenable
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+
+  return nonThenableRpc;
 }
 
 async function getChainIdFromGenesisHash(

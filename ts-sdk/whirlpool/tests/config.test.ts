@@ -15,6 +15,9 @@ import {
   DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY,
   DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
   DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
+  ENFORCE_TOKEN_BALANCE_CHECK,
+  DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK,
+  setEnforceTokenBalanceCheck,
 } from "../src/config";
 import assert from "assert";
 import { address, createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
@@ -74,6 +77,14 @@ describe("Configuration", () => {
     assert.strictEqual(NATIVE_MINT_WRAPPING_STRATEGY, "ata");
   });
 
+  it("Should be able to set the enforce token balance check", () => {
+    setEnforceTokenBalanceCheck(true);
+    assert.strictEqual(ENFORCE_TOKEN_BALANCE_CHECK, true);
+
+    setEnforceTokenBalanceCheck(false);
+    assert.strictEqual(ENFORCE_TOKEN_BALANCE_CHECK, false);
+  });
+
   it("Should be able to reset the configuration", () => {
     resetConfiguration();
     assert.strictEqual(
@@ -89,6 +100,10 @@ describe("Configuration", () => {
     assert.strictEqual(
       NATIVE_MINT_WRAPPING_STRATEGY,
       DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY,
+    );
+    assert.strictEqual(
+      ENFORCE_TOKEN_BALANCE_CHECK,
+      DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK,
     );
   });
 });

@@ -50,6 +50,7 @@ pub fn tick_index_to_sqrt_price(tick_index: i32) -> U128 {
 
 /// Derive the tick index from a sqrt price. The precision of this method is only guarranted
 /// if tick is within the bounds of {max, min} tick-index.
+/// This function will make panic for zero sqrt price.
 ///
 /// # Parameters
 /// - `sqrt_price` - A u128 integer representing the sqrt price

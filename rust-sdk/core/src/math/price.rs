@@ -3,9 +3,8 @@ use orca_whirlpools_macros::wasm_expose;
 
 use libm::{floor, pow, sqrt};
 
-use crate::U128;
-
 use super::{invert_tick_index, sqrt_price_to_tick_index, tick_index_to_sqrt_price};
+use crate::U128;
 
 const Q64_RESOLUTION: f64 = 18446744073709551616.0;
 

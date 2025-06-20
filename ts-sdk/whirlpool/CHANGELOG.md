@@ -1,5 +1,30 @@
 # @orca-so/whirlpools
 
+## 2.2.0
+
+### Minor Changes
+
+- [#971](https://github.com/orca-so/whirlpools/pull/971) [`aa69979`](https://github.com/orca-so/whirlpools/commit/aa699796d86a6d51825df4214de5334ea8630636) Thanks [@calintje](https://github.com/calintje)! - Add configurable balance checking in token account preparation, allowing users to disable balance validation to get quotes and instructions even with insufficient token balances.
+
+## 2.1.1
+
+### Patch Changes
+
+- [#963](https://github.com/orca-so/whirlpools/pull/963) [`49cc8c8`](https://github.com/orca-so/whirlpools/commit/49cc8c86c99428ea0feb1fbf2d8bff0c396637ba) Thanks [@calintje](https://github.com/calintje)! - Add tx-sender to peerDeps
+
+- Updated dependencies [[`49cc8c8`](https://github.com/orca-so/whirlpools/commit/49cc8c86c99428ea0feb1fbf2d8bff0c396637ba)]:
+  - @orca-so/tx-sender@1.0.2
+
+## 2.1.0
+
+### Minor Changes
+
+- [#943](https://github.com/orca-so/whirlpools/pull/943) [`8a76634`](https://github.com/orca-so/whirlpools/commit/8a76634176e716c902dd9a23694c5a029b23de7a) Thanks [@boosik-sol](https://github.com/boosik-sol)! - Implements resetPositionRange instruction for ts-sdk
+
+### Patch Changes
+
+- [#958](https://github.com/orca-so/whirlpools/pull/958) [`63a5323`](https://github.com/orca-so/whirlpools/commit/63a5323425d22840bc226039db3e5faae7232a94) Thanks [@boosik-sol](https://github.com/boosik-sol)! - return rpc object on setRpc
+
 ## 2.0.0
 
 ### Major Changes

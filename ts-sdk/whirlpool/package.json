@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "Orca's high-level typescript sdk to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -29,6 +29,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@orca-so/tx-sender": "*",
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
     "@solana-program/memo": "^0.7.0",

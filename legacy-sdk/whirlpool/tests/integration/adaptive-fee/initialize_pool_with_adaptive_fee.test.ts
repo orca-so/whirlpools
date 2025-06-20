@@ -1190,7 +1190,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         } else {
           await assert.rejects(
             promise,
-            /0x179f/ // UnsupportedTokenMint
+            /0x179f/, // UnsupportedTokenMint
           );
         }
       }

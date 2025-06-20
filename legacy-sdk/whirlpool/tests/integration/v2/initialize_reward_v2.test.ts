@@ -604,7 +604,7 @@ describe("initialize_reward_v2", () => {
       } else {
         await assert.rejects(
           promise,
-          /0x179f/ // UnsupportedTokenMint
+          /0x179f/, // UnsupportedTokenMint
         );
       }
     }

@@ -112,20 +112,20 @@ pub fn handler(
     }
 
     initialize_vault_token_account(
-      whirlpool,
-      &ctx.accounts.token_vault_a,
-      &ctx.accounts.token_mint_a,
-      &ctx.accounts.funder,
-      &ctx.accounts.token_program_a,
-      &ctx.accounts.system_program,
+        whirlpool,
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_mint_a,
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.system_program,
     )?;
     initialize_vault_token_account(
-      whirlpool,
-      &ctx.accounts.token_vault_b,
-      &ctx.accounts.token_mint_b,
-      &ctx.accounts.funder,
-      &ctx.accounts.token_program_b,      
-      &ctx.accounts.system_program,
+        whirlpool,
+        &ctx.accounts.token_vault_b,
+        &ctx.accounts.token_mint_b,
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.system_program,
     )?;
 
     whirlpool.initialize(

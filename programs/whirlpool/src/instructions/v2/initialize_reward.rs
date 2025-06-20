@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenInterface};
 
-use crate::{state::Whirlpool, util::{initialize_vault_token_account, verify_supported_token_mint}};
+use crate::{
+    state::Whirlpool,
+    util::{initialize_vault_token_account, verify_supported_token_mint},
+};
 
 #[derive(Accounts)]
 #[instruction(reward_index: u8)]

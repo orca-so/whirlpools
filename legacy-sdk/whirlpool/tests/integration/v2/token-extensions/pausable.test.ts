@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../../../src";
@@ -61,13 +60,23 @@ describe("TokenExtension/Pausable", () => {
         },
         TickSpacing.Standard,
       );
-    
+
     // verify Pausable extension is set correctly
 
-    const mintA = await getMint(provider.connection, poolInitInfo.tokenMintA, undefined, TEST_TOKEN_2022_PROGRAM_ID);
+    const mintA = await getMint(
+      provider.connection,
+      poolInitInfo.tokenMintA,
+      undefined,
+      TEST_TOKEN_2022_PROGRAM_ID,
+    );
     const pausableConfigA = getPausableConfig(mintA);
     assert.ok(pausableConfigA && !pausableConfigA.paused);
-    const mintB = await getMint(provider.connection, poolInitInfo.tokenMintB, undefined, TEST_TOKEN_2022_PROGRAM_ID);
+    const mintB = await getMint(
+      provider.connection,
+      poolInitInfo.tokenMintB,
+      undefined,
+      TEST_TOKEN_2022_PROGRAM_ID,
+    );
     const pausableConfigB = getPausableConfig(mintB);
     assert.ok(pausableConfigB && !pausableConfigB.paused);
 
@@ -134,25 +143,25 @@ describe("TokenExtension/Pausable", () => {
     assert.ok(quoteBToA.estimatedAmountOut.gtn(0));
 
     const ix = WhirlpoolIx.swapV2Ix(ctx.program, {
-        ...quoteBToA,
-        whirlpool: whirlpoolPda.publicKey,
-        tokenAuthority: ctx.wallet.publicKey,
-        tokenMintA: poolInitInfo.tokenMintA,
-        tokenMintB: poolInitInfo.tokenMintB,
-        tokenProgramA: poolInitInfo.tokenProgramA,
-        tokenProgramB: poolInitInfo.tokenProgramB,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        oracle: oraclePubkey,
-      });
+      ...quoteBToA,
+      whirlpool: whirlpoolPda.publicKey,
+      tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
+      tokenOwnerAccountA: tokenAccountA,
+      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+      tokenOwnerAccountB: tokenAccountB,
+      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+      oracle: oraclePubkey,
+    });
 
     // pause the mintA
     await pause(ctx, poolInitInfo.tokenMintA);
     await assert.rejects(
       toTx(ctx, ix).buildAndExecute(),
-      /Transferring, minting, and burning is paused on this mint/
+      /Transferring, minting, and burning is paused on this mint/,
     );
     await resume(ctx, poolInitInfo.tokenMintA);
 
@@ -160,7 +169,7 @@ describe("TokenExtension/Pausable", () => {
     await pause(ctx, poolInitInfo.tokenMintB);
     await assert.rejects(
       toTx(ctx, ix).buildAndExecute(),
-      /Transferring, minting, and burning is paused on this mint/
+      /Transferring, minting, and burning is paused on this mint/,
     );
     await resume(ctx, poolInitInfo.tokenMintB);
 
@@ -190,7 +199,12 @@ async function pause(ctx: WhirlpoolContext, mint: PublicKey) {
     signers: [],
   }).buildAndExecute();
 
-  const mintData = await getMint(ctx.connection, mint, undefined, TEST_TOKEN_2022_PROGRAM_ID);
+  const mintData = await getMint(
+    ctx.connection,
+    mint,
+    undefined,
+    TEST_TOKEN_2022_PROGRAM_ID,
+  );
   const pausableConfig = getPausableConfig(mintData);
   assert.ok(pausableConfig && pausableConfig.paused);
 }
@@ -208,7 +222,12 @@ async function resume(ctx: WhirlpoolContext, mint: PublicKey) {
     signers: [],
   }).buildAndExecute();
 
-  const mintData = await getMint(ctx.connection, mint, undefined, TEST_TOKEN_2022_PROGRAM_ID);
+  const mintData = await getMint(
+    ctx.connection,
+    mint,
+    undefined,
+    TEST_TOKEN_2022_PROGRAM_ID,
+  );
   const pausableConfig = getPausableConfig(mintData);
   assert.ok(pausableConfig && !pausableConfig.paused);
 }

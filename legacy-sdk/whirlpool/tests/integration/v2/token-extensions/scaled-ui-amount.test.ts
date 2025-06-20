@@ -27,9 +27,7 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
-import {
-  amountToUiAmount,
-} from "@solana/spl-token";
+import { amountToUiAmount } from "@solana/spl-token";
 
 describe("TokenExtension/ScaledUiAmount", () => {
   const provider = anchor.AnchorProvider.local(
@@ -82,7 +80,7 @@ describe("TokenExtension/ScaledUiAmount", () => {
         },
         TickSpacing.Standard,
       );
-    
+
     // verify multiplier is set correctly
 
     const initialRawBalanceA = new BN(
@@ -101,10 +99,14 @@ describe("TokenExtension/ScaledUiAmount", () => {
     );
 
     assert.ok(
-      initialRawBalanceA.muln(multiplierA).eq(new BN(Number.parseInt(initialUIBalanceA))),
+      initialRawBalanceA
+        .muln(multiplierA)
+        .eq(new BN(Number.parseInt(initialUIBalanceA))),
     );
     assert.ok(
-      initialRawBalanceB.muln(multiplierB).eq(new BN(Number.parseInt(initialUIBalanceB))),
+      initialRawBalanceB
+        .muln(multiplierB)
+        .eq(new BN(Number.parseInt(initialUIBalanceB))),
     );
 
     // now we can assure that ScaledUiAmount works as expected on both tokens

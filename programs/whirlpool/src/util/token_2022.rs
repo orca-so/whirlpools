@@ -473,7 +473,7 @@ pub fn initialize_vault_token_account<'info>(
             token_program.to_account_info(),
             GetAccountDataSize {
                 mint: vault_mint.to_account_info(),
-            }
+            },
         ),
         // Needless to say, the program will never attempt to change the owner of the vault.
         // However, since the ImmutableOwner extension only increases the account size by 4 bytes, the overhead of always including it is negligible.

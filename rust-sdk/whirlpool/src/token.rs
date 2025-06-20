@@ -346,7 +346,14 @@ pub fn get_account_data_size(
 ) -> Result<usize, Box<dyn Error>> {
     let mint = StateWithExtensions::<Mint>::unpack(&mint_info.data)?;
     let mint_extensions = mint.get_extension_types()?;
-    let account_extensions = ExtensionType::get_required_init_account_extensions(&mint_extensions);
+    let mut account_extensions =
+        ExtensionType::get_required_init_account_extensions(&mint_extensions);
+    if token_program_id == TOKEN_2022_PROGRAM_ID
+        && !account_extensions.contains(&ExtensionType::ImmutableOwner)
+    {
+        // For token-2022 accounts, we always include ImmutableOwner extension
+        account_extensions.push(ExtensionType::ImmutableOwner);
+    }
     let account_len = ExtensionType::try_calculate_account_len::<Account>(&account_extensions)?;
     Ok(account_len)
 }

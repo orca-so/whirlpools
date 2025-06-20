@@ -36,7 +36,10 @@ import {
   getTransferSolInstruction,
 } from "@solana-program/system";
 import { getTokenSize } from "@solana-program/token";
-import { getTokenSize as getTokenSizeWithExtensions } from "@solana-program/token-2022";
+import {
+  getTokenSize as getTokenSizeWithExtensions,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "@solana-program/token-2022";
 import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 import assert from "assert";
@@ -350,6 +353,11 @@ export function getAccountExtensions(mint: Mint): ExtensionArgs[] {
           transferring: false,
         });
         break;
+      case "PausableConfig":
+        extensions.push({
+          __kind: "PausableAccount",
+        });
+        break;
     }
   }
   return extensions;
@@ -379,6 +387,15 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
  */
 export function getTokenSizeForMint(mint: Account<Mint>): number {
   const extensions = getAccountExtensions(mint.data);
+  if (
+    mint.programAddress === TOKEN_2022_PROGRAM_ADDRESS &&
+    !extensions.find((x) => x.__kind === "ImmutableOwner")
+  ) {
+    // For token-2022 accounts, we always include ImmutableOwner extension
+    extensions.push({
+      __kind: "ImmutableOwner",
+    });
+  }
   return extensions.length === 0
     ? getTokenSize()
     : getTokenSizeWithExtensions(extensions);

@@ -31,6 +31,7 @@ Token-2022 tokens are acceptable 👍
 - `yarn start setFeeAuthority`: set new fee authority on WhirlpoolsConfig
 - `yarn start setCollectProtocolFeesAuthority`: set new collect protocol fees authority on WhirlpoolsConfig
 - `yarn start setRewardEmissionsSuperAuthority`: set new reward emissions super authority on WhirlpoolsConfig
+- `yarn start setInitializePoolAuthority`: set new initialize pool authority on AdaptiveFeeTier
 - TODO: set config extension authority
 
 ## Whirlpool & TickArray

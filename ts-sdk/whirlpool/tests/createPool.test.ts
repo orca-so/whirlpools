@@ -9,7 +9,7 @@ import {
   SPLASH_POOL_TICK_SPACING,
 } from "../src/config";
 import { setupMint } from "./utils/token";
-import { setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
+import { setupMintTE, setupMintTEFee, setupMintTEScaledUiAmount } from "./utils/tokenExtensions";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
 import { fetchMaybeWhirlpool } from "@orca-so/whirlpools-client";
 import assert from "assert";
@@ -23,6 +23,7 @@ describe("Create Pool", () => {
   let mintTEA: Address;
   let mintTEB: Address;
   let mintTEFee: Address;
+  let mintTESUA: Address;
   const tickSpacing = 64;
 
   beforeAll(async () => {
@@ -31,6 +32,7 @@ describe("Create Pool", () => {
     mintTEA = await setupMintTE();
     mintTEB = await setupMintTE();
     mintTEFee = await setupMintTEFee();
+    mintTESUA = await setupMintTEScaledUiAmount();
   });
 
   it("Should throw an error if funder is not set", async () => {
@@ -296,6 +298,39 @@ describe("Create Pool", () => {
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);
+    assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
+  });
+
+  it("Should create concentrated liquidity pool with 1 TE token (with Scaled Ui Amount extension)", async () => {
+    const price = 10;
+    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+
+    const { instructions, poolAddress, initializationCost } =
+      await createConcentratedLiquidityPoolInstructions(
+        rpc,
+        mintA,
+        mintTESUA,
+        tickSpacing,
+        price,
+      );
+
+    const balanceBefore = await rpc.getBalance(signer.address).send();
+    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+    assert.strictEqual(poolBefore.exists, false);
+
+    await sendTransaction(instructions);
+
+    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+    const balanceAfter = await rpc.getBalance(signer.address).send();
+    const balanceChange = balanceBefore.value - balanceAfter.value;
+    const txFee = 15000n; // 3 signing accounts * 5000 lamports
+    const minRentExempt = balanceChange - txFee;
+
+    assertAccountExists(poolAfter);
+    assert.strictEqual(initializationCost, minRentExempt);
+    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+    assert.strictEqual(mintTESUA, poolAfter.data.tokenMintB);
     assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
   });
 });

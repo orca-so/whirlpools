@@ -1,5 +1,6 @@
 import type { Address, IInstruction, VariableSizeDecoder } from "@solana/kit";
 import {
+  address,
   appendTransactionMessageInstructions,
   assertIsAddress,
   createSolanaRpcFromTransport,
@@ -26,6 +27,7 @@ import { setupConfigAndFeeTiers } from "./program";
 import { getAddMemoInstruction } from "@solana-program/memo";
 import { randomUUID } from "crypto";
 import { getNextKeypair } from "./keypair";
+import fs from "fs";
 
 export const signer = getNextKeypair();
 setDefaultFunder(signer);
@@ -39,7 +41,11 @@ export async function getTestContext(): Promise<ProgramTestContext> {
   if (_testContext == null) {
     _testContext = await startAnchor(
       "../../",
-      [],
+      [
+        // HACK: token_2022.20250510.so must exist in /target/deploy
+        // Once we upgrade the development environment with the newer token-2022 program, we can remove this.
+        ["token_2022.20250510", toBytes(address("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"))],
+      ],
       [
         [
           toBytes(signer.address),

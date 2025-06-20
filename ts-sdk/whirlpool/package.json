@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "vitest run tests",
+    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },

@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "vitest run tests",
+    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
@@ -35,7 +35,7 @@
     "@solana-program/memo": "^0.7.0",
     "@solana-program/system": "^0.7.0",
     "@solana-program/token": "^0.5.1",
-    "@solana-program/token-2022": "^0.4.0",
+    "@solana-program/token-2022": "^0.4.2",
     "@solana/sysvars": "^2.1.0"
   },
   "peerDependencies": {

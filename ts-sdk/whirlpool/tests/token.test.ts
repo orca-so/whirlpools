@@ -544,12 +544,12 @@ describe("Token Account Creation", () => {
     const mint = await setupMintTE();
     const mintAccount = await fetchMint(rpc, mint);
     const tokenSize = getTokenSizeForMint(mintAccount);
-    assert.strictEqual(tokenSize, 165);
+    assert.strictEqual(tokenSize, 170); // 165 + 1 + 4(ImmutableOwner extension)
   });
 
   it("Should get the correct token size for TOKEN_2022_PROGRAM mint with Transfer Fee extension", async () => {
     const mintAccount = await fetchMint(rpc, mintTE);
     const tokenSize = getTokenSizeForMint(mintAccount);
-    assert.strictEqual(tokenSize, 178);
+    assert.strictEqual(tokenSize, 182); // 165 + 1 + 12(TransferFeeAmount extension) + 4(ImmutableOwner extension)
   });
 });

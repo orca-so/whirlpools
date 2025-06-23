@@ -2329,7 +2329,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "3.0.1"
+version = "3.1.0"
 dependencies = [
  "bincode",
  "orca_whirlpools_client",
@@ -2343,7 +2343,7 @@ dependencies = [
  "spl-associated-token-account",
  "spl-memo 5.0.0",
  "spl-token 6.0.0",
- "spl-token-2022 4.0.0",
+ "spl-token-2022 7.0.0",
 ]
 
 [[package]]

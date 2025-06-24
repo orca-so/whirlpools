@@ -12,6 +12,7 @@ import {
 import {
   resetConfiguration,
   setNativeMintWrappingStrategy,
+  setEnforceTokenBalanceCheck,
 } from "../src/config";
 import {
   getAccountExtensions,
@@ -61,6 +62,7 @@ describe("Token Account Creation", () => {
 
   afterEach(async () => {
     await deleteAccount(ataNative);
+    await deleteAccount(ataB);
     resetConfiguration();
   });
 
@@ -122,7 +124,19 @@ describe("Token Account Creation", () => {
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
-  it("Required balance but current balance is insufficient", async () => {
+  it("Required balance but current balance is insufficient and balance check is not enforced", async () => {
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [mintA]: 250n,
+    });
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+
+    assert.strictEqual(result.createInstructions.length, 0);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+  it("Required balance but current balance is insufficient and balance check is enforced", async () => {
+    setEnforceTokenBalanceCheck(true);
     const result = prepareTokenAccountsInstructions(rpc, signer, {
       [mintA]: 250n,
     });
@@ -130,6 +144,18 @@ describe("Token Account Creation", () => {
   });
 
   it("Required balance but no token account exists", async () => {
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [mintB]: 250n,
+    });
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+
+    assert.strictEqual(result.createInstructions.length, 1);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+  it("Required balance but no token account exists", async () => {
+    setEnforceTokenBalanceCheck(true);
     const result = prepareTokenAccountsInstructions(rpc, signer, {
       [mintB]: 250n,
     });
@@ -188,8 +214,22 @@ describe("Token Account Creation", () => {
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
-  it("Native mint and wrapping is none with balances but no token account exists", async () => {
+  it("Native mint and wrapping is none with balances but no token account exists and balance check is not enforced", async () => {
     setNativeMintWrappingStrategy("none");
+
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [NATIVE_MINT]: 250n,
+    });
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
+
+    assert.strictEqual(result.createInstructions.length, 1);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+  it("Native mint and wrapping is none with balances but no token account exists and balance check is enforced", async () => {
+    setNativeMintWrappingStrategy("none");
+    setEnforceTokenBalanceCheck(true);
 
     const result = prepareTokenAccountsInstructions(rpc, signer, {
       [NATIVE_MINT]: 250n,
@@ -216,9 +256,25 @@ describe("Token Account Creation", () => {
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
-  it("Native mint and wrapping is none with balances but current balance is insufficient", async () => {
+  it("Native mint and wrapping is none with balances but current balance is insufficient and balance check is not enforced", async () => {
     await setupAta(NATIVE_MINT);
     setNativeMintWrappingStrategy("none");
+
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [NATIVE_MINT]: 250n,
+    });
+
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
+
+    assert.strictEqual(result.createInstructions.length, 0);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+  it("Native mint and wrapping is none with balances but current balance is insufficient and balance check is enforced", async () => {
+    await setupAta(NATIVE_MINT);
+    setNativeMintWrappingStrategy("none");
+    setEnforceTokenBalanceCheck(true);
 
     const result = prepareTokenAccountsInstructions(rpc, signer, {
       [NATIVE_MINT]: 250n,
@@ -488,12 +544,12 @@ describe("Token Account Creation", () => {
     const mint = await setupMintTE();
     const mintAccount = await fetchMint(rpc, mint);
     const tokenSize = getTokenSizeForMint(mintAccount);
-    assert.strictEqual(tokenSize, 165);
+    assert.strictEqual(tokenSize, 170); // 165 + 1 + 4(ImmutableOwner extension)
   });
 
   it("Should get the correct token size for TOKEN_2022_PROGRAM mint with Transfer Fee extension", async () => {
     const mintAccount = await fetchMint(rpc, mintTE);
     const tokenSize = getTokenSizeForMint(mintAccount);
-    assert.strictEqual(tokenSize, 178);
+    assert.strictEqual(tokenSize, 182); // 165 + 1 + 12(TransferFeeAmount extension) + 4(ImmutableOwner extension)
   });
 });

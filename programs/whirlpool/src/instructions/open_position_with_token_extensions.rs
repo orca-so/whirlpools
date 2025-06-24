@@ -67,11 +67,12 @@ pub fn handler(
         &[ctx.bumps.position],
     ];
 
-    collect_rent_for_ticks_in_position(
-        &ctx.accounts.funder,
-        position,
-        &ctx.accounts.system_program,
-    )?;
+    // For Partial upgrade, we disable collecting rent for ticks
+    // collect_rent_for_ticks_in_position(
+    //     &ctx.accounts.funder,
+    //     position,
+    //     &ctx.accounts.system_program,
+    // )?;
 
     position.open_position(
         whirlpool,

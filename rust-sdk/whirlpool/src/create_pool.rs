@@ -310,7 +310,9 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
 #[cfg(test)]
 mod tests {
-    use crate::tests::{setup_mint, setup_mint_te, setup_mint_te_fee, RpcContext};
+    use crate::tests::{
+        setup_mint, setup_mint_te, setup_mint_te_fee, setup_mint_te_sua, RpcContext,
+    };
 
     use super::*;
     use serial_test::serial;
@@ -765,6 +767,58 @@ mod tests {
         assert_eq!(sqrt_price, pool_after.sqrt_price);
         assert_eq!(mint, pool_after.token_mint_a);
         assert_eq!(mint_te_fee, pool_after.token_mint_b);
+        assert_eq!(64, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_concentrated_liquidity_pool_with_scaled_ui_amount() {
+        let ctx = RpcContext::new().await;
+        let mint = setup_mint(&ctx).await.unwrap();
+        let mint_te_sua = setup_mint_te_sua(&ctx).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint,
+            mint_te_sua,
+            64,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint, pool_after.token_mint_a);
+        assert_eq!(mint_te_sua, pool_after.token_mint_b);
         assert_eq!(64, pool_after.tick_spacing);
     }
 }

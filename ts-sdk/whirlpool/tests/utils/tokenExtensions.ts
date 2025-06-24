@@ -8,6 +8,7 @@ import {
   getInitializeMint2Instruction,
   getInitializeTransferFeeConfigInstruction,
   getSetTransferFeeInstruction,
+  getInitializeScaledUiAmountMintInstruction,
 } from "@solana-program/token-2022";
 import type { Address, IInstruction } from "@solana/kit";
 import { sendTransaction, signer } from "./mockRpc";
@@ -82,6 +83,16 @@ export async function setupMintTE(
             maximumFee: extension.olderTransferFee.maximumFee,
           }),
         );
+        break;
+      case "ScaledUiAmountConfig":
+        instructions.push(
+          getInitializeScaledUiAmountMintInstruction({
+            mint: keypair.address,
+            authority: signer.address,
+            multiplier: 1,
+          }),
+        );
+        break;
     }
   }
 
@@ -135,6 +146,23 @@ export async function setupMintTEFee(
           maximumFee: 1e9,
           transferFeeBasisPoints: 150,
         },
+      },
+    ],
+  });
+}
+
+export async function setupMintTEScaledUiAmount(
+  config: { decimals?: number } = {},
+): Promise<Address> {
+  return setupMintTE({
+    ...config,
+    extensions: [
+      {
+        __kind: "ScaledUiAmountConfig",
+        authority: DEFAULT_ADDRESS,
+        newMultiplierEffectiveTimestamp: 0n,
+        multiplier: 1,
+        newMultiplier: 1,
       },
     ],
   });

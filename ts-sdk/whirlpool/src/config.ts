@@ -174,6 +174,29 @@ export function setNativeMintWrappingStrategy(
 }
 
 /**
+ * The default setting for enforcing balance checks during token account preparation.
+ */
+export const DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK = false;
+
+/**
+ * The currently selected setting for enforcing balance checks during token account preparation.
+ * When true, the system will assert that token accounts have sufficient balance before proceeding.
+ * When false, balance checks are skipped, allowing users to get quotes and instructions even with insufficient balance.
+ */
+export let ENFORCE_TOKEN_BALANCE_CHECK = DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK;
+
+/**
+ * Sets whether to enforce balance checks during token account preparation.
+ *
+ * @param {boolean} enforceBalanceCheck - When true, the system will assert that token accounts have sufficient balance. When false, balance checks are skipped.
+ */
+export function setEnforceTokenBalanceCheck(
+  enforceBalanceCheck: boolean,
+): void {
+  ENFORCE_TOKEN_BALANCE_CHECK = enforceBalanceCheck;
+}
+
+/**
  * Resets the configuration to its default state.
  *
  * @returns {Promise<void>} - Resolves when the configuration has been reset.
@@ -185,6 +208,7 @@ export function resetConfiguration() {
   FUNDER = DEFAULT_FUNDER;
   SLIPPAGE_TOLERANCE_BPS = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
   NATIVE_MINT_WRAPPING_STRATEGY = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
+  ENFORCE_TOKEN_BALANCE_CHECK = DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK;
 }
 
 let _payer: KeyPairSigner | undefined;

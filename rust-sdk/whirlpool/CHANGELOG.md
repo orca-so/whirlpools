@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust
 
+## 3.1.0
+
+### Minor Changes
+
+- [#971](https://github.com/orca-so/whirlpools/pull/971) [`aa69979`](https://github.com/orca-so/whirlpools/commit/aa699796d86a6d51825df4214de5334ea8630636) Thanks [@calintje](https://github.com/calintje)! - Add configurable balance checking in token account preparation, allowing users to disable balance validation to get quotes and instructions even with insufficient token balances.
+
 ## 3.0.1
 
 ### Patch Changes

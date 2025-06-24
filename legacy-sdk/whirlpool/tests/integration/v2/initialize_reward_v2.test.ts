@@ -304,7 +304,7 @@ describe("initialize_reward_v2", () => {
         )
           .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
           .buildAndExecute(),
-        /incorrect program id for instruction/, // Anchor will try to create vault account
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -341,7 +341,7 @@ describe("initialize_reward_v2", () => {
         )
           .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
           .buildAndExecute(),
-        /incorrect program id for instruction/, // Anchor will try to create vault account
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -533,7 +533,6 @@ describe("initialize_reward_v2", () => {
       supported: boolean;
       createTokenBadge: boolean;
       tokenTrait: TokenTrait;
-      anchorPatch?: boolean;
     }) {
       const { poolInitInfo, configKeypairs, configExtension } =
         await initTestPoolV2(
@@ -605,9 +604,7 @@ describe("initialize_reward_v2", () => {
       } else {
         await assert.rejects(
           promise,
-          !params.anchorPatch
-            ? /0x179f/ // UnsupportedTokenMint
-            : /invalid account data for instruction/, // Anchor v0.29 doesn't recognize some new extensions (GroupPointer, Group, MemberPointer, Member)
+          /0x179f/, // UnsupportedTokenMint
         );
       }
     }
@@ -667,6 +664,18 @@ describe("initialize_reward_v2", () => {
       });
     });
 
+    it("Token-2022: with ScaledUiAmount", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasScaledUiAmountExtension: true,
+          scaledUiAmountMultiplier: 2,
+        },
+      });
+    });
+
     it("Token-2022: with MetadataPointer & TokenMetadata", async () => {
       await runTest({
         supported: true,
@@ -712,6 +721,17 @@ describe("initialize_reward_v2", () => {
       });
     });
 
+    it("Token-2022: with TokenBadge with Pausable", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasPausableExtension: true,
+        },
+      });
+    });
+
     it("Token-2022: with TokenBadge with TransferHook", async () => {
       await runTest({
         supported: true,
@@ -746,9 +766,9 @@ describe("initialize_reward_v2", () => {
       });
     });
 
-    it("Token-2022: [FAIL] with TokenBadge with DefaultAccountState(Frozen)", async () => {
+    it("Token-2022: with TokenBadge with DefaultAccountState(Frozen)", async () => {
       await runTest({
-        supported: false,
+        supported: true, // relaxed
         createTokenBadge: true,
         tokenTrait: {
           isToken2022: true,
@@ -777,6 +797,17 @@ describe("initialize_reward_v2", () => {
         tokenTrait: {
           isToken2022: true,
           hasPermanentDelegate: true,
+        },
+      });
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with Pausable", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasPausableExtension: true,
         },
       });
     });
@@ -853,18 +884,15 @@ describe("initialize_reward_v2", () => {
         isToken2022: true,
         hasGroupExtension: true,
       };
-      // TODO: remove anchorPatch: v0.29 doesn't recognize Group
       await runTest({
         supported: false,
         createTokenBadge: true,
         tokenTrait,
-        anchorPatch: true,
       });
       await runTest({
         supported: false,
         createTokenBadge: false,
         tokenTrait,
-        anchorPatch: true,
       });
     });
 
@@ -873,18 +901,15 @@ describe("initialize_reward_v2", () => {
         isToken2022: true,
         hasGroupPointerExtension: true,
       };
-      // TODO: remove anchorPatch: v0.29 doesn't recognize GroupPointer
       await runTest({
         supported: false,
         createTokenBadge: true,
         tokenTrait,
-        anchorPatch: true,
       });
       await runTest({
         supported: false,
         createTokenBadge: false,
         tokenTrait,
-        anchorPatch: true,
       });
     });
 
@@ -894,18 +919,15 @@ describe("initialize_reward_v2", () => {
         isToken2022: true,
         hasGroupMemberExtension: true,
       };
-      // TODO: remove anchorPatch: v0.29 doesn't recognize Member
       await runTest({
         supported: false,
         createTokenBadge: true,
         tokenTrait,
-        anchorPatch: true,
       });
       await runTest({
         supported: false,
         createTokenBadge: false,
         tokenTrait,
-        anchorPatch: true,
       });
     });
 
@@ -914,18 +936,15 @@ describe("initialize_reward_v2", () => {
         isToken2022: true,
         hasGroupMemberPointerExtension: true,
       };
-      // TODO: remove anchorPatch: v0.29 doesn't recognize MemberPointer
       await runTest({
         supported: false,
         createTokenBadge: true,
         tokenTrait,
-        anchorPatch: true,
       });
       await runTest({
         supported: false,
         createTokenBadge: false,
         tokenTrait,
-        anchorPatch: true,
       });
     });
 

@@ -25,6 +25,14 @@ pub fn anchor_programs(path: &str) -> Result<Vec<(String, Pubkey)>, Box<dyn Erro
             .map_err(|_| format!("Invalid pubkey in `programs.localnet` table. {}", val))?;
         programs.push((key.to_string(), pk));
     }
+
+    // HACK: token_2022.20250510.so must exist in /target/deploy
+    // Once we upgrade the development environment with the newer token-2022 program, we can remove this.
+    programs.push((
+        "token_2022.20250510".to_string(),
+        Pubkey::from_str("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb").unwrap(),
+    ));
+
     set_var("SBF_OUT_DIR", sbf_out_dir);
     Ok(programs)
 }

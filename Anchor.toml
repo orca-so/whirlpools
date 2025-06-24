@@ -30,6 +30,11 @@ program = "legacy-sdk/whirlpool/tests/external_program/mpl_token_metadata.202402
 address = "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
 program = "legacy-sdk/whirlpool/tests/external_program/transfer_hook_counter.so"
 
+# Newer Token-2022
+[[test.genesis]]
+address = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+program = "legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so"
+
 # For reset_position_range test
 # Now, it is impossible to initialize position account without additional rent for ticks.
 # So we need to load test old position account without the additional rent.

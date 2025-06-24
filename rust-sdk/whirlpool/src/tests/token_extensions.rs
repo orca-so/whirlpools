@@ -55,6 +55,17 @@ pub async fn setup_mint_te(
                 1_000_000_000, // 1 token (matching program)
             )?);
         }
+
+        if extension == &ExtensionType::ScaledUiAmount {
+            instructions.push(
+                spl_token_2022::extension::scaled_ui_amount::instruction::initialize(
+                    &TOKEN_2022_PROGRAM_ID,
+                    &mint.pubkey(),
+                    None,
+                    1f64,
+                )?,
+            );
+        }
     }
 
     // 3. Initialize mint
@@ -87,6 +98,10 @@ pub async fn setup_mint_te(
 
 pub async fn setup_mint_te_fee(ctx: &RpcContext) -> Result<Pubkey, Box<dyn Error>> {
     setup_mint_te(ctx, &[ExtensionType::TransferFeeConfig]).await
+}
+
+pub async fn setup_mint_te_sua(ctx: &RpcContext) -> Result<Pubkey, Box<dyn Error>> {
+    setup_mint_te(ctx, &[ExtensionType::ScaledUiAmount]).await
 }
 
 pub async fn setup_ata_te(

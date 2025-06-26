@@ -202,17 +202,17 @@ pub async fn fetch_concentrated_liquidity_pool(
     token_2: Pubkey,
     tick_spacing: u16,
 ) -> Result<PoolInfo, Box<dyn Error>> {
-    let whirlpools_config_address = &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
+    let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let [token_a, token_b] = order_mints(token_1, token_2);
     let whirlpool_address =
-        get_whirlpool_address(whirlpools_config_address, &token_a, &token_b, tick_spacing)?.0;
+        get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing)?.0;
 
-    let fee_tier_address = get_fee_tier_address(whirlpools_config_address, tick_spacing)?;
+    let fee_tier_address = get_fee_tier_address(&whirlpools_config_address, tick_spacing)?;
 
     let account_infos = rpc
         .get_multiple_accounts(&[
             whirlpool_address,
-            *whirlpools_config_address,
+            whirlpools_config_address,
             fee_tier_address.0,
             token_a,
             token_b,
@@ -247,7 +247,7 @@ pub async fn fetch_concentrated_liquidity_pool(
     } else {
         Ok(PoolInfo::Uninitialized(UninitializedPool {
             address: whirlpool_address,
-            whirlpools_config: *whirlpools_config_address,
+            whirlpools_config: whirlpools_config_address,
             tick_spacing,
             fee_rate: fee_tier.default_fee_rate,
             protocol_fee_rate: whirlpools_config.default_protocol_fee_rate,
@@ -315,17 +315,17 @@ pub async fn fetch_whirlpools_by_token_pair(
     token_1: Pubkey,
     token_2: Pubkey,
 ) -> Result<Vec<PoolInfo>, Box<dyn Error>> {
-    let whirlpools_config_address = &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
+    let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let [token_a, token_b] = order_mints(token_1, token_2);
 
     let fee_tiers = fetch_all_fee_tier_with_filter(
         rpc,
-        vec![FeeTierFilter::WhirlpoolsConfig(*whirlpools_config_address)],
+        vec![FeeTierFilter::WhirlpoolsConfig(whirlpools_config_address)],
     )
     .await?;
 
     let account_infos = rpc
-        .get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b])
+        .get_multiple_accounts(&[whirlpools_config_address, token_a, token_b])
         .await?;
 
     let whirlpools_config_info = account_infos[0].as_ref().ok_or(format!(
@@ -348,7 +348,7 @@ pub async fn fetch_whirlpools_by_token_pair(
         .iter()
         .map(|fee_tier| fee_tier.data.tick_spacing)
         .map(|tick_spacing| {
-            get_whirlpool_address(whirlpools_config_address, &token_a, &token_b, tick_spacing)
+            get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing)
         })
         .map(|x| x.map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, ProgramError>>()?;
@@ -368,7 +368,7 @@ pub async fn fetch_whirlpools_by_token_pair(
         } else {
             whirlpools.push(PoolInfo::Uninitialized(UninitializedPool {
                 address: pool_address,
-                whirlpools_config: *whirlpools_config_address,
+                whirlpools_config: whirlpools_config_address,
                 tick_spacing: fee_tier.data.tick_spacing,
                 fee_rate: fee_tier.data.default_fee_rate,
                 protocol_fee_rate: whirlpools_config.default_protocol_fee_rate,

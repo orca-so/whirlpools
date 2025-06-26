@@ -661,7 +661,7 @@ pub mod whirlpool {
         instructions::reset_position_range::handler(ctx, new_tick_lower_index, new_tick_upper_index)
     }
 
-    /// Transfer a locked position to to a different token account.
+    /// Transfer a locked position to a different token account.
     ///
     /// ### Authority
     /// - `position_authority` - The authority that owns the position token.

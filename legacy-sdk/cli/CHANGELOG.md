@@ -1,5 +1,18 @@
 # @orca-so/whirlpools-sdk-cli
 
+## 0.2.0
+
+### Minor Changes
+
+- [#970](https://github.com/orca-so/whirlpools/pull/970) [`2509ad9`](https://github.com/orca-so/whirlpools/commit/2509ad9d9894a38c922e6e84a6a3a9de5e9ccd2d) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Dynamic TickArray
+
+### Patch Changes
+
+- [#941](https://github.com/orca-so/whirlpools/pull/941) [`a177777`](https://github.com/orca-so/whirlpools/commit/a177777aa903adcd5f7bb9b9836b1dbb972489c0) Thanks [@yugure-orca](https://github.com/yugure-orca)! - add AdaptiveFee related command
+
+- Updated dependencies [[`6352a9b`](https://github.com/orca-so/whirlpools/commit/6352a9b61a574fb62440a7dca9a933af02847db5), [`2509ad9`](https://github.com/orca-so/whirlpools/commit/2509ad9d9894a38c922e6e84a6a3a9de5e9ccd2d)]:
+  - @orca-so/whirlpools-sdk@0.15.0
+
 ## 0.1.3
 
 ### Patch Changes

@@ -21,7 +21,7 @@ yarn add "decimal.js"
 
 ## Usage
 
-Visit our [documentation site on GitHub](https://dev.orca.so/) to to learn more about how to use this SDK.
+Visit our [documentation site on GitHub](https://dev.orca.so/) to learn more about how to use this SDK.
 
 ## Tests
 

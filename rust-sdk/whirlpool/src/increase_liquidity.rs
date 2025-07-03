@@ -994,7 +994,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_increase_liquidity_fails_if_deposit_exceeds_user_balance(
+    async fn test_increase_liquidity_succeeds_if_deposit_exceeds_user_balance_when_balance_check_not_enforced(
     ) -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new().await;
 
@@ -1018,8 +1018,42 @@ mod tests {
         .await;
 
         assert!(
+            res.is_ok(),
+            "Should succeed when balance checking is disabled even if deposit exceeds balance"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_increase_liquidity_fails_if_deposit_exceeds_user_balance_when_balance_check_enforced(
+    ) -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+        crate::set_enforce_token_balance_check(true)?;
+
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let mint_a_key = minted.get("A").unwrap();
+        let mint_b_key = minted.get("B").unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+
+        // Attempt
+        let res = increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await;
+
+        assert!(
             res.is_err(),
-            "Should fail if user tries depositing more than balance"
+            "Should fail if user tries depositing more than balance when balance checking is enforced"
         );
         let err_str = format!("{:?}", res.err().unwrap());
         assert!(
@@ -1029,6 +1063,7 @@ mod tests {
             err_str
         );
 
+        crate::reset_configuration()?;
         Ok(())
     }
 

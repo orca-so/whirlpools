@@ -1,7 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::token_interface::{Mint, TokenInterface};
 
-use crate::{events::*, state::*, util::verify_supported_token_mint};
+use crate::{
+    events::*,
+    state::*,
+    util::{initialize_vault_token_account, verify_supported_token_mint},
+};
 
 #[derive(Accounts)]
 #[instruction(tick_spacing: u16)]
@@ -34,19 +38,13 @@ pub struct InitializePoolV2<'info> {
       space = Whirlpool::LEN)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
 
-    #[account(init,
-      payer = funder,
-      token::token_program = token_program_a,
-      token::mint = token_mint_a,
-      token::authority = whirlpool)]
-    pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_a: Signer<'info>,
 
-    #[account(init,
-      payer = funder,
-      token::token_program = token_program_b,
-      token::mint = token_mint_b,
-      token::authority = whirlpool)]
-    pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_b: Signer<'info>,
 
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
     pub fee_tier: Account<'info, FeeTier>,
@@ -87,6 +85,23 @@ pub fn handler(
         &ctx.accounts.token_mint_b,
         whirlpools_config.key(),
         &ctx.accounts.token_badge_b,
+    )?;
+
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_mint_a,
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.system_program,
+    )?;
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.token_vault_b,
+        &ctx.accounts.token_mint_b,
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.system_program,
     )?;
 
     whirlpool.initialize(

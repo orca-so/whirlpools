@@ -26,14 +26,20 @@ import {
   getAddressEncoder,
   lamports,
 } from "@solana/kit";
-import { NATIVE_MINT_WRAPPING_STRATEGY } from "./config";
+import {
+  NATIVE_MINT_WRAPPING_STRATEGY,
+  ENFORCE_TOKEN_BALANCE_CHECK,
+} from "./config";
 import {
   getCreateAccountInstruction,
   getCreateAccountWithSeedInstruction,
   getTransferSolInstruction,
 } from "@solana-program/system";
 import { getTokenSize } from "@solana-program/token";
-import { getTokenSize as getTokenSizeWithExtensions } from "@solana-program/token-2022";
+import {
+  getTokenSize as getTokenSizeWithExtensions,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "@solana-program/token-2022";
 import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 import assert from "assert";
@@ -143,10 +149,12 @@ export async function prepareTokenAccountsInstructions(
       const existingBalance = tokenAccount.exists
         ? tokenAccount.data.amount
         : 0n;
-      assert(
-        BigInt(spec[mint.address]) <= existingBalance,
-        `Token account for ${mint.address} does not have the required balance`,
-      );
+      if (ENFORCE_TOKEN_BALANCE_CHECK) {
+        assert(
+          BigInt(spec[mint.address]) <= existingBalance,
+          `Token account for ${mint.address} does not have the required balance`,
+        );
+      }
     }
   }
 
@@ -345,6 +353,11 @@ export function getAccountExtensions(mint: Mint): ExtensionArgs[] {
           transferring: false,
         });
         break;
+      case "PausableConfig":
+        extensions.push({
+          __kind: "PausableAccount",
+        });
+        break;
     }
   }
   return extensions;
@@ -374,6 +387,15 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
  */
 export function getTokenSizeForMint(mint: Account<Mint>): number {
   const extensions = getAccountExtensions(mint.data);
+  if (
+    mint.programAddress === TOKEN_2022_PROGRAM_ADDRESS &&
+    !extensions.find((x) => x.__kind === "ImmutableOwner")
+  ) {
+    // For token-2022 accounts, we always include ImmutableOwner extension
+    extensions.push({
+      __kind: "ImmutableOwner",
+    });
+  }
   return extensions.length === 0
     ? getTokenSize()
     : getTokenSizeWithExtensions(extensions);

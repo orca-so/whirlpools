@@ -23,8 +23,6 @@ import {
   requestAirdrop,
 } from "../test-context";
 
-jest.setTimeout(100 * 1000 /* ms */);
-
 describe("ata-util", () => {
   const ctx = createTestContext();
   const { connection, wallet } = ctx;

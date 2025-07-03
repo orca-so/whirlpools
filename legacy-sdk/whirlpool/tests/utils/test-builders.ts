@@ -16,7 +16,6 @@ import type {
   InitFeeTierParams,
   InitializeAdaptiveFeeTierParams,
   InitPoolParams,
-  InitTickArrayParams,
   OpenBundledPositionParams,
   OpenPositionParams,
   Whirlpool,
@@ -30,7 +29,12 @@ import {
 } from "../../src";
 import type { WhirlpoolContext } from "../../src/context";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
-import type { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
+import type {
+  InitDynamicTickArrayParams,
+  InitTickArrayParams,
+  OpenPositionWithTokenExtensionsParams,
+} from "../../src/instructions";
+import { useMaxCU } from "./init-utils";
 
 export interface TestWhirlpoolsConfigKeypairs {
   feeAuthorityKeypair: Keypair;
@@ -218,6 +222,28 @@ export const generateDefaultInitTickArrayParams = (
   };
 };
 
+export const generateDefaultInitDynamicTickArrayParams = (
+  context: WhirlpoolContext,
+  whirlpool: PublicKey,
+  startTick: number,
+  funder?: PublicKey,
+  idempotent: boolean = false,
+): InitDynamicTickArrayParams => {
+  const tickArrayPda = PDAUtil.getTickArray(
+    context.program.programId,
+    whirlpool,
+    startTick,
+  );
+
+  return {
+    whirlpool,
+    tickArrayPda: tickArrayPda,
+    startTick,
+    funder: funder || context.wallet.publicKey,
+    idempotent,
+  };
+};
+
 export async function generateDefaultOpenPositionParams(
   context: WhirlpoolContext,
   whirlpool: PublicKey,
@@ -383,6 +409,7 @@ export async function initPosition(
   if (sourceWallet) {
     tx.addSigner(sourceWallet);
   }
+  tx.addInstruction(useMaxCU());
 
   await tx.buildAndExecute();
 

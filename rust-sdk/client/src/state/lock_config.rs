@@ -1,0 +1,1 @@
+pub const LOCK_CONFIG_DISCRIMINATOR: &[u8] = &[106, 47, 238, 159, 124, 12, 160, 192];

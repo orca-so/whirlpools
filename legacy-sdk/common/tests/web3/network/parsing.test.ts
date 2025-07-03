@@ -7,8 +7,6 @@ import {
   requestAirdrop,
 } from "../../test-context";
 
-jest.setTimeout(100 * 1000 /* ms */);
-
 describe("parsing", () => {
   const ctx = createTestContext();
 

@@ -239,6 +239,89 @@ describe("two-hop swap", () => {
     }
   });
 
+  it("swaps [2] with two-hop swap, dynamic tick arrays", async () => {
+    const aquarium = (
+      await buildTestAquariums(ctx, [
+        {
+          ...aqConfig,
+          initTickArrayRangeParams: [
+            {
+              ...aqConfig.initTickArrayRangeParams[0],
+              dynamicTickArrays: true,
+            },
+            ...aqConfig.initTickArrayRangeParams.slice(1),
+          ],
+        },
+      ])
+    )[0];
+    const { tokenAccounts, mintKeys, pools } = aquarium;
+
+    let tokenBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
+
+    const tokenVaultBalances = await getTokenBalancesForVaults(pools);
+
+    const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+    const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+
+    const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+    const quote = await swapQuoteByInputToken(
+      whirlpoolOne,
+      inputToken,
+      new BN(1000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpoolTwo,
+      intermediaryToken,
+      quote.estimatedAmountOut,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.twoHopSwapIx(ctx.program, {
+        ...twoHopQuote,
+        ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+        tokenAuthority: ctx.wallet.publicKey,
+      }),
+    ).buildAndExecute();
+
+    assert.deepEqual(await getTokenBalancesForVaults(pools), [
+      tokenVaultBalances[0].add(quote.estimatedAmountIn),
+      tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+      tokenVaultBalances[2].add(quote2.estimatedAmountIn),
+      tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
+    ]);
+
+    const prevTbs = [...tokenBalances];
+    tokenBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
+
+    assert.deepEqual(tokenBalances, [
+      prevTbs[0].sub(quote.estimatedAmountIn),
+      prevTbs[1],
+      prevTbs[2].add(quote2.estimatedAmountOut),
+    ]);
+
+    whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+  });
+
   it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;

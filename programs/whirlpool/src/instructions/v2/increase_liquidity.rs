@@ -7,6 +7,7 @@ use crate::events::*;
 use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
+use crate::manager::tick_array_manager::update_tick_array_accounts;
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
 use crate::util::{
@@ -54,10 +55,12 @@ pub struct ModifyLiquidityV2<'info> {
     #[account(mut, constraint = token_vault_b.key() == whirlpool.token_vault_b)]
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, has_one = whirlpool)]
-    pub tick_array_lower: AccountLoader<'info, TickArray>,
-    #[account(mut, has_one = whirlpool)]
-    pub tick_array_upper: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: Checked by the tick array loader
+    pub tick_array_lower: UncheckedAccount<'info>,
+    #[account(mut)]
+    /// CHECK: Checked by the tick array loader
+    pub tick_array_upper: UncheckedAccount<'info>,
     // remaining accounts
     // - accounts for transfer hook program of token_mint_a
     // - accounts for transfer hook program of token_mint_b
@@ -91,21 +94,46 @@ pub fn handler<'info>(
     let liquidity_delta = convert_to_liquidity_delta(liquidity_amount, true)?;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
+    let tick_arrays = TickArraysMut::load(
+        &ctx.accounts.tick_array_lower,
+        &ctx.accounts.tick_array_upper,
+        &ctx.accounts.whirlpool.key(),
+    )?;
+
+    let (lower_tick_array, upper_tick_array) = tick_arrays.deref();
     let update = calculate_modify_liquidity(
         &ctx.accounts.whirlpool,
         &ctx.accounts.position,
-        &ctx.accounts.tick_array_lower,
-        &ctx.accounts.tick_array_upper,
+        lower_tick_array,
+        upper_tick_array,
         liquidity_delta,
         timestamp,
     )?;
 
+    // Need to drop the tick arrays so we can potentially resize them
+    drop(tick_arrays);
+
+    update_tick_array_accounts(
+        &ctx.accounts.position,
+        ctx.accounts.tick_array_lower.to_account_info(),
+        ctx.accounts.tick_array_upper.to_account_info(),
+        &update.tick_array_lower_update,
+        &update.tick_array_upper_update,
+    )?;
+
+    let mut tick_arrays = TickArraysMut::load(
+        &ctx.accounts.tick_array_lower,
+        &ctx.accounts.tick_array_upper,
+        &ctx.accounts.whirlpool.key(),
+    )?;
+
+    let (lower_tick_array_mut, upper_tick_array_mut) = tick_arrays.deref_mut();
     sync_modify_liquidity_values(
         &mut ctx.accounts.whirlpool,
         &mut ctx.accounts.position,
-        &ctx.accounts.tick_array_lower,
-        &ctx.accounts.tick_array_upper,
-        update,
+        lower_tick_array_mut,
+        upper_tick_array_mut,
+        &update,
         timestamp,
     )?;
 

@@ -33,7 +33,7 @@ import {
 import { setupSwapTestV2 } from "../../../../utils/v2/swap-test-utils-v2";
 import { getVaultAmounts } from "../../../../utils/whirlpools-test-utils";
 import { TokenExtensionUtil } from "../../../../../src/utils/public/token-extension-util";
-import type { TokenTrait } from "../../../../utils/v2/init-utils-v2";
+import { useMaxCU, type TokenTrait } from "../../../../utils/v2/init-utils-v2";
 
 describe("swap traversal tests", () => {
   const provider = anchor.AnchorProvider.local(
@@ -1074,7 +1074,9 @@ describe("swap traversal tests", () => {
           IGNORE_CACHE,
         );
         assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
-        await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+        await (await whirlpool.swap(inputTokenQuote))
+          .addInstruction(useMaxCU())
+          .buildAndExecute();
 
         const newData = await whirlpool.refreshData();
         const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);

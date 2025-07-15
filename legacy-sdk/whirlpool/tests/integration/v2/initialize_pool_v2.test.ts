@@ -340,17 +340,31 @@ describe("initialize_pool_v2", () => {
             preLamports,
           ).buildAndExecute();
 
-          await 
-            toTx(
-              ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
-            ).buildAndExecute(),
-            
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultAKeypair.publicKey, poolInitInfo.tokenMintA, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramA);
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultBKeypair.publicKey, poolInitInfo.tokenMintB, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramB);
+          await toTx(
+            ctx,
+            WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
+          ).buildAndExecute();
+          await asyncAssertTokenVaultV2(
+            provider,
+            poolInitInfo.tokenVaultAKeypair.publicKey,
+            poolInitInfo.tokenMintA,
+            poolInitInfo.whirlpoolPda.publicKey,
+            poolInitInfo.tokenProgramA,
+          );
+          await asyncAssertTokenVaultV2(
+            provider,
+            poolInitInfo.tokenVaultBKeypair.publicKey,
+            poolInitInfo.tokenMintB,
+            poolInitInfo.whirlpoolPda.publicKey,
+            poolInitInfo.tokenProgramB,
+          );
 
-          const vaultA = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultAKeypair.publicKey);
-          const vaultB = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultBKeypair.publicKey);
+          const vaultA = await provider.connection.getAccountInfo(
+            poolInitInfo.tokenVaultAKeypair.publicKey,
+          );
+          const vaultB = await provider.connection.getAccountInfo(
+            poolInitInfo.tokenVaultBKeypair.publicKey,
+          );
           assert.ok(vaultA!.lamports > preLamports);
           assert.ok(vaultB!.lamports > preLamports);
         });
@@ -375,17 +389,31 @@ describe("initialize_pool_v2", () => {
             preLamports,
           ).buildAndExecute();
 
-          await 
-            toTx(
-              ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
-            ).buildAndExecute(),
-            
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultAKeypair.publicKey, poolInitInfo.tokenMintA, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramA);
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultBKeypair.publicKey, poolInitInfo.tokenMintB, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramB);
+          await toTx(
+            ctx,
+            WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
+          ).buildAndExecute();
+          await asyncAssertTokenVaultV2(
+            provider,
+            poolInitInfo.tokenVaultAKeypair.publicKey,
+            poolInitInfo.tokenMintA,
+            poolInitInfo.whirlpoolPda.publicKey,
+            poolInitInfo.tokenProgramA,
+          );
+          await asyncAssertTokenVaultV2(
+            provider,
+            poolInitInfo.tokenVaultBKeypair.publicKey,
+            poolInitInfo.tokenMintB,
+            poolInitInfo.whirlpoolPda.publicKey,
+            poolInitInfo.tokenProgramB,
+          );
 
-          const vaultA = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultAKeypair.publicKey);
-          const vaultB = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultBKeypair.publicKey);
+          const vaultA = await provider.connection.getAccountInfo(
+            poolInitInfo.tokenVaultAKeypair.publicKey,
+          );
+          const vaultB = await provider.connection.getAccountInfo(
+            poolInitInfo.tokenVaultBKeypair.publicKey,
+          );
           assert.ok(vaultA!.lamports === preLamports);
           assert.ok(vaultB!.lamports === preLamports);
         });

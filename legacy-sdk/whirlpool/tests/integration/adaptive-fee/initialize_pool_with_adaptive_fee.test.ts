@@ -380,7 +380,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             );
           });
 
-        it("succeeds when vault accounts have non-zero lamports (not rent-exempt)", async () => {
+          it("succeeds when vault accounts have non-zero lamports (not rent-exempt)", async () => {
             const tickSpacing = TickSpacing.Standard;
             const feeTierIndex = 1024 + tickSpacing;
             const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
@@ -396,34 +396,51 @@ describe("initialize_pool_with_adaptive_fee", () => {
               PublicKey.default,
             );
 
-          const preLamports = 1_000_000;
-          await systemTransferTx(
-            provider,
-            poolInitInfo.tokenVaultAKeypair.publicKey,
-            preLamports,
-          ).buildAndExecute();
-          await systemTransferTx(
-            provider,
-            poolInitInfo.tokenVaultBKeypair.publicKey,
-            preLamports,
-          ).buildAndExecute();
+            const preLamports = 1_000_000;
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
 
-          await 
-            toTx(
+            await toTx(
               ctx,
-              WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, poolInitInfo),
-            ).buildAndExecute(),
-            
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultAKeypair.publicKey, poolInitInfo.tokenMintA, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramA);
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultBKeypair.publicKey, poolInitInfo.tokenMintB, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramB);
+              WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+                ctx.program,
+                poolInitInfo,
+              ),
+            ).buildAndExecute();
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              poolInitInfo.tokenMintA,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramA,
+            );
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              poolInitInfo.tokenMintB,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramB,
+            );
 
-          const vaultA = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultAKeypair.publicKey);
-          const vaultB = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultBKeypair.publicKey);
-          assert.ok(vaultA!.lamports > preLamports);
-          assert.ok(vaultB!.lamports > preLamports);
-        });
+            const vaultA = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            );
+            const vaultB = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            );
+            assert.ok(vaultA!.lamports > preLamports);
+            assert.ok(vaultB!.lamports > preLamports);
+          });
 
-        it("succeeds when vault accounts have non-zero lamports (rent-exempt)", async () => {
+          it("succeeds when vault accounts have non-zero lamports (rent-exempt)", async () => {
             const tickSpacing = TickSpacing.Standard;
             const feeTierIndex = 1024 + tickSpacing;
             const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
@@ -439,32 +456,49 @@ describe("initialize_pool_with_adaptive_fee", () => {
               PublicKey.default,
             );
 
-          const preLamports = 1_000_000_000;
-          await systemTransferTx(
-            provider,
-            poolInitInfo.tokenVaultAKeypair.publicKey,
-            preLamports,
-          ).buildAndExecute();
-          await systemTransferTx(
-            provider,
-            poolInitInfo.tokenVaultBKeypair.publicKey,
-            preLamports,
-          ).buildAndExecute();
+            const preLamports = 1_000_000_000;
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
 
-          await 
-            toTx(
+            await toTx(
               ctx,
-              WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, poolInitInfo),
-            ).buildAndExecute(),
-            
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultAKeypair.publicKey, poolInitInfo.tokenMintA, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramA);
-          await asyncAssertTokenVaultV2(provider, poolInitInfo.tokenVaultBKeypair.publicKey, poolInitInfo.tokenMintB, poolInitInfo.whirlpoolPda.publicKey, poolInitInfo.tokenProgramB);
+              WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+                ctx.program,
+                poolInitInfo,
+              ),
+            ).buildAndExecute();
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              poolInitInfo.tokenMintA,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramA,
+            );
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              poolInitInfo.tokenMintB,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramB,
+            );
 
-          const vaultA = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultAKeypair.publicKey);
-          const vaultB = await provider.connection.getAccountInfo(poolInitInfo.tokenVaultBKeypair.publicKey);
-          assert.ok(vaultA!.lamports === preLamports);
-          assert.ok(vaultB!.lamports === preLamports);
-        });
+            const vaultA = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            );
+            const vaultB = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            );
+            assert.ok(vaultA!.lamports === preLamports);
+            assert.ok(vaultB!.lamports === preLamports);
+          });
 
           it("fails when tokenVaultA mint does not match tokenA mint", async () => {
             const tickSpacing = TickSpacing.Standard;

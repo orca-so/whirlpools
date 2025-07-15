@@ -52,7 +52,7 @@ mod tests {
         let facade: TickArrayFacade = tick_array.into();
 
         assert_eq!(facade.start_tick_index, 88);
-        assert_eq!(facade.ticks[1].initialized, true);
+        assert!(facade.ticks[1].initialized);
         assert_eq!(facade.ticks[1].liquidity_net, 100);
         assert_eq!(facade.ticks[1].liquidity_gross, 200);
     }
@@ -82,7 +82,7 @@ mod tests {
         let facade: TickArrayFacade = tick_array.into();
 
         assert_eq!(facade.start_tick_index, 176);
-        assert_eq!(facade.ticks[2].initialized, true);
+        assert!(facade.ticks[2].initialized);
         assert_eq!(facade.ticks[2].liquidity_net, 150);
         assert_eq!(facade.ticks[2].liquidity_gross, 250);
     }

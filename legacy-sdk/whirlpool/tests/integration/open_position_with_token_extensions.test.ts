@@ -382,9 +382,10 @@ describe("open_position_with_token_extensions", () => {
 
     const mintAccount = await ctx.connection.getAccountInfo(mint.publicKey);
     assert.ok(mintAccount !== null);
-    const rentExemptLamports = await ctx.connection.getMinimumBalanceForRentExemption(
-      mintAccount.data.length,
-    );
+    const rentExemptLamports =
+      await ctx.connection.getMinimumBalanceForRentExemption(
+        mintAccount.data.length,
+      );
     assert.ok(mintAccount.lamports > preLamports);
     assert.ok(mintAccount.lamports === rentExemptLamports);
   });
@@ -424,9 +425,10 @@ describe("open_position_with_token_extensions", () => {
 
     const mintAccount = await ctx.connection.getAccountInfo(mint.publicKey);
     assert.ok(mintAccount !== null);
-    const rentExemptLamports = await ctx.connection.getMinimumBalanceForRentExemption(
-      mintAccount.data.length,
-    );
+    const rentExemptLamports =
+      await ctx.connection.getMinimumBalanceForRentExemption(
+        mintAccount.data.length,
+      );
     assert.ok(mintAccount.lamports === preLamports);
     assert.ok(mintAccount.lamports >= rentExemptLamports);
   });

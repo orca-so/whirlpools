@@ -15,8 +15,8 @@ pub struct InitializeTickArray<'info> {
       payer = funder,
       seeds = [b"tick_array", whirlpool.key().as_ref(), start_tick_index.to_string().as_bytes()],
       bump,
-      space = TickArray::LEN)]
-    pub tick_array: AccountLoader<'info, TickArray>,
+      space = FixedTickArray::LEN)]
+    pub tick_array: AccountLoader<'info, FixedTickArray>,
 
     pub system_program: Program<'info, System>,
 }

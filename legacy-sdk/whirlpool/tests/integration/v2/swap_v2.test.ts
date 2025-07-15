@@ -861,6 +861,137 @@ describe("swap_v2", () => {
           );
         });
 
+        it("swaps across one dynamic tick array", async () => {
+          const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+            await initTestPoolWithTokensV2(
+              ctx,
+              tokenTraits.tokenTraitA,
+              tokenTraits.tokenTraitB,
+              TickSpacing.Standard,
+            );
+          const aToB = false;
+          await initTickArrayRange(
+            ctx,
+            whirlpoolPda.publicKey,
+            22528, // to 33792
+            3,
+            TickSpacing.Standard,
+            aToB,
+            true,
+          );
+
+          const fundParams: FundedPositionV2Params[] = [
+            {
+              liquidityAmount: new anchor.BN(10_000_000),
+              tickLowerIndex: 29440,
+              tickUpperIndex: 33536,
+            },
+          ];
+
+          await fundPositionsV2(
+            ctx,
+            poolInitInfo,
+            tokenAccountA,
+            tokenAccountB,
+            fundParams,
+          );
+
+          const tokenVaultABefore = new anchor.BN(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
+          );
+          const tokenVaultBBefore = new anchor.BN(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
+          );
+
+          const oraclePda = PDAUtil.getOracle(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+          );
+
+          const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+          const whirlpoolData = (await fetcher.getPool(
+            whirlpoolKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+          /* replaceed by swapQuoteWithParams to avoid using whirlpool client
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new BN(100000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
+    );
+    */
+          const quote = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: true,
+              aToB: false,
+              tokenAmount: new BN(100000),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
+              whirlpoolData,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolData.tickCurrentIndex,
+                whirlpoolData.tickSpacing,
+                false,
+                ctx.program.programId,
+                whirlpoolKey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolData,
+                  IGNORE_CACHE,
+                ),
+            },
+            Percentage.fromFraction(1, 100),
+          );
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.swapV2Ix(ctx.program, {
+              ...quote,
+              whirlpool: whirlpoolPda.publicKey,
+              tokenAuthority: ctx.wallet.publicKey,
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: poolInitInfo.tokenProgramA,
+              tokenProgramB: poolInitInfo.tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+              oracle: oraclePda.publicKey,
+            }),
+          ).buildAndExecute();
+
+          assert.equal(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
+            tokenVaultABefore.sub(quote.estimatedAmountOut).toString(),
+          );
+          assert.equal(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
+            tokenVaultBBefore.add(quote.estimatedAmountIn).toString(),
+          );
+        });
+
         it("swaps aToB across initialized tick with no movement", async () => {
           const startingTick = 91720;
           const tickSpacing = TickSpacing.Stable;

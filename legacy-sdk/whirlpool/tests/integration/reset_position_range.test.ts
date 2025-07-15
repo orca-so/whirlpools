@@ -5,13 +5,15 @@ import type { InitPoolParams, PositionData } from "../../src";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
+  PDAUtil,
+  PoolUtil,
   TickUtil,
   WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../src";
 import { ONE_SOL, TickSpacing, ZERO_BN, systemTransferTx } from "../utils";
-import { defaultConfirmOptions } from "../utils/const";
+import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../utils/const";
 import {
   initializePositionBundle,
   initTestPool,
@@ -21,6 +23,8 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
 import { useMaxCU } from "../utils/v2/init-utils-v2";
+import preloadWalletSecret from "../preload_account/reset_position_range/owner_wallet_secret.json";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 describe("reset_position_range", () => {
   const provider = anchor.AnchorProvider.local(
@@ -348,6 +352,321 @@ describe("reset_position_range", () => {
 
     it("fail when user pass in a non-initializable tick index for lower-index", async () => {
       await assertResetRangeFails(1, TickSpacing.Standard);
+    });
+  });
+
+  describe("rent collection", () => {
+    async function calculateRents(positionKey: PublicKey) {
+      const positionAccountInfo =
+        await provider.connection.getAccountInfo(positionKey);
+      assert.ok(positionAccountInfo);
+
+      const positionRentReq =
+        await provider.connection.getMinimumBalanceForRentExemption(
+          positionAccountInfo.data.length,
+        );
+
+      const tickRentReq = TICK_RENT_AMOUNT * 2;
+      const allRentReq = positionRentReq + tickRentReq;
+
+      return {
+        positionRentReq,
+        allRentReq,
+        tickRentReq,
+      };
+    }
+
+    async function ensurePositionBalance(
+      positionKey: PublicKey,
+      targetBalance: number,
+    ) {
+      let position_balance = await provider.connection.getBalance(positionKey);
+      if (position_balance > targetBalance) {
+        // Because the position is owned by the Whirlpool program
+        // only the whirlpool program can transfer the lamports unless the position is closed
+      } else if (position_balance < targetBalance) {
+        // If the position doesn't have enough balance, we transfer just enough from the wallet to the position
+        await systemTransferTx(
+          provider,
+          positionKey,
+          targetBalance - position_balance,
+        ).buildAndExecute();
+
+        position_balance = await provider.connection.getBalance(positionKey);
+        assert.strictEqual(position_balance, targetBalance);
+      }
+    }
+
+    async function validateRentBalances(
+      positionKey: PublicKey,
+      positionTokenAccount: PublicKey,
+      postiionMintAddress: PublicKey,
+      preFunderBalance: number,
+      postFunderBalance: number,
+      ensuredPositionBalance: number,
+      postPositionBalance: number,
+    ) {
+      let balance = await provider.connection.getBalance(
+        funderKeypair.publicKey,
+      );
+      assert.strictEqual(balance, preFunderBalance);
+      await ensurePositionBalance(positionKey, ensuredPositionBalance);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.resetPositionRangeIx(ctx.program, {
+          funder: funderKeypair.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          position: positionKey,
+          positionTokenAccount,
+          tickLowerIndex: tickLowerIndex + poolInitInfo.tickSpacing,
+          tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
+        }),
+      )
+        .addSigner(funderKeypair)
+        .buildAndExecute();
+
+      balance = await provider.connection.getBalance(funderKeypair.publicKey);
+      assert.strictEqual(balance, postFunderBalance);
+      assert.strictEqual(
+        await provider.connection.getBalance(positionKey),
+        postPositionBalance,
+      );
+      await validatePosition(positionKey, postiionMintAddress);
+    }
+
+    it("successfully collects rent for position with insufficient balance", async () => {
+      // preload whirlpool and position without additional rent for ticks
+      const preloadWalletKeypair = anchor.web3.Keypair.fromSecretKey(
+        new Uint8Array(preloadWalletSecret),
+      );
+
+      const preloadWhirlpoolAddress = new anchor.web3.PublicKey(
+        "EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4",
+      );
+      const preloadPositionAddress = new anchor.web3.PublicKey(
+        "J6DFYFKUsoMYgxkbeAqVnpSb8fniA9tHR44ZQu8KBgMS",
+      );
+
+      const preloadWhirlpool = await fetcher.getPool(preloadWhirlpoolAddress);
+      const preloadPosition = await fetcher.getPosition(preloadPositionAddress);
+      assert.ok(preloadWhirlpool);
+      assert.ok(preloadPosition);
+
+      const preloadPositionMintAddress = preloadPosition.positionMint;
+      const preloadPositionMint = await fetcher.getMintInfo(
+        preloadPositionMintAddress,
+      );
+      assert.ok(preloadPositionMint);
+      const preloadPositionTokenAccount = getAssociatedTokenAddressSync(
+        preloadPositionMintAddress,
+        preloadWalletKeypair.publicKey,
+        undefined,
+        preloadPositionMint.tokenProgram,
+      );
+
+      const { positionRentReq, allRentReq, tickRentReq } = await calculateRents(
+        preloadPositionAddress,
+      );
+
+      // reset position range (Fixed Tick Arrays -> Dynamic Tick Arrays)
+
+      const preFunderBalance = ONE_SOL;
+      const postFunderBalance = ONE_SOL - tickRentReq;
+
+      const ensuredPositionBalance = positionRentReq;
+      const postPositionBalance = allRentReq;
+
+      // ticks on different tick arrays
+      const newTickLowerIndex = -118272 + 64;
+      const newTickUpperIndex = -112640 + 64;
+
+      assert.ok(preloadPosition.tickLowerIndex !== newTickLowerIndex);
+      assert.ok(preloadPosition.tickUpperIndex !== newTickUpperIndex);
+
+      let balance = await provider.connection.getBalance(
+        funderKeypair.publicKey,
+      );
+      assert.strictEqual(balance, preFunderBalance);
+      await ensurePositionBalance(
+        preloadPositionAddress,
+        ensuredPositionBalance,
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.resetPositionRangeIx(ctx.program, {
+          funder: funderKeypair.publicKey,
+          positionAuthority: preloadWalletKeypair.publicKey,
+          whirlpool: preloadWhirlpoolAddress,
+          position: preloadPositionAddress,
+          positionTokenAccount: preloadPositionTokenAccount,
+          tickLowerIndex: newTickLowerIndex,
+          tickUpperIndex: newTickUpperIndex,
+        }),
+      )
+        .addSigner(funderKeypair)
+        .addSigner(preloadWalletKeypair)
+        .buildAndExecute();
+
+      balance = await provider.connection.getBalance(funderKeypair.publicKey);
+      assert.strictEqual(balance, postFunderBalance);
+      assert.strictEqual(
+        await provider.connection.getBalance(preloadPositionAddress),
+        postPositionBalance,
+      );
+      await validatePosition(
+        preloadPositionAddress,
+        preloadPositionMintAddress,
+        preloadWhirlpoolAddress,
+        0,
+        newTickLowerIndex,
+        newTickUpperIndex,
+      );
+
+      // initialize Dynamic Tick Arrays
+      const dynamicTickArrayLowerPda = PDAUtil.getTickArray(
+        ctx.program.programId,
+        preloadWhirlpoolAddress,
+        -118272,
+      );
+      await toTx(
+        ctx,
+        WhirlpoolIx.initDynamicTickArrayIx(ctx.program, {
+          whirlpool: preloadWhirlpoolAddress,
+          funder: ctx.wallet.publicKey,
+          startTick: -118272,
+          tickArrayPda: dynamicTickArrayLowerPda,
+        }),
+      ).buildAndExecute();
+      const dynamicTickArrayUpperPda = PDAUtil.getTickArray(
+        ctx.program.programId,
+        preloadWhirlpoolAddress,
+        -112640,
+      );
+      await toTx(
+        ctx,
+        WhirlpoolIx.initDynamicTickArrayIx(ctx.program, {
+          whirlpool: preloadWhirlpoolAddress,
+          funder: ctx.wallet.publicKey,
+          startTick: -112640,
+          tickArrayPda: dynamicTickArrayUpperPda,
+        }),
+      ).buildAndExecute();
+
+      // increase liquidity
+      const tokenMaxA = new anchor.BN(10_000_000_000);
+      const tokenMaxB = new anchor.BN(10_000_000);
+      const maxLiquidity = PoolUtil.estimateMaxLiquidityFromTokenAmounts(
+        preloadWhirlpool.sqrtPrice,
+        newTickLowerIndex,
+        newTickUpperIndex,
+        { tokenA: tokenMaxA, tokenB: tokenMaxB },
+      );
+
+      const preRentDynamicTickArrayLower = (
+        await ctx.connection.getAccountInfo(dynamicTickArrayLowerPda.publicKey)
+      )?.lamports;
+      const preRentDynamicTickArrayUpper = (
+        await ctx.connection.getAccountInfo(dynamicTickArrayUpperPda.publicKey)
+      )?.lamports;
+      const preRentPosition = (
+        await ctx.connection.getAccountInfo(preloadPositionAddress)
+      )?.lamports;
+      assert.ok(preRentDynamicTickArrayLower);
+      assert.ok(preRentDynamicTickArrayUpper);
+      assert.ok(preRentPosition);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount: maxLiquidity,
+          positionAuthority: preloadWalletKeypair.publicKey,
+          position: preloadPositionAddress,
+          positionTokenAccount: preloadPositionTokenAccount,
+          whirlpool: preloadWhirlpoolAddress,
+          tickArrayLower: dynamicTickArrayLowerPda.publicKey,
+          tickArrayUpper: dynamicTickArrayUpperPda.publicKey,
+          tokenOwnerAccountA: getAssociatedTokenAddressSync(
+            preloadWhirlpool.tokenMintA,
+            preloadWalletKeypair.publicKey,
+          ),
+          tokenOwnerAccountB: getAssociatedTokenAddressSync(
+            preloadWhirlpool.tokenMintB,
+            preloadWalletKeypair.publicKey,
+          ),
+          tokenMaxA,
+          tokenMaxB,
+          tokenVaultA: preloadWhirlpool.tokenVaultA,
+          tokenVaultB: preloadWhirlpool.tokenVaultB,
+        }),
+      )
+        .addSigner(preloadWalletKeypair)
+        .buildAndExecute();
+
+      const postRentDynamicTickArrayLower = (
+        await ctx.connection.getAccountInfo(dynamicTickArrayLowerPda.publicKey)
+      )?.lamports;
+      const postRentDynamicTickArrayUpper = (
+        await ctx.connection.getAccountInfo(dynamicTickArrayUpperPda.publicKey)
+      )?.lamports;
+      const postRentPosition = (
+        await ctx.connection.getAccountInfo(preloadPositionAddress)
+      )?.lamports;
+      assert.ok(postRentDynamicTickArrayLower);
+      assert.ok(postRentDynamicTickArrayUpper);
+      assert.ok(postRentPosition);
+
+      const rentDiffDynamicTickArrayLower =
+        postRentDynamicTickArrayLower - preRentDynamicTickArrayLower;
+      const rentDiffDynamicTickArrayUpper =
+        postRentDynamicTickArrayUpper - preRentDynamicTickArrayUpper;
+      const rentDiffPosition = preRentPosition - postRentPosition;
+
+      assert.ok(rentDiffPosition > 0);
+      assert.ok(rentDiffPosition === tickRentReq);
+      assert.ok(
+        rentDiffPosition ===
+          rentDiffDynamicTickArrayLower + rentDiffDynamicTickArrayUpper,
+      );
+      assert.ok(
+        rentDiffDynamicTickArrayLower === rentDiffDynamicTickArrayUpper,
+      );
+    });
+
+    it("successfully doesn't collect rent for position with exactly enough balance", async () => {
+      const { positionPda, positionMintAddress, positionTokenAccount } = (
+        await initializeDefaultPosition(whirlpoolPda.publicKey)
+      ).params;
+
+      const { allRentReq } = await calculateRents(positionPda.publicKey);
+      await validateRentBalances(
+        positionPda.publicKey,
+        positionTokenAccount,
+        positionMintAddress,
+        ONE_SOL,
+        ONE_SOL,
+        allRentReq,
+        allRentReq,
+      );
+    });
+
+    it("successfully doesn't collect rent for position with more than enough balance", async () => {
+      const { positionPda, positionMintAddress, positionTokenAccount } = (
+        await initializeDefaultPosition(whirlpoolPda.publicKey)
+      ).params;
+
+      const { allRentReq } = await calculateRents(positionPda.publicKey);
+      await validateRentBalances(
+        positionPda.publicKey,
+        positionTokenAccount,
+        positionMintAddress,
+        ONE_SOL,
+        ONE_SOL,
+        allRentReq + 10,
+        allRentReq + 10,
+      );
     });
   });
 });

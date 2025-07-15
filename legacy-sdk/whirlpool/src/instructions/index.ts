@@ -14,6 +14,7 @@ export * from "./initialize-pool-ix";
 export * from "./initialize-position-bundle-ix";
 export * from "./initialize-reward-ix";
 export * from "./initialize-tick-array-ix";
+export * from "./initialize-dynamic-tick-array-ix";
 export * from "./lock-position";
 export * from "./open-bundled-position-ix";
 export * from "./open-position-ix";

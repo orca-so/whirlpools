@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-client
 
+## 3.0.0
+
+### Major Changes
+
+- [#970](https://github.com/orca-so/whirlpools/pull/970) [`2509ad9`](https://github.com/orca-so/whirlpools/commit/2509ad9d9894a38c922e6e84a6a3a9de5e9ccd2d) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Dynamic TickArray
+
 ## 2.0.0
 
 ### Major Changes

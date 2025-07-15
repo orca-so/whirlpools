@@ -6,10 +6,9 @@ use std::error::Error;
 
 use crate::generated::shared::DecodedAccount;
 use crate::AdaptiveFeeTier;
+use crate::ADAPTIVE_FEE_TIER_DISCRIMINATOR;
 
 use super::utils::fetch_decoded_program_accounts;
-
-pub const ADAPTIVE_FEE_TIER_DISCRIMINATOR: &[u8] = &[147, 16, 144, 116, 47, 146, 149, 46];
 
 #[derive(Debug, Clone)]
 pub enum AdaptiveFeeTierFilter {

@@ -10,6 +10,7 @@ import type {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  DynamicTickArrayData,
   TokenBadgeData,
   WhirlpoolData,
   WhirlpoolsConfigData,
@@ -17,7 +18,7 @@ import type {
   AdaptiveFeeTierData,
   OracleData,
 } from "../../types/public";
-import { AccountName } from "../../types/public";
+import { AccountName, toTick } from "../../types/public";
 
 /**
  * @category Network
@@ -98,12 +99,44 @@ export class ParsableTickArray {
       return null;
     }
 
-    try {
-      return parseAnchorAccount(AccountName.TickArray, accountData);
-    } catch (e) {
-      console.error(`error while parsing TickArray: ${e}`);
-      return null;
+    const discriminator = accountData.data.subarray(0, 8);
+    if (
+      discriminator.equals(
+        BorshAccountsCoder.accountDiscriminator(AccountName.DynamicTickArray),
+      )
+    ) {
+      try {
+        const tickArray = parseAnchorAccount(
+          AccountName.DynamicTickArray,
+          accountData,
+        ) as DynamicTickArrayData;
+        const ticks = tickArray.ticks.map(toTick);
+        return {
+          whirlpool: tickArray.whirlpool,
+          startTickIndex: tickArray.startTickIndex,
+          ticks,
+        };
+      } catch (e) {
+        console.error(`error while parsing DynamicTickArray: ${e}`);
+        return null;
+      }
     }
+
+    if (
+      discriminator.equals(
+        BorshAccountsCoder.accountDiscriminator(AccountName.TickArray),
+      )
+    ) {
+      try {
+        return parseAnchorAccount(AccountName.TickArray, accountData);
+      } catch (e) {
+        console.error(`error while parsing TickArray: ${e}`);
+        return null;
+      }
+    }
+
+    console.error(`unknown discriminator during parsing: ${discriminator}`);
+    return null;
   }
 }
 

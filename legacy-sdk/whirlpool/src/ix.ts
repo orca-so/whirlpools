@@ -815,6 +815,13 @@ export class WhirlpoolIx {
     return ix.initializeRewardV2Ix(program, params);
   }
 
+  public static initDynamicTickArrayIx(
+    program: Program<Whirlpool>,
+    params: ix.InitDynamicTickArrayParams,
+  ) {
+    return ix.initDynamicTickArrayIx(program, params);
+  }
+
   public static setRewardEmissionsV2Ix(
     program: Program<Whirlpool>,
     params: ix.SetRewardEmissionsV2Params,

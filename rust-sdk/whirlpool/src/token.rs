@@ -366,9 +366,7 @@ mod tests {
         setup_mint_te_fee, RpcContext,
     };
     use serial_test::serial;
-
     use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
-
     use std::str::FromStr;
 
     // 1. Basic Utility Tests

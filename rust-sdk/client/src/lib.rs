@@ -3,6 +3,8 @@ mod generated;
 
 mod pda;
 
+mod state;
+
 #[cfg(feature = "fetch")]
 mod gpa;
 
@@ -23,6 +25,7 @@ pub use generated::shared::*;
 pub(crate) use generated::*;
 
 pub use pda::*;
+pub use state::*;
 
 #[cfg(feature = "fetch")]
 pub use gpa::*;

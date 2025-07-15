@@ -5,7 +5,7 @@ use std::{
 };
 
 use orca_whirlpools_client::{
-    get_position_address, get_tick_array_address, Position, TickArray, Whirlpool,
+    get_position_address, get_tick_array_address, FixedTickArray, Position, TickArray, Whirlpool,
 };
 use orca_whirlpools_client::{
     CollectFeesV2, CollectFeesV2InstructionArgs, CollectRewardV2, CollectRewardV2InstructionArgs,
@@ -182,7 +182,8 @@ pub async fn harvest_position_instructions(
     let lower_tick_array_info = tick_array_infos[0]
         .as_ref()
         .ok_or("Lower tick array info not found")?;
-    let lower_tick_array = TickArray::from_bytes(&lower_tick_array_info.data)?;
+    let lower_tick_array: FixedTickArray =
+        TickArray::from_bytes(&lower_tick_array_info.data)?.into();
     let lower_tick = &lower_tick_array.ticks[get_tick_index_in_array(
         position.tick_lower_index,
         lower_tick_array_start_index,
@@ -192,7 +193,8 @@ pub async fn harvest_position_instructions(
     let upper_tick_array_info = tick_array_infos[1]
         .as_ref()
         .ok_or("Upper tick array info not found")?;
-    let upper_tick_array = TickArray::from_bytes(&upper_tick_array_info.data)?;
+    let upper_tick_array: FixedTickArray =
+        TickArray::from_bytes(&upper_tick_array_info.data)?.into();
     let upper_tick = &upper_tick_array.ticks[get_tick_index_in_array(
         position.tick_upper_index,
         upper_tick_array_start_index,

@@ -8,8 +8,6 @@ import {
 } from "../../../src/web3";
 import { createTestContext } from "../../test-context";
 
-jest.setTimeout(100 * 1000 /* ms */);
-
 describe("transactions-builder", () => {
   const ctx = createTestContext();
 

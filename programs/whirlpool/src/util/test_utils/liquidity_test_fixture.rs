@@ -3,11 +3,10 @@ use crate::manager::tick_manager::next_tick_cross_update;
 use crate::manager::whirlpool_manager::*;
 use crate::math::{add_liquidity_delta, Q64_RESOLUTION};
 use crate::state::position_builder::PositionBuilder;
+use crate::state::{tick_builder::TickBuilder, whirlpool_builder::WhirlpoolBuilder, Whirlpool};
 use crate::state::{
-    tick::*, tick_builder::TickBuilder, whirlpool_builder::WhirlpoolBuilder, Whirlpool,
-};
-use crate::state::{
-    Position, PositionRewardInfo, PositionUpdate, WhirlpoolRewardInfo, NUM_REWARDS,
+    Position, PositionRewardInfo, PositionUpdate, Tick, TickUpdate, WhirlpoolRewardInfo,
+    NUM_REWARDS,
 };
 use anchor_lang::prelude::*;
 

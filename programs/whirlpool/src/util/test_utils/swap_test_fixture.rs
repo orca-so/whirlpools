@@ -1,9 +1,14 @@
 use crate::manager::swap_manager::*;
 use crate::math::tick_math::*;
+use crate::state::tick_array_builder::TickArrayBuilder;
 use crate::state::{
-    tick::*, tick_builder::TickBuilder, whirlpool_builder::WhirlpoolBuilder, TickArray, Whirlpool,
+    tick_array::*, tick_builder::TickBuilder, whirlpool_builder::WhirlpoolBuilder, FixedTickArray,
+    Whirlpool,
 };
-use crate::state::{AdaptiveFeeInfo, WhirlpoolRewardInfo, NUM_REWARDS};
+use crate::state::{
+    AdaptiveFeeInfo, Tick, TickUpdate, WhirlpoolRewardInfo, MAX_TICK_INDEX, MIN_TICK_INDEX,
+    NUM_REWARDS,
+};
 use crate::util::SwapTickSequence;
 use anchor_lang::prelude::*;
 use std::cell::RefCell;
@@ -15,7 +20,7 @@ const NO_TICKS_VEC: &Vec<TestTickInfo> = &vec![];
 
 pub struct SwapTestFixture {
     pub whirlpool: Whirlpool,
-    pub tick_arrays: Vec<RefCell<TickArray>>,
+    pub tick_arrays: Vec<RefCell<FixedTickArray>>,
     pub trade_amount: u64,
     pub sqrt_price_limit: u128,
     pub amount_specified_is_input: bool,
@@ -167,11 +172,11 @@ impl SwapTestFixture {
             let array_start_tick_index = info.start_tick_index
                 + info.tick_spacing as i32 * TICK_ARRAY_SIZE * array_index * direction;
 
-            let mut new_ta = TickArray {
-                start_tick_index: array_start_tick_index,
-                ticks: [Tick::default(); TICK_ARRAY_SIZE_USIZE],
-                whirlpool: Pubkey::default(),
-            };
+            let mut new_ta = TickArrayBuilder::default()
+                .start_tick_index(array_start_tick_index)
+                .ticks([Tick::default(); TICK_ARRAY_SIZE_USIZE])
+                .whirlpool(Pubkey::default())
+                .build();
 
             if array.is_none() {
                 ref_mut_tick_arrays.push(RefCell::new(new_ta));
@@ -182,7 +187,7 @@ impl SwapTestFixture {
 
             for tick in tick_array {
                 let update = TickUpdate::from(
-                    &TickBuilder::default()
+                    TickBuilder::default()
                         .initialized(true)
                         .liquidity_net(tick.liquidity_net)
                         .fee_growth_outside_a(tick.fee_growth_outside_a)

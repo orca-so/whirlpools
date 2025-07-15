@@ -1,5 +1,7 @@
 mod adaptive_fee_tier;
+mod dynamic_tick_array;
 mod fee_tier;
+mod fixed_tick_array;
 mod lock_config;
 mod oracle;
 mod position;
@@ -16,7 +18,9 @@ mod whirlpools_config_extension;
 // we can remove them from here.
 
 pub use adaptive_fee_tier::*;
+pub use dynamic_tick_array::*;
 pub use fee_tier::*;
+pub use fixed_tick_array::*;
 pub use lock_config::*;
 pub use oracle::*;
 pub use position::*;

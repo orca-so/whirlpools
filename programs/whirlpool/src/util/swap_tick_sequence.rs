@@ -2,17 +2,18 @@ use crate::errors::ErrorCode;
 use crate::state::*;
 use crate::util::ProxiedTickArray;
 use anchor_lang::prelude::*;
-use std::cell::RefMut;
 
-pub struct SwapTickSequence<'info> {
-    arrays: Vec<ProxiedTickArray<'info>>,
+use crate::state::LoadedTickArrayMut;
+
+pub struct SwapTickSequence<'a> {
+    pub(crate) arrays: Vec<ProxiedTickArray<'a>>,
 }
 
-impl<'info> SwapTickSequence<'info> {
+impl<'a> SwapTickSequence<'a> {
     pub fn new(
-        ta0: RefMut<'info, TickArray>,
-        ta1: Option<RefMut<'info, TickArray>>,
-        ta2: Option<RefMut<'info, TickArray>>,
+        ta0: LoadedTickArrayMut<'a>,
+        ta1: Option<LoadedTickArrayMut<'a>>,
+        ta2: Option<LoadedTickArrayMut<'a>>,
     ) -> Self {
         Self::new_with_proxy(
             ProxiedTickArray::new_initialized(ta0),
@@ -22,9 +23,9 @@ impl<'info> SwapTickSequence<'info> {
     }
 
     pub(crate) fn new_with_proxy(
-        ta0: ProxiedTickArray<'info>,
-        ta1: Option<ProxiedTickArray<'info>>,
-        ta2: Option<ProxiedTickArray<'info>>,
+        ta0: ProxiedTickArray<'a>,
+        ta1: Option<ProxiedTickArray<'a>>,
+        ta2: Option<ProxiedTickArray<'a>>,
     ) -> Self {
         let mut vec = Vec::with_capacity(3);
         vec.push(ta0);
@@ -48,12 +49,7 @@ impl<'info> SwapTickSequence<'info> {
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickArrayIndexOutofBounds` - The provided array-index is out of bounds
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn get_tick(
-        &self,
-        array_index: usize,
-        tick_index: i32,
-        tick_spacing: u16,
-    ) -> Result<&Tick> {
+    pub fn get_tick(&self, array_index: usize, tick_index: i32, tick_spacing: u16) -> Result<Tick> {
         let array = self.arrays.get(array_index);
         match array {
             Some(array) => array.get_tick(tick_index, tick_spacing),
@@ -177,6 +173,8 @@ impl<'info> SwapTickSequence<'info> {
 
 #[cfg(test)]
 mod swap_tick_sequence_tests {
+    use crate::state::tick_array_builder::TickArrayBuilder;
+
     use super::*;
     use std::cell::RefCell;
 
@@ -187,20 +185,22 @@ mod swap_tick_sequence_tests {
     fn build_tick_array(
         start_tick_index: i32,
         initialized_offsets: Vec<usize>,
-    ) -> RefCell<TickArray> {
-        let mut array = TickArray {
-            start_tick_index,
-            ..TickArray::default()
-        };
+    ) -> RefCell<FixedTickArray> {
+        let mut builder = TickArrayBuilder::default()
+            .start_tick_index(start_tick_index)
+            .ticks([Tick::default(); TICK_ARRAY_SIZE_USIZE]);
 
         for offset in initialized_offsets {
-            array.ticks[offset] = Tick {
-                initialized: true,
-                ..Tick::default()
-            };
+            builder = builder.tick_with_offset(
+                Tick {
+                    initialized: true,
+                    ..Tick::default()
+                },
+                offset,
+            );
         }
 
-        RefCell::new(array)
+        RefCell::new(builder.build())
     }
 
     mod modify_ticks {
@@ -232,7 +232,6 @@ mod swap_tick_sequence_tests {
                     tick_index,
                     TS_128,
                     &TickUpdate {
-                        initialized: false,
                         liquidity_net: 1500,
                         ..Default::default()
                     },

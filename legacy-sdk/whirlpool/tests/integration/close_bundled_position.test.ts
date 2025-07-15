@@ -27,6 +27,7 @@ import {
   initializePositionBundle,
   openBundledPosition,
   openPosition,
+  useMaxCU,
 } from "../utils/init-utils";
 import {
   generateDefaultOpenPositionWithTokenExtensionsParams,
@@ -286,7 +287,9 @@ describe("close_bundled_position", () => {
       bundledPositionPda.publicKey,
       IGNORE_CACHE,
     );
-    await (await position.increaseLiquidity(quote)).buildAndExecute();
+    await (await position.increaseLiquidity(quote))
+      .addInstruction(useMaxCU())
+      .buildAndExecute();
     assert.ok((await position.refreshData()).liquidity.gtn(0));
 
     // try to close...

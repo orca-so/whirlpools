@@ -6,7 +6,7 @@ import {
   getInitializeConfigInstruction,
   getInitializeFeeTierInstruction,
   getInitializePoolV2Instruction,
-  getInitializeTickArrayInstruction,
+  getInitializeDynamicTickArrayInstruction,
   getOpenPositionInstruction,
   getOpenPositionWithTokenExtensionsInstruction,
   getPositionAddress,
@@ -200,22 +200,24 @@ export async function setupPosition(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: lowerTickArrayAddress,
         startTickIndex: lowerTickArrayIndex,
+        idempotent: false,
       }),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: upperTickArrayAddress,
         startTickIndex: upperTickArrayIndex,
+        idempotent: false,
       }),
     );
   }
@@ -345,22 +347,24 @@ export async function setupTEPosition(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: lowerTickArrayAddress,
         startTickIndex: lowerTickArrayIndex,
+        idempotent: false,
       }),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: upperTickArrayAddress,
         startTickIndex: upperTickArrayIndex,
+        idempotent: false,
       }),
     );
   }

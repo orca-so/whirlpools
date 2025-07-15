@@ -167,7 +167,7 @@ pub fn swap(
                     };
 
                     let (update, next_liquidity) = calculate_update(
-                        next_tick.unwrap(),
+                        &next_tick.unwrap(),
                         a_to_b,
                         curr_liquidity,
                         fee_growth_global_a,
@@ -393,7 +393,7 @@ mod swap_liquidity_tests {
         );
         let tick_lower = tick_sequence.get_tick(0, 448, TS_8).unwrap();
         assert_swap_tick_state(
-            tick_lower,
+            &tick_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -402,7 +402,7 @@ mod swap_liquidity_tests {
         );
         let tick_upper = tick_sequence.get_tick(1, 720, TS_8).unwrap();
         assert_swap_tick_state(
-            tick_upper,
+            &tick_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -463,7 +463,7 @@ mod swap_liquidity_tests {
         );
         let lower_tick = tick_sequence.get_tick(1, 720, TS_8).unwrap();
         assert_swap_tick_state(
-            lower_tick,
+            &lower_tick,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -472,7 +472,7 @@ mod swap_liquidity_tests {
         );
         let lower_tick = tick_sequence.get_tick(2, 448, TS_8).unwrap();
         assert_swap_tick_state(
-            lower_tick,
+            &lower_tick,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -529,7 +529,7 @@ mod swap_liquidity_tests {
         );
         let tick = tick_sequence.get_tick(0, 448, TS_8).unwrap();
         assert_swap_tick_state(
-            tick,
+            &tick,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -586,7 +586,7 @@ mod swap_liquidity_tests {
         );
         let tick = tick_sequence.get_tick(2, 448, TS_8).unwrap();
         assert_swap_tick_state(
-            tick,
+            &tick,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -661,9 +661,9 @@ mod swap_liquidity_tests {
         );
         let p1_lower = tick_sequence.get_tick(0, 448, TS_8).unwrap();
         let p1_upper = tick_sequence.get_tick(1, 768, TS_8).unwrap();
-        assert_swap_tick_state(p1_lower, &TickExpectation::default());
+        assert_swap_tick_state(&p1_lower, &TickExpectation::default());
         assert_swap_tick_state(
-            p1_upper,
+            &p1_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -673,14 +673,14 @@ mod swap_liquidity_tests {
         let p2_lower = tick_sequence.get_tick(1, 1120, TS_8).unwrap();
         let p2_upper = tick_sequence.get_tick(2, 1536, TS_8).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
                 reward_growths_outside: [10, 10, 10],
             },
         );
-        assert_swap_tick_state(p2_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p2_upper, &TickExpectation::default());
     }
 
     #[test]
@@ -749,9 +749,9 @@ mod swap_liquidity_tests {
         );
         let p1_lower = tick_sequence.get_tick(2, 448, TS_8).unwrap();
         let p1_upper = tick_sequence.get_tick(1, 720, TS_8).unwrap();
-        assert_swap_tick_state(p1_lower, &TickExpectation::default());
+        assert_swap_tick_state(&p1_lower, &TickExpectation::default());
         assert_swap_tick_state(
-            p1_upper,
+            &p1_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -761,14 +761,14 @@ mod swap_liquidity_tests {
         let p2_lower = tick_sequence.get_tick(1, 1120, TS_8).unwrap();
         let p2_upper = tick_sequence.get_tick(0, 1448, TS_8).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
                 reward_growths_outside: [10, 10, 10],
             },
         );
-        assert_swap_tick_state(p2_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p2_upper, &TickExpectation::default());
     }
 
     #[test]
@@ -836,18 +836,18 @@ mod swap_liquidity_tests {
         let p1_lower = tick_sequence.get_tick(0, 8, TS_8).unwrap();
         let p1_upper = tick_sequence.get_tick(0, 448, TS_8).unwrap();
         assert_swap_tick_state(
-            p1_lower,
+            &p1_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
                 reward_growths_outside: [10, 10, 10],
             },
         );
-        assert_swap_tick_state(p1_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p1_upper, &TickExpectation::default());
         let p2_lower = tick_sequence.get_tick(0, 128, TS_8).unwrap();
         let p2_upper = tick_sequence.get_tick(0, 320, TS_8).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -855,7 +855,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p2_upper,
+            &p2_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -929,7 +929,7 @@ mod swap_liquidity_tests {
         let p1_lower = tick_sequence.get_tick(0, 8, TS_8).unwrap();
         let p1_upper = tick_sequence.get_tick(0, 448, TS_8).unwrap();
         assert_swap_tick_state(
-            p1_lower,
+            &p1_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -937,7 +937,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p1_upper,
+            &p1_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -947,7 +947,7 @@ mod swap_liquidity_tests {
         let p2_lower = tick_sequence.get_tick(0, 128, TS_8).unwrap();
         let p2_upper = tick_sequence.get_tick(0, 320, TS_8).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -955,7 +955,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p2_upper,
+            &p2_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1033,12 +1033,12 @@ mod swap_liquidity_tests {
         );
         let p1_lower = tick_sequence.get_tick(0, 23168, TS_128).unwrap();
         let p1_upper = tick_sequence.get_tick(1, 37504, TS_128).unwrap();
-        assert_swap_tick_state(p1_lower, &TickExpectation::default());
-        assert_swap_tick_state(p1_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p1_lower, &TickExpectation::default());
+        assert_swap_tick_state(&p1_upper, &TickExpectation::default());
         let p2_lower = tick_sequence.get_tick(0, 28416, TS_128).unwrap();
         let p2_upper = tick_sequence.get_tick(1, 33920, TS_128).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1046,7 +1046,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p2_upper,
+            &p2_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1124,12 +1124,12 @@ mod swap_liquidity_tests {
         );
         let p1_lower = tick_sequence.get_tick(1, 23168, TS_128).unwrap();
         let p1_upper = tick_sequence.get_tick(0, 37504, TS_128).unwrap();
-        assert_swap_tick_state(p1_lower, &TickExpectation::default());
-        assert_swap_tick_state(p1_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p1_lower, &TickExpectation::default());
+        assert_swap_tick_state(&p1_upper, &TickExpectation::default());
         let p2_lower = tick_sequence.get_tick(1, 28416, TS_128).unwrap();
         let p2_upper = tick_sequence.get_tick(0, 30720, TS_128).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1137,7 +1137,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p2_upper,
+            &p2_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1218,12 +1218,12 @@ mod swap_liquidity_tests {
         );
         let p1_lower = tick_sequence.get_tick(0, 29952, TS_128).unwrap();
         let p1_upper = tick_sequence.get_tick(2, 57216, TS_128).unwrap();
-        assert_swap_tick_state(p1_lower, &TickExpectation::default());
-        assert_swap_tick_state(p1_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p1_lower, &TickExpectation::default());
+        assert_swap_tick_state(&p1_upper, &TickExpectation::default());
         let p2_lower = tick_sequence.get_tick(0, 30336, TS_128).unwrap();
         let p2_upper = tick_sequence.get_tick(2, 56192, TS_128).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1231,7 +1231,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p2_upper,
+            &p2_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1311,12 +1311,12 @@ mod swap_liquidity_tests {
         );
         let p1_lower = tick_sequence.get_tick(2, 29952, TS_128).unwrap();
         let p1_upper = tick_sequence.get_tick(0, 49280, TS_128).unwrap();
-        assert_swap_tick_state(p1_lower, &TickExpectation::default());
-        assert_swap_tick_state(p1_upper, &TickExpectation::default());
+        assert_swap_tick_state(&p1_lower, &TickExpectation::default());
+        assert_swap_tick_state(&p1_upper, &TickExpectation::default());
         let p2_lower = tick_sequence.get_tick(2, 30336, TS_128).unwrap();
         let p2_upper = tick_sequence.get_tick(0, 48512, TS_128).unwrap();
         assert_swap_tick_state(
-            p2_lower,
+            &p2_lower,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,
@@ -1324,7 +1324,7 @@ mod swap_liquidity_tests {
             },
         );
         assert_swap_tick_state(
-            p2_upper,
+            &p2_upper,
             &TickExpectation {
                 fee_growth_outside_a: 100,
                 fee_growth_outside_b: 100,

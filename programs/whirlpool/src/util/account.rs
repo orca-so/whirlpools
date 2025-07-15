@@ -11,6 +11,10 @@ pub fn safe_create_account<'info>(
     space: u64,
     signers_seeds: &[&[&[u8]]],
 ) -> Result<()> {
+    if new_account.owner != &system_program.key() {
+        return Err(ErrorCode::AccountOwnedByWrongProgram.into());
+    }
+
     let current_lamports = new_account.lamports();
 
     if current_lamports > 0 {

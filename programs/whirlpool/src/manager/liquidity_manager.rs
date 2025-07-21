@@ -3400,7 +3400,7 @@ mod calculate_modify_liquidity_unit_tests {
                 );
                 test.cross_tick(TickLabel::Lower, Direction::Right);
 
-                // // t2 - accrue tokens, cross right
+                // t2 - accrue tokens, cross right
                 test.increment_whirlpool_fee_growths(to_x64(20), to_x64(20)); // fees at -60
                 test.increment_whirlpool_reward_growths_by_time(100);
                 // time: 300, rewards at -2.0909 =

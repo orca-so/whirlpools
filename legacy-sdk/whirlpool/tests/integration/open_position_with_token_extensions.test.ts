@@ -347,6 +347,92 @@ describe("open_position_with_token_extensions", () => {
     assert.ok(tokenAccount.owner.equals(ownerKeypair.publicKey));
   });
 
+  it("succeeds when position mint account has non-zero lamports (not rent-exempt)", async () => {
+    const { params, mint } =
+      await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        whirlpoolPda.publicKey,
+        true,
+        tickLowerIndex,
+        tickUpperIndex,
+        provider.wallet.publicKey, // owner
+      );
+
+    const preLamports = 1_000_000;
+    await systemTransferTx(
+      provider,
+      mint.publicKey,
+      preLamports,
+    ).buildAndExecute();
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+    )
+      .addSigner(mint)
+      .buildAndExecute();
+
+    await checkInitialPositionState(params);
+
+    const tokenAccount = await fetcher.getTokenInfo(
+      params.positionTokenAccount,
+      IGNORE_CACHE,
+    );
+    assert.ok(tokenAccount !== null);
+
+    const mintAccount = await ctx.connection.getAccountInfo(mint.publicKey);
+    assert.ok(mintAccount !== null);
+    const rentExemptLamports =
+      await ctx.connection.getMinimumBalanceForRentExemption(
+        mintAccount.data.length,
+      );
+    assert.ok(mintAccount.lamports > preLamports);
+    assert.ok(mintAccount.lamports === rentExemptLamports);
+  });
+
+  it("succeeds when position mint account has non-zero lamports (already rent-exempt)", async () => {
+    const { params, mint } =
+      await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        whirlpoolPda.publicKey,
+        true,
+        tickLowerIndex,
+        tickUpperIndex,
+        provider.wallet.publicKey, // owner
+      );
+
+    const preLamports = 1_000_000_000;
+    await systemTransferTx(
+      provider,
+      mint.publicKey,
+      preLamports,
+    ).buildAndExecute();
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+    )
+      .addSigner(mint)
+      .buildAndExecute();
+
+    await checkInitialPositionState(params);
+
+    const tokenAccount = await fetcher.getTokenInfo(
+      params.positionTokenAccount,
+      IGNORE_CACHE,
+    );
+    assert.ok(tokenAccount !== null);
+
+    const mintAccount = await ctx.connection.getAccountInfo(mint.publicKey);
+    assert.ok(mintAccount !== null);
+    const rentExemptLamports =
+      await ctx.connection.getMinimumBalanceForRentExemption(
+        mintAccount.data.length,
+      );
+    assert.ok(mintAccount.lamports === preLamports);
+    assert.ok(mintAccount.lamports >= rentExemptLamports);
+  });
+
   it("should reserve some rent for tick initialization", async () => {
     // open position
     const { params, mint } =
@@ -615,7 +701,7 @@ describe("open_position_with_token_extensions", () => {
         )
           .addSigner(mint)
           .buildAndExecute(),
-        /already in use/,
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
     });
 
@@ -803,6 +889,52 @@ describe("open_position_with_token_extensions", () => {
           .addSigner(defaultMint)
           .buildAndExecute(),
         /0x7dc/, // ConstraintAddress
+      );
+    });
+
+    it("allocated position mint account", async () => {
+      const { params, mint } =
+        await generateDefaultOpenPositionWithTokenExtensionsParams(
+          ctx,
+          whirlpoolPda.publicKey,
+          true,
+          tickLowerIndex,
+          tickUpperIndex,
+          provider.wallet.publicKey,
+        );
+
+      await toTx(ctx, {
+        instructions: [
+          SystemProgram.transfer({
+            fromPubkey: provider.wallet.publicKey,
+            toPubkey: params.positionMint,
+            lamports: 1_000_000_000,
+          }),
+          SystemProgram.allocate({
+            accountPubkey: params.positionMint,
+            space: 82,
+          }),
+        ],
+        cleanupInstructions: [],
+        signers: [mint],
+      }).buildAndExecute();
+
+      const allocated = await ctx.connection.getAccountInfo(
+        params.positionMint,
+      );
+      assert.ok(allocated !== null);
+      assert.ok(allocated.lamports > 0);
+      assert.ok(allocated.data.length > 0);
+      assert.ok(allocated.owner.equals(SystemProgram.programId));
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+        )
+          .addSigner(mint)
+          .buildAndExecute(),
+        /`from` must not carry data/, // allocated account should be rejected
       );
     });
   });

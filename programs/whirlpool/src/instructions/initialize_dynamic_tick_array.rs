@@ -1,9 +1,6 @@
-use std::cmp::max;
-
 use anchor_lang::{prelude::*, system_program, Discriminator};
-use solana_program::{program::invoke_signed, system_instruction};
 
-use crate::{state::*, ID};
+use crate::{state::*, util::safe_create_account, ID};
 
 #[derive(Accounts)]
 #[instruction(start_tick_index: i32)]
@@ -32,54 +29,14 @@ pub fn handler(
     idempotent: bool,
 ) -> Result<()> {
     if ctx.accounts.tick_array.owner == &system_program::ID {
-        let current_balance = ctx.accounts.tick_array.lamports();
-
-        if current_balance > 0 {
-            // If there is already a balance, `create_account` fails.
-            // We can either do `transfer`, `assign` and `allocate` manually
-            // or just clear out the account before proceeding.
-
-            let account_infos = &[
-                ctx.accounts.tick_array.to_account_info(),
-                ctx.accounts.funder.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
-            ];
-
-            invoke_signed(
-                &system_instruction::transfer(
-                    &ctx.accounts.tick_array.key(),
-                    &ctx.accounts.funder.key(),
-                    current_balance,
-                ),
-                account_infos,
-                &[&[
-                    b"tick_array",
-                    ctx.accounts.whirlpool.key().as_ref(),
-                    start_tick_index.to_string().as_bytes(),
-                    &[ctx.bumps.tick_array],
-                ]],
-            )?;
-        }
-
         let rent_exempt = Rent::get()?.minimum_balance(DynamicTickArray::MIN_LEN);
-        // If there was already a balance, we want to send it all back to the tick array. If there
-        // was no balance (or below rent_exempt), we just want the account to be rent exempt.
-        let lamports = max(rent_exempt, current_balance);
-
-        let account_infos = &[
+        safe_create_account(
+            ctx.accounts.system_program.to_account_info(),
             ctx.accounts.funder.to_account_info(),
             ctx.accounts.tick_array.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ];
-        invoke_signed(
-            &system_instruction::create_account(
-                &ctx.accounts.funder.key(),
-                &ctx.accounts.tick_array.key(),
-                lamports,
-                DynamicTickArray::MIN_LEN as u64,
-                &ID,
-            ),
-            account_infos,
+            &ID,
+            rent_exempt,
+            DynamicTickArray::MIN_LEN as u64,
             &[&[
                 b"tick_array",
                 ctx.accounts.whirlpool.key().as_ref(),

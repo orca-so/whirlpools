@@ -27,7 +27,7 @@ export type TransferLockedPositionParams = {
 };
 
 /**
- * Transfer the position to to a different token account. This instruction also works for locked positions.
+ * Transfer the position to a different token account. This instruction also works for locked positions.
  *
  * @category Instructions
  * @param program - program object containing services required to generate the instruction

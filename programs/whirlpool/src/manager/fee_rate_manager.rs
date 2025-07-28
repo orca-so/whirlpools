@@ -2860,4 +2860,125 @@ mod adaptive_fee_rate_manager_tests {
             assert!(next_variables.last_major_swap_timestamp == timestamp);
         }
     }
+
+    mod test_volatility_accumulator_manipulation {
+        use super::*;
+
+        #[test]
+        fn test_back_and_forth_tick_32_tick_224() {
+            let timestamp = 1_000;
+            let static_fee_rate = 3000;
+
+            fn va(afi: AdaptiveFeeInfo) -> u32 {
+                afi.variables.volatility_accumulator
+            }
+
+            let mut adaptive_fee_info = AdaptiveFeeInfo {
+                constants: AdaptiveFeeConstants {
+                    max_volatility_accumulator: 350_000,
+                    adaptive_fee_control_factor: 5_000,
+                    tick_group_size: 64,
+                    major_swap_threshold_ticks: 64,
+                    filter_period: 30,
+                    decay_period: 600,
+                    reduction_factor: 5000,
+                    ..Default::default()
+                },
+                variables: AdaptiveFeeVariables {
+                    last_reference_update_timestamp: timestamp,
+                    last_major_swap_timestamp: timestamp,
+                    tick_group_index_reference: 0,
+                    volatility_accumulator: 0,
+                    volatility_reference: 0,
+                    ..Default::default()
+                },
+            };
+
+            for i in 0..10 {
+                println!("back and forth, iteration: {}", i);
+
+                // forth swap: tick_index=32 --> tick_index=224
+                {
+                    let mut fee_rate_manager = FeeRateManager::new(
+                        false,
+                        32,
+                        timestamp,
+                        static_fee_rate,
+                        &Some(adaptive_fee_info.clone()),
+                    )
+                    .unwrap();
+
+                    // run 32 -> 64
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[32 -> 64] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    // cross 64
+                    fee_rate_manager.advance_tick_group();
+
+                    // run 64 -> 128
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[64 -> 128] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    // cross 128
+                    fee_rate_manager.advance_tick_group();
+
+                    // run 128 -> 192
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[128 -> 192] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    // cross 192
+                    fee_rate_manager.advance_tick_group();
+
+                    // run 192 -> 224
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[192 -> 224] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    adaptive_fee_info = fee_rate_manager.get_next_adaptive_fee_info().unwrap();
+                }
+
+                assert_eq!(va(adaptive_fee_info.clone()), 3 * 10000);
+
+                // back swap: tick_index=224 --> tick_index=32
+                {
+                    let mut fee_rate_manager = FeeRateManager::new(
+                        true,
+                        224,
+                        timestamp,
+                        static_fee_rate,
+                        &Some(adaptive_fee_info.clone()),
+                    )
+                    .unwrap();
+
+                    // run 224 -> 192
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[224 -> 192] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    // cross 192
+                    fee_rate_manager.advance_tick_group();
+
+                    // run 192 -> 128
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[192 -> 128] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    // cross 128
+                    fee_rate_manager.advance_tick_group();
+
+                    // run 128 -> 64
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[128 -> 64] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    // cross 64
+                    fee_rate_manager.advance_tick_group();
+
+                    // run 64 -> 32
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    println!("[64 -> 32] total_fee_rate: {}, va: {}", fee_rate_manager.get_total_fee_rate(), va(fee_rate_manager.get_next_adaptive_fee_info().unwrap()));
+
+                    adaptive_fee_info = fee_rate_manager.get_next_adaptive_fee_info().unwrap();
+                }
+
+                assert_eq!(va(adaptive_fee_info.clone()), 0);
+            }
+        }
+    }
 }

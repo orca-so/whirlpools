@@ -12257,6 +12257,103 @@ mod adaptive_fee_tests {
                     volatility_reference(&variables_second)
                 );
             }
+
+            #[test]
+            /// a to b -> no wait (same timestamp) -> b to a
+            ///
+            /// -11264               -5632                0                   5632
+            ///                          p1------------------------------p1: 1_500_000
+            /// |--------------------|--------------------|--------------------|
+            ///                                      c2<-----c1
+            ///                                      c2----->c3
+            fn swaps_back_and_forth() {
+                let (tick_array_0, tick_array_neg_5632) = tick_arrays();
+
+                let mut tick_index = 32;
+                let mut adaptive_fee_info = Some(AdaptiveFeeInfo {
+                    constants: AdaptiveFeeConstants {
+                        filter_period: 30,
+                        decay_period: 600,
+                        adaptive_fee_control_factor: 5_000,
+                        reduction_factor: 500,
+                        max_volatility_accumulator: 35 * 10_000,
+                        tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
+                    },
+                    variables: AdaptiveFeeVariables::default(),
+                });
+
+                let timestamp = 1_000_000;
+
+                // first swap
+                let swap_test_info_first = SwapTestFixture::new(SwapTestFixtureInfo {
+                    tick_spacing: TS,
+                    liquidity: 1_500_000,
+                    curr_tick_index: tick_index,
+                    start_tick_index: 0,
+                    trade_amount: 50_000,
+                    sqrt_price_limit: 0,
+                    amount_specified_is_input: true,
+                    a_to_b: A_TO_B,
+                    array_1_ticks: &tick_array_0,
+                    array_2_ticks: Some(&tick_array_neg_5632),
+                    adaptive_fee_info: adaptive_fee_info.clone(),
+                    fee_rate: STATIC_FEE_RATE,
+                    protocol_fee_rate: PROTOCOL_FEE_RATE,
+                    ..Default::default()
+                });
+
+                let mut tick_sequence_first = SwapTickSequence::new(
+                    swap_test_info_first.tick_arrays[0].borrow_mut(),
+                    Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
+                    None,
+                );
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp);
+
+                tick_index = post_swap_first.next_tick_index;
+                adaptive_fee_info = post_swap_first.next_adaptive_fee_info.clone();
+
+                // second swap
+                let swap_test_info_second = SwapTestFixture::new(SwapTestFixtureInfo {
+                    tick_spacing: TS,
+                    liquidity: 1_500_000,
+                    curr_tick_index: tick_index,
+                    curr_sqrt_price_override: Some(post_swap_first.next_sqrt_price),
+                    start_tick_index: -5632,
+                    trade_amount: post_swap_first.amount_a,
+                    sqrt_price_limit: 0,
+                    amount_specified_is_input: false,
+                    a_to_b: B_TO_A,
+                    array_1_ticks: &tick_array_neg_5632,
+                    array_2_ticks: Some(&tick_array_0),
+                    adaptive_fee_info: adaptive_fee_info.clone(),
+                    fee_rate: STATIC_FEE_RATE,
+                    protocol_fee_rate: PROTOCOL_FEE_RATE,
+                    ..Default::default()
+                });
+
+                let mut tick_sequence_second = SwapTickSequence::new(
+                    swap_test_info_second.tick_arrays[0].borrow_mut(),
+                    Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
+                    None,
+                );
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp);
+
+                tick_index = post_swap_second.next_tick_index;
+                adaptive_fee_info = post_swap_second.next_adaptive_fee_info.clone();
+
+                let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
+                let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
+                let variables_first_volatility_accumulator = variables_first.volatility_accumulator;
+                let variables_second_volatility_accumulator = variables_second.volatility_accumulator;
+                println!("first: next tick index: {}", post_swap_first.next_tick_index);
+                println!("first: accumulator: {}", variables_first_volatility_accumulator);
+                println!("second: next tick index: {}", post_swap_second.next_tick_index);
+                println!("second: accumulator: {}", variables_second_volatility_accumulator);
+            }
         }
 
         mod wait_lt_filter_period {

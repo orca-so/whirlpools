@@ -36,7 +36,10 @@ if (!whirlpoolsConfig.feeAuthority.equals(ctx.wallet.publicKey)) {
   );
 }
 
-const adaptiveFeeTier = await ctx.fetcher.getAdaptiveFeeTier(pda.publicKey, IGNORE_CACHE);
+const adaptiveFeeTier = await ctx.fetcher.getAdaptiveFeeTier(
+  pda.publicKey,
+  IGNORE_CACHE,
+);
 if (!adaptiveFeeTier) {
   throw new Error(
     `adaptiveFeeTier address not initialized(${pda.publicKey.toBase58()})`,
@@ -101,19 +104,33 @@ console.info(
   "\n\tdelegatedFeeAuthority",
   adaptiveFeeTier.delegatedFeeAuthority.toBase58(),
   "\n\tfilterPeriod",
-  adaptiveFeeTier.filterPeriod, " -> ", filterPeriod,
+  adaptiveFeeTier.filterPeriod,
+  " -> ",
+  filterPeriod,
   "\n\tdecayPeriod",
-  adaptiveFeeTier.decayPeriod, " -> ", decayPeriod,
+  adaptiveFeeTier.decayPeriod,
+  " -> ",
+  decayPeriod,
   "\n\treductionFactorPer10000",
-  adaptiveFeeTier.reductionFactor, " -> ", reductionFactorPer10000,
+  adaptiveFeeTier.reductionFactor,
+  " -> ",
+  reductionFactorPer10000,
   "\n\tadaptiveFeeControlFactorPer100000",
-  adaptiveFeeTier.adaptiveFeeControlFactor, " -> ", adaptiveFeeControlFactorPer100000,
+  adaptiveFeeTier.adaptiveFeeControlFactor,
+  " -> ",
+  adaptiveFeeControlFactorPer100000,
   "\n\tmaxVolatilityAccumulator",
-  adaptiveFeeTier.maxVolatilityAccumulator, " -> ", maxVolatilityAccumulator,
+  adaptiveFeeTier.maxVolatilityAccumulator,
+  " -> ",
+  maxVolatilityAccumulator,
   "\n\ttickGroupSize",
-  adaptiveFeeTier.tickGroupSize, " -> ", tickGroupSize,
+  adaptiveFeeTier.tickGroupSize,
+  " -> ",
+  tickGroupSize,
   "\n\tmajorSwapThresholdTicks",
-  adaptiveFeeTier.majorSwapThresholdTicks, " -> ", majorSwapThresholdTicks,
+  adaptiveFeeTier.majorSwapThresholdTicks,
+  " -> ",
+  majorSwapThresholdTicks,
 );
 const yesno = await promptConfirm("if the above is OK, enter YES");
 if (!yesno) {

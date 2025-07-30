@@ -26,7 +26,12 @@ pub async fn estimate_compute_units(
         .map_err(|e| format!("Failed to get recent blockhash: {}", e))?;
 
     let mut simulation_instructions = instructions.to_vec();
-    if extract_compute_unit_limit(instructions).is_none() {
+
+    // Use the provided compute unit limit if it is set. Otherwise, set the max limit for simulation.
+    // If no compute unit limit is set, the simulation can fail if a transaction exceeds the default limit.
+    if let Some(compute_unit_limit) = extract_compute_unit_limit(instructions) {
+        return Ok(compute_unit_limit);
+    } else {
         simulation_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
     }
 

@@ -153,8 +153,13 @@ pub async fn build_transaction_with_config(
         Message::try_compile(payer, &instructions, &[], recent_blockhash)
             .map_err(|e| format!("Failed to compile message: {}", e))?
     };
+
+    // Provide the correct number of signatures for the transaction, otherwise (de)serialization can fail
     Ok(VersionedTransaction {
-        signatures: vec![],
+        signatures: vec![
+            solana_sdk::signature::Signature::default();
+            message.header.num_required_signatures.into()
+        ],
         message: VersionedMessage::V0(message),
     })
 }

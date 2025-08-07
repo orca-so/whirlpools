@@ -10,6 +10,22 @@ use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::message::{v0::Message, VersionedMessage};
 use solana_sdk::transaction::VersionedTransaction;
 
+/// Compute unit limit strategy to apply when building a transaction.
+/// - Dynamic: Estimate compute units by simulating the transaction.
+///            If the simulation fails, the transaction will not build.
+/// - Exact: Directly use the provided compute unit limit.
+#[derive(Debug, Default)]
+pub enum ComputeUnitLimitStrategy {
+    #[default]
+    Dynamic,
+    Exact(u32),
+}
+
+#[derive(Debug, Default)]
+pub struct ComputeConfig {
+    pub unit_limit: ComputeUnitLimitStrategy,
+}
+
 /// Estimate compute units by simulating a transaction
 pub async fn estimate_compute_units(
     rpc_client: &RpcClient,

@@ -1,5 +1,4 @@
 mod compute_budget;
-mod compute_config;
 mod config;
 mod fee_config;
 mod jito;
@@ -7,7 +6,6 @@ mod rpc_config;
 mod signer;
 
 pub use compute_budget::*;
-pub use compute_config::*;
 pub use config::*;
 pub use fee_config::*;
 pub use jito::*;

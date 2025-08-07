@@ -41,7 +41,7 @@ impl From<Hash> for ChainId {
 }
 
 /// RPC configuration for connecting to Solana nodes
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct RpcConfig {
     pub url: String,
     pub supports_priority_fee_percentile: bool,

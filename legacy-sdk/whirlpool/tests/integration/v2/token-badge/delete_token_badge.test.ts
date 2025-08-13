@@ -16,6 +16,7 @@ import type {
 } from "../../../../src/instructions";
 import { createMintV2 } from "../../../utils/v2/token-2022";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
+import { getLocalnetAdminKeypair0 } from "../../../utils";
 
 describe("delete_token_badge", () => {
   const provider = anchor.AnchorProvider.local(
@@ -45,7 +46,8 @@ describe("delete_token_badge", () => {
   }
 
   async function initializeWhirlpoolsConfig(configKeypair: Keypair) {
-    return toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const initConfigTx = toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, {
         collectProtocolFeesAuthority:
@@ -54,10 +56,22 @@ describe("delete_token_badge", () => {
         rewardEmissionsSuperAuthority:
           rewardEmissionsSuperAuthorityKeypair.publicKey,
         defaultProtocolFeeRate: 300,
-        funder: provider.wallet.publicKey,
+        funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
-    )
+    );
+    initConfigTx.addInstruction(
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: configKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    );
+
+    return initConfigTx
+      .addSigner(admin)
       .addSigner(configKeypair)
       .buildAndExecute();
   }
@@ -301,6 +315,38 @@ describe("delete_token_badge", () => {
     await assert.rejects(
       deleteTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
       /0xbc4/, // AccountNotInitialized
+    );
+  });
+
+  it("should be failed: TokenBadge feature is not enabled", async () => {
+    const admin = await getLocalnetAdminKeypair0(ctx);
+
+    const whirlpoolsConfigKeypair = Keypair.generate();
+    await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
+    await initializeWhirlpoolsConfigExtension(
+      whirlpoolsConfigKeypair.publicKey,
+    );
+
+    const mint = await createMintV2(provider, { isToken2022: true });
+    await initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+
+    // disable TokenBadge feature
+    await toTx(
+      ctx,
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [false],
+        },
+      }),
+    )
+      .addSigner(admin)
+      .buildAndExecute();
+
+    await assert.rejects(
+      deleteTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
+      /0x17b2/, // FeatureIsNotEnabled
     );
   });
 

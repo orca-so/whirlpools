@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
+import { PoolUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
@@ -39,7 +39,7 @@ describe("set_reward_authority_by_super_authority", () => {
       poolInitInfo.whirlpoolPda.publicKey,
     )) as WhirlpoolData;
     assert.ok(
-      pool.rewardInfos[0].authority.equals(newAuthorityKeypair.publicKey),
+      PoolUtil.getRewardAuthority(pool).equals(newAuthorityKeypair.publicKey),
     );
   });
 
@@ -116,12 +116,13 @@ describe("set_reward_authority_by_super_authority", () => {
     );
   });
 
-  it("fails on invalid reward index", async () => {
+  it("successfully set_reward_authority_by_super_authority even when an invalid reward index is provided", async () => {
     const { configKeypairs, poolInitInfo, configInitInfo } = await initTestPool(
       ctx,
       TickSpacing.Standard,
     );
 
+    // -1 is invalid value for u8
     assert.throws(() => {
       toTx(
         ctx,
@@ -138,21 +139,19 @@ describe("set_reward_authority_by_super_authority", () => {
         .buildAndExecute();
     }, /out of range/);
 
-    await assert.rejects(
-      toTx(
-        ctx,
-        WhirlpoolIx.setRewardAuthorityBySuperAuthorityIx(ctx.program, {
-          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-          rewardEmissionsSuperAuthority:
-            configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-          newRewardAuthority: provider.wallet.publicKey,
-          rewardIndex: 200,
-        }),
-      )
-        .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
-        .buildAndExecute(),
-      /0x178a/, // InvalidRewardIndex
-    );
+    // 200 is invalid value for u8, but it is not checked in the instruction (ignored)
+    await toTx(
+      ctx,
+      WhirlpoolIx.setRewardAuthorityBySuperAuthorityIx(ctx.program, {
+        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+        rewardEmissionsSuperAuthority:
+          configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+        newRewardAuthority: provider.wallet.publicKey,
+        rewardIndex: 200,
+      }),
+    )
+      .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+      .buildAndExecute();
   });
 });

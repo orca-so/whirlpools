@@ -47,7 +47,7 @@ if (allInitialized) {
 const rewardIndex = whirlpool.rewardInfos.findIndex(
   (r) => !PoolUtil.isRewardInitialized(r),
 );
-const rewardAuthority = whirlpool.rewardInfos[rewardIndex].authority;
+const rewardAuthority = PoolUtil.getRewardAuthority(whirlpool);
 if (!rewardAuthority.equals(ctx.wallet.publicKey)) {
   throw new Error(
     `the current wallet must be the reward authority(${rewardAuthority.toBase58()})`,

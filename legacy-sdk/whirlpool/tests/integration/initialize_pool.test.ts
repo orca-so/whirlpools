@@ -128,14 +128,17 @@ describe("initialize_pool", () => {
     whirlpool.rewardInfos.forEach((rewardInfo) => {
       assert.equal(rewardInfo.emissionsPerSecondX64, 0);
       assert.equal(rewardInfo.growthGlobalX64, 0);
-      assert.ok(
-        rewardInfo.authority.equals(
-          configInitInfo.rewardEmissionsSuperAuthority,
-        ),
-      );
       assert.ok(rewardInfo.mint.equals(anchor.web3.PublicKey.default));
       assert.ok(rewardInfo.vault.equals(anchor.web3.PublicKey.default));
     });
+
+    assert.ok(
+      PoolUtil.getRewardAuthority(whirlpool).equals(
+        configInitInfo.rewardEmissionsSuperAuthority,
+      ),
+    );
+    assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
+    assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
   });
 
   it("successfully init a Stable account", async () => {
@@ -205,14 +208,17 @@ describe("initialize_pool", () => {
     whirlpool.rewardInfos.forEach((rewardInfo) => {
       assert.equal(rewardInfo.emissionsPerSecondX64, 0);
       assert.equal(rewardInfo.growthGlobalX64, 0);
-      assert.ok(
-        rewardInfo.authority.equals(
-          configInitInfo.rewardEmissionsSuperAuthority,
-        ),
-      );
       assert.ok(rewardInfo.mint.equals(anchor.web3.PublicKey.default));
       assert.ok(rewardInfo.vault.equals(anchor.web3.PublicKey.default));
     });
+
+    assert.ok(
+      PoolUtil.getRewardAuthority(whirlpool).equals(
+        configInitInfo.rewardEmissionsSuperAuthority,
+      ),
+    );
+    assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
+    assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
   });
 
   it("succeeds when funder is different than account paying for transaction fee", async () => {

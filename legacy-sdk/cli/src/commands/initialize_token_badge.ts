@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import type { TokenBadgeAttributeData } from "@orca-so/whirlpools-sdk";
 import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { sendTransaction } from "../utils/transaction_sender";
@@ -36,13 +37,39 @@ if (!configExtension.tokenBadgeAuthority.equals(ctx.wallet.publicKey)) {
   );
 }
 
+// some TokenBadge attributes should be set atomically at the initialization
+const attributeDataArray: TokenBadgeAttributeData[] = [];
+
+// RequireNonTransferablePosition
+console.info(
+  `if you want to initialize TokenBadge WITH RequireNonTransferablePosition attribute, enter YES`,
+);
+if (await promptConfirm("YES")) {
+  console.info(
+    "\n>>>>> NOTICE: Whirlpools initialized with this TokenBadge will force NON-TRANSFERABLE position <<<<<\n",
+  );
+
+  attributeDataArray.push({
+    requireNonTransferablePosition: [true],
+  });
+} else {
+  attributeDataArray.push({
+    requireNonTransferablePosition: [false],
+  });
+}
+
 console.info(
   "setting...",
   "\n\twhirlpoolsConfig",
   whirlpoolsConfigPubkey.toBase58(),
   "\n\ttokenMint",
   tokenMint.toBase58(),
+  "\n\tattributes to be set atomically:",
 );
+attributeDataArray.map((attr) => {
+  console.info("\t\t", JSON.stringify(attr));
+});
+
 const yesno = await promptConfirm("if the above is OK, enter YES");
 if (!yesno) {
   throw new Error("stopped");
@@ -59,6 +86,18 @@ builder.addInstruction(
     funder: ctx.wallet.publicKey,
   }),
 );
+for (const attribute of attributeDataArray) {
+  builder.addInstruction(
+    WhirlpoolIx.setTokenBadgeAttributeIx(ctx.program, {
+      whirlpoolsConfigExtension: configExtensionPda.publicKey,
+      whirlpoolsConfig: whirlpoolsConfigPubkey,
+      tokenMint,
+      tokenBadge: pda.publicKey,
+      tokenBadgeAuthority: configExtension.tokenBadgeAuthority,
+      attribute,
+    }),
+  );
+}
 
 const landed = await sendTransaction(builder);
 if (landed) {
@@ -69,18 +108,30 @@ if (landed) {
 
 SAMPLE EXECUTION LOG
 
-connection endpoint http://localhost:8899
-wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
+wallet 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo
 initialize TokenBadge...
-prompt: whirlpoolsConfigPubkey:  JChtLEVR9E6B5jiHTZS1Nd9WgMULMHv2UcVryYACAFYQ
-prompt: tokenMint:  FfprBPB2ULqp4tyBfzrzwxNvpGYoh8hidzSmiA5oDtmu
-setting...
-        whirlpoolsConfig JChtLEVR9E6B5jiHTZS1Nd9WgMULMHv2UcVryYACAFYQ
-        tokenMint FfprBPB2ULqp4tyBfzrzwxNvpGYoh8hidzSmiA5oDtmu
+✔ whirlpoolsConfigPubkey … FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
+✔ tokenMint … 7mg4AksSu95yHiB5MzKt2M8MERH676gHWLJexAGUJQD1
+if you want to initialize TokenBadge WITH RequireNonTransferablePosition attribute, enter YES
+✔ YES › Yes
 
-if the above is OK, enter YES
-prompt: yesno:  YES
-tx: 5sQvVXTWHMdn9YVsWSqNCT2rCArMLz3Wazu67LETs2Hpfs4uHuWvBoKsz2RhaBwpc2DcE233DYQ4rs9PyzW88hj2
-tokenBadge address: FZViZVK1ANAH9Ca3SfshZRpUdSfy1qpX3KGbDBCfCJNh
+>>>>> NOTICE: Whirlpools initialized with this TokenBadge will force NON-TRANSFERABLE position <<<<<
+
+setting... 
+        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR 
+        tokenMint 7mg4AksSu95yHiB5MzKt2M8MERH676gHWLJexAGUJQD1 
+        attributes to be set atomically:
+                 {"requireNonTransferablePosition":[true]}
+✔ if the above is OK, enter YES › Yes
+estimatedComputeUnits: 118090
+✔ priorityFeeInSOL … 0.000005
+Priority fee: 0.000005 SOL
+process transaction...
+transaction is still valid, 150 blocks left (at most)
+sending...
+confirming...
+✅successfully landed
+signature 5PRYu7FthRW6B9D1PrqJEZvmY76jNbTecroPmX6KQRkEtHK3FJyXFLgPK8zuxivfatwAgXGMAM3SwYNgWgXE8ADi
+tokenBadge address: 6JPBd9utJEUmAyjxL41txnG8AqF4wfDUw98AdSg5CKYc
 
 */

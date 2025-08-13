@@ -3,7 +3,7 @@ import * as assert from "assert";
 import type { WhirlpoolData } from "../../src";
 import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
-import { TickSpacing } from "../utils";
+import { getLocalnetAdminKeypair0, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
@@ -117,12 +117,17 @@ describe("set_protocol_fee_rate", () => {
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const { configInitInfo: otherConfigInitInfo } =
-      generateDefaultConfigParams(ctx);
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const { configInitInfo: otherConfigInitInfo } = generateDefaultConfigParams(
+      ctx,
+      admin.publicKey,
+    );
     await toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, otherConfigInitInfo),
-    ).buildAndExecute();
+    )
+      .addSigner(admin)
+      .buildAndExecute();
 
     const newProtocolFeeRate = 1000;
     await assert.rejects(

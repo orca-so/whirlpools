@@ -277,6 +277,16 @@ pub fn is_supported_token_mint(
                 if !is_token_badge_initialized {
                     return Ok(false);
                 }
+
+                // Reject if the default account state is not Initialized and no freeze authority is set,
+                // as thawing would not be possible.
+                let default_state = token_mint_unpacked
+                    .get_extension::<extension::default_account_state::DefaultAccountState>(
+                )?;
+                let initialized: u8 = spl_token_2022::state::AccountState::Initialized.into();
+                if default_state.state != initialized && token_mint.freeze_authority.is_none() {
+                    return Ok(false);
+                }
             }
             TokenExtensionType::Pausable => {
                 if !is_token_badge_initialized {
@@ -325,6 +335,19 @@ pub fn verify_supported_token_mint(
     }
 
     Ok(())
+}
+
+pub fn is_non_transferable_position_required(
+    token_badge: &UncheckedAccount<'_>,
+    whirlpools_config_key: Pubkey,
+    token_mint: &InterfaceAccount<'_, Mint>,
+) -> Result<bool> {
+    if !is_token_badge_initialized(whirlpools_config_key, token_mint.key(), token_badge)? {
+        return Ok(false);
+    }
+
+    let token_badge = TokenBadge::try_deserialize(&mut token_badge.data.borrow().as_ref())?;
+    Ok(token_badge.attribute_require_non_transferable_position)
 }
 
 #[derive(Debug)]

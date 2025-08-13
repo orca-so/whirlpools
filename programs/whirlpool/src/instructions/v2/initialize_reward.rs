@@ -7,9 +7,8 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(reward_index: u8)]
 pub struct InitializeRewardV2<'info> {
-    #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
+    #[account(address = whirlpool.reward_authority())]
     pub reward_authority: Signer<'info>,
 
     #[account(mut)]

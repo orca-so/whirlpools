@@ -77,3 +77,19 @@ filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/toke
 [[test.validator.account]]
 address = "7kshCxjaA7uY2C77X733ZZjM1EE31FhceM9dm4QXrxqZ"
 filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b_ata.json"
+
+# For migrate_repurpose_reward_authority_space test
+# Now, it is impossible to initialize whirlpool with 3 reward authorities (not migrated layout)
+# So we need to load test old Whirlpool account.
+[[test.validator.account]]
+address = "7vWRTPPBq3aNaJZsrfterTz1BSjht4YSHBXJwnbuV6SC"
+filename = "legacy-sdk/whirlpool/tests/preload_account/migrate_repurpose_reward_authority_space/whirlpool.json"
+
+# For open_position_with_token_extensions test
+# Now, it is impossible to initialize whirlpool with 3 reward authorities (not migrated layout)
+# So we need to load test old Whirlpool account.
+# This account has not been migrated, and unless that is recognized, the bit array may be misinterpreted as control_flags,
+# potentially resulting in the creation of a non-transferable position.
+[[test.validator.account]]
+address = "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE"
+filename = "legacy-sdk/whirlpool/tests/preload_account/open_position_with_token_extensions/whirlpool.json"

@@ -5,7 +5,10 @@ use crate::{
     errors::ErrorCode,
     events::*,
     state::*,
-    util::{initialize_vault_token_account, to_timestamp_u64, verify_supported_token_mint},
+    util::{
+        initialize_vault_token_account, is_non_transferable_position_required, to_timestamp_u64,
+        verify_supported_token_mint,
+    },
 };
 
 #[derive(Accounts)]
@@ -128,6 +131,22 @@ pub fn handler(
         &ctx.accounts.system_program,
     )?;
 
+    let mut control_flags = WhirlpoolControlFlags::empty();
+    if is_non_transferable_position_required(
+        &ctx.accounts.token_badge_a,
+        whirlpools_config.key(),
+        &ctx.accounts.token_mint_a,
+    )? {
+        control_flags |= WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION;
+    }
+    if is_non_transferable_position_required(
+        &ctx.accounts.token_badge_b,
+        whirlpools_config.key(),
+        &ctx.accounts.token_mint_b,
+    )? {
+        control_flags |= WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION;
+    }
+
     whirlpool.initialize(
         whirlpools_config,
         fee_tier_index,
@@ -139,6 +158,7 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
+        control_flags,
     )?;
 
     let mut oracle = ctx.accounts.oracle.load_init()?;

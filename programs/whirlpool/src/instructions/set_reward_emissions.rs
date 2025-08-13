@@ -15,7 +15,7 @@ pub struct SetRewardEmissions<'info> {
     #[account(mut)]
     pub whirlpool: Account<'info, Whirlpool>,
 
-    #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
+    #[account(address = whirlpool.reward_authority())]
     pub reward_authority: Signer<'info>,
 
     #[account(address = whirlpool.reward_infos[reward_index as usize].vault)]

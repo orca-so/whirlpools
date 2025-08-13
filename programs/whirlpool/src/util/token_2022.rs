@@ -24,17 +24,18 @@ pub fn initialize_position_mint_2022<'info>(
     system_program: &Program<'info, System>,
     token_2022_program: &Program<'info, Token2022>,
     use_token_metadata_extension: bool,
+    use_non_transferable_extension: bool,
 ) -> Result<()> {
-    let space = ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(
-        if use_token_metadata_extension {
-            &[
-                ExtensionType::MintCloseAuthority,
-                ExtensionType::MetadataPointer,
-            ]
-        } else {
-            &[ExtensionType::MintCloseAuthority]
-        },
-    )?;
+    let mut extensions = vec![ExtensionType::MintCloseAuthority];
+    if use_token_metadata_extension {
+        extensions.push(ExtensionType::MetadataPointer);
+    }
+    if use_non_transferable_extension {
+        extensions.push(ExtensionType::NonTransferable);
+    }
+
+    let space =
+        ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(&extensions)?;
 
     let lamports = Rent::get()?.minimum_balance(space);
 
@@ -81,6 +82,20 @@ pub fn initialize_position_mint_2022<'info>(
             &[
                 position_mint.to_account_info(),
                 authority.to_account_info(),
+                token_2022_program.to_account_info(),
+            ],
+        )?;
+    }
+
+    if use_non_transferable_extension {
+        // initialize NonTransferable extension
+        invoke(
+            &spl_token_2022::instruction::initialize_non_transferable_mint(
+                token_2022_program.key,
+                position_mint.key,
+            )?,
+            &[
+                position_mint.to_account_info(),
                 token_2022_program.to_account_info(),
             ],
         )?;

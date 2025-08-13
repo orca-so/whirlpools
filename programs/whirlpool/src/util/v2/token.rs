@@ -59,7 +59,6 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
     )?;
 
     let mut account_infos = vec![
-        token_program.to_account_info(),
         // owner to vault
         token_owner_account.to_account_info(), // from (owner account)
         token_mint.to_account_info(),          // mint
@@ -69,9 +68,9 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
 
     // TransferHook extension
     if let Some(hook_program_id) = get_transfer_hook_program_id(token_mint)? {
-        if transfer_hook_accounts.is_none() {
-            return Err(ErrorCode::NoExtraAccountsForTransferHook.into());
-        }
+        let transfer_hook_accounts = transfer_hook_accounts
+            .as_deref()
+            .ok_or(ErrorCode::NoExtraAccountsForTransferHook)?;
 
         spl_transfer_hook_interface::onchain::add_extra_accounts_for_execute_cpi(
             &mut instruction,
@@ -83,7 +82,7 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
             token_vault.to_account_info(),         // to (vault account)
             authority.to_account_info(),           // authority (owner)
             amount,
-            transfer_hook_accounts.as_ref().unwrap(),
+            transfer_hook_accounts,
         )?;
     }
 
@@ -141,7 +140,6 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
     )?;
 
     let mut account_infos = vec![
-        token_program.to_account_info(),
         // vault to owner
         token_vault.to_account_info(),         // from (vault account)
         token_mint.to_account_info(),          // mint
@@ -151,9 +149,9 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
 
     // TransferHook extension
     if let Some(hook_program_id) = get_transfer_hook_program_id(token_mint)? {
-        if transfer_hook_accounts.is_none() {
-            return Err(ErrorCode::NoExtraAccountsForTransferHook.into());
-        }
+        let transfer_hook_accounts = transfer_hook_accounts
+            .as_deref()
+            .ok_or(ErrorCode::NoExtraAccountsForTransferHook)?;
 
         spl_transfer_hook_interface::onchain::add_extra_accounts_for_execute_cpi(
             &mut instruction,
@@ -165,7 +163,7 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
             token_owner_account.to_account_info(), // to (owner account)
             whirlpool.to_account_info(),   // authority (pool)
             amount,
-            transfer_hook_accounts.as_ref().unwrap(),
+            transfer_hook_accounts,
         )?;
     }
 

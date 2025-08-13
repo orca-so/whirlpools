@@ -28,6 +28,78 @@ orca_tx_sender = { version = "0.1.0" }
 
 ## Usage Examples
 
+## Per-Function Configuration Examples
+
+Below is an example of how to use the per-function configuration for `build_and_send_transaction_with_config`. However, you can also use the per-function configuration for the build and send steps separately using the following functions: `build_transaction_with_config` and `send_transaction_with_config`.
+
+### Basic Example
+
+```rust
+use orca_tx_sender::{
+    build_and_send_transaction_with_config,
+    PriorityFeeStrategy, Percentile,
+    set_priority_fee_strategy
+};
+use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::system_instruction;
+use solana_sdk::commitment_config::CommitmentLevel;
+use std::error::Error;
+use std::str::FromStr;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let rpc_client = RpcClient::new("https://api.mainnet-beta.solana.com");
+
+    // Use the cluster URL to create a new instance of RpcConfig. You can also create the struct manually.
+    let rpc_config = RpcConfig::new(rpc_client.url());
+
+    // Configure the fee config with priority fees
+    let fee_config = FeeConfig {
+        priority_fee_strategy: PriorityFeeStrategy::Dynamic {
+            percentile: Percentile::P95,
+            max_lamports: 10_000,
+        },
+        ..Default::default()
+    };
+
+    // Create a keypair for signing
+    let payer = Keypair::new();
+    println!("Using keypair: {}", payer.pubkey());
+
+    // Check balance
+    let balance = client.get_balance(&payer.pubkey()).await?;
+    println!("Account balance: {} lamports", balance);
+
+    // Jupiter Program address as an example recipient
+    let recipient = Pubkey::from_str("JUP2jxvXaqu7NQY1GmNF4m1vodw12LVXYxbFL2uJvfo").unwrap();
+
+    // Create transfer instruction
+    let transfer_ix = system_instruction::transfer(
+        &payer.pubkey(),
+        &recipient,
+        1_000_000, // 0.001 SOL
+    );
+
+    // Build and send transaction
+    println!("Sending transaction...");
+    let signature = build_and_send_transaction_with_config(
+        vec![transfer_ix],
+        &[&payer],
+        Some(CommitmentLevel::Confirmed),
+        None, // No address lookup tables
+        &rpc_client,
+        &rpc_config,
+        &fee_config,
+    ).await?;
+
+    println!("Transaction sent: {}", signature);
+    Ok(())
+}
+```
+
+## Global Configuration Examples
+
 ### Basic Example
 
 ```rust

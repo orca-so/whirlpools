@@ -12,6 +12,7 @@ import {
 import { defaultConfirmOptions } from "../../../utils/const";
 import type { InitializeTokenBadgeParams } from "../../../../src/instructions";
 import { createMintV2 } from "../../../utils/v2/token-2022";
+import { getLocalnetAdminKeypair0 } from "../../../utils";
 
 describe("set_token_badge_authority", () => {
   const provider = anchor.AnchorProvider.local(
@@ -31,7 +32,8 @@ describe("set_token_badge_authority", () => {
   const updatedTokenBadgeAuthorityKeypair = Keypair.generate();
 
   async function initializeWhirlpoolsConfig(configKeypair: Keypair) {
-    return toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const initConfigTx = toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, {
         collectProtocolFeesAuthority:
@@ -40,10 +42,22 @@ describe("set_token_badge_authority", () => {
         rewardEmissionsSuperAuthority:
           rewardEmissionsSuperAuthorityKeypair.publicKey,
         defaultProtocolFeeRate: 300,
-        funder: provider.wallet.publicKey,
+        funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
-    )
+    );
+    initConfigTx.addInstruction(
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: configKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    );
+
+    return initConfigTx
+      .addSigner(admin)
       .addSigner(configKeypair)
       .buildAndExecute();
   }

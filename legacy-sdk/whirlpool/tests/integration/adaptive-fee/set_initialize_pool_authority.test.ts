@@ -9,11 +9,11 @@ import {
 } from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initAdaptiveFeeTier } from "../../utils/init-utils";
 import {
-  generateDefaultConfigParams,
-  getDefaultPresetAdaptiveFeeConstants,
-} from "../../utils/test-builders";
+  initAdaptiveFeeTier,
+  initializeConfigWithDefaultConfigParams,
+} from "../../utils/init-utils";
+import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import { Keypair, PublicKey } from "@solana/web3.js";
 
 describe("set_initialize_pool_authority", () => {
@@ -33,11 +33,8 @@ describe("set_initialize_pool_authority", () => {
     const initialInitializePoolAuthority = PublicKey.default;
     const newInitializePoolAuthority = Keypair.generate().publicKey;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -90,11 +87,8 @@ describe("set_initialize_pool_authority", () => {
     const initialInitializePoolAuthority = Keypair.generate().publicKey;
     const newInitializePoolAuthority = PublicKey.default;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -144,11 +138,8 @@ describe("set_initialize_pool_authority", () => {
   });
 
   it("fails when adaptive fee tier account has not been initialized", async () => {
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const adaptiveFeeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -173,11 +164,8 @@ describe("set_initialize_pool_authority", () => {
   });
 
   it("fails when fee authority is not a signer", async () => {
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -214,11 +202,8 @@ describe("set_initialize_pool_authority", () => {
   });
 
   it("fails when invalid fee authority provided", async () => {
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,

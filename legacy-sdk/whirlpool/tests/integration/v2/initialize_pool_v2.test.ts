@@ -22,6 +22,9 @@ import {
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   ZERO_BN,
+  getLocalnetAdminKeypair0,
+  getProviderWalletKeypair,
+  setAuthority,
   sleep,
   systemTransferTx,
 } from "../../utils";
@@ -41,6 +44,7 @@ import type { PublicKey } from "@solana/web3.js";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import {
   AccountState,
+  AuthorityType,
   createInitializeMintInstruction,
   NATIVE_MINT,
   NATIVE_MINT_2022,
@@ -55,6 +59,8 @@ describe("initialize_pool_v2", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
+
+  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   describe("v1 parity", () => {
     const tokenTraitVariations: {
@@ -190,14 +196,17 @@ describe("initialize_pool_v2", () => {
           whirlpool.rewardInfos.forEach((rewardInfo) => {
             assert.equal(rewardInfo.emissionsPerSecondX64, 0);
             assert.equal(rewardInfo.growthGlobalX64, 0);
-            assert.ok(
-              rewardInfo.authority.equals(
-                configInitInfo.rewardEmissionsSuperAuthority,
-              ),
-            );
             assert.ok(rewardInfo.mint.equals(anchor.web3.PublicKey.default));
             assert.ok(rewardInfo.vault.equals(anchor.web3.PublicKey.default));
           });
+
+          assert.ok(
+            PoolUtil.getRewardAuthority(whirlpool).equals(
+              configInitInfo.rewardEmissionsSuperAuthority,
+            ),
+          );
+          assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
+          assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
         });
 
         it("successfully init a Stable account", async () => {
@@ -293,14 +302,17 @@ describe("initialize_pool_v2", () => {
           whirlpool.rewardInfos.forEach((rewardInfo) => {
             assert.equal(rewardInfo.emissionsPerSecondX64, 0);
             assert.equal(rewardInfo.growthGlobalX64, 0);
-            assert.ok(
-              rewardInfo.authority.equals(
-                configInitInfo.rewardEmissionsSuperAuthority,
-              ),
-            );
             assert.ok(rewardInfo.mint.equals(anchor.web3.PublicKey.default));
             assert.ok(rewardInfo.vault.equals(anchor.web3.PublicKey.default));
           });
+
+          assert.ok(
+            PoolUtil.getRewardAuthority(whirlpool).equals(
+              configInitInfo.rewardEmissionsSuperAuthority,
+            ),
+          );
+          assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
+          assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
         });
 
         it("succeeds when funder is different than account paying for transaction fee", async () => {
@@ -1023,18 +1035,30 @@ describe("initialize_pool_v2", () => {
         );
 
         // create config and feetier
+        const admin = await getLocalnetAdminKeypair0(ctx);
         const configKeypair = Keypair.generate();
-        await toTx(
+        const initConfigTx = toTx(
           ctx,
           WhirlpoolIx.initializeConfigIx(ctx.program, {
             collectProtocolFeesAuthority: provider.wallet.publicKey,
             feeAuthority: provider.wallet.publicKey,
             rewardEmissionsSuperAuthority: provider.wallet.publicKey,
             defaultProtocolFeeRate: 300,
-            funder: provider.wallet.publicKey,
+            funder: admin.publicKey,
             whirlpoolsConfigKeypair: configKeypair,
           }),
-        )
+        );
+        initConfigTx.addInstruction(
+          WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+            whirlpoolsConfig: configKeypair.publicKey,
+            authority: admin.publicKey,
+            featureFlag: {
+              tokenBadge: [true],
+            },
+          }),
+        );
+        await initConfigTx
+          .addSigner(admin)
           .addSigner(configKeypair)
           .buildAndExecute();
 
@@ -1320,6 +1344,7 @@ describe("initialize_pool_v2", () => {
       supported: boolean;
       createTokenBadge: boolean;
       tokenTrait: TokenTrait;
+      dropFreezeAuthorityAfterMintInitialization?: boolean;
     }) {
       // create tokens
       const [tokenA, tokenTarget, tokenB] = generate3MintAddress();
@@ -1327,19 +1352,50 @@ describe("initialize_pool_v2", () => {
       await createMintV2(provider, { isToken2022: false }, undefined, tokenB);
       await createMintV2(provider, params.tokenTrait, undefined, tokenTarget);
 
+      if (params.dropFreezeAuthorityAfterMintInitialization) {
+        await setAuthority(
+          provider,
+          tokenTarget.publicKey,
+          null,
+          AuthorityType.FreezeAccount,
+          providerWalletKeypair,
+          params.tokenTrait.isToken2022
+            ? TEST_TOKEN_2022_PROGRAM_ID
+            : TEST_TOKEN_PROGRAM_ID,
+        );
+
+        const afterSetAuthorityMint = await fetcher.getMintInfo(
+          tokenTarget.publicKey,
+          IGNORE_CACHE,
+        );
+        assert.ok(afterSetAuthorityMint?.freezeAuthority === null);
+      }
+
       // create config and feetier
+      const admin = await getLocalnetAdminKeypair0(ctx);
       const configKeypair = Keypair.generate();
-      await toTx(
+      const initConfigTx = toTx(
         ctx,
         WhirlpoolIx.initializeConfigIx(ctx.program, {
           collectProtocolFeesAuthority: provider.wallet.publicKey,
           feeAuthority: provider.wallet.publicKey,
           rewardEmissionsSuperAuthority: provider.wallet.publicKey,
           defaultProtocolFeeRate: 300,
-          funder: provider.wallet.publicKey,
+          funder: admin.publicKey,
           whirlpoolsConfigKeypair: configKeypair,
         }),
-      )
+      );
+      initConfigTx.addInstruction(
+        WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+          whirlpoolsConfig: configKeypair.publicKey,
+          authority: admin.publicKey,
+          featureFlag: {
+            tokenBadge: [true],
+          },
+        }),
+      );
+      await initConfigTx
+        .addSigner(admin)
         .addSigner(configKeypair)
         .buildAndExecute();
 
@@ -1455,18 +1511,30 @@ describe("initialize_pool_v2", () => {
       await createMintV2(provider, { isToken2022: false }, undefined, tokenB);
 
       // create config and feetier
+      const admin = await getLocalnetAdminKeypair0(ctx);
       const configKeypair = Keypair.generate();
-      await toTx(
+      const initConfigTx = toTx(
         ctx,
         WhirlpoolIx.initializeConfigIx(ctx.program, {
           collectProtocolFeesAuthority: provider.wallet.publicKey,
           feeAuthority: provider.wallet.publicKey,
           rewardEmissionsSuperAuthority: provider.wallet.publicKey,
           defaultProtocolFeeRate: 300,
-          funder: provider.wallet.publicKey,
+          funder: admin.publicKey,
           whirlpoolsConfigKeypair: configKeypair,
         }),
-      )
+      );
+      initConfigTx.addInstruction(
+        WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+          whirlpoolsConfig: configKeypair.publicKey,
+          authority: admin.publicKey,
+          featureFlag: {
+            tokenBadge: [true],
+          },
+        }),
+      );
+      await initConfigTx
+        .addSigner(admin)
         .addSigner(configKeypair)
         .buildAndExecute();
 
@@ -1719,6 +1787,20 @@ describe("initialize_pool_v2", () => {
           hasDefaultAccountStateExtension: true,
           defaultAccountInitialState: AccountState.Frozen,
         },
+      });
+    });
+
+    it("Token-2022: [FAIL] with TokenBadge with DefaultAccountState(Frozen), but no freeze authority", async () => {
+      await runTest({
+        supported: false, // thawing is impossible
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasFreezeAuthority: true, // needed to set initial state to Frozen
+          hasDefaultAccountStateExtension: true,
+          defaultAccountInitialState: AccountState.Frozen,
+        },
+        dropFreezeAuthorityAfterMintInitialization: true,
       });
     });
 

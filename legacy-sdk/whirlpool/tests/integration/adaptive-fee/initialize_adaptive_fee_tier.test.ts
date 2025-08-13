@@ -20,11 +20,12 @@ import {
   systemTransferTx,
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initAdaptiveFeeTier, initFeeTier } from "../../utils/init-utils";
 import {
-  generateDefaultConfigParams,
-  getDefaultPresetAdaptiveFeeConstants,
-} from "../../utils/test-builders";
+  initAdaptiveFeeTier,
+  initFeeTier,
+  initializeConfigWithDefaultConfigParams,
+} from "../../utils/init-utils";
+import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
@@ -62,11 +63,8 @@ describe("initialize_adaptive_fee_tier", () => {
     presetAdaptiveFeeConstants: AdaptiveFeeConstantsData,
     funder?: Keypair,
   ) {
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const result = await initAdaptiveFeeTier(
       ctx,
@@ -319,20 +317,13 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const {
       configInitInfo: anotherConfigInitInfo,
       configKeypairs: anotherConfigKeypairs,
-    } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, anotherConfigInitInfo),
-    ).buildAndExecute();
+    } = await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -379,11 +370,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -428,11 +416,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -477,11 +462,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -542,11 +524,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -602,11 +581,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -650,11 +626,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const feeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,

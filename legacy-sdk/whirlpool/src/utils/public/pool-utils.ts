@@ -10,13 +10,19 @@ import type {
 import { TOKEN_MINTS } from "../constants";
 import { PriceMath } from "./price-math";
 import { TokenType } from "./types";
-import type { WhirlpoolContext } from "../..";
-import { PDAUtil } from "../..";
+import type {
+  WhirlpoolContext,
+  WhirlpoolExtensionSegmentPrimary,
+  WhirlpoolExtensionSegmentSecondary,
+} from "../..";
+import { FlagUtil, PDAUtil } from "../..";
 import invariant from "tiny-invariant";
 import {
+  AccountState,
   ExtensionType,
   NATIVE_MINT_2022,
   TOKEN_PROGRAM_ID,
+  getDefaultAccountState,
   getExtensionTypes,
 } from "@solana/spl-token";
 
@@ -31,6 +37,50 @@ export class PoolUtil {
       !PublicKey.default.equals(rewardInfo.mint) &&
       !PublicKey.default.equals(rewardInfo.vault)
     );
+  }
+
+  /**
+   * Return the reward authority for a Whirlpool.
+   * This is the authority that can manage the rewards for the Whirlpool.
+   *
+   * @param pool The Whirlpool to evaluate
+   * @returns The PublicKey of the reward authority
+   */
+  public static getRewardAuthority(pool: WhirlpoolData): PublicKey {
+    return new PublicKey(pool.rewardInfos[0].extension);
+  }
+
+  /**
+   * Return the primary extension segment for a Whirlpool.
+   * This segment contains control flags that can be used to modify the behavior of the Whirlpool.
+   *
+   * @param pool The Whirlpool to evaluate
+   * @returns A WhirlpoolExtensionSegmentPrimary object
+   */
+  public static getExtensionSegmentPrimary(
+    pool: WhirlpoolData,
+  ): WhirlpoolExtensionSegmentPrimary {
+    const extension = Buffer.from(pool.rewardInfos[1].extension);
+    const controlFlags = FlagUtil.u16ToWhirlpoolControlFlags(
+      extension.readUint16LE(0),
+    );
+    return {
+      controlFlags,
+    };
+  }
+
+  /**
+   * Return the secondary extension segment for a Whirlpool.
+   * This is reserved for future use and currently returns an empty object.
+   *
+   * @param pool The Whirlpool to evaluate
+   * @returns An empty WhirlpoolExtensionSegmentSecondary object.
+   */
+  public static getExtensionSegmentSecondary(
+    _pool: WhirlpoolData,
+  ): WhirlpoolExtensionSegmentSecondary {
+    // reserved for future use
+    return {};
   }
 
   /**
@@ -291,11 +341,25 @@ export class PoolUtil {
         case ExtensionType.PermanentDelegate:
         case ExtensionType.TransferHook:
         case ExtensionType.MintCloseAuthority:
-        case ExtensionType.DefaultAccountState:
         case ExtensionType.PausableConfig:
           if (!isTokenBadgeInitialized) {
             return false;
           }
+          continue;
+
+        case ExtensionType.DefaultAccountState:
+          if (!isTokenBadgeInitialized) {
+            return false;
+          }
+          const defaultAccountState =
+            getDefaultAccountState(mintWithTokenProgram)!;
+          if (
+            defaultAccountState.state !== AccountState.Initialized &&
+            mintWithTokenProgram.freezeAuthority === null
+          ) {
+            return false;
+          }
+
           continue;
 
         // not supported

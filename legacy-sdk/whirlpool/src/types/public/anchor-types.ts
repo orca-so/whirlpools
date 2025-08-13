@@ -55,7 +55,7 @@ export function getAccountSize(accountName: AccountName) {
  * Reserved bytes for each account used for calculating the account size.
  */
 const RESERVED_BYTES: ReservedBytes = {
-  [AccountName.WhirlpoolsConfig]: 2,
+  [AccountName.WhirlpoolsConfig]: 0,
   [AccountName.Position]: 0,
   [AccountName.TickArray]: 0,
   [AccountName.DynamicTickArray]: 0,
@@ -87,8 +87,8 @@ export type WhirlpoolsConfigData = {
   feeAuthority: PublicKey;
   collectProtocolFeesAuthority: PublicKey;
   rewardEmissionsSuperAuthority: PublicKey;
-  defaultFeeRate: number;
   defaultProtocolFeeRate: number;
+  featureFlags: number;
 };
 
 /**
@@ -97,9 +97,9 @@ export type WhirlpoolsConfigData = {
 export type WhirlpoolRewardInfoData = {
   mint: PublicKey;
   vault: PublicKey;
-  authority: PublicKey;
   emissionsPerSecondX64: BN;
   growthGlobalX64: BN;
+  extension: number[];
 };
 
 /**
@@ -271,6 +271,7 @@ export type WhirlpoolsConfigExtensionData = {
 export type TokenBadgeData = {
   whirlpoolsConfig: PublicKey;
   tokenMint: PublicKey;
+  attributeRequireNonTransferablePosition: boolean;
 };
 
 /**
@@ -345,4 +346,18 @@ export type AdaptiveFeeVariablesData = {
   volatilityReference: number;
   tickGroupIndexReference: number;
   volatilityAccumulator: number;
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type TokenBadgeAttributeData = {
+  requireNonTransferablePosition: [boolean];
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type ConfigFeatureFlagData = {
+  tokenBadge: [boolean];
 };

@@ -166,6 +166,12 @@ pub enum ErrorCode {
 
     #[msg("Rent calculation error")]
     RentCalculationError, // 0x17b1 (6065)
+
+    #[msg("Feature is not enabled")]
+    FeatureIsNotEnabled, // 0x17b2 (6066)
+
+    #[msg("This whirlpool only supports open_position_with_token_extensions instruction")]
+    PositionWithTokenExtensionsRequired, // 0x17b3 (6067)
 }
 
 impl From<TryFromIntError> for ErrorCode {

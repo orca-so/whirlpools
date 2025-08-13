@@ -36,3 +36,37 @@ export type TickArray = {
   startTickIndex: number;
   data: TickArrayData | null;
 };
+
+/**
+ * Object to represent the control flags of a Whirlpool.
+ * @category WhirlpoolClient
+ */
+export type WhirlpoolControlFlags = {
+  requireNonTransferablePosition: boolean;
+};
+
+/**
+ * Whirlpool extension segment primary.
+ * @category WhirlpoolClient
+ */
+export type WhirlpoolExtensionSegmentPrimary = {
+  controlFlags: WhirlpoolControlFlags;
+  // reserved for future use
+};
+
+/**
+ * Whirlpool extension segment secondary.
+ * @category WhirlpoolClient
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type WhirlpoolExtensionSegmentSecondary = {
+  // reserved for future use
+};
+
+/**
+ * Object to represent the feature flags of a WhirlpoolsConfig.
+ * @category WhirlpoolClient
+ */
+export type ConfigFeatureFlags = {
+  tokenBadge: boolean;
+};

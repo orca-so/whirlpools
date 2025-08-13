@@ -17,11 +17,10 @@ pub struct SetRewardAuthorityBySuperAuthority<'info> {
     pub new_reward_authority: UncheckedAccount<'info>,
 }
 
-/// Set the whirlpool reward authority at the provided `reward_index`.
+/// Set the whirlpool reward authority.
 /// Only the current reward emissions super authority has permission to invoke this instruction.
-pub fn handler(ctx: Context<SetRewardAuthorityBySuperAuthority>, reward_index: u8) -> Result<()> {
-    ctx.accounts.whirlpool.update_reward_authority(
-        reward_index as usize,
-        ctx.accounts.new_reward_authority.key(),
-    )
+pub fn handler(ctx: Context<SetRewardAuthorityBySuperAuthority>, _reward_index: u8) -> Result<()> {
+    ctx.accounts
+        .whirlpool
+        .update_reward_authority(ctx.accounts.new_reward_authority.key())
 }

@@ -72,10 +72,11 @@ impl RpcContext {
                 lamports: 100_000_000_000,
                 data: [
                     WHIRLPOOLS_CONFIG_DISCRIMINATOR,
-                    &signer.pubkey().to_bytes(),
-                    &signer.pubkey().to_bytes(),
-                    &signer.pubkey().to_bytes(),
-                    &[0; 2],
+                    &signer.pubkey().to_bytes(), // fee_authority
+                    &signer.pubkey().to_bytes(), // collect_protocol_fee_authority
+                    &signer.pubkey().to_bytes(), // reward_emissions_super_authority
+                    &[0; 2],                     // default_protocol_fee_rate
+                    &[0; 2],                     // feature_flags
                 ]
                 .concat(),
                 owner: WHIRLPOOL_ID,

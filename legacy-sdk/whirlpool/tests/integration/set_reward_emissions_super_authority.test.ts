@@ -4,6 +4,7 @@ import type { WhirlpoolsConfigData } from "../../src";
 import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { defaultConfirmOptions } from "../utils/const";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { getLocalnetAdminKeypair0 } from "../utils";
 
 describe("set_reward_emissions_super_authority", () => {
   const provider = anchor.AnchorProvider.local(
@@ -16,15 +17,15 @@ describe("set_reward_emissions_super_authority", () => {
   const fetcher = ctx.fetcher;
 
   it("successfully set_reward_emissions_super_authority with super authority keypair", async () => {
+    const admin = await getLocalnetAdminKeypair0(ctx);
     const {
       configInitInfo,
       configKeypairs: { rewardEmissionsSuperAuthorityKeypair },
-    } = generateDefaultConfigParams(ctx);
+    } = generateDefaultConfigParams(ctx, admin.publicKey);
 
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
+      .addSigner(admin)
+      .buildAndExecute();
     const newAuthorityKeypair = anchor.web3.Keypair.generate();
 
     await toTx(
@@ -50,14 +51,14 @@ describe("set_reward_emissions_super_authority", () => {
   });
 
   it("fails if current reward_emissions_super_authority is not a signer", async () => {
+    const admin = await getLocalnetAdminKeypair0(ctx);
     const {
       configInitInfo,
       configKeypairs: { rewardEmissionsSuperAuthorityKeypair },
-    } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    } = generateDefaultConfigParams(ctx, admin.publicKey);
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
+      .addSigner(admin)
+      .buildAndExecute();
 
     await assert.rejects(
       ctx.program.rpc.setRewardEmissionsSuperAuthority({
@@ -73,11 +74,14 @@ describe("set_reward_emissions_super_authority", () => {
   });
 
   it("fails if incorrect reward_emissions_super_authority is passed in", async () => {
-    const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const { configInitInfo } = generateDefaultConfigParams(
       ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+      admin.publicKey,
+    );
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
+      .addSigner(admin)
+      .buildAndExecute();
 
     await assert.rejects(
       toTx(

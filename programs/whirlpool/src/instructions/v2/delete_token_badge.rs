@@ -32,6 +32,10 @@ pub struct DeleteTokenBadge<'info> {
     pub receiver: UncheckedAccount<'info>,
 }
 
-pub fn handler(_ctx: Context<DeleteTokenBadge>) -> Result<()> {
+pub fn handler(ctx: Context<DeleteTokenBadge>) -> Result<()> {
+    ctx.accounts
+        .whirlpools_config
+        .verify_enabled_feature(ConfigFeatureFlags::TOKEN_BADGE)?;
+
     Ok(())
 }

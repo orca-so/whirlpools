@@ -35,15 +35,17 @@ import {
 } from "../../src/config";
 import { getNextKeypair } from "./keypair";
 import { rpc, sendTransaction, signer } from "./mockRpc";
+import { LOCALNET_ADMIN_KEYPAIR_0 } from "./admin";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
+  const admin = LOCALNET_ADMIN_KEYPAIR_0;
   const keypair = getNextKeypair();
   const instructions: IInstruction[] = [];
 
   instructions.push(
     getInitializeConfigInstruction({
       config: keypair,
-      funder: signer,
+      funder: admin,
       feeAuthority: signer.address,
       collectProtocolFeesAuthority: signer.address,
       rewardEmissionsSuperAuthority: signer.address,

@@ -80,6 +80,8 @@ pub fn handler(
         tick_upper_index,
     )?;
 
+    let is_non_transferable_position_required = whirlpool.is_non_transferable_position_required();
+
     initialize_position_mint_2022(
         position_mint,
         &ctx.accounts.funder,
@@ -87,6 +89,7 @@ pub fn handler(
         &ctx.accounts.system_program,
         &ctx.accounts.token_2022_program,
         with_token_metadata,
+        is_non_transferable_position_required,
     )?;
 
     if with_token_metadata {

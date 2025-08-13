@@ -14,6 +14,7 @@ import { defaultConfirmOptions } from "../../../utils/const";
 import type { InitializeTokenBadgeParams } from "../../../../src/instructions";
 import { createMintV2 } from "../../../utils/v2/token-2022";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
+import { getLocalnetAdminKeypair0 } from "../../../utils";
 
 describe("initialize_token_badge", () => {
   const provider = anchor.AnchorProvider.local(
@@ -43,7 +44,8 @@ describe("initialize_token_badge", () => {
   }
 
   async function initializeWhirlpoolsConfig(configKeypair: Keypair) {
-    return toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const initConfigTx = toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, {
         collectProtocolFeesAuthority:
@@ -52,10 +54,22 @@ describe("initialize_token_badge", () => {
         rewardEmissionsSuperAuthority:
           rewardEmissionsSuperAuthorityKeypair.publicKey,
         defaultProtocolFeeRate: 300,
-        funder: provider.wallet.publicKey,
+        funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
-    )
+    );
+    initConfigTx.addInstruction(
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: configKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    );
+
+    return initConfigTx
+      .addSigner(admin)
       .addSigner(configKeypair)
       .buildAndExecute();
   }
@@ -208,7 +222,7 @@ describe("initialize_token_badge", () => {
   });
 
   it("TokenBadge account has reserved space", async () => {
-    const tokenBadgeAccountSizeIncludingReserve = 8 + 32 + 32 + 128;
+    const tokenBadgeAccountSizeIncludingReserve = 8 + 32 + 32 + 1 + 127;
 
     const whirlpoolsConfigKeypair = Keypair.generate();
     await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
@@ -261,6 +275,74 @@ describe("initialize_token_badge", () => {
         return JSON.stringify(err).includes("already in use");
       },
     );
+  });
+
+  it("should be failed: TokenBadge feature is not enabled", async () => {
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const whirlpoolsConfigKeypair = Keypair.generate();
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, {
+        collectProtocolFeesAuthority:
+          collectProtocolFeesAuthorityKeypair.publicKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        rewardEmissionsSuperAuthority:
+          rewardEmissionsSuperAuthorityKeypair.publicKey,
+        defaultProtocolFeeRate: 300,
+        funder: admin.publicKey,
+        whirlpoolsConfigKeypair,
+      }),
+    )
+      .addSigner(admin)
+      .addSigner(whirlpoolsConfigKeypair)
+      .buildAndExecute();
+
+    await initializeWhirlpoolsConfigExtension(
+      whirlpoolsConfigKeypair.publicKey,
+    );
+
+    const mint = await createMintV2(provider, { isToken2022: true });
+    const tokenBadgePda = PDAUtil.getTokenBadge(
+      ctx.program.programId,
+      whirlpoolsConfigKeypair.publicKey,
+      mint,
+    );
+
+    // should be failed: feature is not enabled
+    await assert.rejects(
+      initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
+      /0x17b2/, // FeatureIsNotEnabled
+    );
+
+    const tokenBadgeData = await fetcher.getTokenBadge(
+      tokenBadgePda.publicKey,
+      IGNORE_CACHE,
+    );
+    assert.ok(tokenBadgeData === null);
+
+    // enable feature
+    await toTx(
+      ctx,
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    )
+      .addSigner(admin)
+      .buildAndExecute();
+
+    // should be success: now feature is enabled
+    await initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+
+    const tokenBadgeDataAgain = await fetcher.getTokenBadge(
+      tokenBadgePda.publicKey,
+      IGNORE_CACHE,
+    );
+    assert.ok(tokenBadgeDataAgain !== null);
   });
 
   describe("invalid input account", () => {

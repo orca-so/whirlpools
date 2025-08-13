@@ -10,6 +10,7 @@ import {
   WhirlpoolIx,
 } from "../../../../src";
 import { defaultConfirmOptions } from "../../../utils/const";
+import { getLocalnetAdminKeypair0 } from "../../../utils";
 
 describe("set_config_extension_authority", () => {
   const provider = anchor.AnchorProvider.local(
@@ -29,7 +30,8 @@ describe("set_config_extension_authority", () => {
   const updatedConfigExtensionAuthorityKeypair = Keypair.generate();
 
   async function initializeWhirlpoolsConfig(configKeypair: Keypair) {
-    return toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const initConfigTx = toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, {
         collectProtocolFeesAuthority:
@@ -38,10 +40,22 @@ describe("set_config_extension_authority", () => {
         rewardEmissionsSuperAuthority:
           rewardEmissionsSuperAuthorityKeypair.publicKey,
         defaultProtocolFeeRate: 300,
-        funder: provider.wallet.publicKey,
+        funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
-    )
+    );
+    initConfigTx.addInstruction(
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: configKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    );
+
+    return initConfigTx
+      .addSigner(admin)
       .addSigner(configKeypair)
       .buildAndExecute();
   }

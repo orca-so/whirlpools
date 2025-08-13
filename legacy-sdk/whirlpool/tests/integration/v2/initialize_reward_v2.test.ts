@@ -9,7 +9,13 @@ import {
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
+import {
+  getProviderWalletKeypair,
+  ONE_SOL,
+  setAuthority,
+  systemTransferTx,
+  TickSpacing,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import {
@@ -21,7 +27,7 @@ import {
   createMintV2,
 } from "../../utils/v2/token-2022";
 import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../utils";
-import { AccountState } from "@solana/spl-token";
+import { AccountState, AuthorityType } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 
 describe("initialize_reward_v2", () => {
@@ -32,6 +38,8 @@ describe("initialize_reward_v2", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
+
+  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   describe("v1 parity", () => {
     const tokenTraitVariations: {
@@ -533,6 +541,7 @@ describe("initialize_reward_v2", () => {
       supported: boolean;
       createTokenBadge: boolean;
       tokenTrait: TokenTrait;
+      dropFreezeAuthorityAfterMintInitialization?: boolean;
     }) {
       const { poolInitInfo, configKeypairs, configExtension } =
         await initTestPoolV2(
@@ -547,6 +556,25 @@ describe("initialize_reward_v2", () => {
       const tokenProgram = (await provider.connection.getAccountInfo(
         rewardToken,
       ))!.owner;
+
+      if (params.dropFreezeAuthorityAfterMintInitialization) {
+        await setAuthority(
+          provider,
+          rewardToken,
+          null,
+          AuthorityType.FreezeAccount,
+          providerWalletKeypair,
+          params.tokenTrait.isToken2022
+            ? TEST_TOKEN_2022_PROGRAM_ID
+            : TEST_TOKEN_PROGRAM_ID,
+        );
+
+        const afterSetAuthorityMint = await fetcher.getMintInfo(
+          rewardToken,
+          IGNORE_CACHE,
+        );
+        assert.ok(afterSetAuthorityMint?.freezeAuthority === null);
+      }
 
       // create token badge if wanted
       const tokenBadgePda = PDAUtil.getTokenBadge(
@@ -776,6 +804,20 @@ describe("initialize_reward_v2", () => {
           hasDefaultAccountStateExtension: true,
           defaultAccountInitialState: AccountState.Frozen,
         },
+      });
+    });
+
+    it("Token-2022: [FAIL] with TokenBadge with DefaultAccountState(Frozen), but not freeze authority", async () => {
+      await runTest({
+        supported: false, // thawing is impossible
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasFreezeAuthority: true, // needed to set initial state to Frozen
+          hasDefaultAccountStateExtension: true,
+          defaultAccountInitialState: AccountState.Frozen,
+        },
+        dropFreezeAuthorityAfterMintInitialization: true,
       });
     });
 

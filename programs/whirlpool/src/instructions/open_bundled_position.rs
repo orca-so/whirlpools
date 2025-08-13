@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
 use crate::{
-    manager::tick_array_manager::collect_rent_for_ticks_in_position, state::*,
+    errors::ErrorCode, manager::tick_array_manager::collect_rent_for_ticks_in_position, state::*,
     util::verify_position_bundle_authority,
 };
 
@@ -50,6 +50,10 @@ pub fn handler(
     let whirlpool = &ctx.accounts.whirlpool;
     let position_bundle = &mut ctx.accounts.position_bundle;
     let position = &mut ctx.accounts.bundled_position;
+
+    if whirlpool.is_position_with_token_extensions_required() {
+        return Err(ErrorCode::PositionWithTokenExtensionsRequired.into());
+    }
 
     // Allow delegation
     verify_position_bundle_authority(

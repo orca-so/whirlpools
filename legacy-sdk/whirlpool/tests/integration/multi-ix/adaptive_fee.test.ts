@@ -31,6 +31,7 @@ import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-exte
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
+  getLocalnetAdminKeypair0,
   sleep,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
@@ -61,13 +62,15 @@ describe("adaptive fee tests", () => {
   );
 
   let testCtx: SharedTestContext;
+  let admin: Keypair;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
+    admin = await getLocalnetAdminKeypair0(whirlpoolCtx);
     testCtx = {
       provider,
       whirlpoolCtx,
@@ -2073,10 +2076,11 @@ describe("adaptive fee tests", () => {
         rewardEmissionsSuperAuthority:
           authorityWhirlpoolsConfigKeypair.publicKey,
         defaultProtocolFeeRate: 300,
-        funder: provider.wallet.publicKey,
+        funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
     )
+      .addSigner(admin)
       .addSigner(configKeypair)
       .buildAndExecute();
 

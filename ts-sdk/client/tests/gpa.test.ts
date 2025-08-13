@@ -15,6 +15,7 @@ import {
   createDefaultRpcTransport,
   createSolanaRpcFromTransport,
   getAddressDecoder,
+  getAddressEncoder,
   getBase58Encoder,
 } from "@solana/kit";
 import {
@@ -350,6 +351,7 @@ describe("get program account memcmp filters", () => {
     const tokenBadgeStruct: TokenBadgeArgs = {
       whirlpoolsConfig: addresses[0],
       tokenMint: addresses[1],
+      attributeRequireNonTransferablePosition: true,
     };
     await fetchAllTokenBadgeWithFilter(
       mockRpc,
@@ -384,21 +386,21 @@ describe("get program account memcmp filters", () => {
         {
           mint: addresses[5],
           vault: addresses[6],
-          authority: addresses[7],
+          extension: new Uint8Array(getAddressEncoder().encode(addresses[7])),
           emissionsPerSecondX64: 8514,
           growthGlobalX64: 2841,
         },
         {
           mint: addresses[8],
           vault: addresses[9],
-          authority: addresses[10],
+          extension: new Uint8Array(32),
           emissionsPerSecondX64: 5815,
           growthGlobalX64: 1185,
         },
         {
-          mint: addresses[11],
-          vault: addresses[12],
-          authority: addresses[13],
+          mint: addresses[10],
+          vault: addresses[11],
+          extension: new Uint8Array(32),
           emissionsPerSecondX64: 1821,
           growthGlobalX64: 1256,
         },
@@ -431,6 +433,7 @@ describe("get program account memcmp filters", () => {
       collectProtocolFeesAuthority: addresses[1],
       rewardEmissionsSuperAuthority: addresses[2],
       defaultProtocolFeeRate: 1234,
+      featureFlags: 1,
     };
     await fetchAllWhirlpoolsConfigWithFilter(
       mockRpc,

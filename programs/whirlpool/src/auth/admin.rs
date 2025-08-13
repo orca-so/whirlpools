@@ -11,19 +11,19 @@ pub const ADMINS: [Pubkey; 2] = [
 ];
 
 #[cfg(feature = "devnet")]
-pub const ADMINS: [Pubkey; 3] = [
-    // TODO: Replace with actual admin keys
-    pubkey!("11111111111111111111111111111111"),
-    pubkey!("11111111111111111111111111111111"),
-    pubkey!("11111111111111111111111111111111"),
+pub const ADMINS: [Pubkey; 2] = [
+    // fee authority of FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR (Solana Devnet)
+    pubkey!("3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo"),
+    // fee authority of FPydDjRdZu9sT7HVd6ANhfjh85KLq21Pefr5YWWMRPFp (Eclipse Testnet)
+    pubkey!("9Pxdxw2iC1FY5qG3wsRLU6tDjstzEUvTEpPoFQeXZYMy"),
 ];
 
 #[cfg(feature = "mainnet")]
-pub const ADMINS: [Pubkey; 3] = [
-    // TODO: Replace with actual admin keys
-    pubkey!("11111111111111111111111111111111"),
-    pubkey!("11111111111111111111111111111111"),
-    pubkey!("11111111111111111111111111111111"),
+pub const ADMINS: [Pubkey; 2] = [
+    // fee authority of 2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ (Solana)
+    pubkey!("6BLTtBS9miUZruZtR9reTzp6ctGc4kVY4xrcxQwurYtw"),
+    // fee authority of FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv (Eclipse)
+    pubkey!("AqiJTdr9jLPDAk5prGhWFHtSM1qJszAsdZVV7oeinxhh"),
 ];
 
 pub fn is_admin_key(maybe_admin: &Pubkey) -> bool {

@@ -15,7 +15,7 @@ pub struct DynamicTickData {
     pub fee_growth_outside_b: u128, // 16
 
     // Array of Q64.64
-    pub reward_growths_outside: [u128; 3], // 48 = 16 * 3
+    pub reward_growths_outside: [u128; NUM_REWARDS], // 48 = 16 * 3
 }
 
 impl DynamicTickData {

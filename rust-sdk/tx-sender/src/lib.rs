@@ -89,6 +89,13 @@ pub async fn build_and_send_transaction<S: Signer>(
     .await
 }
 
+#[derive(Debug, Default)]
+pub struct BuildTransactionConfig {
+    pub rpc_config: RpcConfig,
+    pub fee_config: FeeConfig,
+    pub compute_config: ComputeConfig,
+}
+
 /// Build a transaction with compute budget and priority fees from the supplied configuration
 ///
 /// This function handles:
@@ -96,13 +103,12 @@ pub async fn build_and_send_transaction<S: Signer>(
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
 /// 4. Supporting address lookup tables for account compression
-pub async fn build_transaction_with_config(
+pub async fn build_transaction_with_config_obj(
     mut instructions: Vec<Instruction>,
     payer: &Pubkey,
     address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
     rpc_client: &RpcClient,
-    rpc_config: &RpcConfig,
-    fee_config: &FeeConfig,
+    config: &BuildTransactionConfig,
 ) -> Result<VersionedTransaction, String> {
     let recent_blockhash = rpc_client
         .get_latest_blockhash()
@@ -113,13 +119,21 @@ pub async fn build_transaction_with_config(
 
     let address_lookup_tables_clone = address_lookup_tables.clone();
 
-    let compute_units = compute_budget::estimate_compute_units(
-        rpc_client,
-        &instructions,
-        payer,
-        address_lookup_tables_clone,
-    )
-    .await?;
+    let compute_units = match config.compute_config.unit_limit {
+        ComputeUnitLimitStrategy::Dynamic => {
+            compute_budget::estimate_compute_units(
+                rpc_client,
+                &instructions,
+                payer,
+                address_lookup_tables_clone,
+            )
+            .await?
+        }
+        ComputeUnitLimitStrategy::Exact(units) => units,
+    };
+
+    let rpc_config = &config.rpc_config;
+    let fee_config = &config.fee_config;
     let budget_instructions = compute_budget::get_compute_budget_instruction(
         rpc_client,
         compute_units,
@@ -153,10 +167,44 @@ pub async fn build_transaction_with_config(
         Message::try_compile(payer, &instructions, &[], recent_blockhash)
             .map_err(|e| format!("Failed to compile message: {}", e))?
     };
+
+    // Provide the correct number of signatures for the transaction, otherwise (de)serialization can fail
     Ok(VersionedTransaction {
-        signatures: vec![],
+        signatures: vec![
+            solana_sdk::signature::Signature::default();
+            message.header.num_required_signatures.into()
+        ],
         message: VersionedMessage::V0(message),
     })
+}
+
+/// Build a transaction with compute budget and priority fees from the supplied configuration
+///
+/// This function handles:
+/// 1. Building a transaction message with all instructions
+/// 2. Adding compute budget instructions
+/// 3. Adding any Jito tip instructions
+/// 4. Supporting address lookup tables for account compression
+pub async fn build_transaction_with_config(
+    instructions: Vec<Instruction>,
+    payer: &Pubkey,
+    address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
+    rpc_client: &RpcClient,
+    rpc_config: &RpcConfig,
+    fee_config: &FeeConfig,
+) -> Result<VersionedTransaction, String> {
+    build_transaction_with_config_obj(
+        instructions,
+        payer,
+        address_lookup_tables,
+        rpc_client,
+        &BuildTransactionConfig {
+            rpc_config: (*rpc_config).clone(),
+            fee_config: (*fee_config).clone(),
+            ..Default::default()
+        },
+    )
+    .await
 }
 
 /// Build a transaction with compute budget and priority fees from the global configuration

@@ -1,4 +1,5 @@
 export * from "./feeTier";
+export * from "./lockConfig";
 export * from "./oracle";
 export * from "./position";
 export * from "./positionBundle";

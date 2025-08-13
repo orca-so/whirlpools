@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust
 
+## 4.0.1
+
+### Patch Changes
+
+- [#1020](https://github.com/orca-so/whirlpools/pull/1020) [`a57c99c`](https://github.com/orca-so/whirlpools/commit/a57c99c5fb1cae451280b576c206ea761aa00255) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Fix wrong ATA init instruction generation
+
 ## 4.0.0
 
 ### Major Changes

@@ -6,6 +6,7 @@ import * as assert from "assert";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../../src";
 import { defaultConfirmOptions } from "../../../utils/const";
 import type { InitConfigExtensionParams } from "../../../../src/instructions";
+import { getLocalnetAdminKeypair0 } from "../../../utils";
 
 describe("initialize_config_extension", () => {
   const provider = anchor.AnchorProvider.local(
@@ -32,7 +33,8 @@ describe("initialize_config_extension", () => {
   }
 
   async function initializeWhirlpoolsConfig(configKeypair: Keypair) {
-    return toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const initConfigTx = toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, {
         collectProtocolFeesAuthority:
@@ -41,10 +43,22 @@ describe("initialize_config_extension", () => {
         rewardEmissionsSuperAuthority:
           rewardEmissionsSuperAuthorityKeypair.publicKey,
         defaultProtocolFeeRate: 300,
-        funder: provider.wallet.publicKey,
+        funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
-    )
+    );
+    initConfigTx.addInstruction(
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig: configKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    );
+
+    return initConfigTx
+      .addSigner(admin)
       .addSigner(configKeypair)
       .buildAndExecute();
   }

@@ -25,6 +25,7 @@ pub mod open_position_with_metadata;
 pub mod open_position_with_token_extensions;
 pub mod reset_position_range;
 pub mod set_collect_protocol_fees_authority;
+pub mod set_config_feature_flag;
 pub mod set_default_fee_rate;
 pub mod set_default_protocol_fee_rate;
 pub mod set_fee_authority;
@@ -64,6 +65,7 @@ pub use open_position_with_metadata::*;
 pub use open_position_with_token_extensions::*;
 pub use reset_position_range::*;
 pub use set_collect_protocol_fees_authority::*;
+pub use set_config_feature_flag::*;
 pub use set_default_fee_rate::*;
 pub use set_default_protocol_fee_rate::*;
 pub use set_fee_authority::*;
@@ -82,3 +84,6 @@ pub use v2::*;
 
 pub mod adaptive_fee;
 pub use adaptive_fee::*;
+
+pub mod migrate_repurpose_reward_authority_space;
+pub use migrate_repurpose_reward_authority_space::*;

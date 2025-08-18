@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../../../src";
@@ -15,6 +14,7 @@ import {
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
+  getProviderWalletKeypair,
   getTokenBalance,
   sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
@@ -42,7 +42,7 @@ describe("TokenExtension/InterestBearing", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
-  const payer = (ctx.wallet as NodeWallet).payer;
+  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   async function rawAmountToUIAmount(
     mint: PublicKey,
@@ -50,7 +50,7 @@ describe("TokenExtension/InterestBearing", () => {
   ): Promise<string> {
     const result = await amountToUiAmount(
       ctx.connection,
-      payer,
+      providerWalletKeypair,
       mint,
       rawAmount.toNumber(),
       TEST_TOKEN_2022_PROGRAM_ID,
@@ -108,16 +108,16 @@ describe("TokenExtension/InterestBearing", () => {
     // set rate > 0%
     const sigA = await updateRateInterestBearingMint(
       ctx.connection,
-      payer,
+      providerWalletKeypair,
       poolInitInfo.tokenMintA,
-      payer,
+      providerWalletKeypair,
       30_000, // 300%
     );
     const sigB = await updateRateInterestBearingMint(
       ctx.connection,
-      payer,
+      providerWalletKeypair,
       poolInitInfo.tokenMintB,
-      payer,
+      providerWalletKeypair,
       10_000, // 100%
     );
     await Promise.all([

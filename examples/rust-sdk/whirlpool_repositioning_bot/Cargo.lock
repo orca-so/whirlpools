@@ -2329,7 +2329,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "bincode",
  "orca_whirlpools_client",

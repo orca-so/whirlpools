@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../../../src";
@@ -15,6 +14,7 @@ import {
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
+  getProviderWalletKeypair,
   getTokenBalance,
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
@@ -38,7 +38,7 @@ describe("TokenExtension/ScaledUiAmount", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
-  const payer = (ctx.wallet as NodeWallet).payer;
+  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   async function rawAmountToUIAmount(
     mint: PublicKey,
@@ -46,7 +46,7 @@ describe("TokenExtension/ScaledUiAmount", () => {
   ): Promise<string> {
     const result = await amountToUiAmount(
       ctx.connection,
-      payer,
+      providerWalletKeypair,
       mint,
       rawAmount.toNumber(),
       TEST_TOKEN_2022_PROGRAM_ID,

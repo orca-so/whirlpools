@@ -1,5 +1,6 @@
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
+import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 
@@ -89,4 +90,11 @@ export function rewritePubkey(
   };
 
   return ixWithWrongAccount;
+}
+
+export function getProviderWalletKeypair(
+  provider: AnchorProvider,
+): web3.Keypair {
+  const payer = (provider.wallet as NodeWallet).payer;
+  return payer;
 }

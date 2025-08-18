@@ -16,6 +16,7 @@ import {
   ZERO_BN,
   createAndMintToAssociatedTokenAccount,
   createMint,
+  getLocalnetAdminKeypair0,
   mintToDestination,
 } from ".";
 import type {
@@ -151,6 +152,8 @@ export async function buildTestAquariums(
   ctx: WhirlpoolContext,
   initParams: InitAquariumParams[],
 ): Promise<TestAquarium[]> {
+  const admin = await getLocalnetAdminKeypair0(ctx);
+
   const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
   await ctx.connection.requestAirdrop(
@@ -166,8 +169,13 @@ export async function buildTestAquariums(
     // Could batch
     await toTx(
       ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo),
-    ).buildAndExecute();
+      WhirlpoolIx.initializeConfigIx(ctx.program, {
+        ...configParams.configInitInfo,
+        funder: admin.publicKey,
+      }),
+    )
+      .addSigner(admin)
+      .buildAndExecute();
 
     const {
       initFeeTierParams,
@@ -347,11 +355,15 @@ export async function buildTestPoolParams(
   funder?: PublicKey,
   reuseTokenA?: PublicKey,
 ) {
-  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-  await toTx(
+  const admin = await getLocalnetAdminKeypair0(ctx);
+
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
     ctx,
-    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-  ).buildAndExecute();
+    admin.publicKey,
+  );
+  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
+    .addSigner(admin)
+    .buildAndExecute();
 
   const { params: feeTierParams } = await initFeeTier(
     ctx,
@@ -1213,6 +1225,37 @@ export async function openBundledPosition(
   }
   const txId = await tx.buildAndExecute();
   return { txId, params };
+}
+
+export async function initializeConfigWithDefaultConfigParams(
+  ctx: WhirlpoolContext,
+) {
+  const admin = await getLocalnetAdminKeypair0(ctx);
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
+    ctx,
+    admin.publicKey,
+  );
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+  );
+
+  // enable TokenBadge feature for convenience
+  tx.addInstruction(
+    WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      authority: admin.publicKey,
+      featureFlag: {
+        tokenBadge: [true],
+      },
+    }),
+  );
+
+  await tx.addSigner(admin).buildAndExecute();
+  return {
+    configInitInfo,
+    configKeypairs,
+  };
 }
 
 export function useCU(cu: number): Instruction {

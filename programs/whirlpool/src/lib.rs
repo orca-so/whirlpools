@@ -3,6 +3,8 @@ use anchor_lang::prelude::*;
 declare_id!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
 
 #[doc(hidden)]
+pub mod auth;
+#[doc(hidden)]
 pub mod constants;
 #[doc(hidden)]
 pub mod errors;
@@ -22,7 +24,10 @@ pub mod tests;
 #[doc(hidden)]
 pub mod util;
 
-use crate::state::{LockType, OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
+use crate::state::{
+    ConfigFeatureFlag, LockType, OpenPositionBumps, OpenPositionWithMetadataBumps,
+    TokenBadgeAttribute, WhirlpoolBumps,
+};
 use crate::util::RemainingAccountsInfo;
 use instructions::*;
 
@@ -32,6 +37,9 @@ pub mod whirlpool {
 
     /// Initializes a WhirlpoolsConfig account that hosts info & authorities
     /// required to govern a set of Whirlpools.
+    ///
+    /// ### Authority
+    /// - "authority" - Set authority that is one of ADMINS.
     ///
     /// ### Parameters
     /// - `fee_authority` - Authority authorized to initialize fee-tiers and set customs fees.
@@ -864,13 +872,34 @@ pub mod whirlpool {
         instructions::set_fee_rate_by_delegated_fee_authority::handler(ctx, fee_rate)
     }
 
+    /// Sets the feature flag for a WhirlpoolConfig.
+    ///
+    /// ### Authority
+    /// - "authority" - Set authority that is one of ADMINS.
+    ///
+    /// ### Parameters
+    /// - `feature_flag` - The feature flag that the WhirlpoolConfig will use.
+    pub fn set_config_feature_flag(
+        ctx: Context<SetConfigFeatureFlag>,
+        feature_flag: ConfigFeatureFlag,
+    ) -> Result<()> {
+        instructions::set_config_feature_flag::handler(ctx, feature_flag)
+    }
+
+    /// Migration instruction to repurpose the reward authority space in the Whirlpool.
+    /// TODO: This instruction should be removed once all pools have been migrated.
+    pub fn migrate_repurpose_reward_authority_space(
+        ctx: Context<MigrateRepurposeRewardAuthoritySpace>,
+    ) -> Result<()> {
+        instructions::migrate_repurpose_reward_authority_space::handler(ctx)
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     // V2 instructions (TokenExtensions)
     ////////////////////////////////////////////////////////////////////////////////
 
-    // TODO: update comments
-
     /// Collect fees accrued for this position.
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
@@ -882,6 +911,7 @@ pub mod whirlpool {
     }
 
     /// Collect the protocol fees accrued in this Whirlpool
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees
@@ -893,6 +923,7 @@ pub mod whirlpool {
     }
 
     /// Collect rewards accrued for this position.
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
@@ -905,6 +936,7 @@ pub mod whirlpool {
     }
 
     /// Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
@@ -935,6 +967,7 @@ pub mod whirlpool {
     }
 
     /// Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
@@ -965,6 +998,7 @@ pub mod whirlpool {
     }
 
     /// Initializes a Whirlpool account.
+    /// This instruction works with both Token and Token-2022.
     /// Fee rate is set to the default values on the config and supplied fee_tier.
     ///
     /// ### Parameters
@@ -985,6 +1019,7 @@ pub mod whirlpool {
     }
 
     /// Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - "reward_authority" - assigned authority by the reward_super_authority for the specified
@@ -1002,6 +1037,7 @@ pub mod whirlpool {
     }
 
     /// Set the reward emissions for a reward in a Whirlpool.
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - "reward_authority" - assigned authority by the reward_super_authority for the specified
@@ -1027,6 +1063,7 @@ pub mod whirlpool {
     }
 
     /// Perform a swap in this Whirlpool
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - "token_authority" - The authority to withdraw tokens from the input token account.
@@ -1068,6 +1105,7 @@ pub mod whirlpool {
     }
 
     /// Perform a two-hop swap in this Whirlpool
+    /// This instruction works with both Token and Token-2022.
     ///
     /// ### Authority
     /// - "token_authority" - The authority to withdraw tokens from the input token account.
@@ -1117,24 +1155,69 @@ pub mod whirlpool {
         )
     }
 
+    /// Initializes a WhirlpoolConfigExtension account that hosts info & authorities.
+    ///
+    /// ### Authority
+    /// - "fee_authority" - Set authority in the WhirlpoolConfig
     pub fn initialize_config_extension(ctx: Context<InitializeConfigExtension>) -> Result<()> {
         instructions::v2::initialize_config_extension::handler(ctx)
     }
 
+    /// Sets the config extension authority for a WhirlpoolsConfigExtension.
+    /// Only the current config extension authority has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "config_extension_authority" - Set authority in the WhirlpoolConfigExtension
     pub fn set_config_extension_authority(ctx: Context<SetConfigExtensionAuthority>) -> Result<()> {
         instructions::v2::set_config_extension_authority::handler(ctx)
     }
 
+    /// Sets the token badge authority for a WhirlpoolsConfigExtension.
+    /// Only the config extension authority has permission to invoke this instruction.
+    ///
+    /// ### Authority
+    /// - "config_extension_authority" - Set authority in the WhirlpoolConfigExtension
     pub fn set_token_badge_authority(ctx: Context<SetTokenBadgeAuthority>) -> Result<()> {
         instructions::v2::set_token_badge_authority::handler(ctx)
     }
 
+    /// Initialize a TokenBadge account.
+    ///
+    /// ### Authority
+    /// - "token_badge_authority" - Set authority in the WhirlpoolConfigExtension
+    ///
+    /// ### Special Errors
+    /// - `FeatureIsNotEnabled` - If the feature flag for token badges is not enabled.
     pub fn initialize_token_badge(ctx: Context<InitializeTokenBadge>) -> Result<()> {
         instructions::v2::initialize_token_badge::handler(ctx)
     }
 
+    /// Delete a TokenBadge account.
+    ///
+    /// ### Authority
+    /// - "token_badge_authority" - Set authority in the WhirlpoolConfigExtension
+    ///
+    /// ### Special Errors
+    /// - `FeatureIsNotEnabled` - If the feature flag for token badges is not enabled.
     pub fn delete_token_badge(ctx: Context<DeleteTokenBadge>) -> Result<()> {
         instructions::v2::delete_token_badge::handler(ctx)
+    }
+
+    /// Set an attribute on a TokenBadge account.
+    ///
+    /// ### Authority
+    /// - "token_badge_authority" - Set authority in the WhirlpoolConfigExtension
+    ///
+    /// ### Parameters
+    /// - `attribute` - The attribute to set on the TokenBadge account.
+    ///
+    /// #### Special Errors
+    /// - `FeatureIsNotEnabled` - If the feature flag for token badges is not enabled.
+    pub fn set_token_badge_attribute(
+        ctx: Context<SetTokenBadgeAttribute>,
+        attribute: TokenBadgeAttribute,
+    ) -> Result<()> {
+        instructions::v2::set_token_badge_attribute::handler(ctx, attribute)
     }
 
     // Only for inclusion in the IDL

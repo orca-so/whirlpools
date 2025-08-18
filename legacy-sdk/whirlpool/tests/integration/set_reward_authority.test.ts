@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData } from "../../src";
-import { NUM_REWARDS, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
+import { PoolUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
@@ -17,29 +17,27 @@ describe("set_reward_authority", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
-  it("successfully set_reward_authority at every reward index", async () => {
+  it("successfully set_reward_authority", async () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(
       ctx,
       TickSpacing.Standard,
     );
 
-    const newKeypairs = generateKeypairs(NUM_REWARDS);
+    const newKeypair = anchor.web3.Keypair.generate();
     const txBuilder = new TransactionBuilder(
       provider.connection,
       provider.wallet,
       ctx.txBuilderOpts,
     );
-    for (let i = 0; i < NUM_REWARDS; i++) {
-      txBuilder.addInstruction(
-        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
-          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-          rewardAuthority:
-            configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-          newRewardAuthority: newKeypairs[i].publicKey,
-          rewardIndex: i,
-        }),
-      );
-    }
+    txBuilder.addInstruction(
+      WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+        rewardAuthority:
+          configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+        newRewardAuthority: newKeypair.publicKey,
+        rewardIndex: 0,
+      }),
+    );
     await txBuilder
       .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
       .buildAndExecute({
@@ -49,9 +47,7 @@ describe("set_reward_authority", () => {
     const pool = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
     )) as WhirlpoolData;
-    for (let i = 0; i < NUM_REWARDS; i++) {
-      assert.ok(pool.rewardInfos[i].authority.equals(newKeypairs[i].publicKey));
-    }
+    assert.ok(PoolUtil.getRewardAuthority(pool).equals(newKeypair.publicKey));
   });
 
   it("fails when provided reward_authority does not match whirlpool reward authority", async () => {
@@ -81,6 +77,7 @@ describe("set_reward_authority", () => {
       TickSpacing.Standard,
     );
 
+    // -1 is out of range
     const newAuthority = anchor.web3.Keypair.generate();
     assert.throws(() => {
       toTx(
@@ -95,21 +92,19 @@ describe("set_reward_authority", () => {
       ).buildAndExecute();
     }, /out of range/);
 
-    await assert.rejects(
-      toTx(
-        ctx,
-        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
-          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-          rewardAuthority:
-            configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-          newRewardAuthority: newAuthority.publicKey,
-          rewardIndex: 255,
-        }),
-      )
-        .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
-        .buildAndExecute(),
-      //   /failed to send transaction/
-    );
+    // rewardIndex should be ignored
+    await toTx(
+      ctx,
+      WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+        rewardAuthority:
+          configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+        newRewardAuthority: newAuthority.publicKey,
+        rewardIndex: 255,
+      }),
+    )
+      .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+      .buildAndExecute();
   });
 
   it("fails when reward_authority is not a signer", async () => {
@@ -134,11 +129,3 @@ describe("set_reward_authority", () => {
     );
   });
 });
-
-function generateKeypairs(n: number): anchor.web3.Keypair[] {
-  const keypairs: anchor.web3.Keypair[] = [];
-  for (let i = 0; i < n; i++) {
-    keypairs.push(anchor.web3.Keypair.generate());
-  }
-  return keypairs;
-}

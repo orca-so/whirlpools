@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { InitPoolParams, WhirlpoolData } from "../../src";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
-import { TickSpacing } from "../utils";
+import { getLocalnetAdminKeypair0, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import {
@@ -166,11 +166,14 @@ describe("set_default_fee_rate", () => {
   });
 
   it("fails when fee tier account has not been initialized", async () => {
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
+    const admin = await getLocalnetAdminKeypair0(ctx);
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
       ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+      admin.publicKey,
+    );
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
+      .addSigner(admin)
+      .buildAndExecute();
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     await assert.rejects(

@@ -11,7 +11,7 @@ concurrency:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
       run: yarn build --output-style static
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
       run: yarn test --exclude legacy-sdk/integration --exclude rust-sdk/integration --output-style static
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
       run: yarn lint --output-style static
 
   changeset:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
     steps:
     - name: Checkout repository

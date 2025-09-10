@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust-client
 
+## 5.0.0
+
+### Major Changes
+
+- [#1038](https://github.com/orca-so/whirlpools/pull/1038) [`19875ce`](https://github.com/orca-so/whirlpools/commit/19875ce6595c7e15ad07cd2ede3966b05d34ab62) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Support non transferable position, Whirlpool account layout update (repurpose reward authority field)
+
 ## 4.0.0
 
 ### Major Changes

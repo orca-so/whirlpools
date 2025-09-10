@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-rust-client",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "build": "node ./codama.js && cargo build",

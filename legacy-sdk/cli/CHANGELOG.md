@@ -1,5 +1,18 @@
 # @orca-so/whirlpools-sdk-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1038](https://github.com/orca-so/whirlpools/pull/1038) [`19875ce`](https://github.com/orca-so/whirlpools/commit/19875ce6595c7e15ad07cd2ede3966b05d34ab62) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Support non transferable position, Whirlpool account layout update (repurpose reward authority field)
+
+### Patch Changes
+
+- [#1024](https://github.com/orca-so/whirlpools/pull/1024) [`88d3279`](https://github.com/orca-so/whirlpools/commit/88d32793aeeee5ea55c11d05d8856a9ff91c4eab) Thanks [@yugure-orca](https://github.com/yugure-orca)! - add setPresetAdaptiveFeeConstants command
+
+- Updated dependencies [[`19875ce`](https://github.com/orca-so/whirlpools/commit/19875ce6595c7e15ad07cd2ede3966b05d34ab62)]:
+  - @orca-so/whirlpools-sdk@0.16.0
+
 ## 0.2.0
 
 ### Minor Changes

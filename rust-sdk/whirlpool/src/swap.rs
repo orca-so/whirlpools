@@ -5,7 +5,7 @@ use std::{
 };
 
 use orca_whirlpools_client::{
-    get_oracle_address, get_tick_array_address, AccountsType, FixedTickArray, Oracle,
+    get_oracle_address, get_tick_array_address, AccountsType, TickArray, Oracle,
     RemainingAccountsInfo, RemainingAccountsSlice, SwapV2, SwapV2InstructionArgs, Whirlpool,
 };
 use orca_whirlpools_core::{
@@ -102,7 +102,7 @@ async fn fetch_tick_arrays_or_default(
         .iter()
         .map(|x| {
             x.as_ref()
-                .and_then(|y| FixedTickArray::from_bytes(&y.data).ok())
+                .and_then(|y| TickArray::from_bytes(&y.data).ok())
         })
         .map(|x| x.map(|y| y.into()))
         .collect();

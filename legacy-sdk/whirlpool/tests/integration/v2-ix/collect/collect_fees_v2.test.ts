@@ -3,7 +3,11 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolData } from "../../../../src";
+import type {
+  PositionData,
+  TickArrayData,
+  WhirlpoolData,
+} from "../../../../src";
 import {
   collectFeesQuote,
   METADATA_PROGRAM_ADDRESS,
@@ -26,7 +30,10 @@ import {
 import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
-import { createMintV2, createTokenAccountV2 } from "../../../utils/v2/token-2022";
+import {
+  createMintV2,
+  createTokenAccountV2,
+} from "../../../utils/v2/token-2022";
 import { createTokenAccount as createTokenAccountForPosition } from "../../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";

@@ -3,7 +3,12 @@ import * as assert from "assert";
 import type { WhirlpoolData } from "../../../src";
 import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { createMint, ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
+import {
+  createMint,
+  ONE_SOL,
+  systemTransferTx,
+  TickSpacing,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initializeReward, initTestPool } from "../../utils/init-utils";
 

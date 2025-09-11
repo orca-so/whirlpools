@@ -3,7 +3,11 @@ import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolData } from "../../../../src";
+import type {
+  PositionData,
+  TickArrayData,
+  WhirlpoolData,
+} from "../../../../src";
 import {
   METADATA_PROGRAM_ADDRESS,
   WhirlpoolContext,
@@ -28,7 +32,11 @@ import {
   TICK_RENT_AMOUNT,
 } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
-import { initTickArray, openPosition, useMaxCU } from "../../../utils/init-utils";
+import {
+  initTickArray,
+  openPosition,
+  useMaxCU,
+} from "../../../utils/init-utils";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   createMintV2,

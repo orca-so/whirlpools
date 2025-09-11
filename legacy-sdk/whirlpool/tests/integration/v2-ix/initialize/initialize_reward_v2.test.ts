@@ -26,7 +26,10 @@ import {
   asyncAssertOwnerProgram,
   createMintV2,
 } from "../../../utils/v2/token-2022";
-import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../../utils";
+import {
+  TEST_TOKEN_2022_PROGRAM_ID,
+  TEST_TOKEN_PROGRAM_ID,
+} from "../../../utils";
 import { AccountState, AuthorityType } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 

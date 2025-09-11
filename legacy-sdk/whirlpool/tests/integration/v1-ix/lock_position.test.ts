@@ -51,7 +51,10 @@ import type {
 } from "../../../src";
 import { useMaxCU } from "../../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
-import { approveTokenV2, createTokenAccountV2 } from "../../utils/v2/token-2022";
+import {
+  approveTokenV2,
+  createTokenAccountV2,
+} from "../../utils/v2/token-2022";
 
 describe("lock_position", () => {
   const provider = anchor.AnchorProvider.local(

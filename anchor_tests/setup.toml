@@ -1,31 +1,3 @@
-[programs.localnet]
-whirlpool = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
-[registry]
-url = "https://anchor.projectserum.com"
-
-[provider]
-cluster = "localnet"
-wallet = "~/.config/solana/id.json"
-
-[scripts]
-# When you run "anchor test" command, it searches for Test.toml files under the anchor_tests directory and executes them in order.
-# These tests are large and require several hours to complete.
-#
-# If you want to run only specific test cases, specify the directory where Test.toml resides using --run option.
-#
-# Example 1) Run all tests
-#
-# anchor test
-#
-# Example 2) Run only the tests for integration/token-badge
-#
-# anchor test --run anchor_tests/int/token-badge
-#
-# Example 3) Run only the tests for integration/token-badge and sdk/whirlpools/utils
-#
-# anchor test --run anchor_tests/int/token-badge --run anchor_tests/sdk/utils
-
 [test.validator]
 # If we use slot_per_epoch = "33", rent for Position account (216 byte) was not 0.00239424 but 0.002394239
 slots_per_epoch = "32"
@@ -39,66 +11,66 @@ url = "https://api.mainnet-beta.solana.com"
 
 [[test.genesis]]
 address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-program = "legacy-sdk/whirlpool/tests/external_program/mpl_token_metadata.20240214.so"
+program = "../legacy-sdk/whirlpool/tests/external_program/mpl_token_metadata.20240214.so"
 
 [[test.genesis]]
 address = "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
-program = "legacy-sdk/whirlpool/tests/external_program/transfer_hook_counter.so"
+program = "../legacy-sdk/whirlpool/tests/external_program/transfer_hook_counter.so"
 
 # Newer Token-2022
 [[test.genesis]]
 address = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-program = "legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so"
+program = "../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so"
 
 # For reset_position_range test
 # Now, it is impossible to initialize position account without additional rent for ticks.
 # So we need to load test old position account without the additional rent.
 [[test.validator.account]]
 address = "4GQ4VQZKPt4fLxGCusfdBZia2ge5hUZpfwwr3pqxUrmf"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/owner_wallet.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/owner_wallet.json"
 [[test.validator.account]]
 address = "Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_a.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_a.json"
 [[test.validator.account]]
 address = "BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b.json"
 [[test.validator.account]]
 address = "EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/whirlpool.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/whirlpool.json"
 [[test.validator.account]]
 address = "GedZgiHw8dJpR6Fyt1PNgSwYznEyh18qgZvobuxYxMQ3"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/vault_a.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/vault_a.json"
 [[test.validator.account]]
 address = "4KDudC7XagDiZZbd9Xzabcy5yZMC8bvz7c8q7Bb9vXTa"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/vault_b.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/vault_b.json"
 [[test.validator.account]]
 address = "AihMywzP74pU2riq1ihFW2YSVcc1itT3yiP7minvkxDs"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/fixed_tick_array_lower.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/fixed_tick_array_lower.json"
 [[test.validator.account]]
 address = "F4h3qr6uBgdLDJyTms4YiebiaiuCEvC5C9LJE8scA1LV"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/fixed_tick_array_upper.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/fixed_tick_array_upper.json"
 [[test.validator.account]]
 address = "CzKujYEJWNCvFHhjCBcv5gKnnTdvXrQ3b9ecxyZQV6sg"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position_mint.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position_mint.json"
 [[test.validator.account]]
 address = "J6DFYFKUsoMYgxkbeAqVnpSb8fniA9tHR44ZQu8KBgMS"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position.json"
 [[test.validator.account]]
 address = "6wGj2VeDPPP1ni6TJA1KuwExFXCWKsvXLyJZvfBsfgWY"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position_ata.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/position_ata.json"
 [[test.validator.account]]
 address = "oH6UWXaG2uvePMcqR9bih8E2Gt9eS4jhYx5VyAEC4k1"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_a_ata.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_a_ata.json"
 [[test.validator.account]]
 address = "7kshCxjaA7uY2C77X733ZZjM1EE31FhceM9dm4QXrxqZ"
-filename = "legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b_ata.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/reset_position_range/token_b_ata.json"
 
 # For migrate_repurpose_reward_authority_space test
 # Now, it is impossible to initialize whirlpool with 3 reward authorities (not migrated layout)
 # So we need to load test old Whirlpool account.
 [[test.validator.account]]
 address = "7vWRTPPBq3aNaJZsrfterTz1BSjht4YSHBXJwnbuV6SC"
-filename = "legacy-sdk/whirlpool/tests/preload_account/migrate_repurpose_reward_authority_space/whirlpool.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/migrate_repurpose_reward_authority_space/whirlpool.json"
 
 # For open_position_with_token_extensions test
 # Now, it is impossible to initialize whirlpool with 3 reward authorities (not migrated layout)
@@ -107,4 +79,4 @@ filename = "legacy-sdk/whirlpool/tests/preload_account/migrate_repurpose_reward_
 # potentially resulting in the creation of a non-transferable position.
 [[test.validator.account]]
 address = "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE"
-filename = "legacy-sdk/whirlpool/tests/preload_account/open_position_with_token_extensions/whirlpool.json"
+filename = "../legacy-sdk/whirlpool/tests/preload_account/open_position_with_token_extensions/whirlpool.json"

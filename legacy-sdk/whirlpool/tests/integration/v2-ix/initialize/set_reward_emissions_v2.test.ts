@@ -1,19 +1,19 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { TickSpacing, ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import type { WhirlpoolData } from "../../../../src";
+import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../../src";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
+import { TickSpacing, ZERO_BN } from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
 import {
   initTestPoolV2,
   initializeRewardV2,
-} from "../../utils/v2/init-utils-v2";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+} from "../../../utils/v2/init-utils-v2";
+import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   createAndMintToTokenAccountV2,
   mintToDestinationV2,
-} from "../../utils/v2/token-2022";
+} from "../../../utils/v2/token-2022";
 
 describe("set_reward_emissions_v2", () => {
   const provider = anchor.AnchorProvider.local(

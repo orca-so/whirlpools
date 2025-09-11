@@ -3,7 +3,7 @@ import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolData } from "../../../src";
+import type { PositionData, TickArrayData, WhirlpoolData } from "../../../../src";
 import {
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
@@ -12,9 +12,9 @@ import {
   WhirlpoolContext,
   WhirlpoolIx,
   toTx,
-} from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { PoolUtil, toTokenAmount } from "../../../src/utils/public/pool-utils";
+} from "../../../../src";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
+import { PoolUtil, toTokenAmount } from "../../../../src/utils/public/pool-utils";
 import {
   MAX_U64,
   TEST_TOKEN_2022_PROGRAM_ID,
@@ -26,28 +26,28 @@ import {
   getTokenBalance,
   sleep,
   transferToken,
-} from "../../utils";
+} from "../../../utils";
 import {
   defaultConfirmOptions,
   TICK_INIT_SIZE,
   TICK_RENT_AMOUNT,
-} from "../../utils/const";
-import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
-import { initTickArray, openPosition } from "../../utils/init-utils";
-import { useMaxCU, type TokenTrait } from "../../utils/v2/init-utils-v2";
+} from "../../../utils/const";
+import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
+import { initTickArray, openPosition } from "../../../utils/init-utils";
+import { useMaxCU, type TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   createMintV2,
   createAndMintToTokenAccountV2,
   approveTokenV2,
-} from "../../utils/v2/token-2022";
+} from "../../../utils/v2/token-2022";
 import {
   createTokenAccount as createTokenAccountForPosition,
   createAndMintToTokenAccount as createAndMintToTokenAccountForPosition,
-} from "../../utils/token";
+} from "../../../utils/token";
 import {
   generateDefaultInitTickArrayParams,
   generateDefaultOpenPositionParams,
-} from "../../utils/test-builders";
+} from "../../../utils/test-builders";
 
 describe("increase_liquidity_v2", () => {
   const provider = anchor.AnchorProvider.local(

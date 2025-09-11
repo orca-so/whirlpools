@@ -10,7 +10,7 @@ import type {
   SwapV2Params,
   TickArrayData,
   WhirlpoolData,
-} from "../../../src";
+} from "../../../../src";
 import {
   MAX_SQRT_PRICE,
   MAX_SQRT_PRICE_BN,
@@ -30,8 +30,8 @@ import {
   swapQuoteByOutputToken,
   swapQuoteWithParams,
   toTx,
-} from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
+} from "../../../../src";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   MAX_U64,
   TEST_TOKEN_2022_PROGRAM_ID,
@@ -40,24 +40,24 @@ import {
   ZERO_BN,
   getTokenBalance,
   sleep,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
-import { initTickArrayRange } from "../../utils/init-utils";
+} from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
+import { initTickArrayRange } from "../../../utils/init-utils";
 import type {
   FundedPositionV2Params,
   TokenTrait,
-} from "../../utils/v2/init-utils-v2";
+} from "../../../utils/v2/init-utils-v2";
 import {
   fundPositionsV2,
   initTestPoolV2,
   initTestPoolWithLiquidityV2,
   initTestPoolWithTokensV2,
   withdrawPositionsV2,
-} from "../../utils/v2/init-utils-v2";
-import { createMintV2 } from "../../utils/v2/token-2022";
-import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
+} from "../../../utils/v2/init-utils-v2";
+import { createMintV2 } from "../../../utils/v2/token-2022";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import type { PublicKey } from "@solana/web3.js";
-import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
 describe("swap_v2", () => {
   const provider = anchor.AnchorProvider.local(
@@ -954,6 +954,7 @@ describe("swap_v2", () => {
                   whirlpoolData,
                   IGNORE_CACHE,
                 ),
+              oracleData: NO_ORACLE_DATA,
             },
             Percentage.fromFraction(1, 100),
           );

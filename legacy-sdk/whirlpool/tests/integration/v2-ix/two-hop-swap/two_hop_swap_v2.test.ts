@@ -3,7 +3,7 @@ import { Percentage, U64_MAX } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
-import type { InitPoolParams, WhirlpoolData } from "../../../src";
+import type { InitPoolParams, WhirlpoolData } from "../../../../src";
 import {
   buildWhirlpoolClient,
   METADATA_PROGRAM_ADDRESS,
@@ -19,39 +19,39 @@ import {
   twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
   WhirlpoolIx,
-} from "../../../src";
+} from "../../../../src";
 import type {
   InitPoolV2Params,
   TwoHopSwapV2Params,
-} from "../../../src/instructions";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
+} from "../../../../src/instructions";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   getTokenBalance,
   sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { InitAquariumV2Params } from "../../utils/v2/aquarium-v2";
+} from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
+import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
   buildTestAquariumsV2,
   getDefaultAquariumV2,
   getTokenAccsForPoolsV2,
-} from "../../utils/v2/aquarium-v2";
+} from "../../../utils/v2/aquarium-v2";
 import type {
   FundedPositionV2Params,
   TokenTrait,
-} from "../../utils/v2/init-utils-v2";
+} from "../../../utils/v2/init-utils-v2";
 import {
   asyncAssertOwnerProgram,
   createMintV2,
-} from "../../utils/v2/token-2022";
+} from "../../../utils/v2/token-2022";
 import {
   NO_TOKEN_EXTENSION_CONTEXT,
   TokenExtensionUtil,
-} from "../../../src/utils/public/token-extension-util";
-import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
+} from "../../../../src/utils/public/token-extension-util";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
 describe("two_hop_swap_v2", () => {
   const provider = anchor.AnchorProvider.local(

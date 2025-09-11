@@ -3,26 +3,26 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { WhirlpoolData } from "../../../src";
+import type { WhirlpoolData } from "../../../../src";
 import {
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
-} from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
+} from "../../../../src";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   getTokenBalance,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   ZERO_BN,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
-import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
-import { createMintV2, createTokenAccountV2 } from "../../utils/v2/token-2022";
+} from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
+import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
+import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
+import { createMintV2, createTokenAccountV2 } from "../../../utils/v2/token-2022";
 
 describe("collect_protocol_fees_v2", () => {
   const provider = anchor.AnchorProvider.local(

@@ -1,32 +1,32 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
+import type { WhirlpoolData } from "../../../../src";
 import {
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
-} from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
+} from "../../../../src";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   getProviderWalletKeypair,
   ONE_SOL,
   setAuthority,
   systemTransferTx,
   TickSpacing,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+} from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
+import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   initTestPoolV2,
   initializeRewardV2,
-} from "../../utils/v2/init-utils-v2";
+} from "../../../utils/v2/init-utils-v2";
 import {
   asyncAssertOwnerProgram,
   createMintV2,
-} from "../../utils/v2/token-2022";
-import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../utils";
+} from "../../../utils/v2/token-2022";
+import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../../utils";
 import { AccountState, AuthorityType } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 

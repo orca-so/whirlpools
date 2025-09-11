@@ -3,7 +3,7 @@ import type { PDA } from "@orca-so/common-sdk";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { InitPoolV2Params, WhirlpoolData } from "../../../src";
+import type { InitPoolV2Params, WhirlpoolData } from "../../../../src";
 import {
   IGNORE_CACHE,
   MAX_SQRT_PRICE,
@@ -15,7 +15,7 @@ import {
   WhirlpoolContext,
   WhirlpoolIx,
   toTx,
-} from "../../../src";
+} from "../../../../src";
 import {
   ONE_SOL,
   TEST_TOKEN_2022_PROGRAM_ID,
@@ -27,19 +27,19 @@ import {
   setAuthority,
   sleep,
   systemTransferTx,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+} from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
+import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   buildTestPoolV2Params,
   initTestPoolV2,
-} from "../../utils/v2/init-utils-v2";
+} from "../../../utils/v2/init-utils-v2";
 import {
   asyncAssertOwnerProgram,
   asyncAssertTokenVaultV2,
   createMintV2,
   initializeNativeMint2022Idempotent,
-} from "../../utils/v2/token-2022";
+} from "../../../utils/v2/token-2022";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import {
@@ -49,7 +49,7 @@ import {
   NATIVE_MINT,
   NATIVE_MINT_2022,
 } from "@solana/spl-token";
-import { buildTestPoolParams, initFeeTier } from "../../utils/init-utils";
+import { buildTestPoolParams, initFeeTier } from "../../../utils/init-utils";
 
 describe("initialize_pool_v2", () => {
   const provider = anchor.AnchorProvider.local(

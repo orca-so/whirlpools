@@ -3,15 +3,15 @@ import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolData } from "../../../src";
+import type { PositionData, TickArrayData, WhirlpoolData } from "../../../../src";
 import {
   METADATA_PROGRAM_ADDRESS,
   WhirlpoolContext,
   WhirlpoolIx,
   toTx,
-} from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../../src/quotes/public/decrease-liquidity-quote";
+} from "../../../../src";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
+import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../../../src/quotes/public/decrease-liquidity-quote";
 import {
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
@@ -21,25 +21,25 @@ import {
   assertTick,
   sleep,
   transferToken,
-} from "../../utils";
+} from "../../../utils";
 import {
   defaultConfirmOptions,
   TICK_INIT_SIZE,
   TICK_RENT_AMOUNT,
-} from "../../utils/const";
-import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
-import { initTickArray, openPosition, useMaxCU } from "../../utils/init-utils";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+} from "../../../utils/const";
+import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
+import { initTickArray, openPosition, useMaxCU } from "../../../utils/init-utils";
+import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   createMintV2,
   createAndMintToTokenAccountV2,
   approveTokenV2,
-} from "../../utils/v2/token-2022";
+} from "../../../utils/v2/token-2022";
 import {
   createTokenAccount as createTokenAccountForPosition,
   createAndMintToTokenAccount as createAndMintToTokenAccountForPosition,
-} from "../../utils/token";
-import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
+} from "../../../utils/token";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("decrease_liquidity_v2", () => {
   const provider = anchor.AnchorProvider.local(

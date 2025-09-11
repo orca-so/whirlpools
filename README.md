@@ -17,6 +17,7 @@ The program has been audited several times by different security firms.
 * Aug 21st, 2024 - [OtterSec](/.audits/2024-08-21.pdf)
 * Feb 28th, 2025 - [Sec3](/.audits/2025-02-28.pdf)
 * Jun 23rd, 2025 - [Sec3](/.audits/2025-06-23.pdf)
+* Aug 22nd, 2025 - [Sec3](/.audits/2025-08-22.pdf)
 
 ## Usage
 

@@ -1,0 +1,61 @@
+name: Verify generated clients
+
+on:
+  pull_request:
+    paths:
+      - 'programs/whirlpool/**'
+      - 'Anchor.toml'
+      - 'codama.*'
+      - 'ts-sdk/**'
+      - 'rust-sdk/**'
+      - '.github/workflows/**'
+
+jobs:
+  verify-generated:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
+      ANCHOR_VERSION: '0.29.0'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install deps
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Anchor
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/coral-xyz/anchor/master/avm/install.sh | sh -s -- -y
+          . "$HOME/.profile" || true
+          avm install $ANCHOR_VERSION
+          avm use $ANCHOR_VERSION
+          anchor --version
+
+      - name: Regenerate IDL
+        run: yarn generate:idl
+
+      - name: Generate TS and Rust clients
+        run: yarn generate:clients
+
+      - name: Verify no diffs in generated outputs
+        run: |
+          git diff --exit-code -- \
+            ts-sdk/client/src/generated \
+            rust-sdk/client/src/generated
+
+

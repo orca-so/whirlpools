@@ -1751,7 +1751,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/nodes-from-anchor@npm:1.1.11, @codama/nodes-from-anchor@npm:^1.1.11":
+"@codama/nodes-from-anchor@npm:1.1.11":
   version: 1.1.11
   resolution: "@codama/nodes-from-anchor@npm:1.1.11"
   dependencies:
@@ -1801,7 +1801,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-js@npm:1.2.10, @codama/renderers-js@npm:^1.2.10":
+"@codama/renderers-js@npm:1.2.10":
   version: 1.2.10
   resolution: "@codama/renderers-js@npm:1.2.10"
   dependencies:
@@ -1817,7 +1817,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:1.0.19, @codama/renderers-rust@npm:^1.0.19":
+"@codama/renderers-rust@npm:1.0.19":
   version: 1.0.19
   resolution: "@codama/renderers-rust@npm:1.0.19"
   dependencies:
@@ -4010,11 +4010,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.11"
-    "@codama/renderers-js": "npm:^1.2.10"
+    "@codama/nodes-from-anchor": "npm:1.1.11"
+    "@codama/renderers-js": "npm:1.2.10"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/kit": "npm:^2.1.0"
-    codama: "npm:^1.2.11"
+    codama: "npm:1.2.11"
     typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/kit": ^2.1.0
@@ -4149,6 +4149,7 @@ __metadata:
     "@changesets/changelog-github": "npm:^0.5.1"
     "@changesets/cli": "npm:^2.28.1"
     "@types/node": "npm:^22.14.0"
+    codama: "npm:1.2.11"
     nx: "npm:^20.7.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.4.0"
@@ -4166,11 +4167,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.11"
-    "@codama/renderers-rust": "npm:^1.0.19"
+    "@codama/nodes-from-anchor": "npm:1.1.11"
+    "@codama/renderers-rust": "npm:1.0.19"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
-    codama: "npm:^1.2.11"
+    codama: "npm:1.2.11"
   languageName: unknown
   linkType: soft
 
@@ -7669,7 +7670,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codama@npm:^1.2.11":
+"codama@npm:1.2.11":
   version: 1.2.11
   resolution: "codama@npm:1.2.11"
   dependencies:

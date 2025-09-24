@@ -31,7 +31,5 @@ wallet.json
 solana-release
 rust-sdk/integration/**/Cargo.lock
 ts-sdk/integration/**/Cargo.lock
-**/dist/
-/target/
 !/ts-sdk/client/src/generated/
 !/rust-sdk/client/src/generated/

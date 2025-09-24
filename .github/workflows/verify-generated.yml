@@ -20,11 +20,6 @@ jobs:
 
       - name: Setup Anchor toolchain
         uses: ./.github/actions/anchor
-        with:
-          rustc-version: v1.84.0
-          node-version: v22.8.0
-          solana-version: v1.17.25
-          anchor-version: v0.29.0
 
       - name: Install deps
         run: yarn install --immutable

@@ -12,19 +12,24 @@
     "lint": "nx run-many --target lint --projects",
     "clean": "nx reset && nx run-many --target clean --projects",
     "generate:idl": "anchor build",
-    "generate:ts": "yarn --cwd ts-sdk/client node ./codama.js",
-    "generate:rs": "yarn --cwd rust-sdk/client node ./codama.js",
+    "generate:ts": "nx run @orca-so/whirlpools-client:generate || yarn --cwd ts-sdk/client run generate",
+    "generate:rs": "nx run @orca-so/whirlpools-rust-client:generate || yarn --cwd rust-sdk/client run generate",
     "generate:clients": "yarn generate:ts && yarn generate:rs"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.28.1",
     "@types/node": "^22.14.0",
-    "codama": "1.2.11",
     "nx": "^20.7.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.4.0",
     "vitest": "^3.0.9"
+  },
+  "resolutions": {
+    "codama": "1.2.11",
+    "@codama/nodes-from-anchor": "1.1.11",
+    "@codama/renderers-js": "1.2.10",
+    "@codama/renderers-rust": "1.0.19"
   },
   "workspaces": [
     "programs/*",

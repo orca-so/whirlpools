@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
+    "generate": "node ./codama.js",
     "test": "vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist src/generated"
@@ -32,11 +33,11 @@
     "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "1.1.11",
-    "@codama/renderers-js": "1.2.10",
+    "@codama/nodes-from-anchor": "^1.1.11",
+    "@codama/renderers-js": "^1.2.10",
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.1.0",
-    "codama": "1.2.11",
+    "codama": "^1.2.11",
     "typescript": "^5.8.2"
   },
   "repository": {

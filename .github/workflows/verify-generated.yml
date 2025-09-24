@@ -13,9 +13,6 @@ on:
 jobs:
   verify-generated:
     runs-on: ubuntu-latest
-    env:
-      NODE_VERSION: '20'
-      ANCHOR_VERSION: '0.29.0'
 
     steps:
       - name: Checkout
@@ -23,28 +20,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Anchor toolchain
+        uses: ./.github/actions/anchor
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
+          rustc-version: v1.84.0
+          node-version: v22.8.0
+          solana-version: v1.17.25
+          anchor-version: v0.29.0
 
       - name: Install deps
-        run: yarn install --frozen-lockfile
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install Anchor
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/coral-xyz/anchor/master/avm/install.sh | sh -s -- -y
-          . "$HOME/.profile" || true
-          avm install $ANCHOR_VERSION
-          avm use $ANCHOR_VERSION
-          anchor --version
+        run: yarn install --immutable
 
       - name: Regenerate IDL
         run: yarn generate:idl

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node ./codama.js && cargo build",
+    "generate": "node ./codama.js",
     "test": "cargo test --lib",
     "deploy": "../../scripts/deploy-cargo",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
@@ -11,10 +12,10 @@
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "1.1.11",
-    "@codama/renderers-rust": "1.0.19",
+    "@codama/nodes-from-anchor": "^1.1.11",
+    "@codama/renderers-rust": "^1.0.19",
     "@orca-so/whirlpools-program": "*",
     "@orca-so/whirlpools-rust-core": "*",
-    "codama": "1.2.11"
+    "codama": "^1.2.11"
   }
 }

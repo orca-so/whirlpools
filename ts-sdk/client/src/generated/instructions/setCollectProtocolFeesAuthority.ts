@@ -29,17 +29,17 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const SET_COLLECT_PROTOCOL_FEES_AUTHORITY_DISCRIMINATOR = new Uint8Array(
-  [34, 150, 93, 244, 139, 225, 233, 67]
+  [34, 150, 93, 244, 139, 225, 233, 67],
 );
 
 export function getSetCollectProtocolFeesAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_COLLECT_PROTOCOL_FEES_AUTHORITY_DISCRIMINATOR
+    SET_COLLECT_PROTOCOL_FEES_AUTHORITY_DISCRIMINATOR,
   );
 }
 
@@ -79,17 +79,17 @@ export type SetCollectProtocolFeesAuthorityInstructionDataArgs = {};
 
 export function getSetCollectProtocolFeesAuthorityInstructionDataEncoder(): Encoder<SetCollectProtocolFeesAuthorityInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: SET_COLLECT_PROTOCOL_FEES_AUTHORITY_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getSetCollectProtocolFeesAuthorityInstructionDataDecoder(): Decoder<SetCollectProtocolFeesAuthorityInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -99,7 +99,7 @@ export function getSetCollectProtocolFeesAuthorityInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetCollectProtocolFeesAuthorityInstructionDataEncoder(),
-    getSetCollectProtocolFeesAuthorityInstructionDataDecoder()
+    getSetCollectProtocolFeesAuthorityInstructionDataDecoder(),
   );
 }
 
@@ -124,7 +124,7 @@ export function getSetCollectProtocolFeesAuthorityInstruction<
     TAccountCollectProtocolFeesAuthority,
     TAccountNewCollectProtocolFeesAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetCollectProtocolFeesAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -154,7 +154,7 @@ export function getSetCollectProtocolFeesAuthorityInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -192,11 +192,11 @@ export function parseSetCollectProtocolFeesAuthorityInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedSetCollectProtocolFeesAuthorityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -212,7 +212,7 @@ export function parseSetCollectProtocolFeesAuthorityInstruction<
       newCollectProtocolFeesAuthority: getNextAccount(),
     },
     data: getSetCollectProtocolFeesAuthorityInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

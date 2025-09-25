@@ -29,16 +29,16 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const CLOSE_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR =
   new Uint8Array([1, 182, 135, 59, 155, 25, 99, 223]);
 
 export function getClosePositionWithTokenExtensionsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLOSE_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR
+    CLOSE_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
   );
 }
 
@@ -86,17 +86,17 @@ export type ClosePositionWithTokenExtensionsInstructionDataArgs = {};
 
 export function getClosePositionWithTokenExtensionsInstructionDataEncoder(): Encoder<ClosePositionWithTokenExtensionsInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: CLOSE_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getClosePositionWithTokenExtensionsInstructionDataDecoder(): Decoder<ClosePositionWithTokenExtensionsInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -106,7 +106,7 @@ export function getClosePositionWithTokenExtensionsInstructionDataCodec(): Codec
 > {
   return combineCodec(
     getClosePositionWithTokenExtensionsInstructionDataEncoder(),
-    getClosePositionWithTokenExtensionsInstructionDataDecoder()
+    getClosePositionWithTokenExtensionsInstructionDataDecoder(),
   );
 }
 
@@ -143,7 +143,7 @@ export function getClosePositionWithTokenExtensionsInstruction<
     TAccountPositionTokenAccount,
     TAccountToken2022Program
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): ClosePositionWithTokenExtensionsInstruction<
   TProgramAddress,
   TAccountPositionAuthority,
@@ -179,7 +179,7 @@ export function getClosePositionWithTokenExtensionsInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.positionAuthority),
@@ -191,7 +191,7 @@ export function getClosePositionWithTokenExtensionsInstruction<
     ],
     programAddress,
     data: getClosePositionWithTokenExtensionsInstructionDataEncoder().encode(
-      {}
+      {},
     ),
   } as ClosePositionWithTokenExtensionsInstruction<
     TProgramAddress,
@@ -228,11 +228,11 @@ export function parseClosePositionWithTokenExtensionsInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedClosePositionWithTokenExtensionsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -251,7 +251,7 @@ export function parseClosePositionWithTokenExtensionsInstruction<
       token2022Program: getNextAccount(),
     },
     data: getClosePositionWithTokenExtensionsInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

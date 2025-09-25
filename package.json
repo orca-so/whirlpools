@@ -14,7 +14,8 @@
     "generate:idl": "anchor build",
     "generate:ts": "nx run @orca-so/whirlpools-client:generate || yarn --cwd ts-sdk/client run generate",
     "generate:rs": "nx run @orca-so/whirlpools-rust-client:generate || yarn --cwd rust-sdk/client run generate",
-    "generate:clients": "yarn generate:ts && yarn generate:rs"
+    "generate:clients": "yarn generate:ts && yarn generate:rs && yarn format:generated",
+    "format:generated": "nx run-many --target format:generated --projects @orca-so/whirlpools-client,@orca-so/whirlpools-rust-client"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",

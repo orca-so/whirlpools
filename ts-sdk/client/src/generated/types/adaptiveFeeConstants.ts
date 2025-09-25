@@ -22,7 +22,7 @@ import {
   type Decoder,
   type Encoder,
   type ReadonlyUint8Array,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export type AdaptiveFeeConstants = {
   filterPeriod: number;
@@ -39,27 +39,27 @@ export type AdaptiveFeeConstantsArgs = AdaptiveFeeConstants;
 
 export function getAdaptiveFeeConstantsEncoder(): Encoder<AdaptiveFeeConstantsArgs> {
   return getStructEncoder([
-    ['filterPeriod', getU16Encoder()],
-    ['decayPeriod', getU16Encoder()],
-    ['reductionFactor', getU16Encoder()],
-    ['adaptiveFeeControlFactor', getU32Encoder()],
-    ['maxVolatilityAccumulator', getU32Encoder()],
-    ['tickGroupSize', getU16Encoder()],
-    ['majorSwapThresholdTicks', getU16Encoder()],
-    ['reserved', fixEncoderSize(getBytesEncoder(), 16)],
+    ["filterPeriod", getU16Encoder()],
+    ["decayPeriod", getU16Encoder()],
+    ["reductionFactor", getU16Encoder()],
+    ["adaptiveFeeControlFactor", getU32Encoder()],
+    ["maxVolatilityAccumulator", getU32Encoder()],
+    ["tickGroupSize", getU16Encoder()],
+    ["majorSwapThresholdTicks", getU16Encoder()],
+    ["reserved", fixEncoderSize(getBytesEncoder(), 16)],
   ]);
 }
 
 export function getAdaptiveFeeConstantsDecoder(): Decoder<AdaptiveFeeConstants> {
   return getStructDecoder([
-    ['filterPeriod', getU16Decoder()],
-    ['decayPeriod', getU16Decoder()],
-    ['reductionFactor', getU16Decoder()],
-    ['adaptiveFeeControlFactor', getU32Decoder()],
-    ['maxVolatilityAccumulator', getU32Decoder()],
-    ['tickGroupSize', getU16Decoder()],
-    ['majorSwapThresholdTicks', getU16Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 16)],
+    ["filterPeriod", getU16Decoder()],
+    ["decayPeriod", getU16Decoder()],
+    ["reductionFactor", getU16Decoder()],
+    ["adaptiveFeeControlFactor", getU32Decoder()],
+    ["maxVolatilityAccumulator", getU32Decoder()],
+    ["tickGroupSize", getU16Decoder()],
+    ["majorSwapThresholdTicks", getU16Decoder()],
+    ["reserved", fixDecoderSize(getBytesDecoder(), 16)],
   ]);
 }
 
@@ -69,6 +69,6 @@ export function getAdaptiveFeeConstantsCodec(): Codec<
 > {
   return combineCodec(
     getAdaptiveFeeConstantsEncoder(),
-    getAdaptiveFeeConstantsDecoder()
+    getAdaptiveFeeConstantsDecoder(),
   );
 }

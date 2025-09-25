@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const DELETE_TOKEN_BADGE_DISCRIMINATOR = new Uint8Array([
   53, 146, 68, 8, 18, 117, 17, 185,
@@ -39,7 +39,7 @@ export const DELETE_TOKEN_BADGE_DISCRIMINATOR = new Uint8Array([
 
 export function getDeleteTokenBadgeDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    DELETE_TOKEN_BADGE_DISCRIMINATOR
+    DELETE_TOKEN_BADGE_DISCRIMINATOR,
   );
 }
 
@@ -89,14 +89,14 @@ export type DeleteTokenBadgeInstructionDataArgs = {};
 
 export function getDeleteTokenBadgeInstructionDataEncoder(): Encoder<DeleteTokenBadgeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: DELETE_TOKEN_BADGE_DISCRIMINATOR })
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: DELETE_TOKEN_BADGE_DISCRIMINATOR }),
   );
 }
 
 export function getDeleteTokenBadgeInstructionDataDecoder(): Decoder<DeleteTokenBadgeInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -106,7 +106,7 @@ export function getDeleteTokenBadgeInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getDeleteTokenBadgeInstructionDataEncoder(),
-    getDeleteTokenBadgeInstructionDataDecoder()
+    getDeleteTokenBadgeInstructionDataDecoder(),
   );
 }
 
@@ -143,7 +143,7 @@ export function getDeleteTokenBadgeInstruction<
     TAccountTokenBadge,
     TAccountReceiver
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): DeleteTokenBadgeInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -179,7 +179,7 @@ export function getDeleteTokenBadgeInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -226,11 +226,11 @@ export function parseDeleteTokenBadgeInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedDeleteTokenBadgeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

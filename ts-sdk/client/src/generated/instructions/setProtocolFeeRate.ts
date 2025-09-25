@@ -31,9 +31,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const SET_PROTOCOL_FEE_RATE_DISCRIMINATOR = new Uint8Array([
   95, 7, 4, 50, 154, 79, 156, 131,
@@ -41,7 +41,7 @@ export const SET_PROTOCOL_FEE_RATE_DISCRIMINATOR = new Uint8Array([
 
 export function getSetProtocolFeeRateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_PROTOCOL_FEE_RATE_DISCRIMINATOR
+    SET_PROTOCOL_FEE_RATE_DISCRIMINATOR,
   );
 }
 
@@ -79,20 +79,20 @@ export type SetProtocolFeeRateInstructionDataArgs = { protocolFeeRate: number };
 export function getSetProtocolFeeRateInstructionDataEncoder(): Encoder<SetProtocolFeeRateInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['protocolFeeRate', getU16Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["protocolFeeRate", getU16Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_PROTOCOL_FEE_RATE_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getSetProtocolFeeRateInstructionDataDecoder(): Decoder<SetProtocolFeeRateInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['protocolFeeRate', getU16Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["protocolFeeRate", getU16Decoder()],
   ]);
 }
 
@@ -102,7 +102,7 @@ export function getSetProtocolFeeRateInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetProtocolFeeRateInstructionDataEncoder(),
-    getSetProtocolFeeRateInstructionDataDecoder()
+    getSetProtocolFeeRateInstructionDataDecoder(),
   );
 }
 
@@ -114,7 +114,7 @@ export type SetProtocolFeeRateInput<
   whirlpoolsConfig: Address<TAccountWhirlpoolsConfig>;
   whirlpool: Address<TAccountWhirlpool>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
-  protocolFeeRate: SetProtocolFeeRateInstructionDataArgs['protocolFeeRate'];
+  protocolFeeRate: SetProtocolFeeRateInstructionDataArgs["protocolFeeRate"];
 };
 
 export function getSetProtocolFeeRateInstruction<
@@ -128,7 +128,7 @@ export function getSetProtocolFeeRateInstruction<
     TAccountWhirlpool,
     TAccountFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetProtocolFeeRateInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -155,7 +155,7 @@ export function getSetProtocolFeeRateInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -164,7 +164,7 @@ export function getSetProtocolFeeRateInstruction<
     ],
     programAddress,
     data: getSetProtocolFeeRateInstructionDataEncoder().encode(
-      args as SetProtocolFeeRateInstructionDataArgs
+      args as SetProtocolFeeRateInstructionDataArgs,
     ),
   } as SetProtocolFeeRateInstruction<
     TProgramAddress,
@@ -195,11 +195,11 @@ export function parseSetProtocolFeeRateInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedSetProtocolFeeRateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -215,7 +215,7 @@ export function parseSetProtocolFeeRateInstruction<
       feeAuthority: getNextAccount(),
     },
     data: getSetProtocolFeeRateInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

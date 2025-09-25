@@ -33,7 +33,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export const POSITION_BUNDLE_DISCRIMINATOR = new Uint8Array([
   129, 169, 175, 65, 185, 95, 32, 100,
@@ -41,7 +41,7 @@ export const POSITION_BUNDLE_DISCRIMINATOR = new Uint8Array([
 
 export function getPositionBundleDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    POSITION_BUNDLE_DISCRIMINATOR
+    POSITION_BUNDLE_DISCRIMINATOR,
   );
 }
 
@@ -59,19 +59,19 @@ export type PositionBundleArgs = {
 export function getPositionBundleEncoder(): Encoder<PositionBundleArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['positionBundleMint', getAddressEncoder()],
-      ['positionBitmap', fixEncoderSize(getBytesEncoder(), 32)],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["positionBundleMint", getAddressEncoder()],
+      ["positionBitmap", fixEncoderSize(getBytesEncoder(), 32)],
     ]),
-    (value) => ({ ...value, discriminator: POSITION_BUNDLE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: POSITION_BUNDLE_DISCRIMINATOR }),
   );
 }
 
 export function getPositionBundleDecoder(): Decoder<PositionBundle> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['positionBundleMint', getAddressDecoder()],
-    ['positionBitmap', fixDecoderSize(getBytesDecoder(), 32)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["positionBundleMint", getAddressDecoder()],
+    ["positionBitmap", fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -83,24 +83,24 @@ export function getPositionBundleCodec(): Codec<
 }
 
 export function decodePositionBundle<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<PositionBundle, TAddress>;
 export function decodePositionBundle<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<PositionBundle, TAddress>;
 export function decodePositionBundle<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<PositionBundle, TAddress> | MaybeAccount<PositionBundle, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getPositionBundleDecoder()
+    getPositionBundleDecoder(),
   );
 }
 
 export async function fetchPositionBundle<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<PositionBundle, TAddress>> {
   const maybeAccount = await fetchMaybePositionBundle(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -112,7 +112,7 @@ export async function fetchMaybePositionBundle<
 >(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<PositionBundle, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodePositionBundle(maybeAccount);
@@ -121,12 +121,12 @@ export async function fetchMaybePositionBundle<
 export async function fetchAllPositionBundle(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<PositionBundle>[]> {
   const maybeAccounts = await fetchAllMaybePositionBundle(
     rpc,
     addresses,
-    config
+    config,
   );
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
@@ -135,11 +135,11 @@ export async function fetchAllPositionBundle(
 export async function fetchAllMaybePositionBundle(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<PositionBundle>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) =>
-    decodePositionBundle(maybeAccount)
+    decodePositionBundle(maybeAccount),
   );
 }
 

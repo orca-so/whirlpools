@@ -21,7 +21,7 @@ import {
   type Codec,
   type Decoder,
   type Encoder,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export type Tick = {
   initialized: boolean;
@@ -43,23 +43,23 @@ export type TickArgs = {
 
 export function getTickEncoder(): Encoder<TickArgs> {
   return getStructEncoder([
-    ['initialized', getBooleanEncoder()],
-    ['liquidityNet', getI128Encoder()],
-    ['liquidityGross', getU128Encoder()],
-    ['feeGrowthOutsideA', getU128Encoder()],
-    ['feeGrowthOutsideB', getU128Encoder()],
-    ['rewardGrowthsOutside', getArrayEncoder(getU128Encoder(), { size: 3 })],
+    ["initialized", getBooleanEncoder()],
+    ["liquidityNet", getI128Encoder()],
+    ["liquidityGross", getU128Encoder()],
+    ["feeGrowthOutsideA", getU128Encoder()],
+    ["feeGrowthOutsideB", getU128Encoder()],
+    ["rewardGrowthsOutside", getArrayEncoder(getU128Encoder(), { size: 3 })],
   ]);
 }
 
 export function getTickDecoder(): Decoder<Tick> {
   return getStructDecoder([
-    ['initialized', getBooleanDecoder()],
-    ['liquidityNet', getI128Decoder()],
-    ['liquidityGross', getU128Decoder()],
-    ['feeGrowthOutsideA', getU128Decoder()],
-    ['feeGrowthOutsideB', getU128Decoder()],
-    ['rewardGrowthsOutside', getArrayDecoder(getU128Decoder(), { size: 3 })],
+    ["initialized", getBooleanDecoder()],
+    ["liquidityNet", getI128Decoder()],
+    ["liquidityGross", getU128Decoder()],
+    ["feeGrowthOutsideA", getU128Decoder()],
+    ["feeGrowthOutsideB", getU128Decoder()],
+    ["rewardGrowthsOutside", getArrayDecoder(getU128Decoder(), { size: 3 })],
   ]);
 }
 

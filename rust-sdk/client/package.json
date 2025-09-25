@@ -5,6 +5,7 @@
   "scripts": {
     "build": "node ./codama.js && cargo build",
     "generate": "node ./codama.js",
+    "format:generated": "yarn workspace @orca-so/whirlpools-lint prettier --write ../../rust-sdk/client/src/generated",
     "test": "cargo test --lib",
     "deploy": "../../scripts/deploy-cargo",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",

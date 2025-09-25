@@ -48,6 +48,25 @@ jobs:
     - name: Run Lint
       run: yarn lint --output-style static
 
+  verify-generated:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Anchor
+        uses: ./.github/actions/anchor
+      - name: Install dependencies
+        run: yarn install
+      - name: Regenerate IDL
+        run: yarn generate:idl
+      - name: Generate clients
+        run: yarn generate:clients
+      - name: Verify no diffs
+        run: |
+          git diff --exit-code -- \
+            ts-sdk/client/src/generated \
+            rust-sdk/client/src/generated
+
   changeset:
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}

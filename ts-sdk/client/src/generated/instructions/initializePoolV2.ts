@@ -33,9 +33,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const INITIALIZE_POOL_V2_DISCRIMINATOR = new Uint8Array([
   207, 45, 87, 242, 27, 63, 204, 67,
@@ -43,7 +43,7 @@ export const INITIALIZE_POOL_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializePoolV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_POOL_V2_DISCRIMINATOR,
+    INITIALIZE_POOL_V2_DISCRIMINATOR
   );
 }
 
@@ -63,10 +63,10 @@ export type InitializePoolV2Instruction<
   TAccountTokenProgramB extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -135,19 +135,19 @@ export type InitializePoolV2InstructionDataArgs = {
 export function getInitializePoolV2InstructionDataEncoder(): Encoder<InitializePoolV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["tickSpacing", getU16Encoder()],
-      ["initialSqrtPrice", getU128Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tickSpacing', getU16Encoder()],
+      ['initialSqrtPrice', getU128Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_POOL_V2_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INITIALIZE_POOL_V2_DISCRIMINATOR })
   );
 }
 
 export function getInitializePoolV2InstructionDataDecoder(): Decoder<InitializePoolV2InstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["tickSpacing", getU16Decoder()],
-    ["initialSqrtPrice", getU128Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tickSpacing', getU16Decoder()],
+    ['initialSqrtPrice', getU128Decoder()],
   ]);
 }
 
@@ -157,7 +157,7 @@ export function getInitializePoolV2InstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializePoolV2InstructionDataEncoder(),
-    getInitializePoolV2InstructionDataDecoder(),
+    getInitializePoolV2InstructionDataDecoder()
   );
 }
 
@@ -191,8 +191,8 @@ export type InitializePoolV2Input<
   tokenProgramB: Address<TAccountTokenProgramB>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  tickSpacing: InitializePoolV2InstructionDataArgs["tickSpacing"];
-  initialSqrtPrice: InitializePoolV2InstructionDataArgs["initialSqrtPrice"];
+  tickSpacing: InitializePoolV2InstructionDataArgs['tickSpacing'];
+  initialSqrtPrice: InitializePoolV2InstructionDataArgs['initialSqrtPrice'];
 };
 
 export function getInitializePoolV2Instruction<
@@ -228,7 +228,7 @@ export function getInitializePoolV2Instruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializePoolV2Instruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -280,14 +280,14 @@ export function getInitializePoolV2Instruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -307,7 +307,7 @@ export function getInitializePoolV2Instruction<
     ],
     programAddress,
     data: getInitializePoolV2InstructionDataEncoder().encode(
-      args as InitializePoolV2InstructionDataArgs,
+      args as InitializePoolV2InstructionDataArgs
     ),
   } as InitializePoolV2Instruction<
     TProgramAddress,
@@ -360,11 +360,11 @@ export function parseInitializePoolV2Instruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedInitializePoolV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 14) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

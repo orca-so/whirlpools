@@ -33,9 +33,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const INCREASE_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
   46, 156, 243, 118, 13, 205, 251, 178,
@@ -43,7 +43,7 @@ export const INCREASE_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
 
 export function getIncreaseLiquidityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INCREASE_LIQUIDITY_DISCRIMINATOR,
+    INCREASE_LIQUIDITY_DISCRIMINATOR
   );
 }
 
@@ -52,7 +52,7 @@ export type IncreaseLiquidityInstruction<
   TAccountWhirlpool extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountPositionAuthority extends string | IAccountMeta<string> = string,
   TAccountPosition extends string | IAccountMeta<string> = string,
   TAccountPositionTokenAccount extends string | IAccountMeta<string> = string,
@@ -121,21 +121,21 @@ export type IncreaseLiquidityInstructionDataArgs = {
 export function getIncreaseLiquidityInstructionDataEncoder(): Encoder<IncreaseLiquidityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["liquidityAmount", getU128Encoder()],
-      ["tokenMaxA", getU64Encoder()],
-      ["tokenMaxB", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['liquidityAmount', getU128Encoder()],
+      ['tokenMaxA', getU64Encoder()],
+      ['tokenMaxB', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INCREASE_LIQUIDITY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INCREASE_LIQUIDITY_DISCRIMINATOR })
   );
 }
 
 export function getIncreaseLiquidityInstructionDataDecoder(): Decoder<IncreaseLiquidityInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["liquidityAmount", getU128Decoder()],
-    ["tokenMaxA", getU64Decoder()],
-    ["tokenMaxB", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['liquidityAmount', getU128Decoder()],
+    ['tokenMaxA', getU64Decoder()],
+    ['tokenMaxB', getU64Decoder()],
   ]);
 }
 
@@ -145,7 +145,7 @@ export function getIncreaseLiquidityInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getIncreaseLiquidityInstructionDataEncoder(),
-    getIncreaseLiquidityInstructionDataDecoder(),
+    getIncreaseLiquidityInstructionDataDecoder()
   );
 }
 
@@ -173,9 +173,9 @@ export type IncreaseLiquidityInput<
   tokenVaultB: Address<TAccountTokenVaultB>;
   tickArrayLower: Address<TAccountTickArrayLower>;
   tickArrayUpper: Address<TAccountTickArrayUpper>;
-  liquidityAmount: IncreaseLiquidityInstructionDataArgs["liquidityAmount"];
-  tokenMaxA: IncreaseLiquidityInstructionDataArgs["tokenMaxA"];
-  tokenMaxB: IncreaseLiquidityInstructionDataArgs["tokenMaxB"];
+  liquidityAmount: IncreaseLiquidityInstructionDataArgs['liquidityAmount'];
+  tokenMaxA: IncreaseLiquidityInstructionDataArgs['tokenMaxA'];
+  tokenMaxB: IncreaseLiquidityInstructionDataArgs['tokenMaxB'];
 };
 
 export function getIncreaseLiquidityInstruction<
@@ -205,7 +205,7 @@ export function getIncreaseLiquidityInstruction<
     TAccountTickArrayLower,
     TAccountTickArrayUpper
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): IncreaseLiquidityInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -260,10 +260,10 @@ export function getIncreaseLiquidityInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -280,7 +280,7 @@ export function getIncreaseLiquidityInstruction<
     ],
     programAddress,
     data: getIncreaseLiquidityInstructionDataEncoder().encode(
-      args as IncreaseLiquidityInstructionDataArgs,
+      args as IncreaseLiquidityInstructionDataArgs
     ),
   } as IncreaseLiquidityInstruction<
     TProgramAddress,
@@ -327,11 +327,11 @@ export function parseIncreaseLiquidityInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedIncreaseLiquidityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 11) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

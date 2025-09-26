@@ -19,7 +19,7 @@ import {
   type Codec,
   type Decoder,
   type Encoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type DynamicTickData = {
   liquidityNet: bigint;
@@ -39,21 +39,21 @@ export type DynamicTickDataArgs = {
 
 export function getDynamicTickDataEncoder(): Encoder<DynamicTickDataArgs> {
   return getStructEncoder([
-    ["liquidityNet", getI128Encoder()],
-    ["liquidityGross", getU128Encoder()],
-    ["feeGrowthOutsideA", getU128Encoder()],
-    ["feeGrowthOutsideB", getU128Encoder()],
-    ["rewardGrowthsOutside", getArrayEncoder(getU128Encoder(), { size: 3 })],
+    ['liquidityNet', getI128Encoder()],
+    ['liquidityGross', getU128Encoder()],
+    ['feeGrowthOutsideA', getU128Encoder()],
+    ['feeGrowthOutsideB', getU128Encoder()],
+    ['rewardGrowthsOutside', getArrayEncoder(getU128Encoder(), { size: 3 })],
   ]);
 }
 
 export function getDynamicTickDataDecoder(): Decoder<DynamicTickData> {
   return getStructDecoder([
-    ["liquidityNet", getI128Decoder()],
-    ["liquidityGross", getU128Decoder()],
-    ["feeGrowthOutsideA", getU128Decoder()],
-    ["feeGrowthOutsideB", getU128Decoder()],
-    ["rewardGrowthsOutside", getArrayDecoder(getU128Decoder(), { size: 3 })],
+    ['liquidityNet', getI128Decoder()],
+    ['liquidityGross', getU128Decoder()],
+    ['feeGrowthOutsideA', getU128Decoder()],
+    ['feeGrowthOutsideB', getU128Decoder()],
+    ['rewardGrowthsOutside', getArrayDecoder(getU128Decoder(), { size: 3 })],
   ]);
 }
 

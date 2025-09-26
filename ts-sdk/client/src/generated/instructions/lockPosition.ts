@@ -30,15 +30,15 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 import {
   getLockTypeDecoder,
   getLockTypeEncoder,
   type LockType,
   type LockTypeArgs,
-} from "../types";
+} from '../types';
 
 export const LOCK_POSITION_DISCRIMINATOR = new Uint8Array([
   227, 62, 2, 252, 247, 10, 171, 185,
@@ -46,7 +46,7 @@ export const LOCK_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getLockPositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    LOCK_POSITION_DISCRIMINATOR,
+    LOCK_POSITION_DISCRIMINATOR
   );
 }
 
@@ -62,7 +62,7 @@ export type LockPositionInstruction<
   TAccountToken2022Program extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -111,17 +111,17 @@ export type LockPositionInstructionDataArgs = { lockType: LockTypeArgs };
 export function getLockPositionInstructionDataEncoder(): Encoder<LockPositionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["lockType", getLockTypeEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['lockType', getLockTypeEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: LOCK_POSITION_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: LOCK_POSITION_DISCRIMINATOR })
   );
 }
 
 export function getLockPositionInstructionDataDecoder(): Decoder<LockPositionInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["lockType", getLockTypeDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['lockType', getLockTypeDecoder()],
   ]);
 }
 
@@ -131,7 +131,7 @@ export function getLockPositionInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getLockPositionInstructionDataEncoder(),
-    getLockPositionInstructionDataDecoder(),
+    getLockPositionInstructionDataDecoder()
   );
 }
 
@@ -155,7 +155,7 @@ export type LockPositionInput<
   whirlpool: Address<TAccountWhirlpool>;
   token2022Program: Address<TAccountToken2022Program>;
   systemProgram?: Address<TAccountSystemProgram>;
-  lockType: LockPositionInstructionDataArgs["lockType"];
+  lockType: LockPositionInstructionDataArgs['lockType'];
 };
 
 export function getLockPositionInstruction<
@@ -181,7 +181,7 @@ export function getLockPositionInstruction<
     TAccountToken2022Program,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): LockPositionInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -229,10 +229,10 @@ export function getLockPositionInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.funder),
@@ -247,7 +247,7 @@ export function getLockPositionInstruction<
     ],
     programAddress,
     data: getLockPositionInstructionDataEncoder().encode(
-      args as LockPositionInstructionDataArgs,
+      args as LockPositionInstructionDataArgs
     ),
   } as LockPositionInstruction<
     TProgramAddress,
@@ -290,11 +290,11 @@ export function parseLockPositionInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedLockPositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

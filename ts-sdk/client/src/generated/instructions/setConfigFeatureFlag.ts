@@ -28,15 +28,15 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 import {
   getConfigFeatureFlagDecoder,
   getConfigFeatureFlagEncoder,
   type ConfigFeatureFlag,
   type ConfigFeatureFlagArgs,
-} from "../types";
+} from '../types';
 
 export const SET_CONFIG_FEATURE_FLAG_DISCRIMINATOR = new Uint8Array([
   71, 173, 228, 18, 67, 247, 210, 57,
@@ -44,7 +44,7 @@ export const SET_CONFIG_FEATURE_FLAG_DISCRIMINATOR = new Uint8Array([
 
 export function getSetConfigFeatureFlagDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_CONFIG_FEATURE_FLAG_DISCRIMINATOR,
+    SET_CONFIG_FEATURE_FLAG_DISCRIMINATOR
   );
 }
 
@@ -80,20 +80,20 @@ export type SetConfigFeatureFlagInstructionDataArgs = {
 export function getSetConfigFeatureFlagInstructionDataEncoder(): Encoder<SetConfigFeatureFlagInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["featureFlag", getConfigFeatureFlagEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['featureFlag', getConfigFeatureFlagEncoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_CONFIG_FEATURE_FLAG_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetConfigFeatureFlagInstructionDataDecoder(): Decoder<SetConfigFeatureFlagInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["featureFlag", getConfigFeatureFlagDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['featureFlag', getConfigFeatureFlagDecoder()],
   ]);
 }
 
@@ -103,7 +103,7 @@ export function getSetConfigFeatureFlagInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetConfigFeatureFlagInstructionDataEncoder(),
-    getSetConfigFeatureFlagInstructionDataDecoder(),
+    getSetConfigFeatureFlagInstructionDataDecoder()
   );
 }
 
@@ -113,7 +113,7 @@ export type SetConfigFeatureFlagInput<
 > = {
   whirlpoolsConfig: Address<TAccountWhirlpoolsConfig>;
   authority: TransactionSigner<TAccountAuthority>;
-  featureFlag: SetConfigFeatureFlagInstructionDataArgs["featureFlag"];
+  featureFlag: SetConfigFeatureFlagInstructionDataArgs['featureFlag'];
 };
 
 export function getSetConfigFeatureFlagInstruction<
@@ -122,7 +122,7 @@ export function getSetConfigFeatureFlagInstruction<
   TProgramAddress extends Address = typeof WHIRLPOOL_PROGRAM_ADDRESS,
 >(
   input: SetConfigFeatureFlagInput<TAccountWhirlpoolsConfig, TAccountAuthority>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetConfigFeatureFlagInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -147,7 +147,7 @@ export function getSetConfigFeatureFlagInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -155,7 +155,7 @@ export function getSetConfigFeatureFlagInstruction<
     ],
     programAddress,
     data: getSetConfigFeatureFlagInstructionDataEncoder().encode(
-      args as SetConfigFeatureFlagInstructionDataArgs,
+      args as SetConfigFeatureFlagInstructionDataArgs
     ),
   } as SetConfigFeatureFlagInstruction<
     TProgramAddress,
@@ -184,11 +184,11 @@ export function parseSetConfigFeatureFlagInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedSetConfigFeatureFlagInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -203,7 +203,7 @@ export function parseSetConfigFeatureFlagInstruction<
       authority: getNextAccount(),
     },
     data: getSetConfigFeatureFlagInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

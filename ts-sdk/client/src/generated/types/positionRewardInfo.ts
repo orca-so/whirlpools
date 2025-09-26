@@ -17,7 +17,7 @@ import {
   type Codec,
   type Decoder,
   type Encoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type PositionRewardInfo = {
   growthInsideCheckpoint: bigint;
@@ -31,15 +31,15 @@ export type PositionRewardInfoArgs = {
 
 export function getPositionRewardInfoEncoder(): Encoder<PositionRewardInfoArgs> {
   return getStructEncoder([
-    ["growthInsideCheckpoint", getU128Encoder()],
-    ["amountOwed", getU64Encoder()],
+    ['growthInsideCheckpoint', getU128Encoder()],
+    ['amountOwed', getU64Encoder()],
   ]);
 }
 
 export function getPositionRewardInfoDecoder(): Decoder<PositionRewardInfo> {
   return getStructDecoder([
-    ["growthInsideCheckpoint", getU128Decoder()],
-    ["amountOwed", getU64Decoder()],
+    ['growthInsideCheckpoint', getU128Decoder()],
+    ['amountOwed', getU64Decoder()],
   ]);
 }
 
@@ -49,6 +49,6 @@ export function getPositionRewardInfoCodec(): Codec<
 > {
   return combineCodec(
     getPositionRewardInfoEncoder(),
-    getPositionRewardInfoDecoder(),
+    getPositionRewardInfoDecoder()
   );
 }

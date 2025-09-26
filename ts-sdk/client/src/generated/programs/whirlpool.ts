@@ -12,7 +12,7 @@ import {
   getBytesEncoder,
   type Address,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   type ParsedCloseBundledPositionInstruction,
   type ParsedClosePositionInstruction,
@@ -77,10 +77,10 @@ import {
   type ParsedTwoHopSwapInstruction,
   type ParsedTwoHopSwapV2Instruction,
   type ParsedUpdateFeesAndRewardsInstruction,
-} from "../instructions";
+} from '../instructions';
 
 export const WHIRLPOOL_PROGRAM_ADDRESS =
-  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc" as Address<"whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc">;
+  'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc' as Address<'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc'>;
 
 export enum WhirlpoolAccount {
   AdaptiveFeeTier,
@@ -98,16 +98,16 @@ export enum WhirlpoolAccount {
 }
 
 export function identifyWhirlpoolAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
 ): WhirlpoolAccount {
-  const data = "data" in account ? account.data : account;
+  const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([147, 16, 144, 116, 47, 146, 149, 46]),
+        new Uint8Array([147, 16, 144, 116, 47, 146, 149, 46])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.AdaptiveFeeTier;
@@ -116,9 +116,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([157, 20, 49, 224, 217, 87, 193, 254]),
+        new Uint8Array([157, 20, 49, 224, 217, 87, 193, 254])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.WhirlpoolsConfig;
@@ -127,9 +127,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([2, 99, 215, 163, 240, 26, 153, 58]),
+        new Uint8Array([2, 99, 215, 163, 240, 26, 153, 58])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.WhirlpoolsConfigExtension;
@@ -138,9 +138,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([17, 216, 246, 142, 225, 199, 218, 56]),
+        new Uint8Array([17, 216, 246, 142, 225, 199, 218, 56])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.DynamicTickArray;
@@ -149,9 +149,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([56, 75, 159, 76, 142, 68, 190, 105]),
+        new Uint8Array([56, 75, 159, 76, 142, 68, 190, 105])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.FeeTier;
@@ -160,9 +160,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([69, 97, 189, 190, 110, 7, 66, 187]),
+        new Uint8Array([69, 97, 189, 190, 110, 7, 66, 187])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.FixedTickArray;
@@ -171,9 +171,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([106, 47, 238, 159, 124, 12, 160, 192]),
+        new Uint8Array([106, 47, 238, 159, 124, 12, 160, 192])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.LockConfig;
@@ -182,9 +182,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([139, 194, 131, 179, 140, 179, 229, 244]),
+        new Uint8Array([139, 194, 131, 179, 140, 179, 229, 244])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.Oracle;
@@ -193,9 +193,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([170, 188, 143, 228, 122, 64, 247, 208]),
+        new Uint8Array([170, 188, 143, 228, 122, 64, 247, 208])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.Position;
@@ -204,9 +204,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([129, 169, 175, 65, 185, 95, 32, 100]),
+        new Uint8Array([129, 169, 175, 65, 185, 95, 32, 100])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.PositionBundle;
@@ -215,9 +215,9 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([116, 219, 204, 229, 249, 116, 255, 150]),
+        new Uint8Array([116, 219, 204, 229, 249, 116, 255, 150])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.TokenBadge;
@@ -226,15 +226,15 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([63, 149, 209, 12, 225, 128, 99, 9]),
+        new Uint8Array([63, 149, 209, 12, 225, 128, 99, 9])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolAccount.Whirlpool;
   }
   throw new Error(
-    "The provided account could not be identified as a whirlpool account.",
+    'The provided account could not be identified as a whirlpool account.'
   );
 }
 
@@ -305,16 +305,16 @@ export enum WhirlpoolInstruction {
 }
 
 export function identifyWhirlpoolInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
 ): WhirlpoolInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
+  const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70]),
+        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeConfig;
@@ -323,9 +323,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([95, 180, 10, 172, 84, 174, 232, 40]),
+        new Uint8Array([95, 180, 10, 172, 84, 174, 232, 40])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializePool;
@@ -334,9 +334,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([11, 188, 193, 214, 141, 91, 149, 184]),
+        new Uint8Array([11, 188, 193, 214, 141, 91, 149, 184])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeTickArray;
@@ -345,9 +345,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([41, 33, 165, 200, 120, 231, 142, 50]),
+        new Uint8Array([41, 33, 165, 200, 120, 231, 142, 50])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeDynamicTickArray;
@@ -356,9 +356,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([183, 74, 156, 160, 112, 2, 42, 30]),
+        new Uint8Array([183, 74, 156, 160, 112, 2, 42, 30])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeFeeTier;
@@ -367,9 +367,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([95, 135, 192, 196, 242, 129, 230, 68]),
+        new Uint8Array([95, 135, 192, 196, 242, 129, 230, 68])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeReward;
@@ -378,9 +378,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([13, 197, 86, 168, 109, 176, 27, 244]),
+        new Uint8Array([13, 197, 86, 168, 109, 176, 27, 244])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetRewardEmissions;
@@ -389,9 +389,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([135, 128, 47, 77, 15, 152, 240, 49]),
+        new Uint8Array([135, 128, 47, 77, 15, 152, 240, 49])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.OpenPosition;
@@ -400,9 +400,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([242, 29, 134, 48, 58, 110, 14, 60]),
+        new Uint8Array([242, 29, 134, 48, 58, 110, 14, 60])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.OpenPositionWithMetadata;
@@ -411,9 +411,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([46, 156, 243, 118, 13, 205, 251, 178]),
+        new Uint8Array([46, 156, 243, 118, 13, 205, 251, 178])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.IncreaseLiquidity;
@@ -422,9 +422,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([160, 38, 208, 111, 104, 91, 44, 1]),
+        new Uint8Array([160, 38, 208, 111, 104, 91, 44, 1])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.DecreaseLiquidity;
@@ -433,9 +433,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([154, 230, 250, 13, 236, 209, 75, 223]),
+        new Uint8Array([154, 230, 250, 13, 236, 209, 75, 223])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.UpdateFeesAndRewards;
@@ -444,9 +444,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([164, 152, 207, 99, 30, 186, 19, 182]),
+        new Uint8Array([164, 152, 207, 99, 30, 186, 19, 182])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CollectFees;
@@ -455,9 +455,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([70, 5, 132, 87, 86, 235, 177, 34]),
+        new Uint8Array([70, 5, 132, 87, 86, 235, 177, 34])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CollectReward;
@@ -466,9 +466,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([22, 67, 23, 98, 150, 178, 70, 220]),
+        new Uint8Array([22, 67, 23, 98, 150, 178, 70, 220])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CollectProtocolFees;
@@ -477,9 +477,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([248, 198, 158, 145, 225, 117, 135, 200]),
+        new Uint8Array([248, 198, 158, 145, 225, 117, 135, 200])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.Swap;
@@ -488,9 +488,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([123, 134, 81, 0, 49, 68, 98, 98]),
+        new Uint8Array([123, 134, 81, 0, 49, 68, 98, 98])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.ClosePosition;
@@ -499,9 +499,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([118, 215, 214, 157, 182, 229, 208, 228]),
+        new Uint8Array([118, 215, 214, 157, 182, 229, 208, 228])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetDefaultFeeRate;
@@ -510,9 +510,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([107, 205, 249, 226, 151, 35, 86, 0]),
+        new Uint8Array([107, 205, 249, 226, 151, 35, 86, 0])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetDefaultProtocolFeeRate;
@@ -521,9 +521,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([53, 243, 137, 65, 8, 140, 158, 6]),
+        new Uint8Array([53, 243, 137, 65, 8, 140, 158, 6])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetFeeRate;
@@ -532,9 +532,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([95, 7, 4, 50, 154, 79, 156, 131]),
+        new Uint8Array([95, 7, 4, 50, 154, 79, 156, 131])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetProtocolFeeRate;
@@ -543,9 +543,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([31, 1, 50, 87, 237, 101, 97, 132]),
+        new Uint8Array([31, 1, 50, 87, 237, 101, 97, 132])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetFeeAuthority;
@@ -554,9 +554,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([34, 150, 93, 244, 139, 225, 233, 67]),
+        new Uint8Array([34, 150, 93, 244, 139, 225, 233, 67])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetCollectProtocolFeesAuthority;
@@ -565,9 +565,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([34, 39, 183, 252, 83, 28, 85, 127]),
+        new Uint8Array([34, 39, 183, 252, 83, 28, 85, 127])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetRewardAuthority;
@@ -576,9 +576,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([240, 154, 201, 198, 148, 93, 56, 25]),
+        new Uint8Array([240, 154, 201, 198, 148, 93, 56, 25])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetRewardAuthorityBySuperAuthority;
@@ -587,9 +587,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([207, 5, 200, 209, 122, 56, 82, 183]),
+        new Uint8Array([207, 5, 200, 209, 122, 56, 82, 183])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetRewardEmissionsSuperAuthority;
@@ -598,9 +598,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([195, 96, 237, 108, 68, 162, 219, 230]),
+        new Uint8Array([195, 96, 237, 108, 68, 162, 219, 230])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.TwoHopSwap;
@@ -609,9 +609,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([117, 45, 241, 149, 24, 18, 194, 65]),
+        new Uint8Array([117, 45, 241, 149, 24, 18, 194, 65])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializePositionBundle;
@@ -620,9 +620,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([93, 124, 16, 179, 249, 131, 115, 245]),
+        new Uint8Array([93, 124, 16, 179, 249, 131, 115, 245])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializePositionBundleWithMetadata;
@@ -631,9 +631,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([100, 25, 99, 2, 217, 239, 124, 173]),
+        new Uint8Array([100, 25, 99, 2, 217, 239, 124, 173])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.DeletePositionBundle;
@@ -642,9 +642,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([169, 113, 126, 171, 213, 172, 212, 49]),
+        new Uint8Array([169, 113, 126, 171, 213, 172, 212, 49])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.OpenBundledPosition;
@@ -653,9 +653,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([41, 36, 216, 245, 27, 85, 103, 67]),
+        new Uint8Array([41, 36, 216, 245, 27, 85, 103, 67])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CloseBundledPosition;
@@ -664,9 +664,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([212, 47, 95, 92, 114, 102, 131, 250]),
+        new Uint8Array([212, 47, 95, 92, 114, 102, 131, 250])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.OpenPositionWithTokenExtensions;
@@ -675,9 +675,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([1, 182, 135, 59, 155, 25, 99, 223]),
+        new Uint8Array([1, 182, 135, 59, 155, 25, 99, 223])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.ClosePositionWithTokenExtensions;
@@ -686,9 +686,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([227, 62, 2, 252, 247, 10, 171, 185]),
+        new Uint8Array([227, 62, 2, 252, 247, 10, 171, 185])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.LockPosition;
@@ -697,9 +697,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([164, 123, 180, 141, 194, 100, 160, 175]),
+        new Uint8Array([164, 123, 180, 141, 194, 100, 160, 175])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.ResetPositionRange;
@@ -708,9 +708,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([179, 121, 229, 46, 67, 138, 194, 138]),
+        new Uint8Array([179, 121, 229, 46, 67, 138, 194, 138])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.TransferLockedPosition;
@@ -719,9 +719,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([77, 99, 208, 200, 141, 123, 117, 48]),
+        new Uint8Array([77, 99, 208, 200, 141, 123, 117, 48])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeAdaptiveFeeTier;
@@ -730,9 +730,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([229, 66, 84, 251, 164, 134, 183, 7]),
+        new Uint8Array([229, 66, 84, 251, 164, 134, 183, 7])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetDefaultBaseFeeRate;
@@ -741,9 +741,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([193, 234, 231, 147, 138, 57, 3, 122]),
+        new Uint8Array([193, 234, 231, 147, 138, 57, 3, 122])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetDelegatedFeeAuthority;
@@ -752,9 +752,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([125, 43, 127, 235, 149, 26, 106, 236]),
+        new Uint8Array([125, 43, 127, 235, 149, 26, 106, 236])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetInitializePoolAuthority;
@@ -763,9 +763,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([132, 185, 66, 148, 83, 88, 134, 198]),
+        new Uint8Array([132, 185, 66, 148, 83, 88, 134, 198])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetPresetAdaptiveFeeConstants;
@@ -774,9 +774,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([143, 94, 96, 76, 172, 124, 119, 199]),
+        new Uint8Array([143, 94, 96, 76, 172, 124, 119, 199])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializePoolWithAdaptiveFee;
@@ -785,9 +785,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([121, 121, 54, 114, 131, 230, 162, 104]),
+        new Uint8Array([121, 121, 54, 114, 131, 230, 162, 104])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetFeeRateByDelegatedFeeAuthority;
@@ -796,9 +796,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([71, 173, 228, 18, 67, 247, 210, 57]),
+        new Uint8Array([71, 173, 228, 18, 67, 247, 210, 57])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetConfigFeatureFlag;
@@ -807,9 +807,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([214, 161, 248, 79, 152, 98, 172, 231]),
+        new Uint8Array([214, 161, 248, 79, 152, 98, 172, 231])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.MigrateRepurposeRewardAuthoritySpace;
@@ -818,9 +818,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([207, 117, 95, 191, 229, 180, 226, 15]),
+        new Uint8Array([207, 117, 95, 191, 229, 180, 226, 15])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CollectFeesV2;
@@ -829,9 +829,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([103, 128, 222, 134, 114, 200, 22, 200]),
+        new Uint8Array([103, 128, 222, 134, 114, 200, 22, 200])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CollectProtocolFeesV2;
@@ -840,9 +840,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([177, 107, 37, 180, 160, 19, 49, 209]),
+        new Uint8Array([177, 107, 37, 180, 160, 19, 49, 209])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.CollectRewardV2;
@@ -851,9 +851,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([58, 127, 188, 62, 79, 82, 196, 96]),
+        new Uint8Array([58, 127, 188, 62, 79, 82, 196, 96])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.DecreaseLiquidityV2;
@@ -862,9 +862,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([133, 29, 89, 223, 69, 238, 176, 10]),
+        new Uint8Array([133, 29, 89, 223, 69, 238, 176, 10])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.IncreaseLiquidityV2;
@@ -873,9 +873,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([207, 45, 87, 242, 27, 63, 204, 67]),
+        new Uint8Array([207, 45, 87, 242, 27, 63, 204, 67])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializePoolV2;
@@ -884,9 +884,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([91, 1, 77, 50, 235, 229, 133, 49]),
+        new Uint8Array([91, 1, 77, 50, 235, 229, 133, 49])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeRewardV2;
@@ -895,9 +895,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([114, 228, 72, 32, 193, 48, 160, 102]),
+        new Uint8Array([114, 228, 72, 32, 193, 48, 160, 102])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetRewardEmissionsV2;
@@ -906,9 +906,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([43, 4, 237, 11, 26, 201, 30, 98]),
+        new Uint8Array([43, 4, 237, 11, 26, 201, 30, 98])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SwapV2;
@@ -917,9 +917,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([186, 143, 209, 29, 254, 2, 194, 117]),
+        new Uint8Array([186, 143, 209, 29, 254, 2, 194, 117])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.TwoHopSwapV2;
@@ -928,9 +928,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([55, 9, 53, 9, 114, 57, 209, 52]),
+        new Uint8Array([55, 9, 53, 9, 114, 57, 209, 52])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeConfigExtension;
@@ -939,9 +939,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([44, 94, 241, 116, 24, 188, 60, 143]),
+        new Uint8Array([44, 94, 241, 116, 24, 188, 60, 143])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetConfigExtensionAuthority;
@@ -950,9 +950,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([207, 202, 4, 32, 205, 79, 13, 178]),
+        new Uint8Array([207, 202, 4, 32, 205, 79, 13, 178])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetTokenBadgeAuthority;
@@ -961,9 +961,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([253, 77, 205, 95, 27, 224, 89, 223]),
+        new Uint8Array([253, 77, 205, 95, 27, 224, 89, 223])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.InitializeTokenBadge;
@@ -972,9 +972,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([53, 146, 68, 8, 18, 117, 17, 185]),
+        new Uint8Array([53, 146, 68, 8, 18, 117, 17, 185])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.DeleteTokenBadge;
@@ -983,9 +983,9 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([224, 88, 65, 33, 138, 147, 246, 137]),
+        new Uint8Array([224, 88, 65, 33, 138, 147, 246, 137])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.SetTokenBadgeAttribute;
@@ -994,20 +994,20 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([223, 253, 121, 121, 60, 193, 129, 31]),
+        new Uint8Array([223, 253, 121, 121, 60, 193, 129, 31])
       ),
-      0,
+      0
     )
   ) {
     return WhirlpoolInstruction.IdlInclude;
   }
   throw new Error(
-    "The provided instruction could not be identified as a whirlpool instruction.",
+    'The provided instruction could not be identified as a whirlpool instruction.'
   );
 }
 
 export type ParsedWhirlpoolInstruction<
-  TProgram extends string = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+  TProgram extends string = 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
 > =
   | ({
       instructionType: WhirlpoolInstruction.InitializeConfig;

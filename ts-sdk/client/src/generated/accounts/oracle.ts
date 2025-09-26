@@ -35,7 +35,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAdaptiveFeeConstantsDecoder,
   getAdaptiveFeeConstantsEncoder,
@@ -45,7 +45,7 @@ import {
   type AdaptiveFeeConstantsArgs,
   type AdaptiveFeeVariables,
   type AdaptiveFeeVariablesArgs,
-} from "../types";
+} from '../types';
 
 export const ORACLE_DISCRIMINATOR = new Uint8Array([
   139, 194, 131, 179, 140, 179, 229, 244,
@@ -75,25 +75,25 @@ export type OracleArgs = {
 export function getOracleEncoder(): Encoder<OracleArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["whirlpool", getAddressEncoder()],
-      ["tradeEnableTimestamp", getU64Encoder()],
-      ["adaptiveFeeConstants", getAdaptiveFeeConstantsEncoder()],
-      ["adaptiveFeeVariables", getAdaptiveFeeVariablesEncoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 128)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['whirlpool', getAddressEncoder()],
+      ['tradeEnableTimestamp', getU64Encoder()],
+      ['adaptiveFeeConstants', getAdaptiveFeeConstantsEncoder()],
+      ['adaptiveFeeVariables', getAdaptiveFeeVariablesEncoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 128)],
     ]),
-    (value) => ({ ...value, discriminator: ORACLE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: ORACLE_DISCRIMINATOR })
   );
 }
 
 export function getOracleDecoder(): Decoder<Oracle> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["whirlpool", getAddressDecoder()],
-    ["tradeEnableTimestamp", getU64Decoder()],
-    ["adaptiveFeeConstants", getAdaptiveFeeConstantsDecoder()],
-    ["adaptiveFeeVariables", getAdaptiveFeeVariablesDecoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 128)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['whirlpool', getAddressDecoder()],
+    ['tradeEnableTimestamp', getU64Decoder()],
+    ['adaptiveFeeConstants', getAdaptiveFeeConstantsDecoder()],
+    ['adaptiveFeeVariables', getAdaptiveFeeVariablesDecoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 128)],
   ]);
 }
 
@@ -102,24 +102,24 @@ export function getOracleCodec(): Codec<OracleArgs, Oracle> {
 }
 
 export function decodeOracle<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<Oracle, TAddress>;
 export function decodeOracle<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<Oracle, TAddress>;
 export function decodeOracle<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<Oracle, TAddress> | MaybeAccount<Oracle, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getOracleDecoder(),
+    getOracleDecoder()
   );
 }
 
 export async function fetchOracle<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<Oracle, TAddress>> {
   const maybeAccount = await fetchMaybeOracle(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -129,7 +129,7 @@ export async function fetchOracle<TAddress extends string = string>(
 export async function fetchMaybeOracle<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<Oracle, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeOracle(maybeAccount);
@@ -138,7 +138,7 @@ export async function fetchMaybeOracle<TAddress extends string = string>(
 export async function fetchAllOracle(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<Oracle>[]> {
   const maybeAccounts = await fetchAllMaybeOracle(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -148,7 +148,7 @@ export async function fetchAllOracle(
 export async function fetchAllMaybeOracle(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<Oracle>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeOracle(maybeAccount));

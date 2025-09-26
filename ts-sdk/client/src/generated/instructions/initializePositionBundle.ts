@@ -29,9 +29,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const INITIALIZE_POSITION_BUNDLE_DISCRIMINATOR = new Uint8Array([
   117, 45, 241, 149, 24, 18, 194, 65,
@@ -39,7 +39,7 @@ export const INITIALIZE_POSITION_BUNDLE_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializePositionBundleDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_POSITION_BUNDLE_DISCRIMINATOR,
+    INITIALIZE_POSITION_BUNDLE_DISCRIMINATOR
   );
 }
 
@@ -54,13 +54,13 @@ export type InitializePositionBundleInstruction<
   TAccountFunder extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
@@ -108,17 +108,17 @@ export type InitializePositionBundleInstructionDataArgs = {};
 
 export function getInitializePositionBundleInstructionDataEncoder(): Encoder<InitializePositionBundleInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: INITIALIZE_POSITION_BUNDLE_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getInitializePositionBundleInstructionDataDecoder(): Decoder<InitializePositionBundleInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -128,7 +128,7 @@ export function getInitializePositionBundleInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializePositionBundleInstructionDataEncoder(),
-    getInitializePositionBundleInstructionDataDecoder(),
+    getInitializePositionBundleInstructionDataDecoder()
   );
 }
 
@@ -177,7 +177,7 @@ export function getInitializePositionBundleInstruction<
     TAccountRent,
     TAccountAssociatedTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializePositionBundleInstruction<
   TProgramAddress,
   TAccountPositionBundle,
@@ -225,18 +225,18 @@ export function getInitializePositionBundleInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.positionBundle),
@@ -292,11 +292,11 @@ export function parseInitializePositionBundleInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedInitializePositionBundleInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -318,7 +318,7 @@ export function parseInitializePositionBundleInstruction<
       associatedTokenProgram: getNextAccount(),
     },
     data: getInitializePositionBundleInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

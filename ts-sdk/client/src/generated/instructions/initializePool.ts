@@ -35,9 +35,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const INITIALIZE_POOL_DISCRIMINATOR = new Uint8Array([
   95, 180, 10, 172, 84, 174, 232, 40,
@@ -45,7 +45,7 @@ export const INITIALIZE_POOL_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializePoolDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_POOL_DISCRIMINATOR,
+    INITIALIZE_POOL_DISCRIMINATOR
   );
 }
 
@@ -61,13 +61,13 @@ export type InitializePoolInstruction<
   TAccountFeeTier extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -129,21 +129,21 @@ export type InitializePoolInstructionDataArgs = {
 export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoolInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["whirlpoolBump", getU8Encoder()],
-      ["tickSpacing", getU16Encoder()],
-      ["initialSqrtPrice", getU128Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['whirlpoolBump', getU8Encoder()],
+      ['tickSpacing', getU16Encoder()],
+      ['initialSqrtPrice', getU128Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR })
   );
 }
 
 export function getInitializePoolInstructionDataDecoder(): Decoder<InitializePoolInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["whirlpoolBump", getU8Decoder()],
-    ["tickSpacing", getU16Decoder()],
-    ["initialSqrtPrice", getU128Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['whirlpoolBump', getU8Decoder()],
+    ['tickSpacing', getU16Decoder()],
+    ['initialSqrtPrice', getU128Decoder()],
   ]);
 }
 
@@ -153,7 +153,7 @@ export function getInitializePoolInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializePoolInstructionDataEncoder(),
-    getInitializePoolInstructionDataDecoder(),
+    getInitializePoolInstructionDataDecoder()
   );
 }
 
@@ -181,9 +181,9 @@ export type InitializePoolInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  whirlpoolBump: InitializePoolInstructionDataArgs["whirlpoolBump"];
-  tickSpacing: InitializePoolInstructionDataArgs["tickSpacing"];
-  initialSqrtPrice: InitializePoolInstructionDataArgs["initialSqrtPrice"];
+  whirlpoolBump: InitializePoolInstructionDataArgs['whirlpoolBump'];
+  tickSpacing: InitializePoolInstructionDataArgs['tickSpacing'];
+  initialSqrtPrice: InitializePoolInstructionDataArgs['initialSqrtPrice'];
 };
 
 export function getInitializePoolInstruction<
@@ -213,7 +213,7 @@ export function getInitializePoolInstruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializePoolInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -259,18 +259,18 @@ export function getInitializePoolInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -287,7 +287,7 @@ export function getInitializePoolInstruction<
     ],
     programAddress,
     data: getInitializePoolInstructionDataEncoder().encode(
-      args as InitializePoolInstructionDataArgs,
+      args as InitializePoolInstructionDataArgs
     ),
   } as InitializePoolInstruction<
     TProgramAddress,
@@ -334,11 +334,11 @@ export function parseInitializePoolInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedInitializePoolInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 11) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

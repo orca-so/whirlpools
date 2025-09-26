@@ -39,15 +39,15 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 import {
   getRemainingAccountsInfoDecoder,
   getRemainingAccountsInfoEncoder,
   type RemainingAccountsInfo,
   type RemainingAccountsInfoArgs,
-} from "../types";
+} from '../types';
 
 export const TWO_HOP_SWAP_V2_DISCRIMINATOR = new Uint8Array([
   186, 143, 209, 29, 254, 2, 194, 117,
@@ -55,7 +55,7 @@ export const TWO_HOP_SWAP_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getTwoHopSwapV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TWO_HOP_SWAP_V2_DISCRIMINATOR,
+    TWO_HOP_SWAP_V2_DISCRIMINATOR
   );
 }
 
@@ -201,35 +201,35 @@ export type TwoHopSwapV2InstructionDataArgs = {
 export function getTwoHopSwapV2InstructionDataEncoder(): Encoder<TwoHopSwapV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amount", getU64Encoder()],
-      ["otherAmountThreshold", getU64Encoder()],
-      ["amountSpecifiedIsInput", getBooleanEncoder()],
-      ["aToBOne", getBooleanEncoder()],
-      ["aToBTwo", getBooleanEncoder()],
-      ["sqrtPriceLimitOne", getU128Encoder()],
-      ["sqrtPriceLimitTwo", getU128Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amount', getU64Encoder()],
+      ['otherAmountThreshold', getU64Encoder()],
+      ['amountSpecifiedIsInput', getBooleanEncoder()],
+      ['aToBOne', getBooleanEncoder()],
+      ['aToBTwo', getBooleanEncoder()],
+      ['sqrtPriceLimitOne', getU128Encoder()],
+      ['sqrtPriceLimitTwo', getU128Encoder()],
       [
-        "remainingAccountsInfo",
+        'remainingAccountsInfo',
         getOptionEncoder(getRemainingAccountsInfoEncoder()),
       ],
     ]),
-    (value) => ({ ...value, discriminator: TWO_HOP_SWAP_V2_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: TWO_HOP_SWAP_V2_DISCRIMINATOR })
   );
 }
 
 export function getTwoHopSwapV2InstructionDataDecoder(): Decoder<TwoHopSwapV2InstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amount", getU64Decoder()],
-    ["otherAmountThreshold", getU64Decoder()],
-    ["amountSpecifiedIsInput", getBooleanDecoder()],
-    ["aToBOne", getBooleanDecoder()],
-    ["aToBTwo", getBooleanDecoder()],
-    ["sqrtPriceLimitOne", getU128Decoder()],
-    ["sqrtPriceLimitTwo", getU128Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amount', getU64Decoder()],
+    ['otherAmountThreshold', getU64Decoder()],
+    ['amountSpecifiedIsInput', getBooleanDecoder()],
+    ['aToBOne', getBooleanDecoder()],
+    ['aToBTwo', getBooleanDecoder()],
+    ['sqrtPriceLimitOne', getU128Decoder()],
+    ['sqrtPriceLimitTwo', getU128Decoder()],
     [
-      "remainingAccountsInfo",
+      'remainingAccountsInfo',
       getOptionDecoder(getRemainingAccountsInfoDecoder()),
     ],
   ]);
@@ -241,7 +241,7 @@ export function getTwoHopSwapV2InstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getTwoHopSwapV2InstructionDataEncoder(),
-    getTwoHopSwapV2InstructionDataDecoder(),
+    getTwoHopSwapV2InstructionDataDecoder()
   );
 }
 
@@ -295,14 +295,14 @@ export type TwoHopSwapV2Input<
   oracleOne: Address<TAccountOracleOne>;
   oracleTwo: Address<TAccountOracleTwo>;
   memoProgram: Address<TAccountMemoProgram>;
-  amount: TwoHopSwapV2InstructionDataArgs["amount"];
-  otherAmountThreshold: TwoHopSwapV2InstructionDataArgs["otherAmountThreshold"];
-  amountSpecifiedIsInput: TwoHopSwapV2InstructionDataArgs["amountSpecifiedIsInput"];
-  aToBOne: TwoHopSwapV2InstructionDataArgs["aToBOne"];
-  aToBTwo: TwoHopSwapV2InstructionDataArgs["aToBTwo"];
-  sqrtPriceLimitOne: TwoHopSwapV2InstructionDataArgs["sqrtPriceLimitOne"];
-  sqrtPriceLimitTwo: TwoHopSwapV2InstructionDataArgs["sqrtPriceLimitTwo"];
-  remainingAccountsInfo: TwoHopSwapV2InstructionDataArgs["remainingAccountsInfo"];
+  amount: TwoHopSwapV2InstructionDataArgs['amount'];
+  otherAmountThreshold: TwoHopSwapV2InstructionDataArgs['otherAmountThreshold'];
+  amountSpecifiedIsInput: TwoHopSwapV2InstructionDataArgs['amountSpecifiedIsInput'];
+  aToBOne: TwoHopSwapV2InstructionDataArgs['aToBOne'];
+  aToBTwo: TwoHopSwapV2InstructionDataArgs['aToBTwo'];
+  sqrtPriceLimitOne: TwoHopSwapV2InstructionDataArgs['sqrtPriceLimitOne'];
+  sqrtPriceLimitTwo: TwoHopSwapV2InstructionDataArgs['sqrtPriceLimitTwo'];
+  remainingAccountsInfo: TwoHopSwapV2InstructionDataArgs['remainingAccountsInfo'];
 };
 
 export function getTwoHopSwapV2Instruction<
@@ -358,7 +358,7 @@ export function getTwoHopSwapV2Instruction<
     TAccountOracleTwo,
     TAccountMemoProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): TwoHopSwapV2Instruction<
   TProgramAddress,
   TAccountWhirlpoolOne,
@@ -457,7 +457,7 @@ export function getTwoHopSwapV2Instruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolOne),
@@ -487,7 +487,7 @@ export function getTwoHopSwapV2Instruction<
     ],
     programAddress,
     data: getTwoHopSwapV2InstructionDataEncoder().encode(
-      args as TwoHopSwapV2InstructionDataArgs,
+      args as TwoHopSwapV2InstructionDataArgs
     ),
   } as TwoHopSwapV2Instruction<
     TProgramAddress,
@@ -560,11 +560,11 @@ export function parseTwoHopSwapV2Instruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedTwoHopSwapV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 24) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

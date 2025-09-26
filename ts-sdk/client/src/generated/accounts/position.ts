@@ -41,13 +41,13 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getPositionRewardInfoDecoder,
   getPositionRewardInfoEncoder,
   type PositionRewardInfo,
   type PositionRewardInfoArgs,
-} from "../types";
+} from '../types';
 
 export const POSITION_DISCRIMINATOR = new Uint8Array([
   170, 188, 143, 228, 122, 64, 247, 208,
@@ -87,39 +87,39 @@ export type PositionArgs = {
 export function getPositionEncoder(): Encoder<PositionArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["whirlpool", getAddressEncoder()],
-      ["positionMint", getAddressEncoder()],
-      ["liquidity", getU128Encoder()],
-      ["tickLowerIndex", getI32Encoder()],
-      ["tickUpperIndex", getI32Encoder()],
-      ["feeGrowthCheckpointA", getU128Encoder()],
-      ["feeOwedA", getU64Encoder()],
-      ["feeGrowthCheckpointB", getU128Encoder()],
-      ["feeOwedB", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['whirlpool', getAddressEncoder()],
+      ['positionMint', getAddressEncoder()],
+      ['liquidity', getU128Encoder()],
+      ['tickLowerIndex', getI32Encoder()],
+      ['tickUpperIndex', getI32Encoder()],
+      ['feeGrowthCheckpointA', getU128Encoder()],
+      ['feeOwedA', getU64Encoder()],
+      ['feeGrowthCheckpointB', getU128Encoder()],
+      ['feeOwedB', getU64Encoder()],
       [
-        "rewardInfos",
+        'rewardInfos',
         getArrayEncoder(getPositionRewardInfoEncoder(), { size: 3 }),
       ],
     ]),
-    (value) => ({ ...value, discriminator: POSITION_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: POSITION_DISCRIMINATOR })
   );
 }
 
 export function getPositionDecoder(): Decoder<Position> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["whirlpool", getAddressDecoder()],
-    ["positionMint", getAddressDecoder()],
-    ["liquidity", getU128Decoder()],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
-    ["feeGrowthCheckpointA", getU128Decoder()],
-    ["feeOwedA", getU64Decoder()],
-    ["feeGrowthCheckpointB", getU128Decoder()],
-    ["feeOwedB", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['whirlpool', getAddressDecoder()],
+    ['positionMint', getAddressDecoder()],
+    ['liquidity', getU128Decoder()],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
+    ['feeGrowthCheckpointA', getU128Decoder()],
+    ['feeOwedA', getU64Decoder()],
+    ['feeGrowthCheckpointB', getU128Decoder()],
+    ['feeOwedB', getU64Decoder()],
     [
-      "rewardInfos",
+      'rewardInfos',
       getArrayDecoder(getPositionRewardInfoDecoder(), { size: 3 }),
     ],
   ]);
@@ -130,24 +130,24 @@ export function getPositionCodec(): Codec<PositionArgs, Position> {
 }
 
 export function decodePosition<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<Position, TAddress>;
 export function decodePosition<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<Position, TAddress>;
 export function decodePosition<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<Position, TAddress> | MaybeAccount<Position, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getPositionDecoder(),
+    getPositionDecoder()
   );
 }
 
 export async function fetchPosition<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<Position, TAddress>> {
   const maybeAccount = await fetchMaybePosition(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -157,7 +157,7 @@ export async function fetchPosition<TAddress extends string = string>(
 export async function fetchMaybePosition<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<Position, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodePosition(maybeAccount);
@@ -166,7 +166,7 @@ export async function fetchMaybePosition<TAddress extends string = string>(
 export async function fetchAllPosition(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<Position>[]> {
   const maybeAccounts = await fetchAllMaybePosition(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -176,7 +176,7 @@ export async function fetchAllPosition(
 export async function fetchAllMaybePosition(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<Position>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodePosition(maybeAccount));

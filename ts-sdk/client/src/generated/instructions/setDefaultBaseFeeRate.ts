@@ -31,9 +31,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_DEFAULT_BASE_FEE_RATE_DISCRIMINATOR = new Uint8Array([
   229, 66, 84, 251, 164, 134, 183, 7,
@@ -41,7 +41,7 @@ export const SET_DEFAULT_BASE_FEE_RATE_DISCRIMINATOR = new Uint8Array([
 
 export function getSetDefaultBaseFeeRateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_DEFAULT_BASE_FEE_RATE_DISCRIMINATOR,
+    SET_DEFAULT_BASE_FEE_RATE_DISCRIMINATOR
   );
 }
 
@@ -81,20 +81,20 @@ export type SetDefaultBaseFeeRateInstructionDataArgs = {
 export function getSetDefaultBaseFeeRateInstructionDataEncoder(): Encoder<SetDefaultBaseFeeRateInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["defaultBaseFeeRate", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['defaultBaseFeeRate', getU16Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_DEFAULT_BASE_FEE_RATE_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetDefaultBaseFeeRateInstructionDataDecoder(): Decoder<SetDefaultBaseFeeRateInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["defaultBaseFeeRate", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['defaultBaseFeeRate', getU16Decoder()],
   ]);
 }
 
@@ -104,7 +104,7 @@ export function getSetDefaultBaseFeeRateInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetDefaultBaseFeeRateInstructionDataEncoder(),
-    getSetDefaultBaseFeeRateInstructionDataDecoder(),
+    getSetDefaultBaseFeeRateInstructionDataDecoder()
   );
 }
 
@@ -116,7 +116,7 @@ export type SetDefaultBaseFeeRateInput<
   whirlpoolsConfig: Address<TAccountWhirlpoolsConfig>;
   adaptiveFeeTier: Address<TAccountAdaptiveFeeTier>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
-  defaultBaseFeeRate: SetDefaultBaseFeeRateInstructionDataArgs["defaultBaseFeeRate"];
+  defaultBaseFeeRate: SetDefaultBaseFeeRateInstructionDataArgs['defaultBaseFeeRate'];
 };
 
 export function getSetDefaultBaseFeeRateInstruction<
@@ -130,7 +130,7 @@ export function getSetDefaultBaseFeeRateInstruction<
     TAccountAdaptiveFeeTier,
     TAccountFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetDefaultBaseFeeRateInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -157,7 +157,7 @@ export function getSetDefaultBaseFeeRateInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -166,7 +166,7 @@ export function getSetDefaultBaseFeeRateInstruction<
     ],
     programAddress,
     data: getSetDefaultBaseFeeRateInstructionDataEncoder().encode(
-      args as SetDefaultBaseFeeRateInstructionDataArgs,
+      args as SetDefaultBaseFeeRateInstructionDataArgs
     ),
   } as SetDefaultBaseFeeRateInstruction<
     TProgramAddress,
@@ -197,11 +197,11 @@ export function parseSetDefaultBaseFeeRateInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedSetDefaultBaseFeeRateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -217,7 +217,7 @@ export function parseSetDefaultBaseFeeRateInstruction<
       feeAuthority: getNextAccount(),
     },
     data: getSetDefaultBaseFeeRateInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

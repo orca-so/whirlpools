@@ -30,9 +30,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_DEFAULT_PROTOCOL_FEE_RATE_DISCRIMINATOR = new Uint8Array([
   107, 205, 249, 226, 151, 35, 86, 0,
@@ -40,7 +40,7 @@ export const SET_DEFAULT_PROTOCOL_FEE_RATE_DISCRIMINATOR = new Uint8Array([
 
 export function getSetDefaultProtocolFeeRateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_DEFAULT_PROTOCOL_FEE_RATE_DISCRIMINATOR,
+    SET_DEFAULT_PROTOCOL_FEE_RATE_DISCRIMINATOR
   );
 }
 
@@ -76,20 +76,20 @@ export type SetDefaultProtocolFeeRateInstructionDataArgs = {
 export function getSetDefaultProtocolFeeRateInstructionDataEncoder(): Encoder<SetDefaultProtocolFeeRateInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["defaultProtocolFeeRate", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['defaultProtocolFeeRate', getU16Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_DEFAULT_PROTOCOL_FEE_RATE_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetDefaultProtocolFeeRateInstructionDataDecoder(): Decoder<SetDefaultProtocolFeeRateInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["defaultProtocolFeeRate", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['defaultProtocolFeeRate', getU16Decoder()],
   ]);
 }
 
@@ -99,7 +99,7 @@ export function getSetDefaultProtocolFeeRateInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetDefaultProtocolFeeRateInstructionDataEncoder(),
-    getSetDefaultProtocolFeeRateInstructionDataDecoder(),
+    getSetDefaultProtocolFeeRateInstructionDataDecoder()
   );
 }
 
@@ -109,7 +109,7 @@ export type SetDefaultProtocolFeeRateInput<
 > = {
   whirlpoolsConfig: Address<TAccountWhirlpoolsConfig>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
-  defaultProtocolFeeRate: SetDefaultProtocolFeeRateInstructionDataArgs["defaultProtocolFeeRate"];
+  defaultProtocolFeeRate: SetDefaultProtocolFeeRateInstructionDataArgs['defaultProtocolFeeRate'];
 };
 
 export function getSetDefaultProtocolFeeRateInstruction<
@@ -121,7 +121,7 @@ export function getSetDefaultProtocolFeeRateInstruction<
     TAccountWhirlpoolsConfig,
     TAccountFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetDefaultProtocolFeeRateInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -146,7 +146,7 @@ export function getSetDefaultProtocolFeeRateInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -154,7 +154,7 @@ export function getSetDefaultProtocolFeeRateInstruction<
     ],
     programAddress,
     data: getSetDefaultProtocolFeeRateInstructionDataEncoder().encode(
-      args as SetDefaultProtocolFeeRateInstructionDataArgs,
+      args as SetDefaultProtocolFeeRateInstructionDataArgs
     ),
   } as SetDefaultProtocolFeeRateInstruction<
     TProgramAddress,
@@ -183,11 +183,11 @@ export function parseSetDefaultProtocolFeeRateInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedSetDefaultProtocolFeeRateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -202,7 +202,7 @@ export function parseSetDefaultProtocolFeeRateInstruction<
       feeAuthority: getNextAccount(),
     },
     data: getSetDefaultProtocolFeeRateInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

@@ -23,7 +23,7 @@ import {
   type Decoder,
   type Encoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 /**
  * Stores the state relevant for tracking liquidity mining rewards at the `Whirlpool` level.
@@ -82,21 +82,21 @@ export type WhirlpoolRewardInfoArgs = {
 
 export function getWhirlpoolRewardInfoEncoder(): Encoder<WhirlpoolRewardInfoArgs> {
   return getStructEncoder([
-    ["mint", getAddressEncoder()],
-    ["vault", getAddressEncoder()],
-    ["extension", fixEncoderSize(getBytesEncoder(), 32)],
-    ["emissionsPerSecondX64", getU128Encoder()],
-    ["growthGlobalX64", getU128Encoder()],
+    ['mint', getAddressEncoder()],
+    ['vault', getAddressEncoder()],
+    ['extension', fixEncoderSize(getBytesEncoder(), 32)],
+    ['emissionsPerSecondX64', getU128Encoder()],
+    ['growthGlobalX64', getU128Encoder()],
   ]);
 }
 
 export function getWhirlpoolRewardInfoDecoder(): Decoder<WhirlpoolRewardInfo> {
   return getStructDecoder([
-    ["mint", getAddressDecoder()],
-    ["vault", getAddressDecoder()],
-    ["extension", fixDecoderSize(getBytesDecoder(), 32)],
-    ["emissionsPerSecondX64", getU128Decoder()],
-    ["growthGlobalX64", getU128Decoder()],
+    ['mint', getAddressDecoder()],
+    ['vault', getAddressDecoder()],
+    ['extension', fixDecoderSize(getBytesDecoder(), 32)],
+    ['emissionsPerSecondX64', getU128Decoder()],
+    ['growthGlobalX64', getU128Decoder()],
   ]);
 }
 
@@ -106,6 +106,6 @@ export function getWhirlpoolRewardInfoCodec(): Codec<
 > {
   return combineCodec(
     getWhirlpoolRewardInfoEncoder(),
-    getWhirlpoolRewardInfoDecoder(),
+    getWhirlpoolRewardInfoDecoder()
   );
 }

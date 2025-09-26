@@ -58,7 +58,7 @@ export type WhirlpoolExtensionSegmentPrimary = {
  * Whirlpool extension segment secondary.
  * @category WhirlpoolClient
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+
 export type WhirlpoolExtensionSegmentSecondary = {
   // reserved for future use
 };

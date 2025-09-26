@@ -33,9 +33,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const OPEN_POSITION_DISCRIMINATOR = new Uint8Array([
   135, 128, 47, 77, 15, 152, 240, 49,
@@ -43,7 +43,7 @@ export const OPEN_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getOpenPositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    OPEN_POSITION_DISCRIMINATOR,
+    OPEN_POSITION_DISCRIMINATOR
   );
 }
 
@@ -57,13 +57,13 @@ export type OpenPositionInstruction<
   TAccountWhirlpool extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
@@ -122,21 +122,21 @@ export type OpenPositionInstructionDataArgs = {
 export function getOpenPositionInstructionDataEncoder(): Encoder<OpenPositionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["positionBump", getU8Encoder()],
-      ["tickLowerIndex", getI32Encoder()],
-      ["tickUpperIndex", getI32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['positionBump', getU8Encoder()],
+      ['tickLowerIndex', getI32Encoder()],
+      ['tickUpperIndex', getI32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: OPEN_POSITION_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: OPEN_POSITION_DISCRIMINATOR })
   );
 }
 
 export function getOpenPositionInstructionDataDecoder(): Decoder<OpenPositionInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["positionBump", getU8Decoder()],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['positionBump', getU8Decoder()],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
   ]);
 }
 
@@ -146,7 +146,7 @@ export function getOpenPositionInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getOpenPositionInstructionDataEncoder(),
-    getOpenPositionInstructionDataDecoder(),
+    getOpenPositionInstructionDataDecoder()
   );
 }
 
@@ -172,9 +172,9 @@ export type OpenPositionInput<
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
-  positionBump: OpenPositionInstructionDataArgs["positionBump"];
-  tickLowerIndex: OpenPositionInstructionDataArgs["tickLowerIndex"];
-  tickUpperIndex: OpenPositionInstructionDataArgs["tickUpperIndex"];
+  positionBump: OpenPositionInstructionDataArgs['positionBump'];
+  tickLowerIndex: OpenPositionInstructionDataArgs['tickLowerIndex'];
+  tickUpperIndex: OpenPositionInstructionDataArgs['tickUpperIndex'];
 };
 
 export function getOpenPositionInstruction<
@@ -202,7 +202,7 @@ export function getOpenPositionInstruction<
     TAccountRent,
     TAccountAssociatedTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): OpenPositionInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -249,18 +249,18 @@ export function getOpenPositionInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.funder),
@@ -276,7 +276,7 @@ export function getOpenPositionInstruction<
     ],
     programAddress,
     data: getOpenPositionInstructionDataEncoder().encode(
-      args as OpenPositionInstructionDataArgs,
+      args as OpenPositionInstructionDataArgs
     ),
   } as OpenPositionInstruction<
     TProgramAddress,
@@ -321,11 +321,11 @@ export function parseOpenPositionInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedOpenPositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 10) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "format": "cd ../.. && prettier './**/*.{js,jsx,ts,tsx,json}' --write && eslint -c ts-sdk/lint/eslint.config.js --fix",
-    "lint": "cd ../.. && prettier --check './**/*.{js,jsx,ts,tsx,json}' && eslint -c ts-sdk/lint/eslint.config.js",
-    "format:client": "cd ../.. && prettier 'ts-sdk/client/src/**/*.{js,ts}' --write && eslint -c ts-sdk/lint/eslint.config.js --fix"
+    "lint": "cd ../.. && prettier --check './**/*.{js,jsx,ts,tsx,json}' && eslint -c ts-sdk/lint/eslint.config.js"
   },
   "devDependencies": {
     "eslint": "^9.23.0",

@@ -36,9 +36,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const INITIALIZE_ADAPTIVE_FEE_TIER_DISCRIMINATOR = new Uint8Array([
   77, 99, 208, 200, 141, 123, 117, 48,
@@ -46,7 +46,7 @@ export const INITIALIZE_ADAPTIVE_FEE_TIER_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeAdaptiveFeeTierDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_ADAPTIVE_FEE_TIER_DISCRIMINATOR,
+    INITIALIZE_ADAPTIVE_FEE_TIER_DISCRIMINATOR
   );
 }
 
@@ -58,7 +58,7 @@ export type InitializeAdaptiveFeeTierInstruction<
   TAccountFeeAuthority extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -119,42 +119,42 @@ export type InitializeAdaptiveFeeTierInstructionDataArgs = {
 export function getInitializeAdaptiveFeeTierInstructionDataEncoder(): Encoder<InitializeAdaptiveFeeTierInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["feeTierIndex", getU16Encoder()],
-      ["tickSpacing", getU16Encoder()],
-      ["initializePoolAuthority", getAddressEncoder()],
-      ["delegatedFeeAuthority", getAddressEncoder()],
-      ["defaultBaseFeeRate", getU16Encoder()],
-      ["filterPeriod", getU16Encoder()],
-      ["decayPeriod", getU16Encoder()],
-      ["reductionFactor", getU16Encoder()],
-      ["adaptiveFeeControlFactor", getU32Encoder()],
-      ["maxVolatilityAccumulator", getU32Encoder()],
-      ["tickGroupSize", getU16Encoder()],
-      ["majorSwapThresholdTicks", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['feeTierIndex', getU16Encoder()],
+      ['tickSpacing', getU16Encoder()],
+      ['initializePoolAuthority', getAddressEncoder()],
+      ['delegatedFeeAuthority', getAddressEncoder()],
+      ['defaultBaseFeeRate', getU16Encoder()],
+      ['filterPeriod', getU16Encoder()],
+      ['decayPeriod', getU16Encoder()],
+      ['reductionFactor', getU16Encoder()],
+      ['adaptiveFeeControlFactor', getU32Encoder()],
+      ['maxVolatilityAccumulator', getU32Encoder()],
+      ['tickGroupSize', getU16Encoder()],
+      ['majorSwapThresholdTicks', getU16Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: INITIALIZE_ADAPTIVE_FEE_TIER_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getInitializeAdaptiveFeeTierInstructionDataDecoder(): Decoder<InitializeAdaptiveFeeTierInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["feeTierIndex", getU16Decoder()],
-    ["tickSpacing", getU16Decoder()],
-    ["initializePoolAuthority", getAddressDecoder()],
-    ["delegatedFeeAuthority", getAddressDecoder()],
-    ["defaultBaseFeeRate", getU16Decoder()],
-    ["filterPeriod", getU16Decoder()],
-    ["decayPeriod", getU16Decoder()],
-    ["reductionFactor", getU16Decoder()],
-    ["adaptiveFeeControlFactor", getU32Decoder()],
-    ["maxVolatilityAccumulator", getU32Decoder()],
-    ["tickGroupSize", getU16Decoder()],
-    ["majorSwapThresholdTicks", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['feeTierIndex', getU16Decoder()],
+    ['tickSpacing', getU16Decoder()],
+    ['initializePoolAuthority', getAddressDecoder()],
+    ['delegatedFeeAuthority', getAddressDecoder()],
+    ['defaultBaseFeeRate', getU16Decoder()],
+    ['filterPeriod', getU16Decoder()],
+    ['decayPeriod', getU16Decoder()],
+    ['reductionFactor', getU16Decoder()],
+    ['adaptiveFeeControlFactor', getU32Decoder()],
+    ['maxVolatilityAccumulator', getU32Decoder()],
+    ['tickGroupSize', getU16Decoder()],
+    ['majorSwapThresholdTicks', getU16Decoder()],
   ]);
 }
 
@@ -164,7 +164,7 @@ export function getInitializeAdaptiveFeeTierInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeAdaptiveFeeTierInstructionDataEncoder(),
-    getInitializeAdaptiveFeeTierInstructionDataDecoder(),
+    getInitializeAdaptiveFeeTierInstructionDataDecoder()
   );
 }
 
@@ -180,18 +180,18 @@ export type InitializeAdaptiveFeeTierInput<
   funder: TransactionSigner<TAccountFunder>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
   systemProgram?: Address<TAccountSystemProgram>;
-  feeTierIndex: InitializeAdaptiveFeeTierInstructionDataArgs["feeTierIndex"];
-  tickSpacing: InitializeAdaptiveFeeTierInstructionDataArgs["tickSpacing"];
-  initializePoolAuthority: InitializeAdaptiveFeeTierInstructionDataArgs["initializePoolAuthority"];
-  delegatedFeeAuthority: InitializeAdaptiveFeeTierInstructionDataArgs["delegatedFeeAuthority"];
-  defaultBaseFeeRate: InitializeAdaptiveFeeTierInstructionDataArgs["defaultBaseFeeRate"];
-  filterPeriod: InitializeAdaptiveFeeTierInstructionDataArgs["filterPeriod"];
-  decayPeriod: InitializeAdaptiveFeeTierInstructionDataArgs["decayPeriod"];
-  reductionFactor: InitializeAdaptiveFeeTierInstructionDataArgs["reductionFactor"];
-  adaptiveFeeControlFactor: InitializeAdaptiveFeeTierInstructionDataArgs["adaptiveFeeControlFactor"];
-  maxVolatilityAccumulator: InitializeAdaptiveFeeTierInstructionDataArgs["maxVolatilityAccumulator"];
-  tickGroupSize: InitializeAdaptiveFeeTierInstructionDataArgs["tickGroupSize"];
-  majorSwapThresholdTicks: InitializeAdaptiveFeeTierInstructionDataArgs["majorSwapThresholdTicks"];
+  feeTierIndex: InitializeAdaptiveFeeTierInstructionDataArgs['feeTierIndex'];
+  tickSpacing: InitializeAdaptiveFeeTierInstructionDataArgs['tickSpacing'];
+  initializePoolAuthority: InitializeAdaptiveFeeTierInstructionDataArgs['initializePoolAuthority'];
+  delegatedFeeAuthority: InitializeAdaptiveFeeTierInstructionDataArgs['delegatedFeeAuthority'];
+  defaultBaseFeeRate: InitializeAdaptiveFeeTierInstructionDataArgs['defaultBaseFeeRate'];
+  filterPeriod: InitializeAdaptiveFeeTierInstructionDataArgs['filterPeriod'];
+  decayPeriod: InitializeAdaptiveFeeTierInstructionDataArgs['decayPeriod'];
+  reductionFactor: InitializeAdaptiveFeeTierInstructionDataArgs['reductionFactor'];
+  adaptiveFeeControlFactor: InitializeAdaptiveFeeTierInstructionDataArgs['adaptiveFeeControlFactor'];
+  maxVolatilityAccumulator: InitializeAdaptiveFeeTierInstructionDataArgs['maxVolatilityAccumulator'];
+  tickGroupSize: InitializeAdaptiveFeeTierInstructionDataArgs['tickGroupSize'];
+  majorSwapThresholdTicks: InitializeAdaptiveFeeTierInstructionDataArgs['majorSwapThresholdTicks'];
 };
 
 export function getInitializeAdaptiveFeeTierInstruction<
@@ -209,7 +209,7 @@ export function getInitializeAdaptiveFeeTierInstruction<
     TAccountFeeAuthority,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializeAdaptiveFeeTierInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -243,10 +243,10 @@ export function getInitializeAdaptiveFeeTierInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -257,7 +257,7 @@ export function getInitializeAdaptiveFeeTierInstruction<
     ],
     programAddress,
     data: getInitializeAdaptiveFeeTierInstructionDataEncoder().encode(
-      args as InitializeAdaptiveFeeTierInstructionDataArgs,
+      args as InitializeAdaptiveFeeTierInstructionDataArgs
     ),
   } as InitializeAdaptiveFeeTierInstruction<
     TProgramAddress,
@@ -292,11 +292,11 @@ export function parseInitializeAdaptiveFeeTierInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedInitializeAdaptiveFeeTierInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -314,7 +314,7 @@ export function parseInitializeAdaptiveFeeTierInstruction<
       systemProgram: getNextAccount(),
     },
     data: getInitializeAdaptiveFeeTierInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

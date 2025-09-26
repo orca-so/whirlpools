@@ -25,16 +25,16 @@ import {
   type IInstructionWithData,
   type ReadonlyUint8Array,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const MIGRATE_REPURPOSE_REWARD_AUTHORITY_SPACE_DISCRIMINATOR =
   new Uint8Array([214, 161, 248, 79, 152, 98, 172, 231]);
 
 export function getMigrateRepurposeRewardAuthoritySpaceDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    MIGRATE_REPURPOSE_REWARD_AUTHORITY_SPACE_DISCRIMINATOR,
+    MIGRATE_REPURPOSE_REWARD_AUTHORITY_SPACE_DISCRIMINATOR
   );
 }
 
@@ -61,17 +61,17 @@ export type MigrateRepurposeRewardAuthoritySpaceInstructionDataArgs = {};
 
 export function getMigrateRepurposeRewardAuthoritySpaceInstructionDataEncoder(): Encoder<MigrateRepurposeRewardAuthoritySpaceInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: MIGRATE_REPURPOSE_REWARD_AUTHORITY_SPACE_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getMigrateRepurposeRewardAuthoritySpaceInstructionDataDecoder(): Decoder<MigrateRepurposeRewardAuthoritySpaceInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -81,7 +81,7 @@ export function getMigrateRepurposeRewardAuthoritySpaceInstructionDataCodec(): C
 > {
   return combineCodec(
     getMigrateRepurposeRewardAuthoritySpaceInstructionDataEncoder(),
-    getMigrateRepurposeRewardAuthoritySpaceInstructionDataDecoder(),
+    getMigrateRepurposeRewardAuthoritySpaceInstructionDataDecoder()
   );
 }
 
@@ -96,7 +96,7 @@ export function getMigrateRepurposeRewardAuthoritySpaceInstruction<
   TProgramAddress extends Address = typeof WHIRLPOOL_PROGRAM_ADDRESS,
 >(
   input: MigrateRepurposeRewardAuthoritySpaceInput<TAccountWhirlpool>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): MigrateRepurposeRewardAuthoritySpaceInstruction<
   TProgramAddress,
   TAccountWhirlpool
@@ -113,12 +113,12 @@ export function getMigrateRepurposeRewardAuthoritySpaceInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [getAccountMeta(accounts.whirlpool)],
     programAddress,
     data: getMigrateRepurposeRewardAuthoritySpaceInstructionDataEncoder().encode(
-      {},
+      {}
     ),
   } as MigrateRepurposeRewardAuthoritySpaceInstruction<
     TProgramAddress,
@@ -145,14 +145,14 @@ export function parseMigrateRepurposeRewardAuthoritySpaceInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedMigrateRepurposeRewardAuthoritySpaceInstruction<
   TProgram,
   TAccountMetas
 > {
   if (instruction.accounts.length < 1) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -166,7 +166,7 @@ export function parseMigrateRepurposeRewardAuthoritySpaceInstruction<
       whirlpool: getNextAccount(),
     },
     data: getMigrateRepurposeRewardAuthoritySpaceInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

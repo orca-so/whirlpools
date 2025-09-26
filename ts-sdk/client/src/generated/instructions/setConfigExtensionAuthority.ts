@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_CONFIG_EXTENSION_AUTHORITY_DISCRIMINATOR = new Uint8Array([
   44, 94, 241, 116, 24, 188, 60, 143,
@@ -39,7 +39,7 @@ export const SET_CONFIG_EXTENSION_AUTHORITY_DISCRIMINATOR = new Uint8Array([
 
 export function getSetConfigExtensionAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_CONFIG_EXTENSION_AUTHORITY_DISCRIMINATOR,
+    SET_CONFIG_EXTENSION_AUTHORITY_DISCRIMINATOR
   );
 }
 
@@ -85,17 +85,17 @@ export type SetConfigExtensionAuthorityInstructionDataArgs = {};
 
 export function getSetConfigExtensionAuthorityInstructionDataEncoder(): Encoder<SetConfigExtensionAuthorityInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: SET_CONFIG_EXTENSION_AUTHORITY_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetConfigExtensionAuthorityInstructionDataDecoder(): Decoder<SetConfigExtensionAuthorityInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -105,7 +105,7 @@ export function getSetConfigExtensionAuthorityInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetConfigExtensionAuthorityInstructionDataEncoder(),
-    getSetConfigExtensionAuthorityInstructionDataDecoder(),
+    getSetConfigExtensionAuthorityInstructionDataDecoder()
   );
 }
 
@@ -134,7 +134,7 @@ export function getSetConfigExtensionAuthorityInstruction<
     TAccountConfigExtensionAuthority,
     TAccountNewConfigExtensionAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetConfigExtensionAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -169,7 +169,7 @@ export function getSetConfigExtensionAuthorityInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -210,11 +210,11 @@ export function parseSetConfigExtensionAuthorityInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedSetConfigExtensionAuthorityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -231,7 +231,7 @@ export function parseSetConfigExtensionAuthorityInstruction<
       newConfigExtensionAuthority: getNextAccount(),
     },
     data: getSetConfigExtensionAuthorityInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

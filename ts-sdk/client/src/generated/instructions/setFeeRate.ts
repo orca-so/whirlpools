@@ -31,9 +31,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_FEE_RATE_DISCRIMINATOR = new Uint8Array([
   53, 243, 137, 65, 8, 140, 158, 6,
@@ -41,7 +41,7 @@ export const SET_FEE_RATE_DISCRIMINATOR = new Uint8Array([
 
 export function getSetFeeRateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_FEE_RATE_DISCRIMINATOR,
+    SET_FEE_RATE_DISCRIMINATOR
   );
 }
 
@@ -79,17 +79,17 @@ export type SetFeeRateInstructionDataArgs = { feeRate: number };
 export function getSetFeeRateInstructionDataEncoder(): Encoder<SetFeeRateInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["feeRate", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['feeRate', getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_FEE_RATE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: SET_FEE_RATE_DISCRIMINATOR })
   );
 }
 
 export function getSetFeeRateInstructionDataDecoder(): Decoder<SetFeeRateInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["feeRate", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['feeRate', getU16Decoder()],
   ]);
 }
 
@@ -99,7 +99,7 @@ export function getSetFeeRateInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetFeeRateInstructionDataEncoder(),
-    getSetFeeRateInstructionDataDecoder(),
+    getSetFeeRateInstructionDataDecoder()
   );
 }
 
@@ -111,7 +111,7 @@ export type SetFeeRateInput<
   whirlpoolsConfig: Address<TAccountWhirlpoolsConfig>;
   whirlpool: Address<TAccountWhirlpool>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
-  feeRate: SetFeeRateInstructionDataArgs["feeRate"];
+  feeRate: SetFeeRateInstructionDataArgs['feeRate'];
 };
 
 export function getSetFeeRateInstruction<
@@ -125,7 +125,7 @@ export function getSetFeeRateInstruction<
     TAccountWhirlpool,
     TAccountFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetFeeRateInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -152,7 +152,7 @@ export function getSetFeeRateInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -161,7 +161,7 @@ export function getSetFeeRateInstruction<
     ],
     programAddress,
     data: getSetFeeRateInstructionDataEncoder().encode(
-      args as SetFeeRateInstructionDataArgs,
+      args as SetFeeRateInstructionDataArgs
     ),
   } as SetFeeRateInstruction<
     TProgramAddress,
@@ -192,11 +192,11 @@ export function parseSetFeeRateInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedSetFeeRateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

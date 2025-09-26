@@ -24,7 +24,7 @@ import {
   type Decoder,
   type Encoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type AdaptiveFeeVariables = {
   lastReferenceUpdateTimestamp: bigint;
@@ -46,23 +46,23 @@ export type AdaptiveFeeVariablesArgs = {
 
 export function getAdaptiveFeeVariablesEncoder(): Encoder<AdaptiveFeeVariablesArgs> {
   return getStructEncoder([
-    ["lastReferenceUpdateTimestamp", getU64Encoder()],
-    ["lastMajorSwapTimestamp", getU64Encoder()],
-    ["volatilityReference", getU32Encoder()],
-    ["tickGroupIndexReference", getI32Encoder()],
-    ["volatilityAccumulator", getU32Encoder()],
-    ["reserved", fixEncoderSize(getBytesEncoder(), 16)],
+    ['lastReferenceUpdateTimestamp', getU64Encoder()],
+    ['lastMajorSwapTimestamp', getU64Encoder()],
+    ['volatilityReference', getU32Encoder()],
+    ['tickGroupIndexReference', getI32Encoder()],
+    ['volatilityAccumulator', getU32Encoder()],
+    ['reserved', fixEncoderSize(getBytesEncoder(), 16)],
   ]);
 }
 
 export function getAdaptiveFeeVariablesDecoder(): Decoder<AdaptiveFeeVariables> {
   return getStructDecoder([
-    ["lastReferenceUpdateTimestamp", getU64Decoder()],
-    ["lastMajorSwapTimestamp", getU64Decoder()],
-    ["volatilityReference", getU32Decoder()],
-    ["tickGroupIndexReference", getI32Decoder()],
-    ["volatilityAccumulator", getU32Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 16)],
+    ['lastReferenceUpdateTimestamp', getU64Decoder()],
+    ['lastMajorSwapTimestamp', getU64Decoder()],
+    ['volatilityReference', getU32Decoder()],
+    ['tickGroupIndexReference', getI32Decoder()],
+    ['volatilityAccumulator', getU32Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 16)],
   ]);
 }
 
@@ -72,6 +72,6 @@ export function getAdaptiveFeeVariablesCodec(): Codec<
 > {
   return combineCodec(
     getAdaptiveFeeVariablesEncoder(),
-    getAdaptiveFeeVariablesDecoder(),
+    getAdaptiveFeeVariablesDecoder()
   );
 }

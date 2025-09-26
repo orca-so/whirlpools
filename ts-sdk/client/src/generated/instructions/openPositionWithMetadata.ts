@@ -33,9 +33,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const OPEN_POSITION_WITH_METADATA_DISCRIMINATOR = new Uint8Array([
   242, 29, 134, 48, 58, 110, 14, 60,
@@ -43,7 +43,7 @@ export const OPEN_POSITION_WITH_METADATA_DISCRIMINATOR = new Uint8Array([
 
 export function getOpenPositionWithMetadataDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    OPEN_POSITION_WITH_METADATA_DISCRIMINATOR,
+    OPEN_POSITION_WITH_METADATA_DISCRIMINATOR
   );
 }
 
@@ -60,13 +60,13 @@ export type OpenPositionWithMetadataInstruction<
   TAccountWhirlpool extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
   TAccountMetadataProgram extends string | IAccountMeta<string> = string,
   TAccountMetadataUpdateAuth extends string | IAccountMeta<string> = string,
@@ -138,26 +138,26 @@ export type OpenPositionWithMetadataInstructionDataArgs = {
 export function getOpenPositionWithMetadataInstructionDataEncoder(): Encoder<OpenPositionWithMetadataInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["positionBump", getU8Encoder()],
-      ["metadataBump", getU8Encoder()],
-      ["tickLowerIndex", getI32Encoder()],
-      ["tickUpperIndex", getI32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['positionBump', getU8Encoder()],
+      ['metadataBump', getU8Encoder()],
+      ['tickLowerIndex', getI32Encoder()],
+      ['tickUpperIndex', getI32Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: OPEN_POSITION_WITH_METADATA_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getOpenPositionWithMetadataInstructionDataDecoder(): Decoder<OpenPositionWithMetadataInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["positionBump", getU8Decoder()],
-    ["metadataBump", getU8Decoder()],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['positionBump', getU8Decoder()],
+    ['metadataBump', getU8Decoder()],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
   ]);
 }
 
@@ -167,7 +167,7 @@ export function getOpenPositionWithMetadataInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getOpenPositionWithMetadataInstructionDataEncoder(),
-    getOpenPositionWithMetadataInstructionDataDecoder(),
+    getOpenPositionWithMetadataInstructionDataDecoder()
   );
 }
 
@@ -200,10 +200,10 @@ export type OpenPositionWithMetadataInput<
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   metadataProgram: Address<TAccountMetadataProgram>;
   metadataUpdateAuth: Address<TAccountMetadataUpdateAuth>;
-  positionBump: OpenPositionWithMetadataInstructionDataArgs["positionBump"];
-  metadataBump: OpenPositionWithMetadataInstructionDataArgs["metadataBump"];
-  tickLowerIndex: OpenPositionWithMetadataInstructionDataArgs["tickLowerIndex"];
-  tickUpperIndex: OpenPositionWithMetadataInstructionDataArgs["tickUpperIndex"];
+  positionBump: OpenPositionWithMetadataInstructionDataArgs['positionBump'];
+  metadataBump: OpenPositionWithMetadataInstructionDataArgs['metadataBump'];
+  tickLowerIndex: OpenPositionWithMetadataInstructionDataArgs['tickLowerIndex'];
+  tickUpperIndex: OpenPositionWithMetadataInstructionDataArgs['tickUpperIndex'];
 };
 
 export function getOpenPositionWithMetadataInstruction<
@@ -237,7 +237,7 @@ export function getOpenPositionWithMetadataInstruction<
     TAccountMetadataProgram,
     TAccountMetadataUpdateAuth
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): OpenPositionWithMetadataInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -299,18 +299,18 @@ export function getOpenPositionWithMetadataInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.funder),
@@ -329,7 +329,7 @@ export function getOpenPositionWithMetadataInstruction<
     ],
     programAddress,
     data: getOpenPositionWithMetadataInstructionDataEncoder().encode(
-      args as OpenPositionWithMetadataInstructionDataArgs,
+      args as OpenPositionWithMetadataInstructionDataArgs
     ),
   } as OpenPositionWithMetadataInstruction<
     TProgramAddress,
@@ -381,11 +381,11 @@ export function parseOpenPositionWithMetadataInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedOpenPositionWithMetadataInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 13) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -411,7 +411,7 @@ export function parseOpenPositionWithMetadataInstruction<
       metadataUpdateAuth: getNextAccount(),
     },
     data: getOpenPositionWithMetadataInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

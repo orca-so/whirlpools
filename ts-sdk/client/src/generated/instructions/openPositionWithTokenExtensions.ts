@@ -33,17 +33,17 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR = new Uint8Array(
-  [212, 47, 95, 92, 114, 102, 131, 250],
+  [212, 47, 95, 92, 114, 102, 131, 250]
 );
 
 export function getOpenPositionWithTokenExtensionsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
+    OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR
   );
 }
 
@@ -58,7 +58,7 @@ export type OpenPositionWithTokenExtensionsInstruction<
   TAccountToken2022Program extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = "11111111111111111111111111111111",
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
   TAccountMetadataUpdateAuth extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
@@ -118,24 +118,24 @@ export type OpenPositionWithTokenExtensionsInstructionDataArgs = {
 export function getOpenPositionWithTokenExtensionsInstructionDataEncoder(): Encoder<OpenPositionWithTokenExtensionsInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["tickLowerIndex", getI32Encoder()],
-      ["tickUpperIndex", getI32Encoder()],
-      ["withTokenMetadataExtension", getBooleanEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tickLowerIndex', getI32Encoder()],
+      ['tickUpperIndex', getI32Encoder()],
+      ['withTokenMetadataExtension', getBooleanEncoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getOpenPositionWithTokenExtensionsInstructionDataDecoder(): Decoder<OpenPositionWithTokenExtensionsInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
-    ["withTokenMetadataExtension", getBooleanDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
+    ['withTokenMetadataExtension', getBooleanDecoder()],
   ]);
 }
 
@@ -145,7 +145,7 @@ export function getOpenPositionWithTokenExtensionsInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getOpenPositionWithTokenExtensionsInstructionDataEncoder(),
-    getOpenPositionWithTokenExtensionsInstructionDataDecoder(),
+    getOpenPositionWithTokenExtensionsInstructionDataDecoder()
   );
 }
 
@@ -171,9 +171,9 @@ export type OpenPositionWithTokenExtensionsInput<
   systemProgram?: Address<TAccountSystemProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   metadataUpdateAuth: Address<TAccountMetadataUpdateAuth>;
-  tickLowerIndex: OpenPositionWithTokenExtensionsInstructionDataArgs["tickLowerIndex"];
-  tickUpperIndex: OpenPositionWithTokenExtensionsInstructionDataArgs["tickUpperIndex"];
-  withTokenMetadataExtension: OpenPositionWithTokenExtensionsInstructionDataArgs["withTokenMetadataExtension"];
+  tickLowerIndex: OpenPositionWithTokenExtensionsInstructionDataArgs['tickLowerIndex'];
+  tickUpperIndex: OpenPositionWithTokenExtensionsInstructionDataArgs['tickUpperIndex'];
+  withTokenMetadataExtension: OpenPositionWithTokenExtensionsInstructionDataArgs['withTokenMetadataExtension'];
 };
 
 export function getOpenPositionWithTokenExtensionsInstruction<
@@ -201,7 +201,7 @@ export function getOpenPositionWithTokenExtensionsInstruction<
     TAccountAssociatedTokenProgram,
     TAccountMetadataUpdateAuth
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): OpenPositionWithTokenExtensionsInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -254,10 +254,10 @@ export function getOpenPositionWithTokenExtensionsInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.funder),
@@ -273,7 +273,7 @@ export function getOpenPositionWithTokenExtensionsInstruction<
     ],
     programAddress,
     data: getOpenPositionWithTokenExtensionsInstructionDataEncoder().encode(
-      args as OpenPositionWithTokenExtensionsInstructionDataArgs,
+      args as OpenPositionWithTokenExtensionsInstructionDataArgs
     ),
   } as OpenPositionWithTokenExtensionsInstruction<
     TProgramAddress,
@@ -318,11 +318,11 @@ export function parseOpenPositionWithTokenExtensionsInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>,
+    IInstructionWithData<Uint8Array>
 ): ParsedOpenPositionWithTokenExtensionsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 10) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -345,7 +345,7 @@ export function parseOpenPositionWithTokenExtensionsInstruction<
       metadataUpdateAuth: getNextAccount(),
     },
     data: getOpenPositionWithTokenExtensionsInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

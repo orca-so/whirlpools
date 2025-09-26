@@ -57,10 +57,8 @@ jobs:
         uses: ./.github/actions/anchor
       - name: Install dependencies
         run: yarn install
-      - name: Regenerate IDL
-        run: yarn generate:idl
       - name: Generate clients
-        run: yarn generate:clients
+        run: yarn generate
       - name: Verify no diffs
         run: |
           git diff --exit-code -- \

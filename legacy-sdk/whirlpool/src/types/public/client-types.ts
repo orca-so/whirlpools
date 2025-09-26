@@ -58,7 +58,7 @@ export type WhirlpoolExtensionSegmentPrimary = {
  * Whirlpool extension segment secondary.
  * @category WhirlpoolClient
  */
- 
+
 export type WhirlpoolExtensionSegmentSecondary = {
   // reserved for future use
 };

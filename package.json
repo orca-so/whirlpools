@@ -22,12 +22,6 @@
     "tsup": "^8.4.0",
     "vitest": "^3.0.9"
   },
-  "resolutions": {
-    "codama": "1.2.11",
-    "@codama/nodes-from-anchor": "1.1.11",
-    "@codama/renderers-js": "1.2.10",
-    "@codama/renderers-rust": "1.0.19"
-  },
   "workspaces": [
     "programs/*",
     "rust-sdk/*",

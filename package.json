@@ -10,7 +10,8 @@
     "deploy": "nx run-many --target deploy --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",
-    "clean": "nx reset && nx run-many --target clean --projects"
+    "clean": "nx reset && nx run-many --target clean --projects",
+    "generate": "nx run-many --target generate --projects && nx run-many --target format --projects @orca-so/whirlpools-lint,@orca-so/whirlpools-rust-client"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",

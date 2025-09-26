@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node ./codama.js && cargo build",
+    "generate": "node ./codama.js",
     "test": "cargo test --lib",
     "deploy": "../../scripts/deploy-cargo",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",

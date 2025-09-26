@@ -25,7 +25,7 @@
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
     "generate": "node ./codama.js",
-    "format:generated": "yarn workspace @orca-so/whirlpools-lint prettier --write ../../ts-sdk/client/src/generated",
+    "format": "nx run @orca-so/whirlpools-lint:format:client",
     "test": "vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist src/generated"

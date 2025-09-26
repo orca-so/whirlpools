@@ -12,8 +12,7 @@
     "lint": "nx run-many --target lint --projects",
     "clean": "nx reset && nx run-many --target clean --projects",
     "generate:idl": "anchor build",
-    "generate:clients": "nx run-many --target generate --projects @orca-so/whirlpools-client,@orca-so/whirlpools-rust-client && yarn format:generated",
-    "format:generated": "nx run-many --target format:generated --projects @orca-so/whirlpools-client,@orca-so/whirlpools-rust-client"
+    "generate:clients": "nx run-many --target generate --projects @orca-so/whirlpools-client,@orca-so/whirlpools-rust-client && nx run-many --target format --projects @orca-so/whirlpools-client,@orca-so/whirlpools-rust-client"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",

@@ -11,7 +11,6 @@ export default [
       "**/.nx",
       "**/.anchor",
       "**/artifacts",
-      "**/generated",
       "**/.docusaurus",
       "**/.next",
     ],
@@ -48,6 +47,7 @@ export default [
 
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/consistent-type-exports": "error",
+      "@typescript-eslint/no-empty-object-type": "off",
     },
   },
 ];

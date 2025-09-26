@@ -35,7 +35,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export const TOKEN_BADGE_DISCRIMINATOR = new Uint8Array([
   116, 219, 204, 229, 249, 116, 255, 150,
@@ -61,21 +61,21 @@ export type TokenBadgeArgs = {
 export function getTokenBadgeEncoder(): Encoder<TokenBadgeArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['whirlpoolsConfig', getAddressEncoder()],
-      ['tokenMint', getAddressEncoder()],
-      ['attributeRequireNonTransferablePosition', getBooleanEncoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["whirlpoolsConfig", getAddressEncoder()],
+      ["tokenMint", getAddressEncoder()],
+      ["attributeRequireNonTransferablePosition", getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: TOKEN_BADGE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: TOKEN_BADGE_DISCRIMINATOR }),
   );
 }
 
 export function getTokenBadgeDecoder(): Decoder<TokenBadge> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['whirlpoolsConfig', getAddressDecoder()],
-    ['tokenMint', getAddressDecoder()],
-    ['attributeRequireNonTransferablePosition', getBooleanDecoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["whirlpoolsConfig", getAddressDecoder()],
+    ["tokenMint", getAddressDecoder()],
+    ["attributeRequireNonTransferablePosition", getBooleanDecoder()],
   ]);
 }
 
@@ -84,24 +84,24 @@ export function getTokenBadgeCodec(): Codec<TokenBadgeArgs, TokenBadge> {
 }
 
 export function decodeTokenBadge<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<TokenBadge, TAddress>;
 export function decodeTokenBadge<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<TokenBadge, TAddress>;
 export function decodeTokenBadge<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<TokenBadge, TAddress> | MaybeAccount<TokenBadge, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getTokenBadgeDecoder()
+    getTokenBadgeDecoder(),
   );
 }
 
 export async function fetchTokenBadge<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<TokenBadge, TAddress>> {
   const maybeAccount = await fetchMaybeTokenBadge(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -111,7 +111,7 @@ export async function fetchTokenBadge<TAddress extends string = string>(
 export async function fetchMaybeTokenBadge<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<TokenBadge, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeTokenBadge(maybeAccount);
@@ -120,7 +120,7 @@ export async function fetchMaybeTokenBadge<TAddress extends string = string>(
 export async function fetchAllTokenBadge(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<TokenBadge>[]> {
   const maybeAccounts = await fetchAllMaybeTokenBadge(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -130,7 +130,7 @@ export async function fetchAllTokenBadge(
 export async function fetchAllMaybeTokenBadge(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<TokenBadge>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeTokenBadge(maybeAccount));

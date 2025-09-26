@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const TRANSFER_LOCKED_POSITION_DISCRIMINATOR = new Uint8Array([
   179, 121, 229, 46, 67, 138, 194, 138,
@@ -39,7 +39,7 @@ export const TRANSFER_LOCKED_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getTransferLockedPositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TRANSFER_LOCKED_POSITION_DISCRIMINATOR
+    TRANSFER_LOCKED_POSITION_DISCRIMINATOR,
   );
 }
 
@@ -97,17 +97,17 @@ export type TransferLockedPositionInstructionDataArgs = {};
 
 export function getTransferLockedPositionInstructionDataEncoder(): Encoder<TransferLockedPositionInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: TRANSFER_LOCKED_POSITION_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getTransferLockedPositionInstructionDataDecoder(): Decoder<TransferLockedPositionInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -117,7 +117,7 @@ export function getTransferLockedPositionInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getTransferLockedPositionInstructionDataEncoder(),
-    getTransferLockedPositionInstructionDataDecoder()
+    getTransferLockedPositionInstructionDataDecoder(),
   );
 }
 
@@ -162,7 +162,7 @@ export function getTransferLockedPositionInstruction<
     TAccountLockConfig,
     TAccountToken2022Program
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): TransferLockedPositionInstruction<
   TProgramAddress,
   TAccountPositionAuthority,
@@ -205,7 +205,7 @@ export function getTransferLockedPositionInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.positionAuthority),
@@ -258,11 +258,11 @@ export function parseTransferLockedPositionInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedTransferLockedPositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -283,7 +283,7 @@ export function parseTransferLockedPositionInstruction<
       token2022Program: getNextAccount(),
     },
     data: getTransferLockedPositionInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

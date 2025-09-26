@@ -35,7 +35,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export const FEE_TIER_DISCRIMINATOR = new Uint8Array([
   56, 75, 159, 76, 142, 68, 190, 105,
@@ -61,21 +61,21 @@ export type FeeTierArgs = {
 export function getFeeTierEncoder(): Encoder<FeeTierArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['whirlpoolsConfig', getAddressEncoder()],
-      ['tickSpacing', getU16Encoder()],
-      ['defaultFeeRate', getU16Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["whirlpoolsConfig", getAddressEncoder()],
+      ["tickSpacing", getU16Encoder()],
+      ["defaultFeeRate", getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: FEE_TIER_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: FEE_TIER_DISCRIMINATOR }),
   );
 }
 
 export function getFeeTierDecoder(): Decoder<FeeTier> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['whirlpoolsConfig', getAddressDecoder()],
-    ['tickSpacing', getU16Decoder()],
-    ['defaultFeeRate', getU16Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["whirlpoolsConfig", getAddressDecoder()],
+    ["tickSpacing", getU16Decoder()],
+    ["defaultFeeRate", getU16Decoder()],
   ]);
 }
 
@@ -84,24 +84,24 @@ export function getFeeTierCodec(): Codec<FeeTierArgs, FeeTier> {
 }
 
 export function decodeFeeTier<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<FeeTier, TAddress>;
 export function decodeFeeTier<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<FeeTier, TAddress>;
 export function decodeFeeTier<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<FeeTier, TAddress> | MaybeAccount<FeeTier, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getFeeTierDecoder()
+    getFeeTierDecoder(),
   );
 }
 
 export async function fetchFeeTier<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<FeeTier, TAddress>> {
   const maybeAccount = await fetchMaybeFeeTier(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -111,7 +111,7 @@ export async function fetchFeeTier<TAddress extends string = string>(
 export async function fetchMaybeFeeTier<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<FeeTier, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeFeeTier(maybeAccount);
@@ -120,7 +120,7 @@ export async function fetchMaybeFeeTier<TAddress extends string = string>(
 export async function fetchAllFeeTier(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<FeeTier>[]> {
   const maybeAccounts = await fetchAllMaybeFeeTier(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -130,7 +130,7 @@ export async function fetchAllFeeTier(
 export async function fetchAllMaybeFeeTier(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<FeeTier>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeFeeTier(maybeAccount));

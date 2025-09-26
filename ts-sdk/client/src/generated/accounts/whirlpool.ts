@@ -43,13 +43,13 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from '@solana/kit';
+} from "@solana/kit";
 import {
   getWhirlpoolRewardInfoDecoder,
   getWhirlpoolRewardInfoEncoder,
   type WhirlpoolRewardInfo,
   type WhirlpoolRewardInfoArgs,
-} from '../types';
+} from "../types";
 
 export const WHIRLPOOL_DISCRIMINATOR = new Uint8Array([
   63, 149, 209, 12, 225, 128, 99, 9,
@@ -107,57 +107,57 @@ export type WhirlpoolArgs = {
 export function getWhirlpoolEncoder(): Encoder<WhirlpoolArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['whirlpoolsConfig', getAddressEncoder()],
-      ['whirlpoolBump', fixEncoderSize(getBytesEncoder(), 1)],
-      ['tickSpacing', getU16Encoder()],
-      ['feeTierIndexSeed', fixEncoderSize(getBytesEncoder(), 2)],
-      ['feeRate', getU16Encoder()],
-      ['protocolFeeRate', getU16Encoder()],
-      ['liquidity', getU128Encoder()],
-      ['sqrtPrice', getU128Encoder()],
-      ['tickCurrentIndex', getI32Encoder()],
-      ['protocolFeeOwedA', getU64Encoder()],
-      ['protocolFeeOwedB', getU64Encoder()],
-      ['tokenMintA', getAddressEncoder()],
-      ['tokenVaultA', getAddressEncoder()],
-      ['feeGrowthGlobalA', getU128Encoder()],
-      ['tokenMintB', getAddressEncoder()],
-      ['tokenVaultB', getAddressEncoder()],
-      ['feeGrowthGlobalB', getU128Encoder()],
-      ['rewardLastUpdatedTimestamp', getU64Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["whirlpoolsConfig", getAddressEncoder()],
+      ["whirlpoolBump", fixEncoderSize(getBytesEncoder(), 1)],
+      ["tickSpacing", getU16Encoder()],
+      ["feeTierIndexSeed", fixEncoderSize(getBytesEncoder(), 2)],
+      ["feeRate", getU16Encoder()],
+      ["protocolFeeRate", getU16Encoder()],
+      ["liquidity", getU128Encoder()],
+      ["sqrtPrice", getU128Encoder()],
+      ["tickCurrentIndex", getI32Encoder()],
+      ["protocolFeeOwedA", getU64Encoder()],
+      ["protocolFeeOwedB", getU64Encoder()],
+      ["tokenMintA", getAddressEncoder()],
+      ["tokenVaultA", getAddressEncoder()],
+      ["feeGrowthGlobalA", getU128Encoder()],
+      ["tokenMintB", getAddressEncoder()],
+      ["tokenVaultB", getAddressEncoder()],
+      ["feeGrowthGlobalB", getU128Encoder()],
+      ["rewardLastUpdatedTimestamp", getU64Encoder()],
       [
-        'rewardInfos',
+        "rewardInfos",
         getArrayEncoder(getWhirlpoolRewardInfoEncoder(), { size: 3 }),
       ],
     ]),
-    (value) => ({ ...value, discriminator: WHIRLPOOL_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: WHIRLPOOL_DISCRIMINATOR }),
   );
 }
 
 export function getWhirlpoolDecoder(): Decoder<Whirlpool> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['whirlpoolsConfig', getAddressDecoder()],
-    ['whirlpoolBump', fixDecoderSize(getBytesDecoder(), 1)],
-    ['tickSpacing', getU16Decoder()],
-    ['feeTierIndexSeed', fixDecoderSize(getBytesDecoder(), 2)],
-    ['feeRate', getU16Decoder()],
-    ['protocolFeeRate', getU16Decoder()],
-    ['liquidity', getU128Decoder()],
-    ['sqrtPrice', getU128Decoder()],
-    ['tickCurrentIndex', getI32Decoder()],
-    ['protocolFeeOwedA', getU64Decoder()],
-    ['protocolFeeOwedB', getU64Decoder()],
-    ['tokenMintA', getAddressDecoder()],
-    ['tokenVaultA', getAddressDecoder()],
-    ['feeGrowthGlobalA', getU128Decoder()],
-    ['tokenMintB', getAddressDecoder()],
-    ['tokenVaultB', getAddressDecoder()],
-    ['feeGrowthGlobalB', getU128Decoder()],
-    ['rewardLastUpdatedTimestamp', getU64Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["whirlpoolsConfig", getAddressDecoder()],
+    ["whirlpoolBump", fixDecoderSize(getBytesDecoder(), 1)],
+    ["tickSpacing", getU16Decoder()],
+    ["feeTierIndexSeed", fixDecoderSize(getBytesDecoder(), 2)],
+    ["feeRate", getU16Decoder()],
+    ["protocolFeeRate", getU16Decoder()],
+    ["liquidity", getU128Decoder()],
+    ["sqrtPrice", getU128Decoder()],
+    ["tickCurrentIndex", getI32Decoder()],
+    ["protocolFeeOwedA", getU64Decoder()],
+    ["protocolFeeOwedB", getU64Decoder()],
+    ["tokenMintA", getAddressDecoder()],
+    ["tokenVaultA", getAddressDecoder()],
+    ["feeGrowthGlobalA", getU128Decoder()],
+    ["tokenMintB", getAddressDecoder()],
+    ["tokenVaultB", getAddressDecoder()],
+    ["feeGrowthGlobalB", getU128Decoder()],
+    ["rewardLastUpdatedTimestamp", getU64Decoder()],
     [
-      'rewardInfos',
+      "rewardInfos",
       getArrayDecoder(getWhirlpoolRewardInfoDecoder(), { size: 3 }),
     ],
   ]);
@@ -168,24 +168,24 @@ export function getWhirlpoolCodec(): Codec<WhirlpoolArgs, Whirlpool> {
 }
 
 export function decodeWhirlpool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<Whirlpool, TAddress>;
 export function decodeWhirlpool<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Whirlpool, TAddress>;
 export function decodeWhirlpool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Whirlpool, TAddress> | MaybeAccount<Whirlpool, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getWhirlpoolDecoder()
+    getWhirlpoolDecoder(),
   );
 }
 
 export async function fetchWhirlpool<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<Whirlpool, TAddress>> {
   const maybeAccount = await fetchMaybeWhirlpool(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -195,7 +195,7 @@ export async function fetchWhirlpool<TAddress extends string = string>(
 export async function fetchMaybeWhirlpool<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Whirlpool, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeWhirlpool(maybeAccount);
@@ -204,7 +204,7 @@ export async function fetchMaybeWhirlpool<TAddress extends string = string>(
 export async function fetchAllWhirlpool(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<Whirlpool>[]> {
   const maybeAccounts = await fetchAllMaybeWhirlpool(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -214,7 +214,7 @@ export async function fetchAllWhirlpool(
 export async function fetchAllMaybeWhirlpool(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Whirlpool>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeWhirlpool(maybeAccount));

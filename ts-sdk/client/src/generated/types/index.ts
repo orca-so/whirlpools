@@ -6,17 +6,17 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './accountsType';
-export * from './adaptiveFeeConstants';
-export * from './adaptiveFeeVariables';
-export * from './configFeatureFlag';
-export * from './dynamicTick';
-export * from './dynamicTickData';
-export * from './lockType';
-export * from './lockTypeLabel';
-export * from './positionRewardInfo';
-export * from './remainingAccountsInfo';
-export * from './remainingAccountsSlice';
-export * from './tick';
-export * from './tokenBadgeAttribute';
-export * from './whirlpoolRewardInfo';
+export * from "./accountsType";
+export * from "./adaptiveFeeConstants";
+export * from "./adaptiveFeeVariables";
+export * from "./configFeatureFlag";
+export * from "./dynamicTick";
+export * from "./dynamicTickData";
+export * from "./lockType";
+export * from "./lockTypeLabel";
+export * from "./positionRewardInfo";
+export * from "./remainingAccountsInfo";
+export * from "./remainingAccountsSlice";
+export * from "./tick";
+export * from "./tokenBadgeAttribute";
+export * from "./whirlpoolRewardInfo";

@@ -21,10 +21,10 @@ import {
   type Encoder,
   type GetDiscriminatedUnionVariant,
   type GetDiscriminatedUnionVariantContent,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export type ConfigFeatureFlag = {
-  __kind: 'TokenBadge';
+  __kind: "TokenBadge";
   fields: readonly [boolean];
 };
 
@@ -33,8 +33,8 @@ export type ConfigFeatureFlagArgs = ConfigFeatureFlag;
 export function getConfigFeatureFlagEncoder(): Encoder<ConfigFeatureFlagArgs> {
   return getDiscriminatedUnionEncoder([
     [
-      'TokenBadge',
-      getStructEncoder([['fields', getTupleEncoder([getBooleanEncoder()])]]),
+      "TokenBadge",
+      getStructEncoder([["fields", getTupleEncoder([getBooleanEncoder()])]]),
     ],
   ]);
 }
@@ -42,8 +42,8 @@ export function getConfigFeatureFlagEncoder(): Encoder<ConfigFeatureFlagArgs> {
 export function getConfigFeatureFlagDecoder(): Decoder<ConfigFeatureFlag> {
   return getDiscriminatedUnionDecoder([
     [
-      'TokenBadge',
-      getStructDecoder([['fields', getTupleDecoder([getBooleanDecoder()])]]),
+      "TokenBadge",
+      getStructDecoder([["fields", getTupleDecoder([getBooleanDecoder()])]]),
     ],
   ]);
 }
@@ -54,21 +54,21 @@ export function getConfigFeatureFlagCodec(): Codec<
 > {
   return combineCodec(
     getConfigFeatureFlagEncoder(),
-    getConfigFeatureFlagDecoder()
+    getConfigFeatureFlagDecoder(),
   );
 }
 
 // Data Enum Helpers.
 export function configFeatureFlag(
-  kind: 'TokenBadge',
+  kind: "TokenBadge",
   data: GetDiscriminatedUnionVariantContent<
     ConfigFeatureFlagArgs,
-    '__kind',
-    'TokenBadge'
-  >['fields']
-): GetDiscriminatedUnionVariant<ConfigFeatureFlagArgs, '__kind', 'TokenBadge'>;
+    "__kind",
+    "TokenBadge"
+  >["fields"],
+): GetDiscriminatedUnionVariant<ConfigFeatureFlagArgs, "__kind", "TokenBadge">;
 export function configFeatureFlag<
-  K extends ConfigFeatureFlagArgs['__kind'],
+  K extends ConfigFeatureFlagArgs["__kind"],
   Data,
 >(kind: K, data?: Data) {
   return Array.isArray(data)
@@ -76,9 +76,9 @@ export function configFeatureFlag<
     : { __kind: kind, ...(data ?? {}) };
 }
 
-export function isConfigFeatureFlag<K extends ConfigFeatureFlag['__kind']>(
+export function isConfigFeatureFlag<K extends ConfigFeatureFlag["__kind"]>(
   kind: K,
-  value: ConfigFeatureFlag
+  value: ConfigFeatureFlag,
 ): value is ConfigFeatureFlag & { __kind: K } {
   return value.__kind === kind;
 }

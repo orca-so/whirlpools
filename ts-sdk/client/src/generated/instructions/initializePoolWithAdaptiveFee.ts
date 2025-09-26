@@ -38,9 +38,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const INITIALIZE_POOL_WITH_ADAPTIVE_FEE_DISCRIMINATOR = new Uint8Array([
   143, 94, 96, 76, 172, 124, 119, 199,
@@ -48,7 +48,7 @@ export const INITIALIZE_POOL_WITH_ADAPTIVE_FEE_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializePoolWithAdaptiveFeeDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_POOL_WITH_ADAPTIVE_FEE_DISCRIMINATOR
+    INITIALIZE_POOL_WITH_ADAPTIVE_FEE_DISCRIMINATOR,
   );
 }
 
@@ -72,10 +72,10 @@ export type InitializePoolWithAdaptiveFeeInstruction<
   TAccountTokenProgramB extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | IAccountMeta<string> = "11111111111111111111111111111111",
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -151,22 +151,22 @@ export type InitializePoolWithAdaptiveFeeInstructionDataArgs = {
 export function getInitializePoolWithAdaptiveFeeInstructionDataEncoder(): Encoder<InitializePoolWithAdaptiveFeeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['initialSqrtPrice', getU128Encoder()],
-      ['tradeEnableTimestamp', getOptionEncoder(getU64Encoder())],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["initialSqrtPrice", getU128Encoder()],
+      ["tradeEnableTimestamp", getOptionEncoder(getU64Encoder())],
     ]),
     (value) => ({
       ...value,
       discriminator: INITIALIZE_POOL_WITH_ADAPTIVE_FEE_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getInitializePoolWithAdaptiveFeeInstructionDataDecoder(): Decoder<InitializePoolWithAdaptiveFeeInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['initialSqrtPrice', getU128Decoder()],
-    ['tradeEnableTimestamp', getOptionDecoder(getU64Decoder())],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["initialSqrtPrice", getU128Decoder()],
+    ["tradeEnableTimestamp", getOptionDecoder(getU64Decoder())],
   ]);
 }
 
@@ -176,7 +176,7 @@ export function getInitializePoolWithAdaptiveFeeInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializePoolWithAdaptiveFeeInstructionDataEncoder(),
-    getInitializePoolWithAdaptiveFeeInstructionDataDecoder()
+    getInitializePoolWithAdaptiveFeeInstructionDataDecoder(),
   );
 }
 
@@ -214,8 +214,8 @@ export type InitializePoolWithAdaptiveFeeInput<
   tokenProgramB: Address<TAccountTokenProgramB>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  initialSqrtPrice: InitializePoolWithAdaptiveFeeInstructionDataArgs['initialSqrtPrice'];
-  tradeEnableTimestamp: InitializePoolWithAdaptiveFeeInstructionDataArgs['tradeEnableTimestamp'];
+  initialSqrtPrice: InitializePoolWithAdaptiveFeeInstructionDataArgs["initialSqrtPrice"];
+  tradeEnableTimestamp: InitializePoolWithAdaptiveFeeInstructionDataArgs["tradeEnableTimestamp"];
 };
 
 export function getInitializePoolWithAdaptiveFeeInstruction<
@@ -255,7 +255,7 @@ export function getInitializePoolWithAdaptiveFeeInstruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializePoolWithAdaptiveFeeInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -317,14 +317,14 @@ export function getInitializePoolWithAdaptiveFeeInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -346,7 +346,7 @@ export function getInitializePoolWithAdaptiveFeeInstruction<
     ],
     programAddress,
     data: getInitializePoolWithAdaptiveFeeInstructionDataEncoder().encode(
-      args as InitializePoolWithAdaptiveFeeInstructionDataArgs
+      args as InitializePoolWithAdaptiveFeeInstructionDataArgs,
     ),
   } as InitializePoolWithAdaptiveFeeInstruction<
     TProgramAddress,
@@ -403,11 +403,11 @@ export function parseInitializePoolWithAdaptiveFeeInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedInitializePoolWithAdaptiveFeeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 16) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -436,7 +436,7 @@ export function parseInitializePoolWithAdaptiveFeeInstruction<
       rent: getNextAccount(),
     },
     data: getInitializePoolWithAdaptiveFeeInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

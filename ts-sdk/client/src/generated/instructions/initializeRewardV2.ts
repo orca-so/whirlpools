@@ -32,9 +32,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const INITIALIZE_REWARD_V2_DISCRIMINATOR = new Uint8Array([
   91, 1, 77, 50, 235, 229, 133, 49,
@@ -42,7 +42,7 @@ export const INITIALIZE_REWARD_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeRewardV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_REWARD_V2_DISCRIMINATOR
+    INITIALIZE_REWARD_V2_DISCRIMINATOR,
   );
 }
 
@@ -57,10 +57,10 @@ export type InitializeRewardV2Instruction<
   TAccountRewardTokenProgram extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | IAccountMeta<string> = "11111111111111111111111111111111",
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+    | IAccountMeta<string> = "SysvarRent111111111111111111111111111111111",
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -110,17 +110,20 @@ export type InitializeRewardV2InstructionDataArgs = { rewardIndex: number };
 export function getInitializeRewardV2InstructionDataEncoder(): Encoder<InitializeRewardV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['rewardIndex', getU8Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["rewardIndex", getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_REWARD_V2_DISCRIMINATOR })
+    (value) => ({
+      ...value,
+      discriminator: INITIALIZE_REWARD_V2_DISCRIMINATOR,
+    }),
   );
 }
 
 export function getInitializeRewardV2InstructionDataDecoder(): Decoder<InitializeRewardV2InstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['rewardIndex', getU8Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["rewardIndex", getU8Decoder()],
   ]);
 }
 
@@ -130,7 +133,7 @@ export function getInitializeRewardV2InstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeRewardV2InstructionDataEncoder(),
-    getInitializeRewardV2InstructionDataDecoder()
+    getInitializeRewardV2InstructionDataDecoder(),
   );
 }
 
@@ -154,7 +157,7 @@ export type InitializeRewardV2Input<
   rewardTokenProgram: Address<TAccountRewardTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  rewardIndex: InitializeRewardV2InstructionDataArgs['rewardIndex'];
+  rewardIndex: InitializeRewardV2InstructionDataArgs["rewardIndex"];
 };
 
 export function getInitializeRewardV2Instruction<
@@ -180,7 +183,7 @@ export function getInitializeRewardV2Instruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeRewardV2Instruction<
   TProgramAddress,
   TAccountRewardAuthority,
@@ -228,14 +231,14 @@ export function getInitializeRewardV2Instruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.rewardAuthority),
@@ -250,7 +253,7 @@ export function getInitializeRewardV2Instruction<
     ],
     programAddress,
     data: getInitializeRewardV2InstructionDataEncoder().encode(
-      args as InitializeRewardV2InstructionDataArgs
+      args as InitializeRewardV2InstructionDataArgs,
     ),
   } as InitializeRewardV2Instruction<
     TProgramAddress,
@@ -293,11 +296,11 @@ export function parseInitializeRewardV2Instruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedInitializeRewardV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -319,7 +322,7 @@ export function parseInitializeRewardV2Instruction<
       rent: getNextAccount(),
     },
     data: getInitializeRewardV2InstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

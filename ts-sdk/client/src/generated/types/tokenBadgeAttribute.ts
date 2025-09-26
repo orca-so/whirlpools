@@ -21,10 +21,10 @@ import {
   type Encoder,
   type GetDiscriminatedUnionVariant,
   type GetDiscriminatedUnionVariantContent,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export type TokenBadgeAttribute = {
-  __kind: 'RequireNonTransferablePosition';
+  __kind: "RequireNonTransferablePosition";
   fields: readonly [boolean];
 };
 
@@ -33,8 +33,8 @@ export type TokenBadgeAttributeArgs = TokenBadgeAttribute;
 export function getTokenBadgeAttributeEncoder(): Encoder<TokenBadgeAttributeArgs> {
   return getDiscriminatedUnionEncoder([
     [
-      'RequireNonTransferablePosition',
-      getStructEncoder([['fields', getTupleEncoder([getBooleanEncoder()])]]),
+      "RequireNonTransferablePosition",
+      getStructEncoder([["fields", getTupleEncoder([getBooleanEncoder()])]]),
     ],
   ]);
 }
@@ -42,8 +42,8 @@ export function getTokenBadgeAttributeEncoder(): Encoder<TokenBadgeAttributeArgs
 export function getTokenBadgeAttributeDecoder(): Decoder<TokenBadgeAttribute> {
   return getDiscriminatedUnionDecoder([
     [
-      'RequireNonTransferablePosition',
-      getStructDecoder([['fields', getTupleDecoder([getBooleanDecoder()])]]),
+      "RequireNonTransferablePosition",
+      getStructDecoder([["fields", getTupleDecoder([getBooleanDecoder()])]]),
     ],
   ]);
 }
@@ -54,25 +54,25 @@ export function getTokenBadgeAttributeCodec(): Codec<
 > {
   return combineCodec(
     getTokenBadgeAttributeEncoder(),
-    getTokenBadgeAttributeDecoder()
+    getTokenBadgeAttributeDecoder(),
   );
 }
 
 // Data Enum Helpers.
 export function tokenBadgeAttribute(
-  kind: 'RequireNonTransferablePosition',
+  kind: "RequireNonTransferablePosition",
   data: GetDiscriminatedUnionVariantContent<
     TokenBadgeAttributeArgs,
-    '__kind',
-    'RequireNonTransferablePosition'
-  >['fields']
+    "__kind",
+    "RequireNonTransferablePosition"
+  >["fields"],
 ): GetDiscriminatedUnionVariant<
   TokenBadgeAttributeArgs,
-  '__kind',
-  'RequireNonTransferablePosition'
+  "__kind",
+  "RequireNonTransferablePosition"
 >;
 export function tokenBadgeAttribute<
-  K extends TokenBadgeAttributeArgs['__kind'],
+  K extends TokenBadgeAttributeArgs["__kind"],
   Data,
 >(kind: K, data?: Data) {
   return Array.isArray(data)
@@ -80,9 +80,9 @@ export function tokenBadgeAttribute<
     : { __kind: kind, ...(data ?? {}) };
 }
 
-export function isTokenBadgeAttribute<K extends TokenBadgeAttribute['__kind']>(
+export function isTokenBadgeAttribute<K extends TokenBadgeAttribute["__kind"]>(
   kind: K,
-  value: TokenBadgeAttribute
+  value: TokenBadgeAttribute,
 ): value is TokenBadgeAttribute & { __kind: K } {
   return value.__kind === kind;
 }

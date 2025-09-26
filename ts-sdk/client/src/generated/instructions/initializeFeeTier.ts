@@ -32,9 +32,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const INITIALIZE_FEE_TIER_DISCRIMINATOR = new Uint8Array([
   183, 74, 156, 160, 112, 2, 42, 30,
@@ -42,7 +42,7 @@ export const INITIALIZE_FEE_TIER_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeFeeTierDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_FEE_TIER_DISCRIMINATOR
+    INITIALIZE_FEE_TIER_DISCRIMINATOR,
   );
 }
 
@@ -54,7 +54,7 @@ export type InitializeFeeTierInstruction<
   TAccountFeeAuthority extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | IAccountMeta<string> = "11111111111111111111111111111111",
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -95,19 +95,19 @@ export type InitializeFeeTierInstructionDataArgs = {
 export function getInitializeFeeTierInstructionDataEncoder(): Encoder<InitializeFeeTierInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['tickSpacing', getU16Encoder()],
-      ['defaultFeeRate', getU16Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["tickSpacing", getU16Encoder()],
+      ["defaultFeeRate", getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_FEE_TIER_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_FEE_TIER_DISCRIMINATOR }),
   );
 }
 
 export function getInitializeFeeTierInstructionDataDecoder(): Decoder<InitializeFeeTierInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['tickSpacing', getU16Decoder()],
-    ['defaultFeeRate', getU16Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["tickSpacing", getU16Decoder()],
+    ["defaultFeeRate", getU16Decoder()],
   ]);
 }
 
@@ -117,7 +117,7 @@ export function getInitializeFeeTierInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeFeeTierInstructionDataEncoder(),
-    getInitializeFeeTierInstructionDataDecoder()
+    getInitializeFeeTierInstructionDataDecoder(),
   );
 }
 
@@ -133,8 +133,8 @@ export type InitializeFeeTierInput<
   funder: TransactionSigner<TAccountFunder>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
   systemProgram?: Address<TAccountSystemProgram>;
-  tickSpacing: InitializeFeeTierInstructionDataArgs['tickSpacing'];
-  defaultFeeRate: InitializeFeeTierInstructionDataArgs['defaultFeeRate'];
+  tickSpacing: InitializeFeeTierInstructionDataArgs["tickSpacing"];
+  defaultFeeRate: InitializeFeeTierInstructionDataArgs["defaultFeeRate"];
 };
 
 export function getInitializeFeeTierInstruction<
@@ -152,7 +152,7 @@ export function getInitializeFeeTierInstruction<
     TAccountFeeAuthority,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeFeeTierInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -183,10 +183,10 @@ export function getInitializeFeeTierInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.config),
@@ -197,7 +197,7 @@ export function getInitializeFeeTierInstruction<
     ],
     programAddress,
     data: getInitializeFeeTierInstructionDataEncoder().encode(
-      args as InitializeFeeTierInstructionDataArgs
+      args as InitializeFeeTierInstructionDataArgs,
     ),
   } as InitializeFeeTierInstruction<
     TProgramAddress,
@@ -232,11 +232,11 @@ export function parseInitializeFeeTierInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedInitializeFeeTierInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

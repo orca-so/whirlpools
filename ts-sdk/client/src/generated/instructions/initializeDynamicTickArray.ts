@@ -33,9 +33,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const INITIALIZE_DYNAMIC_TICK_ARRAY_DISCRIMINATOR = new Uint8Array([
   41, 33, 165, 200, 120, 231, 142, 50,
@@ -43,7 +43,7 @@ export const INITIALIZE_DYNAMIC_TICK_ARRAY_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeDynamicTickArrayDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_DYNAMIC_TICK_ARRAY_DISCRIMINATOR
+    INITIALIZE_DYNAMIC_TICK_ARRAY_DISCRIMINATOR,
   );
 }
 
@@ -54,7 +54,7 @@ export type InitializeDynamicTickArrayInstruction<
   TAccountTickArray extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | IAccountMeta<string> = "11111111111111111111111111111111",
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -91,22 +91,22 @@ export type InitializeDynamicTickArrayInstructionDataArgs = {
 export function getInitializeDynamicTickArrayInstructionDataEncoder(): Encoder<InitializeDynamicTickArrayInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['startTickIndex', getI32Encoder()],
-      ['idempotent', getBooleanEncoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["startTickIndex", getI32Encoder()],
+      ["idempotent", getBooleanEncoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: INITIALIZE_DYNAMIC_TICK_ARRAY_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getInitializeDynamicTickArrayInstructionDataDecoder(): Decoder<InitializeDynamicTickArrayInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['startTickIndex', getI32Decoder()],
-    ['idempotent', getBooleanDecoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["startTickIndex", getI32Decoder()],
+    ["idempotent", getBooleanDecoder()],
   ]);
 }
 
@@ -116,7 +116,7 @@ export function getInitializeDynamicTickArrayInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeDynamicTickArrayInstructionDataEncoder(),
-    getInitializeDynamicTickArrayInstructionDataDecoder()
+    getInitializeDynamicTickArrayInstructionDataDecoder(),
   );
 }
 
@@ -130,8 +130,8 @@ export type InitializeDynamicTickArrayInput<
   funder: TransactionSigner<TAccountFunder>;
   tickArray: Address<TAccountTickArray>;
   systemProgram?: Address<TAccountSystemProgram>;
-  startTickIndex: InitializeDynamicTickArrayInstructionDataArgs['startTickIndex'];
-  idempotent: InitializeDynamicTickArrayInstructionDataArgs['idempotent'];
+  startTickIndex: InitializeDynamicTickArrayInstructionDataArgs["startTickIndex"];
+  idempotent: InitializeDynamicTickArrayInstructionDataArgs["idempotent"];
 };
 
 export function getInitializeDynamicTickArrayInstruction<
@@ -147,7 +147,7 @@ export function getInitializeDynamicTickArrayInstruction<
     TAccountTickArray,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeDynamicTickArrayInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -176,10 +176,10 @@ export function getInitializeDynamicTickArrayInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -189,7 +189,7 @@ export function getInitializeDynamicTickArrayInstruction<
     ],
     programAddress,
     data: getInitializeDynamicTickArrayInstructionDataEncoder().encode(
-      args as InitializeDynamicTickArrayInstructionDataArgs
+      args as InitializeDynamicTickArrayInstructionDataArgs,
     ),
   } as InitializeDynamicTickArrayInstruction<
     TProgramAddress,
@@ -222,11 +222,11 @@ export function parseInitializeDynamicTickArrayInstruction<
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+    IInstructionWithData<Uint8Array>,
 ): ParsedInitializeDynamicTickArrayInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -243,7 +243,7 @@ export function parseInitializeDynamicTickArrayInstruction<
       systemProgram: getNextAccount(),
     },
     data: getInitializeDynamicTickArrayInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

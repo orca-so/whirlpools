@@ -74,11 +74,11 @@ function SwapPage({ account }: SwapPageProps) {
 
       try {
         const [usdcTokenAccount] = await findAssociatedTokenPda({
-          mint: USDC_MINT,
-          owner: walletAddress,
-          tokenProgram: address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+          mint: USDC_MINT as any,
+          owner: walletAddress as any,
+          tokenProgram: address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA") as any
         });
-        const usdcAccountInfo = await fetchToken(rpc, usdcTokenAccount);
+        const usdcAccountInfo = await fetchToken(rpc as any, usdcTokenAccount);
         setUsdcBalance({
           amount: usdcAccountInfo.data.amount,
           decimals: 6
@@ -107,7 +107,7 @@ function SwapPage({ account }: SwapPageProps) {
 
     const timeoutId = setTimeout(async () => {
       try {
-        const pools = await fetchWhirlpoolsByTokenPair(rpc, SOL_MINT, USDC_MINT);
+        const pools = await fetchWhirlpoolsByTokenPair(rpc as any, SOL_MINT as any, USDC_MINT as any);
         const targetPool = pools.find(pool => pool.initialized && pool.tickSpacing === 64);
 
         if (!targetPool) {
@@ -122,14 +122,14 @@ function SwapPage({ account }: SwapPageProps) {
           : BigInt(Math.floor(parseFloat(inputAmount) * 10 ** 6));
 
         const quoteResult = await swapInstructions(
-          rpc,
+          rpc as any,
           {
             inputAmount: inputAmountBN,
-            mint: isSwappingAToB ? SOL_MINT : USDC_MINT
+            mint: (isSwappingAToB ? SOL_MINT : USDC_MINT) as any
           },
           targetPool.address,
           100,
-          signer
+          signer as any
         );
 
         setQuote(quoteResult);
@@ -140,7 +140,7 @@ function SwapPage({ account }: SwapPageProps) {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [inputAmount, isSwappingAToB, rpc, account]);
+  }, [inputAmount, isSwappingAToB, rpc, account, signer]);
 
   const handleSwap = async () => {
     if (!account || !quote || !poolInfo || !signer) {

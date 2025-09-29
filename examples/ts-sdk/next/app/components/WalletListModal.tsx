@@ -112,6 +112,7 @@ export const WalletListItem = ({ wallet, onConnect }: WalletItemProps) => {
       return connectedAccount;
     } catch (error) {
       console.error("Failed to connect wallet:", error);
+      return [];
     }
   };
 

@@ -32,6 +32,10 @@ const nextConfig = {
             from: wasmPath,
             to: "./server/app",
           },
+          {
+            from: wasmPath,
+            to: "./server/chunks",
+          },
         ],
       }),
     );

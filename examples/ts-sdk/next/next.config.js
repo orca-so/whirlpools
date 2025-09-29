@@ -8,8 +8,7 @@ const nextConfig = {
   webpack(config, { isServer }) {
     config.experiments.asyncWebAssembly = true;
 
-    // Copy `orca_whirlpools_core_js_bindings_bg.wasm` file
-    // Try node_modules first (for npm installed package), fallback to relative path (for monorepo)
+    // Locate WASM file for Orca Whirlpools Core
     const nodeModulesWasmPath = "node_modules/@orca-so/whirlpools-core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm";
     const relativeWasmPath = "../../../ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm";
 
@@ -37,7 +36,7 @@ const nextConfig = {
       }),
     );
 
-    // The following supresses a warning about using top-level-await and is optional
+    // Enable async functions in client-side bundles
     if (!isServer) {
       config.output.environment = {
         ...config.output.environment,

@@ -40,24 +40,24 @@ function SwapPage({ account }: SwapPageProps) {
   const [solBalance, setSolBalance] = useState<TokenBalance>({ amount: 0n, decimals: 9 });
   const [usdcBalance, setUsdcBalance] = useState<TokenBalance>({ amount: 0n, decimals: 6 });
   const [inputAmount, setInputAmount] = useState<string>("");
-  const [isSwappingAToB, setIsSwappingAToB] = useState(true); // true: SOL to USDC, false: USDC to SOL
+  const [isSwappingAToB, setIsSwappingAToB] = useState(true);
   const [quote, setQuote] = useState<any>(null);
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [transactionStatus, setTransactionStatus] = useState<string>("");
   const [isSwapping, setIsSwapping] = useState(false);
 
-  // Create RPC instance
+  // Solana RPC connection
   const rpc = useMemo(() =>
     createSolanaRpc(process.env.NEXT_PUBLIC_RPC_URL || "https://api.mainnet-beta.solana.com"),
     []
   );
   
-  // Initialize Whirlpools config
+  // Configure Whirlpools SDK for mainnet
   useEffect(() => {
     setWhirlpoolsConfig('solanaMainnet');
   }, []);
 
-  // Fetch balances when wallet is connected
+  // Load wallet token balances
   const fetchBalances = useCallback(async () => {
     if (!account) {
       setSolBalance({ amount: 0n, decimals: 9 });
@@ -68,11 +68,9 @@ function SwapPage({ account }: SwapPageProps) {
     try {
       const walletAddress = address(account.address);
 
-      // Fetch SOL balance
       const solBalanceResult = await rpc.getBalance(walletAddress).send();
       setSolBalance({ amount: solBalanceResult.value, decimals: 9 });
 
-      // Fetch USDC balance
       try {
         const [usdcTokenAccount] = await findAssociatedTokenPda({
           mint: USDC_MINT,
@@ -98,7 +96,7 @@ function SwapPage({ account }: SwapPageProps) {
     fetchBalances();
   }, [fetchBalances]);
 
-  // Fetch pool info and quote with debouncing
+  // Get swap quote with input debouncing
   useEffect(() => {
     if (!inputAmount || isNaN(parseFloat(inputAmount)) || !account) {
       setQuote(null);
@@ -129,7 +127,7 @@ function SwapPage({ account }: SwapPageProps) {
             mint: isSwappingAToB ? SOL_MINT : USDC_MINT
           },
           targetPool.address,
-          100, // slippage in BPS
+          100,
           signer
         );
 
@@ -138,7 +136,7 @@ function SwapPage({ account }: SwapPageProps) {
         console.error("Failed to fetch quote:", error);
         setQuote(null);
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [inputAmount, isSwappingAToB, rpc, account]);
@@ -155,7 +153,7 @@ function SwapPage({ account }: SwapPageProps) {
     try {
       const { value: latestBlockhash } = await rpc.getLatestBlockhash({ commitment: 'confirmed' }).send();
 
-      // Create transaction message using standard solana-kit pipe pattern
+      // Build transaction with swap instructions
       const message = pipe(
         createTransactionMessage({ version: 0 }),
         m => setTransactionMessageFeePayerSigner(signer, m),
@@ -170,7 +168,7 @@ function SwapPage({ account }: SwapPageProps) {
 
       setTransactionStatus(`Transaction sent! Signature: ${signature.slice(0, 8)}...${signature.slice(-8)}`);
 
-      // Clear form and refresh balances
+      // Reset form and update balances
       setInputAmount("");
       setQuote(null);
       await fetchBalances();

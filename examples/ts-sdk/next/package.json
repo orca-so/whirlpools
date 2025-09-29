@@ -1,7 +1,6 @@
 {
   "name": "@orca-so/whirlpools-example-ts-next",
   "version": "0.1.2",
-  "type": "module",
   "private": true,
   "scripts": {
     "start": "next dev",
@@ -12,17 +11,21 @@
     "@orca-so/whirlpools": "*",
     "@solana/kit": "^3.0.3",
     "@solana/react": "^3.0.3",
-    "@solana-program/token-2022": "^0.4.8",
     "@wallet-standard/react": "^1.0.1",
+    "clsx": "^2.1.1",
     "next": "^15.2.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.3"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.2.4",
     "@types/node": "^22.14.0",
     "@types/react": "^18.3.13",
+    "autoprefixer": "^10.4.0",
     "copy-webpack-plugin": "^13.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.0",
     "typescript": "^5.8.2"
   }
 }

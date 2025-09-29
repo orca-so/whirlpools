@@ -9,8 +9,7 @@ NODE_VERSION="22"
 YARN_VERSION="4.6.0"
 SOLANA_VERSION="v1.17.25"
 ANCHOR_VERSION="v0.29.0"
-RUST_VERSION_FOR_ANCHOR="1.76.0"    # Required for building Anchor v0.29.0
-RUST_VERSION_FOR_PROJECT="1.85.1"   # Required for building Whirlpools project
+RUST_VERSION_FOR_PROJECT="1.84.0"
 
 # Resolve repo root from this script's directory
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -56,6 +55,7 @@ corepack prepare yarn@${YARN_VERSION} --activate
 echo "=== Installing Rust via rustup ==="
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
+rustup default stable
 rustc -V
 
 echo "=== Installing Solana CLI ==="
@@ -64,19 +64,9 @@ source "$HOME/.profile" || true
 solana -V
 
 echo "=== Installing Anchor (${ANCHOR_VERSION}) ==="
-rustup default ${RUST_VERSION_FOR_ANCHOR}
-ANCHOR_TMP_DIR="$(mktemp -d)"
-git clone https://github.com/coral-xyz/anchor "$ANCHOR_TMP_DIR/anchor"
-cd "$ANCHOR_TMP_DIR/anchor"
-git checkout ${ANCHOR_VERSION}
-cd cli
-cargo build --release
-mkdir -p "$HOME/.cargo/bin"
-cp ../target/release/anchor "$HOME/.cargo/bin/anchor-${ANCHOR_VERSION}"
-ln -sfn "$HOME/.cargo/bin/anchor-${ANCHOR_VERSION}" "$HOME/.cargo/bin/anchor"
+cargo install --git https://github.com/coral-xyz/anchor --tag ${ANCHOR_VERSION} anchor-cli --force
 export PATH="$HOME/.cargo/bin:$PATH"
 cd "$REPO_ROOT"
-rm -rf "$ANCHOR_TMP_DIR"
 
 echo "=== Building local Whirlpools repo ==="
 rustup default ${RUST_VERSION_FOR_PROJECT}

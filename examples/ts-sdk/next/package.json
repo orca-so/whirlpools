@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@orca-so/whirlpools": "*",
-    "@solana/kit": "^2.1.0",
+    "@solana/kit": "^3.0.3",
+    "@solana/react": "^3.0.3",
+    "@solana-program/token-2022": "^0.4.8",
+    "@wallet-standard/react": "^1.0.1",
     "next": "^15.2.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -20,7 +23,6 @@
     "@types/node": "^22.14.0",
     "@types/react": "^18.3.13",
     "copy-webpack-plugin": "^13.0.0",
-    "typescript": "^5.8.2",
-    "webpack": "^5.98.0"
+    "typescript": "^5.8.2"
   }
 }

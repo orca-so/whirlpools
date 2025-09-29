@@ -19,7 +19,10 @@ export default function Page() {
   }, [process.env.NEXT_PUBLIC_RPC_URL]);
 
   const fetchPositions = useCallback(async () => {
-    const positions = await fetchPositionsForOwner(rpc as any, address(owner) as any);
+    const positions = await fetchPositionsForOwner(
+      rpc as any,
+      address(owner) as any,
+    );
     setPositions(positions);
   }, [owner]);
 

@@ -23,23 +23,28 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 function WalletProviderInner({
   children,
   connectedWallet,
-  setConnectedWallet
+  setConnectedWallet,
 }: {
   children: ReactNode;
   connectedWallet: ConnectedWallet;
   setConnectedWallet: (wallet: ConnectedWallet | null) => void;
 }) {
-  const signer = useWalletAccountTransactionSendingSigner(connectedWallet.account, "solana:mainnet");
+  const signer = useWalletAccountTransactionSendingSigner(
+    connectedWallet.account,
+    "solana:mainnet",
+  );
 
   return (
-    <WalletContext.Provider value={{
-      account: connectedWallet.account,
-      wallet: connectedWallet.wallet,
-      connectedWallet,
-      setConnectedWallet,
-      isConnected: true,
-      signer,
-    }}>
+    <WalletContext.Provider
+      value={{
+        account: connectedWallet.account,
+        wallet: connectedWallet.wallet,
+        connectedWallet,
+        setConnectedWallet,
+        isConnected: true,
+        signer,
+      }}
+    >
       {children}
     </WalletContext.Provider>
   );

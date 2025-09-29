@@ -9,8 +9,10 @@ const nextConfig = {
     config.experiments.asyncWebAssembly = true;
 
     // Locate WASM file for Orca Whirlpools Core
-    const nodeModulesWasmPath = "node_modules/@orca-so/whirlpools-core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm";
-    const relativeWasmPath = "../../../ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm";
+    const nodeModulesWasmPath =
+      "node_modules/@orca-so/whirlpools-core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm";
+    const relativeWasmPath =
+      "../../../ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm";
 
     let wasmPath;
     if (fs.existsSync(path.resolve(nodeModulesWasmPath))) {
@@ -18,7 +20,9 @@ const nextConfig = {
     } else if (fs.existsSync(path.resolve(relativeWasmPath))) {
       wasmPath = relativeWasmPath;
     } else {
-      throw new Error("Could not find orca_whirlpools_core_js_bindings_bg.wasm file");
+      throw new Error(
+        "Could not find orca_whirlpools_core_js_bindings_bg.wasm file",
+      );
     }
 
     config.plugins.push(

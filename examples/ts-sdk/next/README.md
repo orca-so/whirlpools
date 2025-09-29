@@ -32,23 +32,27 @@ This example showcases a complete token swap application built with:
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd examples/ts-sdk/next
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 # Create .env.local file
 NEXT_PUBLIC_RPC_URL=https://api.mainnet-beta.solana.com
 ```
 
 4. Start the development server:
+
 ```bash
 npm run start
 ```
@@ -67,24 +71,33 @@ npm run start
 ### Key Features
 
 #### Wallet Integration
+
 ```typescript
 // Centralized wallet state with transaction signer
 const { account, signer } = useWallet();
 ```
 
 #### Swap Execution
+
 ```typescript
 // Get swap instructions from Orca SDK
-const quote = await swapInstructions(rpc, {
-  inputAmount: amount,
-  mint: tokenMint
-}, poolAddress, slippageBps, signer);
+const quote = await swapInstructions(
+  rpc,
+  {
+    inputAmount: amount,
+    mint: tokenMint,
+  },
+  poolAddress,
+  slippageBps,
+  signer,
+);
 
 // Execute transaction
 const signature = await signAndSendTransactionMessageWithSigners(transaction);
 ```
 
 #### Real-time Balance Updates
+
 ```typescript
 // Automatic balance refresh after successful swaps
 const fetchBalances = useCallback(async () => {
@@ -101,9 +114,11 @@ The application automatically detects WASM file locations:
 
 ```javascript
 // next.config.js - Smart path resolution
-const wasmPath = fs.existsSync('node_modules/@orca-so/whirlpools-core/dist/nodejs/...')
-  ? 'node_modules/...' // Production deployment
-  : '../../../ts-sdk/core/dist/nodejs/...'; // Monorepo development
+const wasmPath = fs.existsSync(
+  "node_modules/@orca-so/whirlpools-core/dist/nodejs/...",
+)
+  ? "node_modules/..." // Production deployment
+  : "../../../ts-sdk/core/dist/nodejs/..."; // Monorepo development
 ```
 
 ### Supported Networks
@@ -114,6 +129,7 @@ const wasmPath = fs.existsSync('node_modules/@orca-so/whirlpools-core/dist/nodej
 ## Development
 
 ### Project Structure
+
 ```
 ├── app/
 │   ├── swap/
@@ -174,9 +190,12 @@ const pools = await fetchWhirlpoolsByTokenPair(rpc, SOL_MINT, NEW_TOKEN_MINT);
 
 ```typescript
 // Adjust slippage tolerance (in basis points)
-const quote = await swapInstructions(rpc, swapParams, poolAddress,
+const quote = await swapInstructions(
+  rpc,
+  swapParams,
+  poolAddress,
   200, // 2% slippage instead of default 1%
-  signer
+  signer,
 );
 ```
 
@@ -185,14 +204,17 @@ const quote = await swapInstructions(rpc, swapParams, poolAddress,
 ### Common Issues
 
 **WASM File Not Found**
+
 - Ensure `@orca-so/whirlpools-core` is installed
 - Check Next.js build output for WASM copying errors
 
 **Wallet Connection Fails**
+
 - Verify wallet extension is installed and unlocked
 - Check browser console for connection errors
 
 **Transaction Failures**
+
 - Confirm sufficient SOL balance for transaction fees
 - Verify slippage tolerance for volatile markets
 - Check RPC endpoint connectivity
@@ -225,7 +247,7 @@ This example is part of the Orca Whirlpools SDK and follows the same licensing t
 ## Support
 
 For technical questions and support:
+
 - GitHub Issues: Report bugs and feature requests
 - Discord: Join the Orca community
 - Documentation: Comprehensive guides and API reference
-

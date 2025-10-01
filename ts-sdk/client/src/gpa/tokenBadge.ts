@@ -4,6 +4,7 @@ import type {
   Account,
   GetProgramAccountsApi,
   Rpc,
+  Base58EncodedBytes,
 } from "@solana/kit";
 import { getBase58Decoder, getAddressEncoder } from "@solana/kit";
 import type { TokenBadge } from "../generated/accounts/tokenBadge";
@@ -44,7 +45,7 @@ export async function fetchAllTokenBadgeWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: TokenBadgeFilter[]
 ): Promise<Account<TokenBadge>[]> {
-  const discriminator = getBase58Decoder().decode(TOKEN_BADGE_DISCRIMINATOR);
+  const discriminator = getBase58Decoder().decode(TOKEN_BADGE_DISCRIMINATOR) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

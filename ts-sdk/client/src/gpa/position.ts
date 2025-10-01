@@ -4,6 +4,7 @@ import type {
   GetProgramAccountsApi,
   Rpc,
   Address,
+  Base58EncodedBytes,
 } from "@solana/kit";
 import {
   getBase58Decoder,
@@ -70,7 +71,7 @@ export async function fetchAllPositionWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: PositionFilter[]
 ): Promise<Account<Position>[]> {
-  const discriminator = getBase58Decoder().decode(POSITION_DISCRIMINATOR);
+  const discriminator = getBase58Decoder().decode(POSITION_DISCRIMINATOR) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

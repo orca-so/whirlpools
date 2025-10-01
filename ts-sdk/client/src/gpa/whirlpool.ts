@@ -1,6 +1,7 @@
 import type {
   Account,
   Address,
+  Base58EncodedBytes,
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
@@ -219,7 +220,7 @@ export async function fetchAllWhirlpoolWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: WhirlpoolFilter[]
 ): Promise<Account<Whirlpool>[]> {
-  const discriminator = getBase58Decoder().decode(WHIRLPOOL_DISCRIMINATOR);
+  const discriminator = getBase58Decoder().decode(WHIRLPOOL_DISCRIMINATOR) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

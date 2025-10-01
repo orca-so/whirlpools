@@ -113,17 +113,18 @@ pub fn load_tick_array<'a>(
     }
 
     let discriminator = array_ref![data, 0, 8];
-
-    let tick_array: LoadedTickArray<'a> = match *discriminator {
-        FixedTickArray::DISCRIMINATOR => Ref::map(data, |data| {
+    let tick_array: LoadedTickArray<'a> = if discriminator == FixedTickArray::DISCRIMINATOR {
+        Ref::map(data, |data| {
             let tick_array: &FixedTickArray = bytemuck::from_bytes(&data[8..]);
             tick_array
-        }),
-        DynamicTickArray::DISCRIMINATOR => Ref::map(data, |data| {
+        })
+    } else if discriminator == DynamicTickArray::DISCRIMINATOR {
+        Ref::map(data, |data| {
             let tick_array: &DynamicTickArrayLoader = DynamicTickArrayLoader::load(&data[8..]);
             tick_array
-        }),
-        _ => return Err(ErrorCode::AccountDiscriminatorMismatch.into()),
+        })
+    } else {
+        return Err(ErrorCode::AccountDiscriminatorMismatch.into());
     };
 
     if tick_array.whirlpool() != *whirlpool {
@@ -154,18 +155,20 @@ pub fn load_tick_array_mut<'a, 'info>(
     }
 
     let discriminator = array_ref![data, 0, 8];
-    let tick_array: LoadedTickArrayMut<'a> = match *discriminator {
-        FixedTickArray::DISCRIMINATOR => RefMut::map(data, |data| {
+    let tick_array: LoadedTickArrayMut<'a> = if discriminator == FixedTickArray::DISCRIMINATOR {
+        RefMut::map(data, |data| {
             let tick_array: &mut FixedTickArray =
                 bytemuck::from_bytes_mut(&mut data.deref_mut()[8..]);
             tick_array
-        }),
-        DynamicTickArray::DISCRIMINATOR => RefMut::map(data, |data| {
+        })
+    } else if discriminator == DynamicTickArray::DISCRIMINATOR {
+        RefMut::map(data, |data| {
             let tick_array: &mut DynamicTickArrayLoader =
                 DynamicTickArrayLoader::load_mut(&mut data.deref_mut()[8..]);
             tick_array
-        }),
-        _ => return Err(ErrorCode::AccountDiscriminatorMismatch.into()),
+        })
+    } else {
+        return Err(ErrorCode::AccountDiscriminatorMismatch.into());
     };
 
     if tick_array.whirlpool() != *whirlpool {
@@ -322,7 +325,7 @@ mod fixed_tick_array_tests {
             .build();
         let tick_array_data = bytemuck::bytes_of(&tick_array);
         let mut tick_array_data_with_discriminator = [0u8; mem::size_of::<FixedTickArray>() + 8];
-        tick_array_data_with_discriminator[0..8].copy_from_slice(&FixedTickArray::DISCRIMINATOR);
+        tick_array_data_with_discriminator[0..8].copy_from_slice(FixedTickArray::DISCRIMINATOR);
         tick_array_data_with_discriminator[8..].copy_from_slice(tick_array_data);
         let ta_addr = Pubkey::new_unique();
         let mut lamports = 0;
@@ -368,7 +371,7 @@ mod fixed_tick_array_tests {
 
         let tick_array_data = bytemuck::bytes_of(&tick_array);
         let mut tick_array_data_with_discriminator = [0u8; mem::size_of::<FixedTickArray>() + 8];
-        tick_array_data_with_discriminator[0..8].copy_from_slice(&FixedTickArray::DISCRIMINATOR);
+        tick_array_data_with_discriminator[0..8].copy_from_slice(FixedTickArray::DISCRIMINATOR);
         tick_array_data_with_discriminator[8..].copy_from_slice(tick_array_data);
         let ta_addr = Pubkey::new_unique();
         let mut lamports = 0;
@@ -414,7 +417,7 @@ mod fixed_tick_array_tests {
 
         let tick_array_data = bytemuck::bytes_of(&tick_array);
         let mut tick_array_data_with_discriminator = [0u8; mem::size_of::<FixedTickArray>() + 8];
-        tick_array_data_with_discriminator[0..8].copy_from_slice(&FixedTickArray::DISCRIMINATOR);
+        tick_array_data_with_discriminator[0..8].copy_from_slice(FixedTickArray::DISCRIMINATOR);
         tick_array_data_with_discriminator[8..].copy_from_slice(tick_array_data);
         let ta_addr = Pubkey::new_unique();
         let mut lamports = 0;
@@ -455,7 +458,7 @@ mod fixed_tick_array_tests {
 
         let tick_array_data = bytemuck::bytes_of(&tick_array);
         let mut tick_array_data_with_discriminator = [0u8; mem::size_of::<FixedTickArray>() + 8];
-        tick_array_data_with_discriminator[0..8].copy_from_slice(&FixedTickArray::DISCRIMINATOR);
+        tick_array_data_with_discriminator[0..8].copy_from_slice(FixedTickArray::DISCRIMINATOR);
         tick_array_data_with_discriminator[8..].copy_from_slice(tick_array_data);
         let ta_addr = Pubkey::new_unique();
         let mut lamports = 0;
@@ -506,7 +509,7 @@ mod dynamic_tick_array_tests {
         let mut tick_array_data: Vec<u8> = vec![0u8; 8 + 4 + 32 + 16 + tick_data.len()];
 
         let mut offset = 0;
-        tick_array_data[offset..offset + 8].copy_from_slice(&DynamicTickArray::DISCRIMINATOR);
+        tick_array_data[offset..offset + 8].copy_from_slice(DynamicTickArray::DISCRIMINATOR);
         offset += 8;
         tick_array_data[offset..offset + 4].copy_from_slice(&start_tick_index.to_le_bytes());
         offset += 4;
@@ -563,7 +566,7 @@ mod dynamic_tick_array_tests {
         let mut tick_array_data: Vec<u8> = vec![0u8; 8 + 4 + 32 + 16 + tick_data.len()];
 
         let mut offset = 0;
-        tick_array_data[offset..offset + 8].copy_from_slice(&DynamicTickArray::DISCRIMINATOR);
+        tick_array_data[offset..offset + 8].copy_from_slice(DynamicTickArray::DISCRIMINATOR);
         offset += 8;
         tick_array_data[offset..offset + 4].copy_from_slice(&start_tick_index.to_le_bytes());
         offset += 4;
@@ -620,7 +623,7 @@ mod dynamic_tick_array_tests {
         let mut tick_array_data: Vec<u8> = vec![0u8; tick_data.len() + 8 + 32 + 8];
 
         let mut offset = 0;
-        tick_array_data[offset..offset + 8].copy_from_slice(&DynamicTickArray::DISCRIMINATOR);
+        tick_array_data[offset..offset + 8].copy_from_slice(DynamicTickArray::DISCRIMINATOR);
         offset += 8;
         tick_array_data[offset..offset + 4].copy_from_slice(&start_tick_index.to_le_bytes());
         offset += 4;
@@ -666,7 +669,7 @@ mod dynamic_tick_array_tests {
         let mut tick_array_data: Vec<u8> = vec![0u8; tick_data.len() + 8 + 32 + 8];
 
         let mut offset = 0;
-        tick_array_data[offset..offset + 8].copy_from_slice(&DynamicTickArray::DISCRIMINATOR);
+        tick_array_data[offset..offset + 8].copy_from_slice(DynamicTickArray::DISCRIMINATOR);
         offset += 8;
         tick_array_data[offset..offset + 4].copy_from_slice(&start_tick_index.to_le_bytes());
         offset += 4;

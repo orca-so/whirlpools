@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::pubkey;
+use solana_program::pubkey;
 
 #[cfg(not(any(feature = "mainnet", feature = "devnet")))]
 pub const ADMINS: [Pubkey; 2] = [

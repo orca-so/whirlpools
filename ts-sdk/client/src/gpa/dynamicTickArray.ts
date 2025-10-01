@@ -1,6 +1,7 @@
 import type {
   Account,
   Address,
+  Base58EncodedBytes,
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
@@ -52,7 +53,7 @@ export async function fetchAllDynamicTickArrayWithFilter(
 ): Promise<Account<DynamicTickArray>[]> {
   const discriminator = getBase58Decoder().decode(
     DYNAMIC_TICK_ARRAY_DISCRIMINATOR,
-  );
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

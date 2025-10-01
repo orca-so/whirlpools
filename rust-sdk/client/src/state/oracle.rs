@@ -1,1 +1,0 @@
-pub const ORACLE_DISCRIMINATOR: &[u8] = &[139, 194, 131, 179, 140, 179, 229, 244];

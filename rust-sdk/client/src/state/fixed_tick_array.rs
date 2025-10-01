@@ -1,1 +1,0 @@
-pub const FIXED_TICK_ARRAY_DISCRIMINATOR: &[u8] = &[69, 97, 189, 190, 110, 7, 66, 187];

@@ -5,7 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use crate::generated::types::DynamicTick;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
@@ -24,6 +24,8 @@ pub ticks: [DynamicTick; 88],
 }
 
 
+pub const DYNAMIC_TICK_ARRAY_DISCRIMINATOR: [u8; 8] = [17, 216, 246, 142, 225, 199, 218, 56];
+
 impl DynamicTickArray {
   
   
@@ -35,10 +37,10 @@ impl DynamicTickArray {
   }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for DynamicTickArray {
+impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for DynamicTickArray {
   type Error = std::io::Error;
 
-  fn try_from(account_info: &solana_program::account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
+  fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
       let mut data: &[u8] = &(*account_info.data).borrow();
       Self::deserialize(&mut data)
   }
@@ -47,7 +49,7 @@ impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for DynamicTick
 #[cfg(feature = "fetch")]
 pub fn fetch_dynamic_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_program::pubkey::Pubkey,
+  address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::DecodedAccount<DynamicTickArray>, std::io::Error> {
   let accounts = fetch_all_dynamic_tick_array(rpc, &[*address])?;
   Ok(accounts[0].clone())
@@ -56,7 +58,7 @@ pub fn fetch_dynamic_tick_array(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_dynamic_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_program::pubkey::Pubkey],
+  addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::DecodedAccount<DynamicTickArray>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -74,7 +76,7 @@ pub fn fetch_all_dynamic_tick_array(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_dynamic_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_program::pubkey::Pubkey,
+  address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::MaybeAccount<DynamicTickArray>, std::io::Error> {
     let accounts = fetch_all_maybe_dynamic_tick_array(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -83,7 +85,7 @@ pub fn fetch_maybe_dynamic_tick_array(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_dynamic_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_program::pubkey::Pubkey],
+  addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::MaybeAccount<DynamicTickArray>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -123,6 +125,6 @@ pub fn fetch_all_maybe_dynamic_tick_array(
   
   #[cfg(feature = "anchor-idl-build")]
   impl anchor_lang::Discriminator for DynamicTickArray {
-    const DISCRIMINATOR: [u8; 8] = [0; 8];
+    const DISCRIMINATOR: &[u8] = &[0; 8];
   }
 

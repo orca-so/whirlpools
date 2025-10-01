@@ -8,95 +8,97 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR: [u8; 8] = [212, 47, 95, 92, 114, 102, 131, 250];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct OpenPositionWithTokenExtensions {
       
               
-          pub funder: solana_program::pubkey::Pubkey,
+          pub funder: solana_pubkey::Pubkey,
           
               
-          pub owner: solana_program::pubkey::Pubkey,
+          pub owner: solana_pubkey::Pubkey,
           
               
-          pub position: solana_program::pubkey::Pubkey,
+          pub position: solana_pubkey::Pubkey,
           
               
-          pub position_mint: solana_program::pubkey::Pubkey,
+          pub position_mint: solana_pubkey::Pubkey,
           
               
-          pub position_token_account: solana_program::pubkey::Pubkey,
+          pub position_token_account: solana_pubkey::Pubkey,
           
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub token2022_program: solana_program::pubkey::Pubkey,
+          pub token2022_program: solana_pubkey::Pubkey,
           
               
-          pub system_program: solana_program::pubkey::Pubkey,
+          pub system_program: solana_pubkey::Pubkey,
           
               
-          pub associated_token_program: solana_program::pubkey::Pubkey,
+          pub associated_token_program: solana_pubkey::Pubkey,
           
               
-          pub metadata_update_auth: solana_program::pubkey::Pubkey,
+          pub metadata_update_auth: solana_pubkey::Pubkey,
       }
 
 impl OpenPositionWithTokenExtensions {
-  pub fn instruction(&self, args: OpenPositionWithTokenExtensionsInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: OpenPositionWithTokenExtensionsInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: OpenPositionWithTokenExtensionsInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: OpenPositionWithTokenExtensionsInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(10+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new(
+                            accounts.push(solana_instruction::AccountMeta::new(
             self.funder,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.owner,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.position,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.position_mint,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.position_token_account,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token2022_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.associated_token_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.metadata_update_auth,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&OpenPositionWithTokenExtensionsInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = OpenPositionWithTokenExtensionsInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -116,7 +118,11 @@ impl OpenPositionWithTokenExtensionsInstructionData {
                         discriminator: [212, 47, 95, 92, 114, 102, 131, 250],
                                                             }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for OpenPositionWithTokenExtensionsInstructionData {
   fn default() -> Self {
@@ -132,6 +138,12 @@ impl Default for OpenPositionWithTokenExtensionsInstructionData {
                 pub with_token_metadata_extension: bool,
       }
 
+impl OpenPositionWithTokenExtensionsInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
+
 
 /// Instruction builder for `OpenPositionWithTokenExtensions`.
 ///
@@ -143,26 +155,26 @@ impl Default for OpenPositionWithTokenExtensionsInstructionData {
                       ///   3. `[writable, signer]` position_mint
                 ///   4. `[writable]` position_token_account
           ///   5. `[]` whirlpool
-          ///   6. `[]` token2022_program
+                ///   6. `[optional]` token2022_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
                 ///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
-          ///   8. `[]` associated_token_program
-          ///   9. `[]` metadata_update_auth
+                ///   8. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+                ///   9. `[optional]` metadata_update_auth (default to `3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr`)
 #[derive(Clone, Debug, Default)]
 pub struct OpenPositionWithTokenExtensionsBuilder {
-            funder: Option<solana_program::pubkey::Pubkey>,
-                owner: Option<solana_program::pubkey::Pubkey>,
-                position: Option<solana_program::pubkey::Pubkey>,
-                position_mint: Option<solana_program::pubkey::Pubkey>,
-                position_token_account: Option<solana_program::pubkey::Pubkey>,
-                whirlpool: Option<solana_program::pubkey::Pubkey>,
-                token2022_program: Option<solana_program::pubkey::Pubkey>,
-                system_program: Option<solana_program::pubkey::Pubkey>,
-                associated_token_program: Option<solana_program::pubkey::Pubkey>,
-                metadata_update_auth: Option<solana_program::pubkey::Pubkey>,
+            funder: Option<solana_pubkey::Pubkey>,
+                owner: Option<solana_pubkey::Pubkey>,
+                position: Option<solana_pubkey::Pubkey>,
+                position_mint: Option<solana_pubkey::Pubkey>,
+                position_token_account: Option<solana_pubkey::Pubkey>,
+                whirlpool: Option<solana_pubkey::Pubkey>,
+                token2022_program: Option<solana_pubkey::Pubkey>,
+                system_program: Option<solana_pubkey::Pubkey>,
+                associated_token_program: Option<solana_pubkey::Pubkey>,
+                metadata_update_auth: Option<solana_pubkey::Pubkey>,
                         tick_lower_index: Option<i32>,
                 tick_upper_index: Option<i32>,
                 with_token_metadata_extension: Option<bool>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl OpenPositionWithTokenExtensionsBuilder {
@@ -170,53 +182,56 @@ impl OpenPositionWithTokenExtensionsBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn funder(&mut self, funder: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn funder(&mut self, funder: solana_pubkey::Pubkey) -> &mut Self {
                         self.funder = Some(funder);
                     self
     }
             #[inline(always)]
-    pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn owner(&mut self, owner: solana_pubkey::Pubkey) -> &mut Self {
                         self.owner = Some(owner);
                     self
     }
             #[inline(always)]
-    pub fn position(&mut self, position: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position(&mut self, position: solana_pubkey::Pubkey) -> &mut Self {
                         self.position = Some(position);
                     self
     }
             #[inline(always)]
-    pub fn position_mint(&mut self, position_mint: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position_mint(&mut self, position_mint: solana_pubkey::Pubkey) -> &mut Self {
                         self.position_mint = Some(position_mint);
                     self
     }
             #[inline(always)]
-    pub fn position_token_account(&mut self, position_token_account: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position_token_account(&mut self, position_token_account: solana_pubkey::Pubkey) -> &mut Self {
                         self.position_token_account = Some(position_token_account);
                     self
     }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
-            #[inline(always)]
-    pub fn token2022_program(&mut self, token2022_program: solana_program::pubkey::Pubkey) -> &mut Self {
+            /// `[optional account, default to 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb']`
+#[inline(always)]
+    pub fn token2022_program(&mut self, token2022_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.token2022_program = Some(token2022_program);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.system_program = Some(system_program);
                     self
     }
-            #[inline(always)]
-    pub fn associated_token_program(&mut self, associated_token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+            /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+#[inline(always)]
+    pub fn associated_token_program(&mut self, associated_token_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.associated_token_program = Some(associated_token_program);
                     self
     }
-            #[inline(always)]
-    pub fn metadata_update_auth(&mut self, metadata_update_auth: solana_program::pubkey::Pubkey) -> &mut Self {
+            /// `[optional account, default to '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr']`
+#[inline(always)]
+    pub fn metadata_update_auth(&mut self, metadata_update_auth: solana_pubkey::Pubkey) -> &mut Self {
                         self.metadata_update_auth = Some(metadata_update_auth);
                     self
     }
@@ -237,18 +252,18 @@ impl OpenPositionWithTokenExtensionsBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = OpenPositionWithTokenExtensions {
                               funder: self.funder.expect("funder is not set"),
                                         owner: self.owner.expect("owner is not set"),
@@ -256,10 +271,10 @@ impl OpenPositionWithTokenExtensionsBuilder {
                                         position_mint: self.position_mint.expect("position_mint is not set"),
                                         position_token_account: self.position_token_account.expect("position_token_account is not set"),
                                         whirlpool: self.whirlpool.expect("whirlpool is not set"),
-                                        token2022_program: self.token2022_program.expect("token2022_program is not set"),
-                                        system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-                                        associated_token_program: self.associated_token_program.expect("associated_token_program is not set"),
-                                        metadata_update_auth: self.metadata_update_auth.expect("metadata_update_auth is not set"),
+                                        token2022_program: self.token2022_program.unwrap_or(solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")),
+                                        system_program: self.system_program.unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                                        associated_token_program: self.associated_token_program.unwrap_or(solana_pubkey::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")),
+                                        metadata_update_auth: self.metadata_update_auth.unwrap_or(solana_pubkey::pubkey!("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")),
                       };
           let args = OpenPositionWithTokenExtensionsInstructionArgs {
                                                               tick_lower_index: self.tick_lower_index.clone().expect("tick_lower_index is not set"),
@@ -275,77 +290,77 @@ impl OpenPositionWithTokenExtensionsBuilder {
   pub struct OpenPositionWithTokenExtensionsCpiAccounts<'a, 'b> {
           
                     
-              pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+              pub funder: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+              pub owner: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub position: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub position_mint: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position_mint: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub position_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position_token_account: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token2022_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token2022_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub system_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub associated_token_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub metadata_update_auth: &'b solana_program::account_info::AccountInfo<'a>,
+              pub metadata_update_auth: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `open_position_with_token_extensions` CPI instruction.
 pub struct OpenPositionWithTokenExtensionsCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+          pub funder: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+          pub owner: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub position: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub position_mint: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position_mint: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub position_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position_token_account: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token2022_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token2022_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub system_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub associated_token_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub metadata_update_auth: &'b solana_program::account_info::AccountInfo<'a>,
+          pub metadata_update_auth: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: OpenPositionWithTokenExtensionsInstructionArgs,
   }
 
 impl<'a, 'b> OpenPositionWithTokenExtensionsCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: OpenPositionWithTokenExtensionsCpiAccounts<'a, 'b>,
               args: OpenPositionWithTokenExtensionsInstructionArgs,
       ) -> Self {
@@ -365,15 +380,15 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -382,61 +397,61 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(10+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new(
+                            accounts.push(solana_instruction::AccountMeta::new(
             *self.funder.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.position.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.position_mint.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.position_token_account.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token2022_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.associated_token_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.metadata_update_auth.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&OpenPositionWithTokenExtensionsInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = OpenPositionWithTokenExtensionsInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -456,9 +471,9 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -483,7 +498,7 @@ pub struct OpenPositionWithTokenExtensionsCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> OpenPositionWithTokenExtensionsCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(OpenPositionWithTokenExtensionsCpiBuilderInstruction {
       __program: program,
               funder: None,
@@ -504,52 +519,52 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn funder(&mut self, funder: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn funder(&mut self, funder: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.funder = Some(funder);
                     self
     }
       #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.owner = Some(owner);
                     self
     }
       #[inline(always)]
-    pub fn position(&mut self, position: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position(&mut self, position: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position = Some(position);
                     self
     }
       #[inline(always)]
-    pub fn position_mint(&mut self, position_mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position_mint(&mut self, position_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position_mint = Some(position_mint);
                     self
     }
       #[inline(always)]
-    pub fn position_token_account(&mut self, position_token_account: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position_token_account(&mut self, position_token_account: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position_token_account = Some(position_token_account);
                     self
     }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn token2022_program(&mut self, token2022_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token2022_program(&mut self, token2022_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token2022_program = Some(token2022_program);
                     self
     }
       #[inline(always)]
-    pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn system_program(&mut self, system_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
       #[inline(always)]
-    pub fn associated_token_program(&mut self, associated_token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn associated_token_program(&mut self, associated_token_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.associated_token_program = Some(associated_token_program);
                     self
     }
       #[inline(always)]
-    pub fn metadata_update_auth(&mut self, metadata_update_auth: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn metadata_update_auth(&mut self, metadata_update_auth: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.metadata_update_auth = Some(metadata_update_auth);
                     self
     }
@@ -570,7 +585,7 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -579,17 +594,17 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = OpenPositionWithTokenExtensionsInstructionArgs {
                                                               tick_lower_index: self.instruction.tick_lower_index.clone().expect("tick_lower_index is not set"),
                                                                   tick_upper_index: self.instruction.tick_upper_index.clone().expect("tick_upper_index is not set"),
@@ -625,21 +640,21 @@ impl<'a, 'b> OpenPositionWithTokenExtensionsCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct OpenPositionWithTokenExtensionsCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            funder: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                position_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                position_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token2022_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                metadata_update_auth: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            funder: Option<&'b solana_account_info::AccountInfo<'a>>,
+                owner: Option<&'b solana_account_info::AccountInfo<'a>>,
+                position: Option<&'b solana_account_info::AccountInfo<'a>>,
+                position_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
+                position_token_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+                whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token2022_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                associated_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                metadata_update_auth: Option<&'b solana_account_info::AccountInfo<'a>>,
                         tick_lower_index: Option<i32>,
                 tick_upper_index: Option<i32>,
                 with_token_metadata_extension: Option<bool>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

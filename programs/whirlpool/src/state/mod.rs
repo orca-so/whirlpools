@@ -28,4 +28,4 @@ pub use position_bundle::*;
 pub use tick::*;
 pub use tick_array::*;
 pub use token_badge::*;
-pub use zeroed_tick_array::*;
+pub(crate) use zeroed_tick_array::*;

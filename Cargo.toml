@@ -9,3 +9,6 @@ exclude = [
     "docs",
     "examples"
 ]
+
+[profile.release]
+overflow-checks = true

@@ -149,7 +149,8 @@ pub fn initialize_token_metadata_extension<'info>(
     let token_mint_unpacked =
         StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
     let new_account_len = token_mint_unpacked
-        .try_get_new_account_len::<spl_token_metadata_interface::state::TokenMetadata>(&metadata)?;
+        .try_get_new_account_len_for_variable_len_extension::<spl_token_metadata_interface::state::TokenMetadata>(&metadata)?;
+
     let new_rent_exempt_minimum = Rent::get()?.minimum_balance(new_account_len);
     let additional_rent = new_rent_exempt_minimum.saturating_sub(position_mint.lamports());
     drop(token_mint_data); // CPI call will borrow the account data

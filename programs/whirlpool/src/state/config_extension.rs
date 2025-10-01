@@ -112,8 +112,6 @@ mod whirlpools_config_extension_update_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -126,7 +124,7 @@ mod data_layout_tests {
         let mut config_extension_data = [0u8; WhirlpoolsConfigExtension::LEN];
         let mut offset = 0;
         config_extension_data[offset..offset + 8]
-            .copy_from_slice(&WhirlpoolsConfigExtension::discriminator());
+            .copy_from_slice(WhirlpoolsConfigExtension::DISCRIMINATOR);
         offset += 8;
         config_extension_data[offset..offset + 32]
             .copy_from_slice(&config_extension_whirlpools_config.to_bytes());

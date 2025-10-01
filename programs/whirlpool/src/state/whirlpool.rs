@@ -560,8 +560,6 @@ pub mod whirlpool_builder {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -610,7 +608,7 @@ mod data_layout_tests {
 
         let mut whirlpool_data = [0u8; Whirlpool::LEN];
         let mut offset = 0;
-        whirlpool_data[offset..offset + 8].copy_from_slice(&Whirlpool::discriminator());
+        whirlpool_data[offset..offset + 8].copy_from_slice(Whirlpool::DISCRIMINATOR);
         offset += 8;
         whirlpool_data[offset..offset + 32]
             .copy_from_slice(&whirlpool_whirlpools_config.to_bytes());

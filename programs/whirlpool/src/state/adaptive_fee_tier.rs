@@ -151,8 +151,6 @@ impl AdaptiveFeeTier {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -178,8 +176,7 @@ mod data_layout_tests {
 
         let mut adaptive_fee_tier_data = [0u8; AdaptiveFeeTier::LEN];
         let mut offset = 0;
-        adaptive_fee_tier_data[offset..offset + 8]
-            .copy_from_slice(&AdaptiveFeeTier::discriminator());
+        adaptive_fee_tier_data[offset..offset + 8].copy_from_slice(AdaptiveFeeTier::DISCRIMINATOR);
         offset += 8;
         adaptive_fee_tier_data[offset..offset + 32].copy_from_slice(&whirlpools_config.to_bytes());
         offset += 32;

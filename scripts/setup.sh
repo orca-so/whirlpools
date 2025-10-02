@@ -7,8 +7,8 @@ set -euo pipefail
 NVM_VERSION="v0.40.3"
 NODE_VERSION="22"
 YARN_VERSION="4.6.0"
-SOLANA_VERSION="v1.17.25"
-ANCHOR_VERSION="v0.29.0"
+SOLANA_VERSION="v2.1.0"
+ANCHOR_VERSION="v0.31.1"
 RUST_VERSION_FOR_PROJECT="1.84.0"
 
 # Resolve repo root from this script's directory

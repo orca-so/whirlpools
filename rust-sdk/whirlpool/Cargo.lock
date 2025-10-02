@@ -2594,7 +2594,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "5.0.0"
+version = "5.0.1"
 dependencies = [
  "async-trait",
  "base64 0.20.0",
@@ -2623,15 +2623,21 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "5.0.0"
+version = "5.0.1"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
  "num-traits",
  "orca_whirlpools_core",
+ "solana-account",
  "solana-account-decoder",
+ "solana-account-info",
  "solana-client",
+ "solana-cpi",
+ "solana-instruction",
  "solana-program",
+ "solana-program-error",
+ "solana-pubkey",
  "solana-sdk",
  "thiserror 2.0.12",
 ]

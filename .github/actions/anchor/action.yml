@@ -21,10 +21,10 @@ inputs:
     default: 'v22.8.0'
   solana-version:
     description: 'The version of solana to use.'
-    default: 'v1.17.25'
+    default: 'v2.1.0'
   anchor-version:
     description: 'The version of anchor to use.'
-    default: 'v0.29.0'
+    default: 'v0.31.1'
 
 runs:
   using: "composite"

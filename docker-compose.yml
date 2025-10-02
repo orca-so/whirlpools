@@ -3,7 +3,7 @@ name: whirlpools
 services:
 
   build-solana-program:
-    image: backpackapp/build:v0.29.0
+    image: backpackapp/build:v0.31.1
     working_dir: /usr/src/whirlpools
     command: >
       anchor build

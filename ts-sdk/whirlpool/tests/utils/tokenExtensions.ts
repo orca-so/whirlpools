@@ -10,7 +10,7 @@ import {
   getSetTransferFeeInstruction,
   getInitializeScaledUiAmountMintInstruction,
 } from "@solana-program/token-2022";
-import type { Address, IInstruction } from "@solana/kit";
+import type { Address, Instruction } from "@solana/kit";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import { DEFAULT_ADDRESS } from "../../src/config";
@@ -26,7 +26,7 @@ export async function setupAtaTE(
     tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
   });
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getCreateAssociatedTokenIdempotentInstruction({
@@ -58,7 +58,7 @@ export async function setupMintTE(
   config: { decimals?: number; extensions?: ExtensionArgs[] } = {},
 ): Promise<Address> {
   const keypair = getNextKeypair();
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getCreateAccountInstruction({
@@ -135,14 +135,14 @@ export async function setupMintTEFee(
         __kind: "TransferFeeConfig",
         transferFeeConfigAuthority: DEFAULT_ADDRESS,
         withdrawWithheldAuthority: DEFAULT_ADDRESS,
-        withheldAmount: 0n,
+        withheldAmount: BigInt(0),
         olderTransferFee: {
-          epoch: 0n,
+          epoch: BigInt(0),
           maximumFee: 1e9,
           transferFeeBasisPoints: 100,
         },
         newerTransferFee: {
-          epoch: 10n,
+          epoch: BigInt(10),
           maximumFee: 1e9,
           transferFeeBasisPoints: 150,
         },
@@ -160,7 +160,7 @@ export async function setupMintTEScaledUiAmount(
       {
         __kind: "ScaledUiAmountConfig",
         authority: DEFAULT_ADDRESS,
-        newMultiplierEffectiveTimestamp: 0n,
+        newMultiplierEffectiveTimestamp: BigInt(0),
         multiplier: 1,
         newMultiplier: 1,
       },

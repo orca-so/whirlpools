@@ -6,7 +6,7 @@
     "@orca-so/whirlpools-sdk": "*"
   },
   "scripts": {
-    "build": "RUSTUP_TOOLCHAIN=1.78.0 anchor build",
-    "test": "RUSTUP_TOOLCHAIN=1.78.0 anchor test --skip-build"
+    "build": "anchor build",
+    "test": "anchor test --skip-build"
   }
 }

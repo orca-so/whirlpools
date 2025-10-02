@@ -7,12 +7,7 @@ import type {
   Wallet,
   WrappedSolAccountCreateMethod,
 } from "@orca-so/common-sdk";
-import type {
-  Commitment,
-  Connection,
-  PublicKey,
-  SendOptions,
-} from "@solana/web3.js";
+import type { Commitment, Connection, SendOptions } from "@solana/web3.js";
 import type { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import type { WhirlpoolAccountFetcherInterface } from "./network/public";
@@ -62,7 +57,6 @@ export class WhirlpoolContext {
   public static from(
     connection: Connection,
     wallet: Wallet,
-    programId: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(
       connection,
     ),
@@ -73,7 +67,7 @@ export class WhirlpoolContext {
       commitment: opts.userDefaultConfirmCommitment || "confirmed",
       preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
     });
-    const program = new Program(WhirlpoolIDL as Idl, programId, anchorProvider);
+    const program = new Program(WhirlpoolIDL as Idl, anchorProvider);
     return new WhirlpoolContext(
       anchorProvider,
       anchorProvider.wallet,
@@ -105,14 +99,13 @@ export class WhirlpoolContext {
 
   public static withProvider(
     provider: AnchorProvider,
-    programId: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(
       provider.connection,
     ),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
   ): WhirlpoolContext {
-    const program = new Program(WhirlpoolIDL as Idl, programId, provider);
+    const program = new Program(WhirlpoolIDL as Idl, provider);
     return new WhirlpoolContext(
       provider,
       provider.wallet,

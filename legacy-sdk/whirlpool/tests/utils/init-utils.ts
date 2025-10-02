@@ -588,7 +588,7 @@ export async function openPosition(
   owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair,
   withTokenExtensions: boolean = false,
-): ReturnType<typeof openPositionWithOptMetadata> {
+): Promise<Awaited<ReturnType<typeof openPositionWithOptMetadata>>> {
   if (withTokenExtensions) {
     const result = await openPositionWithTokenExtensions(
       ctx,

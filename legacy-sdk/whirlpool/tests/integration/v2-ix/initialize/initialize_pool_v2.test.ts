@@ -730,7 +730,7 @@ describe("initialize_pool_v2", () => {
           let eventVerified = false;
           let detectedSignature = null;
           const listener = ctx.program.addEventListener(
-            "PoolInitialized",
+            "poolInitialized",
             (event, _slot, signature) => {
               detectedSignature = signature;
               // verify

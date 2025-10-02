@@ -8,11 +8,11 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "0.29.0",
+    "@coral-xyz/anchor": "0.31.0",
     "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
-    "@solana/spl-token": "0.4.13",
-    "@solana/web3.js": "^1.90.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
     "@types/bn.js": "^5.1.0",
     "bs58": "^6.0.0",
     "decimal.js": "^10.5.0",

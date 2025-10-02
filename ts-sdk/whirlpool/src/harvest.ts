@@ -12,7 +12,7 @@ import type {
   Rpc,
   GetAccountInfoApi,
   Address,
-  IInstruction,
+  Instruction,
   TransactionSigner,
   GetMultipleAccountsApi,
   GetMinimumBalanceForRentExemptionApi,
@@ -58,7 +58,7 @@ export type HarvestPositionInstructions = {
   rewardsQuote: CollectRewardsQuote;
 
   /** A list of instructions required to harvest the position. */
-  instructions: IInstruction[];
+  instructions: Instruction[];
 };
 
 /**
@@ -213,7 +213,7 @@ export async function harvestPositionInstructions(
       Array.from(requiredMints),
     );
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
   instructions.push(...createInstructions);
 
   if (position.data.liquidity > 0n) {
@@ -292,8 +292,8 @@ export async function harvestAllPositionFees(): Promise<Signature[]> {
   const owner = getPayer();
 
   const positions = await fetchPositionsForOwner(rpc, owner.address);
-  const instructionSets: IInstruction[][] = [];
-  let currentInstructions: IInstruction[] = [];
+  const instructionSets: Instruction[][] = [];
+  let currentInstructions: Instruction[] = [];
   for (const position of positions) {
     if ("positionMint" in position.data) {
       const { instructions } = await harvestPositionInstructions(

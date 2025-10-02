@@ -1,31 +1,32 @@
 import type {
-  CompilableTransactionMessage,
-  IInstruction,
+  Instruction,
   Rpc,
   SolanaRpcApi,
   TransactionSigner,
-  IAccountLookupMeta,
-  IAccountMeta,
-  ITransactionMessageWithFeePayerSigner,
+  AccountLookupMeta,
+  AccountMeta,
+  TransactionMessageWithFeePayerSigner,
+  BaseTransactionMessage,
   TransactionMessageWithBlockhashLifetime,
+  TransactionMessageWithFeePayer,
   TransactionVersion,
 } from "@solana/kit";
-import { getComputeUnitEstimateForTransactionMessageFactory } from "@solana/kit";
+import { estimateComputeUnitLimitFactory } from "@solana-program/compute-budget";
 import { getJitoConfig, getRpcConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { processJitoTipForTxMessage } from "./jito";
 import { processComputeBudgetForTxMessage } from "./computeBudget";
 
-export type TxMessage = ITransactionMessageWithFeePayerSigner<
+export type TxMessage = TransactionMessageWithFeePayerSigner<
   string,
   TransactionSigner<string>
 > &
   Omit<
     TransactionMessageWithBlockhashLifetime &
       Readonly<{
-        instructions: readonly IInstruction<
+        instructions: readonly Instruction<
           string,
-          readonly (IAccountLookupMeta<string, string> | IAccountMeta<string>)[]
+          readonly (AccountLookupMeta<string, string> | AccountMeta<string>)[]
         >[];
         version: TransactionVersion;
       }>,
@@ -34,7 +35,6 @@ export type TxMessage = ITransactionMessageWithFeePayerSigner<
 
 export async function addPriorityInstructions(
   message: TxMessage,
-
   signer: TransactionSigner,
 ) {
   const { rpcUrl, chainId } = getRpcConfig();
@@ -51,9 +51,9 @@ export async function addPriorityInstructions(
 
 async function getComputeUnitsForTxMessage(
   rpc: Rpc<SolanaRpcApi>,
-  txMessage: CompilableTransactionMessage,
+  txMessage: BaseTransactionMessage & TransactionMessageWithFeePayer,
 ) {
-  const estimator = getComputeUnitEstimateForTransactionMessageFactory({
+  const estimator = estimateComputeUnitLimitFactory({
     rpc,
   });
 

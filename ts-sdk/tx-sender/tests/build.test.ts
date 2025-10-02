@@ -3,9 +3,9 @@ import { buildTransaction } from "../src/buildTransaction";
 import { vi } from "vitest";
 import * as jito from "../src/jito";
 import type {
-  IInstruction,
-  ITransactionMessageWithFeePayerSigner,
+  Instruction,
   Address,
+  TransactionMessageWithFeePayerSigner,
 } from "@solana/kit";
 import {
   generateKeyPairSigner,
@@ -54,8 +54,8 @@ vi.mock("@solana/kit", async () => {
     ...actual,
     signTransactionMessageWithSigners: vi.fn().mockImplementation(
       (
-        message: ITransactionMessageWithFeePayerSigner & {
-          instructions: IInstruction[];
+        message: TransactionMessageWithFeePayerSigner & {
+          instructions: Instruction[];
           version: 0;
         },
       ) => encodeTransaction(message.instructions, message.feePayer),
@@ -73,7 +73,7 @@ vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 describe("Build Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
-  const amount = 1_000_000n;
+  const amount = BigInt(1_000_000);
 
   setPriorityFeeSetting({ type: "none" });
   setJitoTipSetting({ type: "none" });
@@ -118,7 +118,7 @@ describe("Build Transaction", async () => {
     setJitoTipSetting({ type: "none" });
     setPriorityFeeSetting({
       type: "exact",
-      amountLamports: 10_000n,
+      amountLamports: BigInt(10_000),
     });
     const message = await buildTransaction([transferInstruction], signer);
 
@@ -141,7 +141,7 @@ describe("Build Transaction", async () => {
     setJitoTipSetting({ type: "none" });
     setPriorityFeeSetting({
       type: "dynamic",
-      maxCapLamports: 100_000n,
+      maxCapLamports: BigInt(100_000),
     });
 
     const message = await buildTransaction([transferInstruction], signer);
@@ -169,7 +169,7 @@ describe("Build Transaction", async () => {
     setPriorityFeeSetting({ type: "none" });
     setJitoTipSetting({
       type: "exact",
-      amountLamports: 10_000n,
+      amountLamports: BigInt(10_000),
     });
     const message = await buildTransaction([transferInstruction], signer);
 

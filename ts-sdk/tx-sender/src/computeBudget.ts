@@ -2,7 +2,7 @@ import {
   getSetComputeUnitPriceInstruction,
   getSetComputeUnitLimitInstruction,
 } from "@solana-program/compute-budget";
-import type { IInstruction, MicroLamports, Address, Slot } from "@solana/kit";
+import type { Address, Instruction, MicroLamports, Slot } from "@solana/kit";
 import {
   prependTransactionMessageInstruction,
   isWritableRole,
@@ -71,7 +71,7 @@ export async function processComputeBudgetForTxMessage(
   return message;
 }
 
-function getWritableAccounts(ixs: readonly IInstruction[]) {
+function getWritableAccounts(ixs: readonly Instruction[]) {
   const writable = new Set<Address>();
   ixs.forEach((ix) => {
     if (ix.accounts) {
@@ -84,7 +84,7 @@ function getWritableAccounts(ixs: readonly IInstruction[]) {
 }
 
 async function calculateDynamicPriorityFees(
-  instructions: readonly IInstruction[],
+  instructions: readonly Instruction[],
   rpcUrl: string,
   supportsPercentile: boolean,
   percentile: Percentile,

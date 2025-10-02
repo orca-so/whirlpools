@@ -14,7 +14,7 @@ import type {
   GetAccountInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
-  IInstruction,
+  Instruction,
   MaybeAccount,
   Rpc,
   TransactionSigner,
@@ -56,10 +56,10 @@ export const NATIVE_MINT = address(
  */
 type TokenAccountInstructions = {
   /** A list of instructions required to create the necessary token accounts. */
-  createInstructions: IInstruction[];
+  createInstructions: Instruction[];
 
   /** A list of instructions to clean up (e.g., close) token accounts after the transaction is complete. */
-  cleanupInstructions: IInstruction[];
+  cleanupInstructions: Instruction[];
 
   /** A mapping of mint addresses to their respective token account addresses. */
   tokenAccountAddresses: Record<Address, Address>;
@@ -115,8 +115,8 @@ export async function prepareTokenAccountsInstructions(
   const tokenAccounts = await fetchAllMaybeToken(rpc, tokenAddresses);
   const tokenAccountAddresses: Record<Address, Address> = {};
 
-  const createInstructions: IInstruction[] = [];
-  const cleanupInstructions: IInstruction[] = [];
+  const createInstructions: Instruction[] = [];
+  const cleanupInstructions: Instruction[] = [];
 
   for (let i = 0; i < mints.length; i++) {
     const mint = mints[i];

@@ -1,4 +1,4 @@
-import type { Address, IInstruction, VariableSizeDecoder } from "@solana/kit";
+import type { Address, Instruction, VariableSizeDecoder } from "@solana/kit";
 import {
   address,
   appendTransactionMessageInstructions,
@@ -57,7 +57,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             new Uint8Array(),
             toBytes(SYSTEM_PROGRAM_ADDRESS),
             false,
-            0n,
+            BigInt(0),
           ),
         ],
         [
@@ -67,7 +67,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             new Uint8Array(),
             toBytes(SYSTEM_PROGRAM_ADDRESS),
             false,
-            0n,
+            BigInt(0),
           ),
         ],
         [
@@ -77,7 +77,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             new Uint8Array(),
             toBytes(SYSTEM_PROGRAM_ADDRESS),
             false,
-            0n,
+            BigInt(0),
           ),
         ],
       ],
@@ -98,12 +98,12 @@ export async function deleteAccount(address: Address) {
       new Uint8Array(),
       toBytes(SYSTEM_PROGRAM_ADDRESS),
       false,
-      0n,
+      BigInt(0),
     ),
   );
 }
 
-export async function sendTransaction(ixs: IInstruction[]) {
+export async function sendTransaction(ixs: Instruction[]) {
   const blockhash = await rpc.getLatestBlockhash().send();
   // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
   // so that we can fire two seemingly identical transactions in a row.
@@ -149,7 +149,7 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   const testContext = await getTestContext();
   const account = await testContext.banksClient.getAccount(toBytes(address));
 
-  if (account == null || account.lamports === 0n) {
+  if (account == null || account.lamports === BigInt(0)) {
     return null as T;
   }
 
@@ -158,7 +158,7 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
     executable: false,
     lamports: lamports(account.lamports),
     owner: getAddressDecoder().decode(account.owner),
-    rentEpoch: 0n,
+    rentEpoch: BigInt(0),
     space: account.data.length,
   } as T;
 }
@@ -253,12 +253,12 @@ async function mockTransport<T>(
     case "getEpochInfo":
       const slot = await testContext.banksClient.getSlot();
       return getResponse<T>({
-        epoch: slot / 32n,
+        epoch: slot / BigInt(32),
         absoluteSlot: slot,
         blockheight: slot,
-        slotIndex: slot % 32n,
-        slotsInEpoch: 32n,
-        transactionCount: 0n,
+        slotIndex: slot % BigInt(32),
+        slotsInEpoch: BigInt(32),
+        transactionCount: BigInt(0),
       });
     case "getBalance":
       const addressForBalance = config.payload.params[0];

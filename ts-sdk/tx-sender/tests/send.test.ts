@@ -7,8 +7,8 @@ import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
 import type {
-  IInstruction,
-  ITransactionMessageWithFeePayerSigner,
+  Instruction,
+  TransactionMessageWithFeePayerSigner,
   Rpc,
   SolanaRpcApi,
   TransactionMessageBytes,
@@ -32,8 +32,8 @@ vi.mock("@solana/kit", async () => {
     ...actual,
     signTransactionMessageWithSigners: vi.fn().mockImplementation(
       (
-        message: ITransactionMessageWithFeePayerSigner & {
-          instructions: IInstruction[];
+        message: TransactionMessageWithFeePayerSigner & {
+          instructions: Instruction[];
           version: 0;
         },
       ) => encodeTransaction(message.instructions, message.feePayer),
@@ -53,7 +53,7 @@ vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 describe("Send Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
-  const amount = 1_000_000n;
+  const amount = BigInt(1_000_000);
 
   const _rpc = await setRpc(rpcUrl, false); // testing that returning the rpc works
   setPriorityFeeSetting({ type: "none" });

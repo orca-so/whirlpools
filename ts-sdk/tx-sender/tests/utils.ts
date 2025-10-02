@@ -2,7 +2,7 @@ import type {
   FullySignedTransaction,
   TransactionWithBlockhashLifetime,
   TransactionSigner,
-  IInstruction,
+  Instruction,
   TransactionMessageBytes,
   SignatureBytes,
   Rpc,
@@ -20,6 +20,7 @@ import {
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { rpcFromUrl } from "../src/compatibility";
 
@@ -49,7 +50,7 @@ export async function decodeTransaction(base64EncodedTransaction: string) {
 
 // this is a copy of the function in buildTransaction.ts (allowing us to avoid exporting it)
 async function prepareTransactionMessage(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   rpc: Rpc<SolanaRpcApi>,
   signer: TransactionSigner,
 ) {
@@ -67,11 +68,9 @@ async function prepareTransactionMessage(
 }
 
 export async function encodeTransaction(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   feePayer: TransactionSigner,
-): Promise<
-  Readonly<FullySignedTransaction & TransactionWithBlockhashLifetime>
-> {
+) {
   const rpc = rpcFromUrl("https://");
   const message = await prepareTransactionMessage(instructions, rpc, feePayer);
   const compiledMessage = compileTransactionMessage(message);

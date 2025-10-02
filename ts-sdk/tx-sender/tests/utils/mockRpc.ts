@@ -17,7 +17,7 @@ export const mockRpcMethods = {
     send: vi.fn().mockResolvedValue([
       {
         prioritizationFee: BigInt(1000),
-        slot: 123456789n,
+        slot: BigInt(123456789),
       },
     ]),
   }),
@@ -50,7 +50,7 @@ export const mockRpcMethods = {
     send: vi.fn().mockResolvedValue({
       value: [
         {
-          slot: 123456789n,
+          slot: BigInt(123456789),
           confirmations: 1,
           err: null,
           confirmationStatus: "confirmed",

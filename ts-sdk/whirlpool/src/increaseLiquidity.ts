@@ -33,7 +33,7 @@ import type {
   GetEpochInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
-  IInstruction,
+  Instruction,
   Lamports,
   Rpc,
   TransactionSigner,
@@ -94,7 +94,7 @@ export type IncreaseLiquidityInstructions = {
   quote: IncreaseLiquidityQuote;
 
   /** List of Solana transaction instructions to execute. */
-  instructions: IInstruction[];
+  instructions: Instruction[];
 };
 
 function getIncreaseLiquidityQuote(
@@ -208,7 +208,7 @@ export async function increaseLiquidityInstructions(
     transferFeeA,
     transferFeeB,
   );
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   const lowerTickArrayStartIndex = getTickArrayStartTickIndex(
     position.data.tickLowerIndex,
@@ -308,7 +308,7 @@ async function internalOpenPositionInstructions(
     funder.address !== DEFAULT_ADDRESS,
     "Either supply a funder or set the default funder",
   );
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   const rent = await fetchSysvarRent(rpc);
   let nonRefundableRent: bigint = 0n;

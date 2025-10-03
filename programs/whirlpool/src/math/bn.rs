@@ -19,39 +19,12 @@
 /// U256 reference:
 /// https://crates.parity.io/sp_core/struct.U256.html
 ///
-use borsh::{BorshDeserialize, BorshSerialize};
 use std::borrow::BorrowMut;
 use std::convert::TryInto;
-use std::io::{Read, Write};
 use std::mem::size_of;
 use uint::construct_uint;
 
 use crate::errors::ErrorCode;
-
-macro_rules! impl_borsh_serialize_for_bn {
-    ($type: ident) => {
-        impl BorshSerialize for $type {
-            #[inline]
-            fn serialize<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
-                let bytes = self.to_le_bytes();
-                writer.write_all(&bytes)
-            }
-        }
-    };
-}
-
-macro_rules! impl_borsh_deserialize_for_bn {
-    ($type: ident) => {
-        impl BorshDeserialize for $type {
-            #[inline]
-            fn deserialize_reader<R: Read>(reader: &mut R) -> std::io::Result<Self> {
-                let mut bytes = [0u8; core::mem::size_of::<$type>()];
-                reader.read_exact(&mut bytes)?;
-                Ok(<$type>::from_le_bytes(bytes))
-            }
-        }
-    };
-}
 
 construct_uint! {
     // U256 of [u64; 4]
@@ -80,9 +53,6 @@ impl U256 {
         bytes
     }
 }
-
-impl_borsh_deserialize_for_bn!(U256);
-impl_borsh_serialize_for_bn!(U256);
 
 #[cfg(test)]
 mod test_u256 {

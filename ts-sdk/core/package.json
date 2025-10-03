@@ -16,7 +16,7 @@
     "../../LICENSE"
   ],
   "scripts": {
-    "build": "wasm-pack build --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
+    "build": "wasm-pack build --mode force --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
     "test": "tsc --noEmit && vitest run tests",
     "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore",
     "deploy": "../../scripts/deploy-npm",

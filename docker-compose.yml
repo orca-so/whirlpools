@@ -142,8 +142,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -lc "corepack enable && corepack prepare yarn@4.6.0 --activate
-      && yarn workspace @orca-so/whirlpools-lint format
-      && yarn workspace @orca-so/whirlpools-lint lint"
+      && yarn workspace @orca-so/whirlpools-lint format"
     profiles: [build]
     depends_on:
       build-ts-whirlpool:

@@ -57,7 +57,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             new Uint8Array(),
             toBytes(SYSTEM_PROGRAM_ADDRESS),
             false,
-            BigInt(0),
+            0n,
           ),
         ],
         [
@@ -67,7 +67,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             new Uint8Array(),
             toBytes(SYSTEM_PROGRAM_ADDRESS),
             false,
-            BigInt(0),
+            0n,
           ),
         ],
         [
@@ -77,7 +77,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             new Uint8Array(),
             toBytes(SYSTEM_PROGRAM_ADDRESS),
             false,
-            BigInt(0),
+            0n,
           ),
         ],
       ],
@@ -98,7 +98,7 @@ export async function deleteAccount(address: Address) {
       new Uint8Array(),
       toBytes(SYSTEM_PROGRAM_ADDRESS),
       false,
-      BigInt(0),
+      0n,
     ),
   );
 }
@@ -149,7 +149,7 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   const testContext = await getTestContext();
   const account = await testContext.banksClient.getAccount(toBytes(address));
 
-  if (account == null || account.lamports === BigInt(0)) {
+  if (account == null || account.lamports === 0n) {
     return null as T;
   }
 
@@ -158,7 +158,7 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
     executable: false,
     lamports: lamports(account.lamports),
     owner: getAddressDecoder().decode(account.owner),
-    rentEpoch: BigInt(0),
+    rentEpoch: 0n,
     space: account.data.length,
   } as T;
 }
@@ -253,12 +253,12 @@ async function mockTransport<T>(
     case "getEpochInfo":
       const slot = await testContext.banksClient.getSlot();
       return getResponse<T>({
-        epoch: slot / BigInt(32),
+        epoch: slot / 32n,
         absoluteSlot: slot,
         blockheight: slot,
-        slotIndex: slot % BigInt(32),
-        slotsInEpoch: BigInt(32),
-        transactionCount: BigInt(0),
+        slotIndex: slot % 32n,
+        slotsInEpoch: 32n,
+        transactionCount: 0n,
       });
     case "getBalance":
       const addressForBalance = config.payload.params[0];

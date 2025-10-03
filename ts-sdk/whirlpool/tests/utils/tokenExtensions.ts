@@ -135,14 +135,14 @@ export async function setupMintTEFee(
         __kind: "TransferFeeConfig",
         transferFeeConfigAuthority: DEFAULT_ADDRESS,
         withdrawWithheldAuthority: DEFAULT_ADDRESS,
-        withheldAmount: BigInt(0),
+        withheldAmount: 0n,
         olderTransferFee: {
-          epoch: BigInt(0),
+          epoch: 0n,
           maximumFee: 1e9,
           transferFeeBasisPoints: 100,
         },
         newerTransferFee: {
-          epoch: BigInt(10),
+          epoch: 10n,
           maximumFee: 1e9,
           transferFeeBasisPoints: 150,
         },
@@ -160,7 +160,7 @@ export async function setupMintTEScaledUiAmount(
       {
         __kind: "ScaledUiAmountConfig",
         authority: DEFAULT_ADDRESS,
-        newMultiplierEffectiveTimestamp: BigInt(0),
+        newMultiplierEffectiveTimestamp: 0n,
         multiplier: 1,
         newMultiplier: 1,
       },

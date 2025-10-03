@@ -73,7 +73,7 @@ vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 describe("Build Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
-  const amount = BigInt(1_000_000);
+  const amount = 1_000_000n;
 
   setPriorityFeeSetting({ type: "none" });
   setJitoTipSetting({ type: "none" });
@@ -118,7 +118,7 @@ describe("Build Transaction", async () => {
     setJitoTipSetting({ type: "none" });
     setPriorityFeeSetting({
       type: "exact",
-      amountLamports: BigInt(10_000),
+      amountLamports: 10_000n,
     });
     const message = await buildTransaction([transferInstruction], signer);
 
@@ -141,7 +141,7 @@ describe("Build Transaction", async () => {
     setJitoTipSetting({ type: "none" });
     setPriorityFeeSetting({
       type: "dynamic",
-      maxCapLamports: BigInt(100_000),
+      maxCapLamports: 100_000n,
     });
 
     const message = await buildTransaction([transferInstruction], signer);
@@ -169,7 +169,7 @@ describe("Build Transaction", async () => {
     setPriorityFeeSetting({ type: "none" });
     setJitoTipSetting({
       type: "exact",
-      amountLamports: BigInt(10_000),
+      amountLamports: 10_000n,
     });
     const message = await buildTransaction([transferInstruction], signer);
 

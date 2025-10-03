@@ -53,7 +53,7 @@ vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 describe("Send Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
-  const amount = BigInt(1_000_000);
+  const amount = 1_000_000n;
 
   const _rpc = await setRpc(rpcUrl, false); // testing that returning the rpc works
   setPriorityFeeSetting({ type: "none" });

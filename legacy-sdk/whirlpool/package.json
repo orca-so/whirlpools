@@ -6,9 +6,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
-    "@coral-xyz/anchor": "~0.29.0",
-    "@solana/spl-token": "^0.4.13",
-    "@solana/web3.js": "^1.90.0"
+    "@coral-xyz/anchor": "~0.31.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4"
   },
   "dependencies": {
     "@orca-so/common-sdk": "*",
@@ -16,10 +16,10 @@
     "tiny-invariant": "^1.3.1"
   },
   "devDependencies": {
-    "@coral-xyz/anchor": "~0.29.0",
+    "@coral-xyz/anchor": "~0.31.0",
     "@orca-so/whirlpools-program": "*",
-    "@solana/spl-token": "^0.4.13",
-    "@solana/web3.js": "^1.90.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
     "@types/bn.js": "~5.1.6",
     "@types/jest": "^29.5.14",
     "typescript": "^5.8.2"

@@ -1,9 +1,8 @@
-import type { Idl } from "@coral-xyz/anchor";
 import { BorshAccountsCoder } from "@coral-xyz/anchor";
+import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import type { ParsableEntity } from "@orca-so/common-sdk";
 import { staticImplements } from "@orca-so/common-sdk";
 import type { AccountInfo, PublicKey } from "@solana/web3.js";
-import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import type {
   FeeTierData,
   LockConfigData,
@@ -18,7 +17,7 @@ import type {
   AdaptiveFeeTierData,
   OracleData,
 } from "../../types/public";
-import { AccountName, toTick } from "../../types/public";
+import { AccountName, toTick, WHIRLPOOL_IDL } from "../../types/public";
 
 /**
  * @category Network
@@ -102,7 +101,7 @@ export class ParsableTickArray {
     const discriminator = accountData.data.subarray(0, 8);
     if (
       discriminator.equals(
-        BorshAccountsCoder.accountDiscriminator(AccountName.DynamicTickArray),
+        WhirlpoolCoder.accountDiscriminator(AccountName.DynamicTickArray),
       )
     ) {
       try {
@@ -124,7 +123,7 @@ export class ParsableTickArray {
 
     if (
       discriminator.equals(
-        BorshAccountsCoder.accountDiscriminator(AccountName.TickArray),
+        WhirlpoolCoder.accountDiscriminator(AccountName.TickArray),
       )
     ) {
       try {
@@ -297,15 +296,17 @@ export class ParsableOracle {
   }
 }
 
-const WhirlpoolCoder = new BorshAccountsCoder(WhirlpoolIDL as Idl);
+const WhirlpoolCoder = new BorshAccountsCoder(
+  convertIdlToCamelCase(WHIRLPOOL_IDL),
+);
 
 function parseAnchorAccount(
   accountName: AccountName,
   accountData: AccountInfo<Buffer>,
 ) {
   const data = accountData.data;
-  const discriminator = BorshAccountsCoder.accountDiscriminator(accountName);
-  if (discriminator.compare(data.slice(0, 8))) {
+  const discriminator = WhirlpoolCoder.accountDiscriminator(accountName);
+  if (discriminator.compare(data.subarray(0, 8))) {
     console.error("incorrect account name during parsing");
     return null;
   }

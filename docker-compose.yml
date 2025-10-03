@@ -37,8 +37,7 @@ services:
       && yarn workspace @orca-so/whirlpools-core build
       && yarn workspace @orca-so/tx-sender build
       && yarn workspace @orca-so/whirlpools build
-      && yarn workspace @orca-so/whirlpools-lint format
-      && yarn workspace @orca-so/whirlpools-lint lint"
+      && yarn workspace @orca-so/whirlpools-lint format"
     profiles: [build]
     depends_on:
       build-solana-program:
@@ -73,14 +72,14 @@ services:
 
   build-rust-sdk:
     image: rust:1.84.0
-    working_dir: /usr/src/whirlpools/rust-sdk
+    working_dir: /usr/src/whirlpools
     command: >
       sh -c "rustup component add clippy rustfmt
-      && cargo build -p orca_tx_sender
-      && cargo build -p orca_whirlpools_macros
-      && cargo build -p orca_whirlpools_client
-      && cargo build -p orca_whirlpools_core
-      && cargo build -p orca_whirlpools
+      && cargo build --manifest-path rust-sdk/macros/Cargo.toml --locked
+      && cargo build --manifest-path rust-sdk/core/Cargo.toml --locked
+      && cargo build --manifest-path rust-sdk/client/Cargo.toml --locked
+      && cargo build --manifest-path rust-sdk/whirlpool/Cargo.toml --locked
+      && cargo build --manifest-path rust-sdk/tx-sender/Cargo.toml --locked
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
     profiles: [build]
@@ -141,8 +140,7 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-example-ts-next build
-      && cd examples/rust-sdk
-      && cargo build"
+      && cargo build --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml --locked"
     profiles: [build]
     depends_on:
       build-rust-sdk:

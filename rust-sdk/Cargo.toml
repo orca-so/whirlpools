@@ -1,3 +1,0 @@
-[workspace]
-members = ["macros", "core", "client", "tx-sender", "whirlpool"]
-resolver = "2"

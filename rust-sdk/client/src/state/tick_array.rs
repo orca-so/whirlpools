@@ -23,19 +23,17 @@ impl TickArray {
             ));
         }
         let discriminator = &bytes[0..8];
-        match discriminator {
-            FIXED_TICK_ARRAY_DISCRIMINATOR => {
-                let tick_array = FixedTickArray::from_bytes(bytes)?;
-                Ok(Self::FixedTickArray(tick_array))
-            }
-            DYNAMIC_TICK_ARRAY_DISCRIMINATOR => {
-                let dynamic_tick_array = DynamicTickArray::from_bytes(bytes)?;
-                Ok(Self::DynamicTickArray(dynamic_tick_array))
-            }
-            _ => Err(std::io::Error::new(
+        if discriminator == FIXED_TICK_ARRAY_DISCRIMINATOR {
+            let tick_array = FixedTickArray::from_bytes(bytes)?;
+            Ok(Self::FixedTickArray(tick_array))
+        } else if discriminator == DYNAMIC_TICK_ARRAY_DISCRIMINATOR {
+            let dynamic_tick_array = DynamicTickArray::from_bytes(bytes)?;
+            Ok(Self::DynamicTickArray(dynamic_tick_array))
+        } else {
+            Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "Invalid account discriminator",
-            )),
+            ))
         }
     }
 }

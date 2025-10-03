@@ -35,6 +35,8 @@ services:
     depends_on:
       yarn-install:
         condition: service_completed_successfully
+      build-solana-program:
+        condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules:ro

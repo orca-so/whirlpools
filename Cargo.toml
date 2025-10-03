@@ -11,4 +11,4 @@ exclude = [
 ]
 
 [profile.release]
-overflow-checks = true
+overflow-checks = false

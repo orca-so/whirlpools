@@ -7,6 +7,7 @@ use anchor_spl::token_2022::spl_token_2022::{
     self, extension::ExtensionType, instruction::AuthorityType,
 };
 use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token2022};
+use anchor_spl::token_2022_extensions::spl_token_metadata_interface;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::system_instruction::transfer;

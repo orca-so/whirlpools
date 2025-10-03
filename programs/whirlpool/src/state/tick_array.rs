@@ -803,7 +803,7 @@ mod tick_array_misc_tests {
             true,
             &mut lamports,
             &mut data,
-            &spl_token::ID,
+            &anchor_spl::token::spl_token::ID,
             true,
             Epoch::default(),
         );
@@ -825,7 +825,7 @@ mod tick_array_misc_tests {
             true,
             &mut lamports,
             &mut data,
-            &spl_token::ID,
+            &anchor_spl::token::spl_token::ID,
             true,
             Epoch::default(),
         );

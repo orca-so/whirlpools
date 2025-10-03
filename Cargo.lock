@@ -3331,8 +3331,6 @@ dependencies = [
  "serde_with 2.3.3",
  "solana-program",
  "solana-security-txt",
- "spl-token",
- "spl-token-metadata-interface",
  "spl-transfer-hook-interface",
  "uint",
 ]

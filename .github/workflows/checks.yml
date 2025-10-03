@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Setup Anchor
       uses: ./.github/actions/anchor
     - name: Install dependencies
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Remove Unnecessary Files
       uses: ./.github/actions/cleanup
     - name: Setup Anchor
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Setup Anchor
       uses: ./.github/actions/anchor
     - name: Install dependencies
@@ -70,7 +70,7 @@ jobs:
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
     - name: Install dependencies

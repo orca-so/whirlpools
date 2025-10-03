@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
+    "build:fast": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
     "generate": "node ./codama.js",
     "test": "vitest run tests",
     "deploy": "../../scripts/deploy-npm",
@@ -38,6 +39,7 @@
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.1.0",
     "codama": "^1.2.11",
+    "tsup": "^8.4.0",
     "typescript": "^5.8.2"
   },
   "repository": {

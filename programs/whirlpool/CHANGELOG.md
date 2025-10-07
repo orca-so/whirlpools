@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-program
 
+## 0.6.1
+
+### Patch Changes
+
+- [#1061](https://github.com/orca-so/whirlpools/pull/1061) [`648f632`](https://github.com/orca-so/whirlpools/commit/648f632d10edfe6b692e3e3ec8f9beb6fcd507fa) Thanks [@yugure-orca](https://github.com/yugure-orca)! - make ADMINS (solana) multi-sig
+
 ## 0.6.0
 
 ### Minor Changes

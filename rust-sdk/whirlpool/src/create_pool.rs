@@ -222,21 +222,22 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
 
+    let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let pool_address = get_whirlpool_address(
-        &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,
+        &whirlpools_config_address,
         &token_a,
         &token_b,
         tick_spacing,
     )?
     .0;
 
-    let fee_tier = get_fee_tier_address(&*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?, tick_spacing)?.0;
+    let fee_tier = get_fee_tier_address(&whirlpools_config_address, tick_spacing)?.0;
 
     let token_badge_a =
-        get_token_badge_address(&*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?, &token_a)?.0;
+        get_token_badge_address(&whirlpools_config_address, &token_a)?.0;
 
     let token_badge_b =
-        get_token_badge_address(&*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?, &token_b)?.0;
+        get_token_badge_address(&whirlpools_config_address, &token_b)?.0;
 
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();
@@ -246,7 +247,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
     instructions.push(
         InitializePoolV2 {
-            whirlpools_config: *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,
+            whirlpools_config: whirlpools_config_address,
             token_mint_a: token_a,
             token_mint_b: token_b,
             token_badge_a,

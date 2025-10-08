@@ -152,9 +152,9 @@ function createBankrunConnection(context: ProgramTestContext) {
       tx: Transaction | VersionedTransaction,
       options?: any
     ) => {
-      // Set recent blockhash if not already set
+      // Always get fresh blockhash to avoid duplicate transaction detection
       const result = await context.banksClient.getLatestBlockhash();
-      if (tx instanceof Transaction && !tx.recentBlockhash) {
+      if (tx instanceof Transaction) {
         tx.recentBlockhash = result?.[0];
       }
 
@@ -182,6 +182,11 @@ function createBankrunConnection(context: ProgramTestContext) {
               signature = "bankrun-tx-sig";
             }
           }
+
+          // Advance slot to get fresh blockhash for next transaction
+          const currentSlot = await context.banksClient.getSlot();
+          await context.warpToSlot(currentSlot + 1n);
+
           return signature;
         } else {
           // Transaction failed

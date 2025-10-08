@@ -16,9 +16,6 @@ updates:
           - "@solana/web3.js"
           - "@solana/spl-token"
           - "@coral-xyz/*"
-        update-types:
-          - "minor"
-          - "patch"
       solana-v2-core:
         applies-to: version-updates
         patterns:
@@ -26,25 +23,16 @@ updates:
         exclude-patterns:
           - "@solana/web3.js"
           - "@solana/spl-token"
-        update-types:
-          - "minor"
-          - "patch"
       solana-v2-programs:
         applies-to: version-updates
         patterns:
           - "@solana-program/*"
-        update-types:
-          - "minor"
-          - "patch"
       typescript-types:
         applies-to: version-updates
         dependency-type: "development"
         patterns:
           - "@types/*"
           - "typescript"
-        update-types:
-          - "minor"
-          - "patch"
       build-tools:
         applies-to: version-updates
         dependency-type: "development"
@@ -54,27 +42,18 @@ updates:
           - "@rollup/*"
           - "@swc/*"
           - "@webassemblyjs/*"
-        update-types:
-          - "minor"
-          - "patch"
       testing-tools:
         applies-to: version-updates
         dependency-type: "development"
         patterns:
           - "@vitest/*"
           - "vitest"
-        update-types:
-          - "minor"
-          - "patch"
       monorepo-tools:
         applies-to: version-updates
         dependency-type: "development"
         patterns:
           - "@nx/*"
           - "nx"
-        update-types:
-          - "minor"
-          - "patch"
       linting-tools:
         applies-to: version-updates
         dependency-type: "development"
@@ -83,25 +62,16 @@ updates:
           - "@eslint-community/*"
           - "@typescript-eslint/*"
           - "eslint"
-        update-types:
-          - "minor"
-          - "patch"
       release-tools:
         applies-to: version-updates
         dependency-type: "development"
         patterns:
           - "@changesets/*"
-        update-types:
-          - "minor"
-          - "patch"
       codegen-tools:
         applies-to: version-updates
         patterns:
           - "@codama/*"
           - "codama"
-        update-types:
-          - "minor"
-          - "patch"
       docs-tooling:
         applies-to: version-updates
         dependency-type: "development"
@@ -110,17 +80,11 @@ updates:
           - "@img/*"
           - "@csstools/*"
           - "@svgr/*"
-        update-types:
-          - "minor"
-          - "patch"
       nextjs:
         applies-to: version-updates
         patterns:
           - "@next/*"
           - "next"
-        update-types:
-          - "minor"
-          - "patch"
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
@@ -132,40 +96,25 @@ updates:
         patterns:
           - "solana-*"
           - "spl-*"
-        update-types:
-          - "minor"
-          - "patch"
       anchor-framework:
         applies-to: version-updates
         patterns:
           - "anchor-*"
-        update-types:
-          - "minor"
-          - "patch"
       serialization:
         applies-to: version-updates
         patterns:
           - "serde*"
           - "borsh*"
-        update-types:
-          - "minor"
-          - "patch"
       cryptography:
         applies-to: version-updates
         patterns:
           - "ark-*"
           - "ed25519*"
           - "libsecp256k1*"
-        update-types:
-          - "minor"
-          - "patch"
       wasm-tooling:
         applies-to: version-updates
         patterns:
           - "wasm-*"
-        update-types:
-          - "minor"
-          - "patch"
   - package-ecosystem: "cargo"
     directories: ["/examples/*", "/rust-sdk/*", "/ts-sdk/*"]
     schedule:
@@ -177,17 +126,11 @@ updates:
         patterns:
           - "solana-*"
           - "spl-*"
-        update-types:
-          - "minor"
-          - "patch"
       serialization:
         applies-to: version-updates
         patterns:
           - "serde*"
           - "borsh*"
-        update-types:
-          - "minor"
-          - "patch"
       cryptography:
         applies-to: version-updates
         patterns:
@@ -195,25 +138,16 @@ updates:
           - "ed25519*"
           - "libsecp256k1*"
           - "curve25519*"
-        update-types:
-          - "minor"
-          - "patch"
       wasm-tooling:
         applies-to: version-updates
         patterns:
           - "wasm-*"
-        update-types:
-          - "minor"
-          - "patch"
       async-runtime:
         applies-to: version-updates
         patterns:
           - "tokio*"
           - "futures*"
           - "async-*"
-        update-types:
-          - "minor"
-          - "patch"
     versioning-strategy: lockfile-only
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -22,10 +22,13 @@
     "@solana/web3.js": "^1.90.0",
     "@types/bn.js": "~5.1.6",
     "@types/jest": "^29.5.14",
-    "typescript": "^5.8.2"
+    "solana-bankrun": "^0.4.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
   },
   "scripts": {
     "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
+    "test:bankrun": "vitest run tests/integration-bankrun",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },

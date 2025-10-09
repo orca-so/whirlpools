@@ -363,9 +363,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.87"
+version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d556ec1359574147ec0c4fc5eb525f3f23263a592b1a9c07e0a75b427de55c97"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2002,6 +2002,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "io-uring"
+version = "0.7.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "046fa2d4d00aea763528b4950358d0ead425372445dc8ff86312b3c69ff7727b"
+dependencies = [
+ "bitflags 2.9.0",
+ "cfg-if",
+ "libc",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2594,7 +2605,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "5.0.0"
+version = "5.0.1"
 dependencies = [
  "async-trait",
  "base64 0.20.0",
@@ -2613,9 +2624,9 @@ dependencies = [
  "solana-sdk",
  "solana-version",
  "spl-associated-token-account",
- "spl-memo 5.0.0",
+ "spl-memo 6.0.0",
  "spl-pod 0.5.0",
- "spl-token 6.0.0",
+ "spl-token 7.0.0",
  "spl-token-2022 7.0.0",
  "tokio",
  "toml 0.7.8",
@@ -2623,7 +2634,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "5.0.0"
+version = "5.0.1"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -6345,17 +6356,19 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.43.0"
+version = "1.46.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d61fa4ffa3de412bfea335c6ecff681de2b609ba3c77ef3e00e521813a9ed9e"
+checksum = "0cc3a2344dafbe23a245241fe8b09735b521110d30fcefbbd5feb1797ca35d17"
 dependencies = [
  "backtrace",
  "bytes",
+ "io-uring",
  "libc",
  "mio",
  "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
+ "slab",
  "socket2",
  "tokio-macros",
  "windows-sys 0.52.0",

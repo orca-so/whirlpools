@@ -68,6 +68,22 @@ mod token_badge_initialize_tests {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = TokenBadge::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:TokenBadge | sha256sum | cut -c 1-16
+        // 74dbcce5f974ff96
+        assert_eq!(discriminator, [116, 219, 204, 229, 249, 116, 255, 150]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

@@ -333,6 +333,22 @@ pub mod position_builder {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = Position::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:Position | sha256sum | cut -c 1-16
+        // aabc8fe47a40f7d0
+        assert_eq!(discriminator, [170, 188, 143, 228, 122, 64, 247, 208]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

@@ -559,6 +559,22 @@ pub mod whirlpool_builder {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = Whirlpool::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:Whirlpool | sha256sum | cut -c 1-16
+        // 3f95d10ce1806309
+        assert_eq!(discriminator, [63, 149, 209, 12, 225, 128, 99, 9]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

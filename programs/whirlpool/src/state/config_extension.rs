@@ -62,6 +62,22 @@ mod whirlpools_config_extension_initialize_tests {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = WhirlpoolsConfigExtension::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:WhirlpoolsConfigExtension | sha256sum | cut -c 1-16
+        // 0263d7a3f01a993a
+        assert_eq!(discriminator, [2, 99, 215, 163, 240, 26, 153, 58]);
+    }
+}
+
+#[cfg(test)]
 mod whirlpools_config_extension_update_tests {
     use super::*;
     use std::str::FromStr;

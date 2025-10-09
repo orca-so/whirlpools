@@ -150,6 +150,22 @@ impl AdaptiveFeeTier {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = AdaptiveFeeTier::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:AdaptiveFeeTier | sha256sum | cut -c 1-16
+        // 931090742f92952e
+        assert_eq!(discriminator, [147, 16, 144, 116, 47, 146, 149, 46]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

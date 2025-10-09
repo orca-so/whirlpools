@@ -86,6 +86,22 @@ mod lock_config_initialize_tests {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = LockConfig::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:LockConfig | sha256sum | cut -c 1-16
+        // 6a2fee9f7c0ca0c0
+        assert_eq!(discriminator, [106, 47, 238, 159, 124, 12, 160, 192]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

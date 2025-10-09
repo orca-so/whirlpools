@@ -270,6 +270,22 @@ mod position_bundle_open_and_close_tests {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = PositionBundle::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:PositionBundle | sha256sum | cut -c 1-16
+        // 81a9af41b95f2064
+        assert_eq!(discriminator, [129, 169, 175, 65, 185, 95, 32, 100]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

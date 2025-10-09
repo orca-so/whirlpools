@@ -254,6 +254,22 @@ mod array_update_tests {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = TickArray::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:TickArray | sha256sum | cut -c 1-16
+        // 4561bdbe6e0742bb
+        assert_eq!(discriminator, [69, 97, 189, 190, 110, 7, 66, 187]);
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use crate::state::NUM_REWARDS;
 

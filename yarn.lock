@@ -4022,6 +4022,7 @@ __metadata:
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/kit": "npm:^2.1.0"
     codama: "npm:^1.2.11"
+    tsup: "npm:^8.4.0"
     typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/kit": ^2.1.0
@@ -4288,6 +4289,7 @@ __metadata:
     "@solana/kit": "npm:^2.1.0"
     "@solana/sysvars": "npm:^2.1.0"
     solana-bankrun: "npm:^0.4.0"
+    tsup: "npm:^8.4.0"
     typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/kit": ^2.1.0

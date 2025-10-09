@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-rust",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "scripts": {
     "build": "cargo build",
     "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && cargo test --lib",

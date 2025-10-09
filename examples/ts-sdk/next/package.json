@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@orca-so/whirlpools": "*",
-    "@solana/kit": "^3.0.3",
-    "@solana/react": "^3.0.3",
+    "@solana/kit": "^2.1.0",
+    "@solana/react": "2.1.0",
     "@wallet-standard/react": "^1.0.1",
     "clsx": "^2.1.1",
     "next": "^15.2.4",

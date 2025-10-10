@@ -273,6 +273,34 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         transactionCount: null,
       };
     },
+    getTokenAccountBalance: async (pubkey: PublicKey) => {
+      // Get the token account data
+      const account = litesvm.getAccount(pubkey);
+      if (!account || account.data.length < 72) {
+        throw new Error("Invalid token account");
+      }
+      // Convert Uint8Array to Buffer for reading methods
+      const data = Buffer.from(account.data);
+      // Read amount from token account (bytes 64-72 for amount as u64)
+      const amount = data.readBigUInt64LE(64);
+      // Get the mint to determine decimals
+      const mintPubkey = new PublicKey(data.slice(0, 32));
+      const mintAccount = litesvm.getAccount(mintPubkey);
+      let decimals = 0;
+      if (mintAccount && mintAccount.data.length >= 45) {
+        const mintData = Buffer.from(mintAccount.data);
+        decimals = mintData.readUInt8(44);
+      }
+      return {
+        context: { slot: 1 },
+        value: {
+          amount: amount.toString(),
+          decimals,
+          uiAmount: Number(amount) / Math.pow(10, decimals),
+          uiAmountString: (Number(amount) / Math.pow(10, decimals)).toString(),
+        },
+      };
+    },
   };
 }
 

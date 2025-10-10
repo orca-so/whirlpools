@@ -15,6 +15,16 @@ import * as path from "path";
 
 let _litesvm: LiteSVM | null = null;
 
+// Event listener management for onLogs simulation
+interface LogListener {
+  id: number;
+  filter: any;
+  callback: (logs: any, ctx: any) => void;
+}
+
+let _logListeners: LogListener[] = [];
+let _nextListenerId = 1;
+
 /**
  * Initialize LiteSVM with the Whirlpool program and external dependencies
  */
@@ -24,6 +34,10 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   }
 
   console.log("🚀 Starting LiteSVM...");
+
+  // Reset event listeners
+  _logListeners = [];
+  _nextListenerId = 1;
 
   // Create a new LiteSVM instance with standard functionality
   _litesvm = new LiteSVM();
@@ -228,6 +242,27 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           }
         }
 
+        // Get transaction logs and trigger any registered listeners
+        const logs = result.logs();
+
+        // Trigger log listeners (simulate WebSocket events)
+        const logsPayload = {
+          signature,
+          err: null,
+          logs,
+        };
+        const context = { slot: Number(litesvm.getClock().slot) };
+
+        // Trigger all registered log listeners
+        for (const listener of _logListeners) {
+          try {
+            // Call the listener callback asynchronously (simulate event emission)
+            setImmediate(() => listener.callback(logsPayload, context));
+          } catch (err) {
+            console.error("Error in log listener:", err);
+          }
+        }
+
         // Expire the blockhash to get a fresh one for next transaction
         litesvm.expireBlockhash();
 
@@ -333,6 +368,24 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           uiAmountString: (Number(amount) / Math.pow(10, decimals)).toString(),
         },
       };
+    },
+    onLogs: (
+      filter: any,
+      callback: (logs: any, ctx: any) => void,
+      commitment?: any
+    ) => {
+      // Register a log listener
+      const listenerId = _nextListenerId++;
+      _logListeners.push({
+        id: listenerId,
+        filter,
+        callback,
+      });
+      return listenerId;
+    },
+    removeOnLogsListener: async (listenerId: number) => {
+      // Remove a log listener by ID
+      _logListeners = _logListeners.filter((l) => l.id !== listenerId);
     },
   };
 }

@@ -33,15 +33,15 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 import {
   getRemainingAccountsInfoDecoder,
   getRemainingAccountsInfoEncoder,
   type RemainingAccountsInfo,
   type RemainingAccountsInfoArgs,
-} from '../types';
+} from "../types";
 
 export const COLLECT_PROTOCOL_FEES_V2_DISCRIMINATOR = new Uint8Array([
   103, 128, 222, 134, 114, 200, 22, 200,
@@ -49,7 +49,7 @@ export const COLLECT_PROTOCOL_FEES_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectProtocolFeesV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_PROTOCOL_FEES_V2_DISCRIMINATOR
+    COLLECT_PROTOCOL_FEES_V2_DISCRIMINATOR,
   );
 }
 
@@ -70,7 +70,7 @@ export type CollectProtocolFeesV2Instruction<
   TAccountTokenProgramB extends string | AccountMeta<string> = string,
   TAccountMemoProgram extends
     | string
-    | AccountMeta<string> = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
+    | AccountMeta<string> = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -129,24 +129,24 @@ export type CollectProtocolFeesV2InstructionDataArgs = {
 export function getCollectProtocolFeesV2InstructionDataEncoder(): Encoder<CollectProtocolFeesV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       [
-        'remainingAccountsInfo',
+        "remainingAccountsInfo",
         getOptionEncoder(getRemainingAccountsInfoEncoder()),
       ],
     ]),
     (value) => ({
       ...value,
       discriminator: COLLECT_PROTOCOL_FEES_V2_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getCollectProtocolFeesV2InstructionDataDecoder(): Decoder<CollectProtocolFeesV2InstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     [
-      'remainingAccountsInfo',
+      "remainingAccountsInfo",
       getOptionDecoder(getRemainingAccountsInfoDecoder()),
     ],
   ]);
@@ -158,7 +158,7 @@ export function getCollectProtocolFeesV2InstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getCollectProtocolFeesV2InstructionDataEncoder(),
-    getCollectProtocolFeesV2InstructionDataDecoder()
+    getCollectProtocolFeesV2InstructionDataDecoder(),
   );
 }
 
@@ -188,7 +188,7 @@ export type CollectProtocolFeesV2Input<
   tokenProgramA: Address<TAccountTokenProgramA>;
   tokenProgramB: Address<TAccountTokenProgramB>;
   memoProgram?: Address<TAccountMemoProgram>;
-  remainingAccountsInfo: CollectProtocolFeesV2InstructionDataArgs['remainingAccountsInfo'];
+  remainingAccountsInfo: CollectProtocolFeesV2InstructionDataArgs["remainingAccountsInfo"];
 };
 
 export function getCollectProtocolFeesV2Instruction<
@@ -220,7 +220,7 @@ export function getCollectProtocolFeesV2Instruction<
     TAccountTokenProgramB,
     TAccountMemoProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): CollectProtocolFeesV2Instruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -277,10 +277,10 @@ export function getCollectProtocolFeesV2Instruction<
   // Resolve default values.
   if (!accounts.memoProgram.value) {
     accounts.memoProgram.value =
-      'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr' as Address<'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'>;
+      "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr" as Address<"MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -297,7 +297,7 @@ export function getCollectProtocolFeesV2Instruction<
       getAccountMeta(accounts.memoProgram),
     ],
     data: getCollectProtocolFeesV2InstructionDataEncoder().encode(
-      args as CollectProtocolFeesV2InstructionDataArgs
+      args as CollectProtocolFeesV2InstructionDataArgs,
     ),
     programAddress,
   } as CollectProtocolFeesV2Instruction<
@@ -345,11 +345,11 @@ export function parseCollectProtocolFeesV2Instruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCollectProtocolFeesV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -374,7 +374,7 @@ export function parseCollectProtocolFeesV2Instruction<
       memoProgram: getNextAccount(),
     },
     data: getCollectProtocolFeesV2InstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

@@ -52,7 +52,9 @@ export async function fetchAllLockConfigWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: LockConfigFilter[]
 ): Promise<Account<LockConfig>[]> {
-  const discriminator = getBase58Decoder().decode(LOCK_CONFIG_DISCRIMINATOR) as Base58EncodedBytes;
+  const discriminator = getBase58Decoder().decode(
+    LOCK_CONFIG_DISCRIMINATOR,
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

@@ -31,13 +31,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from '../shared';
+} from "../shared";
 
 export const DELETE_TOKEN_BADGE_DISCRIMINATOR = new Uint8Array([
   53, 146, 68, 8, 18, 117, 17, 185,
@@ -45,7 +45,7 @@ export const DELETE_TOKEN_BADGE_DISCRIMINATOR = new Uint8Array([
 
 export function getDeleteTokenBadgeDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    DELETE_TOKEN_BADGE_DISCRIMINATOR
+    DELETE_TOKEN_BADGE_DISCRIMINATOR,
   );
 }
 
@@ -95,14 +95,14 @@ export type DeleteTokenBadgeInstructionDataArgs = {};
 
 export function getDeleteTokenBadgeInstructionDataEncoder(): FixedSizeEncoder<DeleteTokenBadgeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: DELETE_TOKEN_BADGE_DISCRIMINATOR })
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: DELETE_TOKEN_BADGE_DISCRIMINATOR }),
   );
 }
 
 export function getDeleteTokenBadgeInstructionDataDecoder(): FixedSizeDecoder<DeleteTokenBadgeInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -112,7 +112,7 @@ export function getDeleteTokenBadgeInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getDeleteTokenBadgeInstructionDataEncoder(),
-    getDeleteTokenBadgeInstructionDataDecoder()
+    getDeleteTokenBadgeInstructionDataDecoder(),
   );
 }
 
@@ -149,7 +149,7 @@ export async function getDeleteTokenBadgeInstructionAsync<
     TAccountTokenBadge,
     TAccountReceiver
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   DeleteTokenBadgeInstruction<
     TProgramAddress,
@@ -193,17 +193,17 @@ export async function getDeleteTokenBadgeInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([116, 111, 107, 101, 110, 95, 98, 97, 100, 103, 101])
+          new Uint8Array([116, 111, 107, 101, 110, 95, 98, 97, 100, 103, 101]),
         ),
         getAddressEncoder().encode(
-          expectAddress(accounts.whirlpoolsConfig.value)
+          expectAddress(accounts.whirlpoolsConfig.value),
         ),
         getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -259,7 +259,7 @@ export function getDeleteTokenBadgeInstruction<
     TAccountTokenBadge,
     TAccountReceiver
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): DeleteTokenBadgeInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -295,7 +295,7 @@ export function getDeleteTokenBadgeInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -340,11 +340,11 @@ export function parseDeleteTokenBadgeInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedDeleteTokenBadgeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

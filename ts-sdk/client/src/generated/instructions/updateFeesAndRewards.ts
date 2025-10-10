@@ -26,9 +26,9 @@ import {
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const UPDATE_FEES_AND_REWARDS_DISCRIMINATOR = new Uint8Array([
   154, 230, 250, 13, 236, 209, 75, 223,
@@ -36,7 +36,7 @@ export const UPDATE_FEES_AND_REWARDS_DISCRIMINATOR = new Uint8Array([
 
 export function getUpdateFeesAndRewardsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_FEES_AND_REWARDS_DISCRIMINATOR
+    UPDATE_FEES_AND_REWARDS_DISCRIMINATOR,
   );
 }
 
@@ -75,17 +75,17 @@ export type UpdateFeesAndRewardsInstructionDataArgs = {};
 
 export function getUpdateFeesAndRewardsInstructionDataEncoder(): FixedSizeEncoder<UpdateFeesAndRewardsInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: UPDATE_FEES_AND_REWARDS_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getUpdateFeesAndRewardsInstructionDataDecoder(): FixedSizeDecoder<UpdateFeesAndRewardsInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -95,7 +95,7 @@ export function getUpdateFeesAndRewardsInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getUpdateFeesAndRewardsInstructionDataEncoder(),
-    getUpdateFeesAndRewardsInstructionDataDecoder()
+    getUpdateFeesAndRewardsInstructionDataDecoder(),
   );
 }
 
@@ -124,7 +124,7 @@ export function getUpdateFeesAndRewardsInstruction<
     TAccountTickArrayLower,
     TAccountTickArrayUpper
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): UpdateFeesAndRewardsInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -147,7 +147,7 @@ export function getUpdateFeesAndRewardsInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -186,11 +186,11 @@ export function parseUpdateFeesAndRewardsInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateFeesAndRewardsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -207,7 +207,7 @@ export function parseUpdateFeesAndRewardsInstruction<
       tickArrayUpper: getNextAccount(),
     },
     data: getUpdateFeesAndRewardsInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

@@ -31,9 +31,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const SET_REWARD_AUTHORITY_DISCRIMINATOR = new Uint8Array([
   34, 39, 183, 252, 83, 28, 85, 127,
@@ -41,7 +41,7 @@ export const SET_REWARD_AUTHORITY_DISCRIMINATOR = new Uint8Array([
 
 export function getSetRewardAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_REWARD_AUTHORITY_DISCRIMINATOR
+    SET_REWARD_AUTHORITY_DISCRIMINATOR,
   );
 }
 
@@ -79,17 +79,20 @@ export type SetRewardAuthorityInstructionDataArgs = { rewardIndex: number };
 export function getSetRewardAuthorityInstructionDataEncoder(): FixedSizeEncoder<SetRewardAuthorityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['rewardIndex', getU8Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["rewardIndex", getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_REWARD_AUTHORITY_DISCRIMINATOR })
+    (value) => ({
+      ...value,
+      discriminator: SET_REWARD_AUTHORITY_DISCRIMINATOR,
+    }),
   );
 }
 
 export function getSetRewardAuthorityInstructionDataDecoder(): FixedSizeDecoder<SetRewardAuthorityInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['rewardIndex', getU8Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["rewardIndex", getU8Decoder()],
   ]);
 }
 
@@ -99,7 +102,7 @@ export function getSetRewardAuthorityInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetRewardAuthorityInstructionDataEncoder(),
-    getSetRewardAuthorityInstructionDataDecoder()
+    getSetRewardAuthorityInstructionDataDecoder(),
   );
 }
 
@@ -111,7 +114,7 @@ export type SetRewardAuthorityInput<
   whirlpool: Address<TAccountWhirlpool>;
   rewardAuthority: TransactionSigner<TAccountRewardAuthority>;
   newRewardAuthority: Address<TAccountNewRewardAuthority>;
-  rewardIndex: SetRewardAuthorityInstructionDataArgs['rewardIndex'];
+  rewardIndex: SetRewardAuthorityInstructionDataArgs["rewardIndex"];
 };
 
 export function getSetRewardAuthorityInstruction<
@@ -125,7 +128,7 @@ export function getSetRewardAuthorityInstruction<
     TAccountRewardAuthority,
     TAccountNewRewardAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetRewardAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -155,7 +158,7 @@ export function getSetRewardAuthorityInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -163,7 +166,7 @@ export function getSetRewardAuthorityInstruction<
       getAccountMeta(accounts.newRewardAuthority),
     ],
     data: getSetRewardAuthorityInstructionDataEncoder().encode(
-      args as SetRewardAuthorityInstructionDataArgs
+      args as SetRewardAuthorityInstructionDataArgs,
     ),
     programAddress,
   } as SetRewardAuthorityInstruction<
@@ -193,11 +196,11 @@ export function parseSetRewardAuthorityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetRewardAuthorityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -213,7 +216,7 @@ export function parseSetRewardAuthorityInstruction<
       newRewardAuthority: getNextAccount(),
     },
     data: getSetRewardAuthorityInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const SET_FEE_AUTHORITY_DISCRIMINATOR = new Uint8Array([
   31, 1, 50, 87, 237, 101, 97, 132,
@@ -39,7 +39,7 @@ export const SET_FEE_AUTHORITY_DISCRIMINATOR = new Uint8Array([
 
 export function getSetFeeAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_FEE_AUTHORITY_DISCRIMINATOR
+    SET_FEE_AUTHORITY_DISCRIMINATOR,
   );
 }
 
@@ -75,14 +75,14 @@ export type SetFeeAuthorityInstructionDataArgs = {};
 
 export function getSetFeeAuthorityInstructionDataEncoder(): FixedSizeEncoder<SetFeeAuthorityInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: SET_FEE_AUTHORITY_DISCRIMINATOR })
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: SET_FEE_AUTHORITY_DISCRIMINATOR }),
   );
 }
 
 export function getSetFeeAuthorityInstructionDataDecoder(): FixedSizeDecoder<SetFeeAuthorityInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -92,7 +92,7 @@ export function getSetFeeAuthorityInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetFeeAuthorityInstructionDataEncoder(),
-    getSetFeeAuthorityInstructionDataDecoder()
+    getSetFeeAuthorityInstructionDataDecoder(),
   );
 }
 
@@ -117,7 +117,7 @@ export function getSetFeeAuthorityInstruction<
     TAccountFeeAuthority,
     TAccountNewFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetFeeAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -144,7 +144,7 @@ export function getSetFeeAuthorityInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -180,11 +180,11 @@ export function parseSetFeeAuthorityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetFeeAuthorityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

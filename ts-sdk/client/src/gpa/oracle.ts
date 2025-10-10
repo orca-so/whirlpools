@@ -128,7 +128,9 @@ export async function fetchAllOracleWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: OracleFilter[]
 ): Promise<Account<Oracle>[]> {
-  const discriminator = getBase58Decoder().decode(ORACLE_DISCRIMINATOR) as Base58EncodedBytes;
+  const discriminator = getBase58Decoder().decode(
+    ORACLE_DISCRIMINATOR,
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

@@ -57,7 +57,9 @@ export async function fetchAllFeeTierWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: FeeTierFilter[]
 ): Promise<Account<FeeTier>[]> {
-  const discriminator = getBase58Decoder().decode(FEE_TIER_DISCRIMINATOR) as Base58EncodedBytes;
+  const discriminator = getBase58Decoder().decode(
+    FEE_TIER_DISCRIMINATOR,
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

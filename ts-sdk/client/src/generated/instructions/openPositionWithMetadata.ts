@@ -35,13 +35,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from '../shared';
+} from "../shared";
 
 export const OPEN_POSITION_WITH_METADATA_DISCRIMINATOR = new Uint8Array([
   242, 29, 134, 48, 58, 110, 14, 60,
@@ -49,7 +49,7 @@ export const OPEN_POSITION_WITH_METADATA_DISCRIMINATOR = new Uint8Array([
 
 export function getOpenPositionWithMetadataDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    OPEN_POSITION_WITH_METADATA_DISCRIMINATOR
+    OPEN_POSITION_WITH_METADATA_DISCRIMINATOR,
   );
 }
 
@@ -64,22 +64,22 @@ export type OpenPositionWithMetadataInstruction<
   TAccountWhirlpool extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   TAccountSystemProgram extends
     | string
-    | AccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = "11111111111111111111111111111111",
   TAccountRent extends
     | string
-    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+    | AccountMeta<string> = "SysvarRent111111111111111111111111111111111",
   TAccountAssociatedTokenProgram extends
     | string
-    | AccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+    | AccountMeta<string> = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
   TAccountMetadataProgram extends
     | string
-    | AccountMeta<string> = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+    | AccountMeta<string> = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
   TAccountMetadataUpdateAuth extends
     | string
-    | AccountMeta<string> = '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr',
+    | AccountMeta<string> = "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -148,26 +148,26 @@ export type OpenPositionWithMetadataInstructionDataArgs = {
 export function getOpenPositionWithMetadataInstructionDataEncoder(): FixedSizeEncoder<OpenPositionWithMetadataInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['positionBump', getU8Encoder()],
-      ['metadataBump', getU8Encoder()],
-      ['tickLowerIndex', getI32Encoder()],
-      ['tickUpperIndex', getI32Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["positionBump", getU8Encoder()],
+      ["metadataBump", getU8Encoder()],
+      ["tickLowerIndex", getI32Encoder()],
+      ["tickUpperIndex", getI32Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: OPEN_POSITION_WITH_METADATA_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getOpenPositionWithMetadataInstructionDataDecoder(): FixedSizeDecoder<OpenPositionWithMetadataInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['positionBump', getU8Decoder()],
-    ['metadataBump', getU8Decoder()],
-    ['tickLowerIndex', getI32Decoder()],
-    ['tickUpperIndex', getI32Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["positionBump", getU8Decoder()],
+    ["metadataBump", getU8Decoder()],
+    ["tickLowerIndex", getI32Decoder()],
+    ["tickUpperIndex", getI32Decoder()],
   ]);
 }
 
@@ -177,7 +177,7 @@ export function getOpenPositionWithMetadataInstructionDataCodec(): FixedSizeCode
 > {
   return combineCodec(
     getOpenPositionWithMetadataInstructionDataEncoder(),
-    getOpenPositionWithMetadataInstructionDataDecoder()
+    getOpenPositionWithMetadataInstructionDataDecoder(),
   );
 }
 
@@ -210,10 +210,10 @@ export type OpenPositionWithMetadataAsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   metadataProgram?: Address<TAccountMetadataProgram>;
   metadataUpdateAuth?: Address<TAccountMetadataUpdateAuth>;
-  positionBump: OpenPositionWithMetadataInstructionDataArgs['positionBump'];
-  metadataBump: OpenPositionWithMetadataInstructionDataArgs['metadataBump'];
-  tickLowerIndex: OpenPositionWithMetadataInstructionDataArgs['tickLowerIndex'];
-  tickUpperIndex: OpenPositionWithMetadataInstructionDataArgs['tickUpperIndex'];
+  positionBump: OpenPositionWithMetadataInstructionDataArgs["positionBump"];
+  metadataBump: OpenPositionWithMetadataInstructionDataArgs["metadataBump"];
+  tickLowerIndex: OpenPositionWithMetadataInstructionDataArgs["tickLowerIndex"];
+  tickUpperIndex: OpenPositionWithMetadataInstructionDataArgs["tickUpperIndex"];
 };
 
 export async function getOpenPositionWithMetadataInstructionAsync<
@@ -247,7 +247,7 @@ export async function getOpenPositionWithMetadataInstructionAsync<
     TAccountMetadataProgram,
     TAccountMetadataUpdateAuth
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   OpenPositionWithMetadataInstruction<
     TProgramAddress,
@@ -314,7 +314,7 @@ export async function getOpenPositionWithMetadataInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110])
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
         ),
         getAddressEncoder().encode(expectAddress(accounts.positionMint.value)),
       ],
@@ -323,7 +323,7 @@ export async function getOpenPositionWithMetadataInstructionAsync<
   if (!accounts.positionTokenAccount.value) {
     accounts.positionTokenAccount.value = await getProgramDerivedAddress({
       programAddress:
-        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" as Address<"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL">,
       seeds: [
         getAddressEncoder().encode(expectAddress(accounts.owner.value)),
         getBytesEncoder().encode(
@@ -331,7 +331,7 @@ export async function getOpenPositionWithMetadataInstructionAsync<
             6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235,
             121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133,
             126, 255, 0, 169,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(expectAddress(accounts.positionMint.value)),
       ],
@@ -339,30 +339,30 @@ export async function getOpenPositionWithMetadataInstructionAsync<
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" as Address<"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL">;
   }
   if (!accounts.metadataProgram.value) {
     accounts.metadataProgram.value =
-      'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
+      "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" as Address<"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s">;
   }
   if (!accounts.metadataUpdateAuth.value) {
     accounts.metadataUpdateAuth.value =
-      '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr' as Address<'3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr'>;
+      "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr" as Address<"3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -380,7 +380,7 @@ export async function getOpenPositionWithMetadataInstructionAsync<
       getAccountMeta(accounts.metadataUpdateAuth),
     ],
     data: getOpenPositionWithMetadataInstructionDataEncoder().encode(
-      args as OpenPositionWithMetadataInstructionDataArgs
+      args as OpenPositionWithMetadataInstructionDataArgs,
     ),
     programAddress,
   } as OpenPositionWithMetadataInstruction<
@@ -430,10 +430,10 @@ export type OpenPositionWithMetadataInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   metadataProgram?: Address<TAccountMetadataProgram>;
   metadataUpdateAuth?: Address<TAccountMetadataUpdateAuth>;
-  positionBump: OpenPositionWithMetadataInstructionDataArgs['positionBump'];
-  metadataBump: OpenPositionWithMetadataInstructionDataArgs['metadataBump'];
-  tickLowerIndex: OpenPositionWithMetadataInstructionDataArgs['tickLowerIndex'];
-  tickUpperIndex: OpenPositionWithMetadataInstructionDataArgs['tickUpperIndex'];
+  positionBump: OpenPositionWithMetadataInstructionDataArgs["positionBump"];
+  metadataBump: OpenPositionWithMetadataInstructionDataArgs["metadataBump"];
+  tickLowerIndex: OpenPositionWithMetadataInstructionDataArgs["tickLowerIndex"];
+  tickUpperIndex: OpenPositionWithMetadataInstructionDataArgs["tickUpperIndex"];
 };
 
 export function getOpenPositionWithMetadataInstruction<
@@ -467,7 +467,7 @@ export function getOpenPositionWithMetadataInstruction<
     TAccountMetadataProgram,
     TAccountMetadataUpdateAuth
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): OpenPositionWithMetadataInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -529,30 +529,30 @@ export function getOpenPositionWithMetadataInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" as Address<"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL">;
   }
   if (!accounts.metadataProgram.value) {
     accounts.metadataProgram.value =
-      'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
+      "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" as Address<"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s">;
   }
   if (!accounts.metadataUpdateAuth.value) {
     accounts.metadataUpdateAuth.value =
-      '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr' as Address<'3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr'>;
+      "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr" as Address<"3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -570,7 +570,7 @@ export function getOpenPositionWithMetadataInstruction<
       getAccountMeta(accounts.metadataUpdateAuth),
     ],
     data: getOpenPositionWithMetadataInstructionDataEncoder().encode(
-      args as OpenPositionWithMetadataInstructionDataArgs
+      args as OpenPositionWithMetadataInstructionDataArgs,
     ),
     programAddress,
   } as OpenPositionWithMetadataInstruction<
@@ -621,11 +621,11 @@ export function parseOpenPositionWithMetadataInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedOpenPositionWithMetadataInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 13) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -651,7 +651,7 @@ export function parseOpenPositionWithMetadataInstruction<
       metadataUpdateAuth: getNextAccount(),
     },
     data: getOpenPositionWithMetadataInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

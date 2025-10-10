@@ -31,9 +31,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const CLOSE_BUNDLED_POSITION_DISCRIMINATOR = new Uint8Array([
   41, 36, 216, 245, 27, 85, 103, 67,
@@ -41,7 +41,7 @@ export const CLOSE_BUNDLED_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getCloseBundledPositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLOSE_BUNDLED_POSITION_DISCRIMINATOR
+    CLOSE_BUNDLED_POSITION_DISCRIMINATOR,
   );
 }
 
@@ -89,20 +89,20 @@ export type CloseBundledPositionInstructionDataArgs = { bundleIndex: number };
 export function getCloseBundledPositionInstructionDataEncoder(): FixedSizeEncoder<CloseBundledPositionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['bundleIndex', getU16Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["bundleIndex", getU16Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: CLOSE_BUNDLED_POSITION_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getCloseBundledPositionInstructionDataDecoder(): FixedSizeDecoder<CloseBundledPositionInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['bundleIndex', getU16Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["bundleIndex", getU16Decoder()],
   ]);
 }
 
@@ -112,7 +112,7 @@ export function getCloseBundledPositionInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCloseBundledPositionInstructionDataEncoder(),
-    getCloseBundledPositionInstructionDataDecoder()
+    getCloseBundledPositionInstructionDataDecoder(),
   );
 }
 
@@ -128,7 +128,7 @@ export type CloseBundledPositionInput<
   positionBundleTokenAccount: Address<TAccountPositionBundleTokenAccount>;
   positionBundleAuthority: TransactionSigner<TAccountPositionBundleAuthority>;
   receiver: Address<TAccountReceiver>;
-  bundleIndex: CloseBundledPositionInstructionDataArgs['bundleIndex'];
+  bundleIndex: CloseBundledPositionInstructionDataArgs["bundleIndex"];
 };
 
 export function getCloseBundledPositionInstruction<
@@ -146,7 +146,7 @@ export function getCloseBundledPositionInstruction<
     TAccountPositionBundleAuthority,
     TAccountReceiver
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): CloseBundledPositionInstruction<
   TProgramAddress,
   TAccountBundledPosition,
@@ -180,7 +180,7 @@ export function getCloseBundledPositionInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.bundledPosition),
@@ -190,7 +190,7 @@ export function getCloseBundledPositionInstruction<
       getAccountMeta(accounts.receiver),
     ],
     data: getCloseBundledPositionInstructionDataEncoder().encode(
-      args as CloseBundledPositionInstructionDataArgs
+      args as CloseBundledPositionInstructionDataArgs,
     ),
     programAddress,
   } as CloseBundledPositionInstruction<
@@ -224,11 +224,11 @@ export function parseCloseBundledPositionInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCloseBundledPositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -246,7 +246,7 @@ export function parseCloseBundledPositionInstruction<
       receiver: getNextAccount(),
     },
     data: getCloseBundledPositionInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

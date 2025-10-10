@@ -22,7 +22,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export type PoolInitialized = {
   whirlpool: Address;
@@ -52,31 +52,31 @@ export type PoolInitializedArgs = {
 
 export function getPoolInitializedEncoder(): FixedSizeEncoder<PoolInitializedArgs> {
   return getStructEncoder([
-    ['whirlpool', getAddressEncoder()],
-    ['whirlpoolsConfig', getAddressEncoder()],
-    ['tokenMintA', getAddressEncoder()],
-    ['tokenMintB', getAddressEncoder()],
-    ['tickSpacing', getU16Encoder()],
-    ['tokenProgramA', getAddressEncoder()],
-    ['tokenProgramB', getAddressEncoder()],
-    ['decimalsA', getU8Encoder()],
-    ['decimalsB', getU8Encoder()],
-    ['initialSqrtPrice', getU128Encoder()],
+    ["whirlpool", getAddressEncoder()],
+    ["whirlpoolsConfig", getAddressEncoder()],
+    ["tokenMintA", getAddressEncoder()],
+    ["tokenMintB", getAddressEncoder()],
+    ["tickSpacing", getU16Encoder()],
+    ["tokenProgramA", getAddressEncoder()],
+    ["tokenProgramB", getAddressEncoder()],
+    ["decimalsA", getU8Encoder()],
+    ["decimalsB", getU8Encoder()],
+    ["initialSqrtPrice", getU128Encoder()],
   ]);
 }
 
 export function getPoolInitializedDecoder(): FixedSizeDecoder<PoolInitialized> {
   return getStructDecoder([
-    ['whirlpool', getAddressDecoder()],
-    ['whirlpoolsConfig', getAddressDecoder()],
-    ['tokenMintA', getAddressDecoder()],
-    ['tokenMintB', getAddressDecoder()],
-    ['tickSpacing', getU16Decoder()],
-    ['tokenProgramA', getAddressDecoder()],
-    ['tokenProgramB', getAddressDecoder()],
-    ['decimalsA', getU8Decoder()],
-    ['decimalsB', getU8Decoder()],
-    ['initialSqrtPrice', getU128Decoder()],
+    ["whirlpool", getAddressDecoder()],
+    ["whirlpoolsConfig", getAddressDecoder()],
+    ["tokenMintA", getAddressDecoder()],
+    ["tokenMintB", getAddressDecoder()],
+    ["tickSpacing", getU16Decoder()],
+    ["tokenProgramA", getAddressDecoder()],
+    ["tokenProgramB", getAddressDecoder()],
+    ["decimalsA", getU8Decoder()],
+    ["decimalsB", getU8Decoder()],
+    ["initialSqrtPrice", getU128Decoder()],
   ]);
 }
 

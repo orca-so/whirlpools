@@ -22,7 +22,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from '@solana/kit';
+} from "@solana/kit";
 
 export type Traded = {
   whirlpool: Address;
@@ -52,31 +52,31 @@ export type TradedArgs = {
 
 export function getTradedEncoder(): FixedSizeEncoder<TradedArgs> {
   return getStructEncoder([
-    ['whirlpool', getAddressEncoder()],
-    ['aToB', getBooleanEncoder()],
-    ['preSqrtPrice', getU128Encoder()],
-    ['postSqrtPrice', getU128Encoder()],
-    ['inputAmount', getU64Encoder()],
-    ['outputAmount', getU64Encoder()],
-    ['inputTransferFee', getU64Encoder()],
-    ['outputTransferFee', getU64Encoder()],
-    ['lpFee', getU64Encoder()],
-    ['protocolFee', getU64Encoder()],
+    ["whirlpool", getAddressEncoder()],
+    ["aToB", getBooleanEncoder()],
+    ["preSqrtPrice", getU128Encoder()],
+    ["postSqrtPrice", getU128Encoder()],
+    ["inputAmount", getU64Encoder()],
+    ["outputAmount", getU64Encoder()],
+    ["inputTransferFee", getU64Encoder()],
+    ["outputTransferFee", getU64Encoder()],
+    ["lpFee", getU64Encoder()],
+    ["protocolFee", getU64Encoder()],
   ]);
 }
 
 export function getTradedDecoder(): FixedSizeDecoder<Traded> {
   return getStructDecoder([
-    ['whirlpool', getAddressDecoder()],
-    ['aToB', getBooleanDecoder()],
-    ['preSqrtPrice', getU128Decoder()],
-    ['postSqrtPrice', getU128Decoder()],
-    ['inputAmount', getU64Decoder()],
-    ['outputAmount', getU64Decoder()],
-    ['inputTransferFee', getU64Decoder()],
-    ['outputTransferFee', getU64Decoder()],
-    ['lpFee', getU64Decoder()],
-    ['protocolFee', getU64Decoder()],
+    ["whirlpool", getAddressDecoder()],
+    ["aToB", getBooleanDecoder()],
+    ["preSqrtPrice", getU128Decoder()],
+    ["postSqrtPrice", getU128Decoder()],
+    ["inputAmount", getU64Decoder()],
+    ["outputAmount", getU64Decoder()],
+    ["inputTransferFee", getU64Decoder()],
+    ["outputTransferFee", getU64Decoder()],
+    ["lpFee", getU64Decoder()],
+    ["protocolFee", getU64Decoder()],
   ]);
 }
 

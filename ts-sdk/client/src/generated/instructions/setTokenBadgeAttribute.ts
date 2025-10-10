@@ -29,15 +29,15 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 import {
   getTokenBadgeAttributeDecoder,
   getTokenBadgeAttributeEncoder,
   type TokenBadgeAttribute,
   type TokenBadgeAttributeArgs,
-} from '../types';
+} from "../types";
 
 export const SET_TOKEN_BADGE_ATTRIBUTE_DISCRIMINATOR = new Uint8Array([
   224, 88, 65, 33, 138, 147, 246, 137,
@@ -45,7 +45,7 @@ export const SET_TOKEN_BADGE_ATTRIBUTE_DISCRIMINATOR = new Uint8Array([
 
 export function getSetTokenBadgeAttributeDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_TOKEN_BADGE_ATTRIBUTE_DISCRIMINATOR
+    SET_TOKEN_BADGE_ATTRIBUTE_DISCRIMINATOR,
   );
 }
 
@@ -95,20 +95,20 @@ export type SetTokenBadgeAttributeInstructionDataArgs = {
 export function getSetTokenBadgeAttributeInstructionDataEncoder(): FixedSizeEncoder<SetTokenBadgeAttributeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['attribute', getTokenBadgeAttributeEncoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["attribute", getTokenBadgeAttributeEncoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_TOKEN_BADGE_ATTRIBUTE_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getSetTokenBadgeAttributeInstructionDataDecoder(): FixedSizeDecoder<SetTokenBadgeAttributeInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['attribute', getTokenBadgeAttributeDecoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["attribute", getTokenBadgeAttributeDecoder()],
   ]);
 }
 
@@ -118,7 +118,7 @@ export function getSetTokenBadgeAttributeInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetTokenBadgeAttributeInstructionDataEncoder(),
-    getSetTokenBadgeAttributeInstructionDataDecoder()
+    getSetTokenBadgeAttributeInstructionDataDecoder(),
   );
 }
 
@@ -134,7 +134,7 @@ export type SetTokenBadgeAttributeInput<
   tokenBadgeAuthority: TransactionSigner<TAccountTokenBadgeAuthority>;
   tokenMint: Address<TAccountTokenMint>;
   tokenBadge: Address<TAccountTokenBadge>;
-  attribute: SetTokenBadgeAttributeInstructionDataArgs['attribute'];
+  attribute: SetTokenBadgeAttributeInstructionDataArgs["attribute"];
 };
 
 export function getSetTokenBadgeAttributeInstruction<
@@ -152,7 +152,7 @@ export function getSetTokenBadgeAttributeInstruction<
     TAccountTokenMint,
     TAccountTokenBadge
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetTokenBadgeAttributeInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -189,7 +189,7 @@ export function getSetTokenBadgeAttributeInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -199,7 +199,7 @@ export function getSetTokenBadgeAttributeInstruction<
       getAccountMeta(accounts.tokenBadge),
     ],
     data: getSetTokenBadgeAttributeInstructionDataEncoder().encode(
-      args as SetTokenBadgeAttributeInstructionDataArgs
+      args as SetTokenBadgeAttributeInstructionDataArgs,
     ),
     programAddress,
   } as SetTokenBadgeAttributeInstruction<
@@ -233,11 +233,11 @@ export function parseSetTokenBadgeAttributeInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetTokenBadgeAttributeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -255,7 +255,7 @@ export function parseSetTokenBadgeAttributeInstruction<
       tokenBadge: getNextAccount(),
     },
     data: getSetTokenBadgeAttributeInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

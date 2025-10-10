@@ -676,9 +676,7 @@ describe("TokenExtension/TransferHook", () => {
         )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
-        // Errors on transfer-hook-interface
-        // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
-        /0x7dc8348c/, // IncorrectAccount (2110272652)
+        /0xbbd/, // Anchor AccountNotEnoughKeys Error (3005)
       );
     });
 
@@ -1839,9 +1837,7 @@ describe("TokenExtension/TransferHook", () => {
         )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
-        // Errors on transfer-hook-interface
-        // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
-        /0x7dc8348c/, // IncorrectAccount (2110272652)
+        /0xbbd/, // Anchor AccountNotEnoughKeys Error (3005)
       );
     });
   });

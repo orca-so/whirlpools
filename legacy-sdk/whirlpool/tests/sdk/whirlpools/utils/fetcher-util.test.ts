@@ -32,11 +32,7 @@ describe("fetcher util tests", () => {
   // create isolated wallet because the wallet for globalCtx has many positions created by other test cases.
   const isolatedOwnerKeypair = Keypair.generate();
   const isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
-  const ctx = WhirlpoolContext.from(
-    globalCtx.connection,
-    isolatedWallet,
-    globalCtx.program.programId,
-  );
+  const ctx = WhirlpoolContext.from(globalCtx.connection, isolatedWallet);
   const fetcher = ctx.fetcher;
   beforeAll(async () => {
     await systemTransferTx(

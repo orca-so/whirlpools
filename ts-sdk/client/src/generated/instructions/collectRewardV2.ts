@@ -35,15 +35,15 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 import {
   getRemainingAccountsInfoDecoder,
   getRemainingAccountsInfoEncoder,
   type RemainingAccountsInfo,
   type RemainingAccountsInfoArgs,
-} from '../types';
+} from "../types";
 
 export const COLLECT_REWARD_V2_DISCRIMINATOR = new Uint8Array([
   177, 107, 37, 180, 160, 19, 49, 209,
@@ -51,7 +51,7 @@ export const COLLECT_REWARD_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectRewardV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_REWARD_V2_DISCRIMINATOR
+    COLLECT_REWARD_V2_DISCRIMINATOR,
   );
 }
 
@@ -67,7 +67,7 @@ export type CollectRewardV2Instruction<
   TAccountRewardTokenProgram extends string | AccountMeta<string> = string,
   TAccountMemoProgram extends
     | string
-    | AccountMeta<string> = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
+    | AccountMeta<string> = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -119,23 +119,23 @@ export type CollectRewardV2InstructionDataArgs = {
 export function getCollectRewardV2InstructionDataEncoder(): Encoder<CollectRewardV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['rewardIndex', getU8Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["rewardIndex", getU8Encoder()],
       [
-        'remainingAccountsInfo',
+        "remainingAccountsInfo",
         getOptionEncoder(getRemainingAccountsInfoEncoder()),
       ],
     ]),
-    (value) => ({ ...value, discriminator: COLLECT_REWARD_V2_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: COLLECT_REWARD_V2_DISCRIMINATOR }),
   );
 }
 
 export function getCollectRewardV2InstructionDataDecoder(): Decoder<CollectRewardV2InstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['rewardIndex', getU8Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["rewardIndex", getU8Decoder()],
     [
-      'remainingAccountsInfo',
+      "remainingAccountsInfo",
       getOptionDecoder(getRemainingAccountsInfoDecoder()),
     ],
   ]);
@@ -147,7 +147,7 @@ export function getCollectRewardV2InstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getCollectRewardV2InstructionDataEncoder(),
-    getCollectRewardV2InstructionDataDecoder()
+    getCollectRewardV2InstructionDataDecoder(),
   );
 }
 
@@ -171,8 +171,8 @@ export type CollectRewardV2Input<
   rewardVault: Address<TAccountRewardVault>;
   rewardTokenProgram: Address<TAccountRewardTokenProgram>;
   memoProgram?: Address<TAccountMemoProgram>;
-  rewardIndex: CollectRewardV2InstructionDataArgs['rewardIndex'];
-  remainingAccountsInfo: CollectRewardV2InstructionDataArgs['remainingAccountsInfo'];
+  rewardIndex: CollectRewardV2InstructionDataArgs["rewardIndex"];
+  remainingAccountsInfo: CollectRewardV2InstructionDataArgs["remainingAccountsInfo"];
 };
 
 export function getCollectRewardV2Instruction<
@@ -198,7 +198,7 @@ export function getCollectRewardV2Instruction<
     TAccountRewardTokenProgram,
     TAccountMemoProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): CollectRewardV2Instruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -249,10 +249,10 @@ export function getCollectRewardV2Instruction<
   // Resolve default values.
   if (!accounts.memoProgram.value) {
     accounts.memoProgram.value =
-      'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr' as Address<'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'>;
+      "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr" as Address<"MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -266,7 +266,7 @@ export function getCollectRewardV2Instruction<
       getAccountMeta(accounts.memoProgram),
     ],
     data: getCollectRewardV2InstructionDataEncoder().encode(
-      args as CollectRewardV2InstructionDataArgs
+      args as CollectRewardV2InstructionDataArgs,
     ),
     programAddress,
   } as CollectRewardV2Instruction<
@@ -308,11 +308,11 @@ export function parseCollectRewardV2Instruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCollectRewardV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

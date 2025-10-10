@@ -71,7 +71,9 @@ export async function fetchAllPositionWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: PositionFilter[]
 ): Promise<Account<Position>[]> {
-  const discriminator = getBase58Decoder().decode(POSITION_DISCRIMINATOR) as Base58EncodedBytes;
+  const discriminator = getBase58Decoder().decode(
+    POSITION_DISCRIMINATOR,
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

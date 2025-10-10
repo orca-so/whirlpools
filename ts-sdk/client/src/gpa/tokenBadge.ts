@@ -45,7 +45,9 @@ export async function fetchAllTokenBadgeWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: TokenBadgeFilter[]
 ): Promise<Account<TokenBadge>[]> {
-  const discriminator = getBase58Decoder().decode(TOKEN_BADGE_DISCRIMINATOR) as Base58EncodedBytes;
+  const discriminator = getBase58Decoder().decode(
+    TOKEN_BADGE_DISCRIMINATOR,
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

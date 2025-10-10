@@ -251,6 +251,28 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         },
       };
     },
+    getParsedTokenAccountsByOwner: async (owner: PublicKey, filter: any) => {
+      // This is a stub implementation that returns empty array
+      // The tests use this to check for existing token accounts
+      // LiteSVM doesn't have a built-in way to query accounts by owner
+      // For now, return empty array which will cause tests to create new accounts
+      return {
+        context: { slot: 1 },
+        value: [],
+      };
+    },
+    getEpochInfo: async (commitment?: any) => {
+      // Return a mock epoch info for testing
+      const clock = litesvm.getClock();
+      return {
+        epoch: Number(clock.epoch),
+        slotIndex: 0,
+        slotsInEpoch: 432000,
+        absoluteSlot: Number(clock.slot),
+        blockHeight: Number(clock.slot),
+        transactionCount: null,
+      };
+    },
   };
 }
 

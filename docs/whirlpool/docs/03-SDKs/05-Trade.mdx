@@ -146,17 +146,16 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
 
     await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    await setPayerFromBytes(new Uint8Array(secret));
+
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
     const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
     const inputAmount = 1_000_000n;
 
     const { instructions, quote, callback: sendTx } = await swap(
-      devnetRpc,
       { inputAmount, mint: mintAddress },
       whirlpoolAddress,
-      100,
-      signer
+      100
     );
 
     // Use the callback to submit the transaction

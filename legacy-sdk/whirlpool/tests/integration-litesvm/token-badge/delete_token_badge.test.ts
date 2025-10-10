@@ -1,5 +1,5 @@
 /**
- * delete_token_badge Test - Bankrun Version
+ * delete_token_badge Test - LiteSVM Version
  *
  * Migrated from legacy-sdk/whirlpool/tests/integration/token-badge/delete_token_badge.test.ts
  * to use Bankrun instead of solana-test-validator for faster test execution.
@@ -23,17 +23,17 @@ import type {
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
-import { startBankrun, createBankrunProvider } from "../../utils/bankrun";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 
-describe("delete_token_badge (bankrun)", () => {
+describe("delete_token_badge (litesvm)", () => {
   let provider: anchor.AnchorProvider;
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
 
   beforeAll(async () => {
-    await startBankrun();
-    provider = await createBankrunProvider();
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
       "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
     );

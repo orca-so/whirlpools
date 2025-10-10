@@ -1,5 +1,5 @@
 /**
- * initialize_config_extension Test - Bankrun Version
+ * initialize_config_extension Test - LiteSVM Version
  *
  * Migrated from legacy-sdk/whirlpool/tests/integration/token-badge/initialize_config_extension.test.ts
  * to use Bankrun instead of solana-test-validator for faster test execution.
@@ -18,17 +18,17 @@ import {
 import { defaultConfirmOptions } from "../../utils/const";
 import type { InitConfigExtensionParams } from "@orca-so/whirlpools-sdk/dist/instructions";
 import { getLocalnetAdminKeypair0 } from "../../utils";
-import { startBankrun, createBankrunProvider } from "../../utils/bankrun";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 
-describe("initialize_config_extension (bankrun)", () => {
+describe("initialize_config_extension (litesvm)", () => {
   let provider: anchor.AnchorProvider;
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
 
   beforeAll(async () => {
-    await startBankrun();
-    provider = await createBankrunProvider();
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
       "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
     );

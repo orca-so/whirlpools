@@ -1,24 +1,24 @@
 /**
- * Simple Bankrun Test - No complex dependencies
+ * Simple LiteSVM Test - No complex dependencies
  *
- * This test demonstrates that bankrun is working correctly
+ * This test demonstrates that LiteSVM is working correctly
  * without relying on complex test utilities or SDK imports
  */
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import { startBankrun, createBankrunProvider } from "../utils/bankrun";
+import { startLiteSVM, createLiteSVMProvider } from "../utils/litesvm";
 
-describe("Bankrun Simple Test", () => {
+describe("LiteSVM Simple Test", () => {
   let provider: anchor.AnchorProvider;
   let program: anchor.Program;
 
   beforeAll(async () => {
-    // Initialize bankrun
-    await startBankrun();
+    // Initialize LiteSVM
+    await startLiteSVM();
 
     // Create provider
-    provider = await createBankrunProvider();
+    provider = await createLiteSVMProvider();
 
     // Load Whirlpool program
     const programId = new PublicKey(
@@ -27,7 +27,7 @@ describe("Bankrun Simple Test", () => {
     const idl = require("../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
 
-    console.log("✅ Bankrun initialized successfully");
+    console.log("✅ LiteSVM initialized successfully");
   });
 
   it("should have a funded wallet", async () => {
@@ -83,3 +83,4 @@ describe("Bankrun Simple Test", () => {
     assert.ok(lastValidBlockHeight > 0, "Should have valid block height");
   });
 });
+

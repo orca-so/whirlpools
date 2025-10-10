@@ -29,6 +29,10 @@
   "scripts": {
     "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
     "test:litesvm": "vitest run tests/integration-litesvm",
+    "test:sdk-litesvm": "vitest run tests/sdk-litesvm",
+    "test:sdk-litesvm:client-impl": "vitest run tests/sdk-litesvm/whirlpools/client-impl",
+    "test:sdk-litesvm:swap": "vitest run tests/sdk-litesvm/whirlpools/swap",
+    "test:sdk-litesvm:utils": "vitest run tests/sdk-litesvm/whirlpools/utils",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },

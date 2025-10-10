@@ -45,6 +45,7 @@ import {
   createMintV2,
   initializeNativeMint2022Idempotent,
 } from "../../utils/v2/token-2022";
+import { initializeNativeMintIdempotent } from "../../utils/v2/token";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import {
@@ -1506,8 +1507,12 @@ describe("initialize_pool_with_adaptive_fee (litesvm)", () => {
         createTokenBadge: boolean;
         isToken2022NativeMint: boolean;
       }) {
-        // We need to call this to use NATIVE_MINT_2022
-        await initializeNativeMint2022Idempotent(provider);
+        // Initialize the appropriate native mint for LiteSVM
+        if (params.isToken2022NativeMint) {
+          await initializeNativeMint2022Idempotent(provider);
+        } else {
+          await initializeNativeMintIdempotent(provider);
+        }
 
         // create tokens
         const nativeMint = params.isToken2022NativeMint

@@ -83,4 +83,3 @@ describe("LiteSVM Simple Test", () => {
     assert.ok(lastValidBlockHeight > 0, "Should have valid block height");
   });
 });
-

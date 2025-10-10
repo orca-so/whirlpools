@@ -267,3 +267,36 @@ export async function createFundedKeypair(
 
   return keypair;
 }
+
+/**
+ * Load a preloaded account from JSON file into LiteSVM
+ * These JSON files contain account data from test validator
+ */
+export function loadPreloadAccount(relativePath: string): void {
+  const litesvm = getLiteSVM();
+
+  // Resolve the path relative to the tests directory
+  const testsDir = path.join(__dirname, "..");
+  const fullPath = path.join(testsDir, "preload_account", relativePath);
+
+  // Read and parse the JSON file
+  const accountData = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
+
+  // Extract account details
+  const pubkey = new PublicKey(accountData.pubkey);
+  const account = accountData.account;
+
+  // Decode the base64 data
+  const data = Buffer.from(account.data[0], account.data[1]);
+
+  // Set the account in LiteSVM
+  litesvm.setAccount(pubkey, {
+    lamports: Number(account.lamports),
+    data: new Uint8Array(data),
+    owner: new PublicKey(account.owner),
+    executable: account.executable,
+    rentEpoch: Number(account.rentEpoch ?? 0),
+  });
+
+  console.log(`✅ Loaded preload account: ${pubkey.toBase58()}`);
+}

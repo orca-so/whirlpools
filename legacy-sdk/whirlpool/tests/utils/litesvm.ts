@@ -16,7 +16,7 @@ import * as path from "path";
 let _litesvm: LiteSVM | null = null;
 
 /**
- * Initialize LiteSVM with the Whirlpool program
+ * Initialize LiteSVM with the Whirlpool program and external dependencies
  */
 export async function startLiteSVM(): Promise<LiteSVM> {
   if (_litesvm) {
@@ -44,6 +44,24 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   }
 
   _litesvm.addProgramFromFile(programId, programPath);
+
+  // Load the Transfer Hook program for Token-2022 tests
+  const transferHookProgramId = new PublicKey(
+    "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
+  );
+  const transferHookPath = path.resolve(
+    __dirname,
+    "../external_program/transfer_hook_counter.so"
+  );
+
+  if (fs.existsSync(transferHookPath)) {
+    _litesvm.addProgramFromFile(transferHookProgramId, transferHookPath);
+    console.log("✅ Loaded Transfer Hook program");
+  } else {
+    console.warn(
+      "⚠️  Transfer Hook program not found - Token-2022 TransferHook tests may fail"
+    );
+  }
 
   console.log("✅ LiteSVM initialized");
   return _litesvm;

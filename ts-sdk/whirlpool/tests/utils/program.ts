@@ -28,7 +28,7 @@ import {
   findAssociatedTokenPda,
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
-import { address, type Address, type IInstruction } from "@solana/kit";
+import { address, type Address, type Instruction } from "@solana/kit";
 import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
@@ -40,7 +40,7 @@ import { LOCALNET_ADMIN_KEYPAIR_0 } from "./admin";
 export async function setupConfigAndFeeTiers(): Promise<Address> {
   const admin = LOCALNET_ADMIN_KEYPAIR_0;
   const keypair = getNextKeypair();
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getInitializeConfigInstruction({
@@ -123,7 +123,7 @@ export async function setupWhirlpool(
 
   const sqrtPrice = config.initialSqrtPrice ?? tickIndexToSqrtPrice(0);
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getInitializePoolV2Instruction({
@@ -198,7 +198,7 @@ export async function setupPosition(
     upperTickArrayAddress,
   ]);
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   if (!lowerTickArray.exists) {
     instructions.push(
@@ -345,7 +345,7 @@ export async function setupTEPosition(
     upperTickArrayAddress,
   ]);
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   if (!lowerTickArray.exists) {
     instructions.push(

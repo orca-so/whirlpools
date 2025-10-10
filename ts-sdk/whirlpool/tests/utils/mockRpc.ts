@@ -1,4 +1,4 @@
-import type { Address, IInstruction, VariableSizeDecoder } from "@solana/kit";
+import type { Address, Instruction, VariableSizeDecoder } from "@solana/kit";
 import {
   address,
   appendTransactionMessageInstructions,
@@ -103,7 +103,7 @@ export async function deleteAccount(address: Address) {
   );
 }
 
-export async function sendTransaction(ixs: IInstruction[]) {
+export async function sendTransaction(ixs: Instruction[]) {
   const blockhash = await rpc.getLatestBlockhash().send();
   // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
   // so that we can fire two seemingly identical transactions in a row.

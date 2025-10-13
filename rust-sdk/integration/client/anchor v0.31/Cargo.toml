@@ -6,6 +6,6 @@ edition = "2021"
 path = "../../lib.rs"
 
 [dependencies]
-anchor-lang = { version = "~0.31.0" }
+anchor-lang = { version = "~0.31.1" }
 solana-program = { version = "~2.1.0" }
 orca_whirlpools_client = { path = "../../../client", features = ["anchor"] }

@@ -14,7 +14,6 @@ import {
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
-  getProviderWalletKeypair,
   getTokenBalance,
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
@@ -27,56 +26,54 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import { amountToUiAmount } from "@solana/spl-token";
+import { getMint, getScaledUiAmountConfig } from "@solana/spl-token";
 
 describe("TokenExtension/ScaledUiAmount (litesvm)", () => {
   let provider: anchor.AnchorProvider;
-
   let program: anchor.Program;
-
   let ctx: WhirlpoolContext;
-
   let fetcher: any;
 
-
   beforeAll(async () => {
-
     await startLiteSVM();
-
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
-
     program = new anchor.Program(idl, programId, provider);
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  fetcher = ctx.fetcher;
-
+    anchor.setProvider(provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
   });
-
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   async function rawAmountToUIAmount(
     mint: PublicKey,
     rawAmount: BN,
   ): Promise<string> {
-    const result = await amountToUiAmount(
+    // For ScaledUiAmount, we need to read the multiplier from the mint
+    // and multiply the raw amount by the multiplier
+    const mintInfo = await getMint(
       ctx.connection,
-      providerWalletKeypair,
       mint,
-      rawAmount.toNumber(),
+      undefined,
       TEST_TOKEN_2022_PROGRAM_ID,
     );
-    if (typeof result === "string") {
-      return result;
+
+    // Try to get the ScaledUiAmount extension
+    const scaledConfig = getScaledUiAmountConfig(mintInfo);
+
+    if (scaledConfig) {
+      // The multiplier is stored in the config
+      const multiplier = scaledConfig.multiplier;
+      const uiAmount = rawAmount.mul(new BN(multiplier.toString()));
+      return uiAmount.toString();
     }
-    throw new Error("Failed to convert raw amount to UI amount");
+
+    // No ScaledUiAmount extension, return raw amount as string
+    return rawAmount.toString();
   }
 
   // Since ScaledUiAmount is no different from normal mint as far as handling raw amounts (u64 amounts),

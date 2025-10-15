@@ -1,253 +1,37 @@
-# Orca Whirlpools Next.js Example
+# Whirlpools Next.js Example
 
-A modern Next.js example demonstrating how to integrate Orca Whirlpools SDK for decentralized token swaps on Solana.
-
-## Overview
-
-This example showcases a complete token swap application built with:
-
-- **Next.js 15** - React framework for production
-- **Orca Whirlpools SDK** - Decentralized liquidity pools on Solana
-- **Solana Web3.js Kit** - Modern Solana development tools
-- **Wallet Standard** - Universal wallet connection interface
-- **TypeScript** - Type-safe development
+This example demonstrates how to use the Orca Whirlpools SDK in a Next.js application to build a token swap interface with wallet integration.
 
 ## Features
 
-- **Wallet Connection**: Support for multiple Solana wallets through Wallet Standard
-- **Token Swaps**: SOL ↔ USDC swaps using Orca's concentrated liquidity pools
-- **Real-time Quotes**: Live pricing with 500ms debouncing for optimal UX
-- **Balance Display**: Real-time wallet balance updates
-- **Transaction Status**: Clear feedback on swap progress and completion
-- **Responsive UI**: Modern, accessible interface with dark mode support
+- Wallet connection using Wallet Standard
+- Token swaps (SOL ↔ USDC) with Orca's concentrated liquidity pools
+- Real-time transaction status tracking
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn package manager
-- A Solana wallet (Phantom, Solflare, etc.)
-
-### Installation
-
-1. Clone the repository:
+After [building the repository](../../../README.md#getting-started), start the development server:
 
 ```bash
-git clone <repository-url>
-cd examples/ts-sdk/next
+yarn workspace @orca-so/whirlpools-example-ts-next start
 ```
 
-2. Install dependencies:
+Navigate to [http://localhost:3000](http://localhost:3000).
 
-```bash
-npm install
-```
+## Using as a Standalone Project
 
-3. Set up environment variables:
+This example references the local version of the Whirlpools SDK via the monorepo workspace (`"@orca-so/whirlpools": "*"`). 
 
-```bash
-# Create .env.local file
-NEXT_PUBLIC_RPC_URL=https://api.mainnet-beta.solana.com
-```
+To use this as a standalone project outside the monorepo:
 
-4. Start the development server:
+1. Copy this directory to your desired location
+2. Update `package.json` to use the published package version:
+   ```json
+   "@orca-so/whirlpools": "^{current version}"
+   ```
+3. Run `npm install` or `yarn install`
+4. Start the development server with `npm run start` or `yarn start`
 
-```bash
-npm run start
-```
+## WebAssembly Configuration
 
-5. Open [http://localhost:3000/swap](http://localhost:3000/swap) in your browser
-
-## Architecture
-
-### Core Components
-
-- **`app/swap/page.tsx`** - Main swap interface component
-- **`app/contexts/WalletContext.tsx`** - Wallet state management
-- **`app/components/ui/`** - Reusable UI components (Button, Dialog)
-- **`next.config.js`** - Webpack configuration for WASM support
-
-### Key Features
-
-#### Wallet Integration
-
-```typescript
-// Centralized wallet state with transaction signer
-const { account, signer } = useWallet();
-```
-
-#### Swap Execution
-
-```typescript
-// Get swap instructions from Orca SDK
-const quote = await swapInstructions(
-  rpc,
-  {
-    inputAmount: amount,
-    mint: tokenMint,
-  },
-  poolAddress,
-  slippageBps,
-  signer,
-);
-
-// Execute transaction
-const signature = await signAndSendTransactionMessageWithSigners(transaction);
-```
-
-#### Real-time Balance Updates
-
-```typescript
-// Automatic balance refresh after successful swaps
-const fetchBalances = useCallback(async () => {
-  const solBalance = await rpc.getBalance(walletAddress).send();
-  const usdcBalance = await fetchToken(rpc, usdcTokenAccount);
-}, [account, rpc]);
-```
-
-## Configuration
-
-### WASM File Handling
-
-The application automatically detects WASM file locations:
-
-```javascript
-// next.config.js - Smart path resolution
-const wasmPath = fs.existsSync(
-  "node_modules/@orca-so/whirlpools-core/dist/nodejs/...",
-)
-  ? "node_modules/..." // Production deployment
-  : "../../../ts-sdk/core/dist/nodejs/..."; // Monorepo development
-```
-
-### Supported Networks
-
-- **Mainnet** - Production swaps with real tokens
-- **Devnet** - Testing with devnet tokens (modify `setWhirlpoolsConfig`)
-
-## Development
-
-### Project Structure
-
-```
-├── app/
-│   ├── swap/
-│   │   └── page.tsx          # Main swap interface
-│   ├── components/
-│   │   ├── ui/              # Reusable UI components
-│   │   ├── ConnectWalletButton.tsx
-│   │   └── WalletListModal.tsx
-│   ├── contexts/
-│   │   └── WalletContext.tsx # Wallet state management
-│   └── lib/
-│       └── utils.ts         # Utility functions
-├── next.config.js           # Next.js configuration
-└── package.json            # Dependencies
-```
-
-### Key Dependencies
-
-```json
-{
-  "@orca-so/whirlpools": "*",
-  "@solana/kit": "^3.0.3",
-  "@solana/react": "^3.0.3",
-  "@wallet-standard/react": "^1.0.1",
-  "next": "^15.2.4"
-}
-```
-
-### Building for Production
-
-```bash
-npm run build
-```
-
-## Usage Examples
-
-### Basic Swap Flow
-
-1. **Connect Wallet**: Click "Connect Wallet" and select your preferred wallet
-2. **Enter Amount**: Input the amount of SOL or USDC to swap
-3. **Get Quote**: Real-time pricing updates automatically
-4. **Execute Swap**: Click swap button to sign and submit transaction
-5. **Confirm**: Transaction signature and updated balances display
-
-### Customization
-
-#### Adding New Token Pairs
-
-```typescript
-// Add new mint addresses
-const NEW_TOKEN_MINT = address("YourTokenMintAddress");
-
-// Update swap interface
-const pools = await fetchWhirlpoolsByTokenPair(rpc, SOL_MINT, NEW_TOKEN_MINT);
-```
-
-#### Modifying Slippage
-
-```typescript
-// Adjust slippage tolerance (in basis points)
-const quote = await swapInstructions(
-  rpc,
-  swapParams,
-  poolAddress,
-  200, // 2% slippage instead of default 1%
-  signer,
-);
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**WASM File Not Found**
-
-- Ensure `@orca-so/whirlpools-core` is installed
-- Check Next.js build output for WASM copying errors
-
-**Wallet Connection Fails**
-
-- Verify wallet extension is installed and unlocked
-- Check browser console for connection errors
-
-**Transaction Failures**
-
-- Confirm sufficient SOL balance for transaction fees
-- Verify slippage tolerance for volatile markets
-- Check RPC endpoint connectivity
-
-### Performance Optimization
-
-- **Quote Debouncing**: 500ms delay prevents excessive API calls
-- **Balance Caching**: Balances update only after successful transactions
-- **Selective Re-renders**: Optimized state updates with useCallback/useMemo
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This example is part of the Orca Whirlpools SDK and follows the same licensing terms.
-
-## Resources
-
-- [Orca Whirlpools SDK Documentation](https://orca-so.github.io/whirlpools/)
-- [Solana Web3.js Kit](https://solana.com/docs/clients/javascript)
-- [Wallet Standard](https://github.com/wallet-standard/wallet-standard)
-- [Next.js Documentation](https://nextjs.org/docs)
-
-## Support
-
-For technical questions and support:
-
-- GitHub Issues: Report bugs and feature requests
-- Discord: Join the Orca community
-- Documentation: Comprehensive guides and API reference
+The Orca SDK uses WebAssembly for performance-critical operations. See `next.config.js` for the required webpack configuration that enables `experiments.asyncWebAssembly` and adds `@orca-so/whirlpools-core` to `serverExternalPackages`.

@@ -226,93 +226,87 @@ export async function buildTestAquariums(
       }),
     );
 
-    const pools = await Promise.all(
-      initPoolParams.map(async (initPoolParam) => {
-        const {
-          tickSpacing,
-          mintIndices,
-          initSqrtPrice = DEFAULT_SQRT_PRICE,
-          feeTierIndex = 0,
-        } = initPoolParam;
-        const [mintOne, mintTwo] = mintIndices.map((idx) => mintKeys[idx]);
-        const [tokenMintA, tokenMintB] = PoolUtil.orderMints(
-          mintOne,
-          mintTwo,
-        ).map(AddressUtil.toPubKey);
+    const pools: InitPoolParams[] = [];
+    for (const initPoolParam of initPoolParams) {
+      const {
+        tickSpacing,
+        mintIndices,
+        initSqrtPrice = DEFAULT_SQRT_PRICE,
+        feeTierIndex = 0,
+      } = initPoolParam;
+      const [mintOne, mintTwo] = mintIndices.map((idx) => mintKeys[idx]);
+      const [tokenMintA, tokenMintB] = PoolUtil.orderMints(
+        mintOne,
+        mintTwo,
+      ).map(AddressUtil.toPubKey);
 
-        const configKey =
-          configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
-        const whirlpoolPda = PDAUtil.getWhirlpool(
-          ctx.program.programId,
-          configKey,
-          tokenMintA,
-          tokenMintB,
-          tickSpacing,
-        );
+      const configKey =
+        configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
+      const whirlpoolPda = PDAUtil.getWhirlpool(
+        ctx.program.programId,
+        configKey,
+        tokenMintA,
+        tokenMintB,
+        tickSpacing,
+      );
 
-        const poolParam = {
-          initSqrtPrice,
-          whirlpoolsConfig: configKey,
-          tokenMintA,
-          tokenMintB,
-          whirlpoolPda,
-          tokenVaultAKeypair: Keypair.generate(),
-          tokenVaultBKeypair: Keypair.generate(),
-          feeTierKey: feeTierParams[feeTierIndex].feeTierPda.publicKey,
-          tickSpacing,
-          // TODO: funder
-          funder: ctx.wallet.publicKey,
-        };
+      const poolParam = {
+        initSqrtPrice,
+        whirlpoolsConfig: configKey,
+        tokenMintA,
+        tokenMintB,
+        whirlpoolPda,
+        tokenVaultAKeypair: Keypair.generate(),
+        tokenVaultBKeypair: Keypair.generate(),
+        feeTierKey: feeTierParams[feeTierIndex].feeTierPda.publicKey,
+        tickSpacing,
+        // TODO: funder
+        funder: ctx.wallet.publicKey,
+      };
 
-        const tx = toTx(
-          ctx,
-          WhirlpoolIx.initializePoolIx(ctx.program, poolParam),
-        );
-        await tx.buildAndExecute();
-        return poolParam;
-      }),
-    );
+      const tx = toTx(
+        ctx,
+        WhirlpoolIx.initializePoolIx(ctx.program, poolParam),
+      );
+      await tx.buildAndExecute();
+      pools.push(poolParam);
+    }
 
-    const tickArrays = await Promise.all(
-      initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const {
-          poolIndex,
-          startTickIndex,
-          arrayCount,
-          aToB,
-          dynamicTickArrays,
-        } = initTickArrayRangeParam;
-        const pool = pools[poolIndex];
-        const pdas = await initTickArrayRange(
-          ctx,
-          pool.whirlpoolPda.publicKey,
-          startTickIndex,
-          arrayCount,
-          pool.tickSpacing,
-          aToB,
-          dynamicTickArrays,
-        );
-        return {
-          params: initTickArrayRangeParam,
-          pdas,
-        };
-      }),
-    );
+    const tickArrays: Array<{
+      params: InitTestTickArrayRangeParams;
+      pdas: PDA[];
+    }> = [];
+    for (const initTickArrayRangeParam of initTickArrayRangeParams) {
+      const { poolIndex, startTickIndex, arrayCount, aToB, dynamicTickArrays } =
+        initTickArrayRangeParam;
+      const pool = pools[poolIndex];
+      const pdas = await initTickArrayRange(
+        ctx,
+        pool.whirlpoolPda.publicKey,
+        startTickIndex,
+        arrayCount,
+        pool.tickSpacing,
+        aToB,
+        dynamicTickArrays,
+      );
+      tickArrays.push({
+        params: initTickArrayRangeParam,
+        pdas,
+      });
+    }
 
-    await Promise.all(
-      initPositionParams.map(async (initPositionParam) => {
-        const { poolIndex, fundParams } = initPositionParam;
-        const pool = pools[poolIndex];
-        const tokenAccKeys = getTokenAccsForPools([pool], tokenAccounts);
-        await fundPositions(
-          ctx,
-          pool,
-          tokenAccKeys[0],
-          tokenAccKeys[1],
-          fundParams,
-        );
-      }),
-    );
+    for (const initPositionParam of initPositionParams) {
+      const { poolIndex, fundParams } = initPositionParam;
+      const pool = pools[poolIndex];
+      const tokenAccKeys = getTokenAccsForPools([pool], tokenAccounts);
+      await fundPositions(
+        ctx,
+        pool,
+        tokenAccKeys[0],
+        tokenAccKeys[1],
+        fundParams,
+      );
+    }
 
     aquariums.push({
       configParams,

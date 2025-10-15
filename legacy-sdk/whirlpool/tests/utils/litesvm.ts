@@ -50,37 +50,58 @@ export async function startLiteSVM(): Promise<LiteSVM> {
     currentTimeInSeconds, // epochStartTimestamp
     currentClock.epoch,
     currentClock.leaderScheduleEpoch,
-    currentTimeInSeconds // unixTimestamp - this is what matters for contract validation
+    currentTimeInSeconds, // unixTimestamp - this is what matters for contract validation
   );
   _litesvm.setClock(newClock);
   console.log(
-    `⏰ Set blockchain clock to current time: ${currentTimeInSeconds}`
+    `⏰ Set blockchain clock to current time: ${currentTimeInSeconds}`,
   );
 
   // Load the Whirlpool program
   const programId = new PublicKey(
-    "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
   );
   const programPath = path.resolve(
     __dirname,
-    "../../../../target/deploy/whirlpool.so"
+    "../../../../target/deploy/whirlpool.so",
   );
 
   if (!fs.existsSync(programPath)) {
     throw new Error(
-      `Program not found at ${programPath}. Run 'anchor build' first.`
+      `Program not found at ${programPath}. Run 'anchor build' first.`,
     );
   }
 
   _litesvm.addProgramFromFile(programId, programPath);
 
+  // Load the full Token-2022 program to override LiteSVM's built-in version
+  // This provides complete instruction support including UpdateRateInterestBearingMint and AmountToUiAmount
+  const token2022ProgramId = new PublicKey(
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  );
+  const token2022Path = path.resolve(
+    __dirname,
+    "../external_program/token_2022.20250510.so",
+  );
+
+  if (fs.existsSync(token2022Path)) {
+    _litesvm.addProgramFromFile(token2022ProgramId, token2022Path);
+    console.log(
+      "✅ Loaded latest Token-2022 program from mainnet (overriding built-in)",
+    );
+  } else {
+    console.warn(
+      "⚠️  Token-2022 program not found - some Token-2022 extension instructions may not work",
+    );
+  }
+
   // Load the Transfer Hook program for Token-2022 tests
   const transferHookProgramId = new PublicKey(
-    "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
+    "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS",
   );
   const transferHookPath = path.resolve(
     __dirname,
-    "../external_program/transfer_hook_counter.so"
+    "../external_program/transfer_hook_counter.so",
   );
 
   if (fs.existsSync(transferHookPath)) {
@@ -88,7 +109,7 @@ export async function startLiteSVM(): Promise<LiteSVM> {
     console.log("✅ Loaded Transfer Hook program");
   } else {
     console.warn(
-      "⚠️  Transfer Hook program not found - Token-2022 TransferHook tests may fail"
+      "⚠️  Transfer Hook program not found - Token-2022 TransferHook tests may fail",
     );
   }
 
@@ -104,6 +125,16 @@ export function getLiteSVM(): LiteSVM {
     throw new Error("LiteSVM not started. Call startLiteSVM() first.");
   }
   return _litesvm;
+}
+
+/**
+ * Reset the LiteSVM instance, forcing a fresh blockchain state on next startLiteSVM()
+ * Use this in beforeEach() hooks to get isolated state between tests
+ */
+export function resetLiteSVM(): void {
+  _litesvm = null;
+  _logListeners = [];
+  _nextListenerId = 1;
 }
 
 /**
@@ -127,7 +158,7 @@ export async function createLiteSVMProvider(): Promise<anchor.AnchorProvider> {
     // @ts-expect-error - Connection interface is partially implemented
     connection,
     new anchor.Wallet(wallet),
-    { commitment: "confirmed" }
+    { commitment: "confirmed" },
   );
 }
 
@@ -162,7 +193,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     },
     sendRawTransaction: async (
       rawTransaction: Buffer | Uint8Array,
-      options?: any
+      options?: any,
     ) => {
       // Deserialize transaction to extract signature after processing
       const tx = Transaction.from(rawTransaction);
@@ -180,7 +211,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
             ? result.logMessages
             : [];
         throw new Error(
-          `Transaction failed:\nError: ${JSON.stringify(result.err)}\nLogs:\n${logs.join("\n")}`
+          `Transaction failed:\nError: ${JSON.stringify(result.err)}\nLogs:\n${logs.join("\n")}`,
         );
       }
 
@@ -194,13 +225,112 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
       return "litesvm-raw-tx-sig";
     },
-    sendTransaction: async (
+    sendAndConfirmTransaction: async (
       tx: Transaction | VersionedTransaction,
-      options?: any
+      signers?: any[],
+      options?: any,
     ) => {
-      // Set blockhash
+      // Set blockhash if needed
       if (tx instanceof Transaction) {
         tx.recentBlockhash = litesvm.latestBlockhash();
+
+        // Sign with signers if provided
+        if (signers && signers.length > 0) {
+          if (!tx.feePayer) {
+            tx.feePayer = signers[0].publicKey;
+          }
+          tx.sign(...signers);
+        }
+      }
+
+      // @ts-expect-error - Transaction types are structurally compatible
+      const result = litesvm.sendTransaction(tx);
+
+      // Check if transaction failed
+      if ("err" in result) {
+        const error = result.err();
+        const logs = result.meta().logs();
+        const errorMsg = `Transaction failed: ${error.toString()}`;
+        console.error(errorMsg);
+        console.error("Logs:", logs);
+        throw new Error(errorMsg);
+      }
+
+      // Get the signature
+      let signature: string;
+      if (tx instanceof Transaction) {
+        if (tx.signatures?.[0]?.signature) {
+          signature = bs58.encode(tx.signatures[0].signature);
+        } else {
+          signature = "litesvm-tx-sig";
+        }
+      } else {
+        if (tx.signatures?.[0]) {
+          signature = bs58.encode(tx.signatures[0]);
+        } else {
+          signature = "litesvm-tx-sig";
+        }
+      }
+
+      // Get transaction logs and trigger any registered listeners
+      const logs = result.logs();
+      const logsPayload = {
+        signature,
+        err: null,
+        logs,
+      };
+      const context = { slot: Number(litesvm.getClock().slot) };
+
+      for (const listener of _logListeners) {
+        try {
+          setImmediate(() => listener.callback(logsPayload, context));
+        } catch (err) {
+          console.error("Error in log listener:", err);
+        }
+      }
+
+      // Expire the blockhash to get a fresh one for next transaction
+      litesvm.expireBlockhash();
+
+      return signature;
+    },
+    sendTransaction: async (
+      tx: Transaction | VersionedTransaction,
+      signersOrOptions?: any[] | any,
+      options?: any,
+    ) => {
+      // Handle both (tx, options) and (tx, signers, options) signatures
+      let signers: any[] = [];
+      let finalOptions = options;
+
+      if (Array.isArray(signersOrOptions)) {
+        signers = signersOrOptions;
+      } else if (signersOrOptions) {
+        finalOptions = signersOrOptions;
+      }
+
+      // Set blockhash and ensure fee payer is set
+      if (tx instanceof Transaction) {
+        tx.recentBlockhash = litesvm.latestBlockhash();
+
+        // Sign with signers if provided
+        if (signers.length > 0) {
+          if (!tx.feePayer) {
+            tx.feePayer = signers[0].publicKey;
+          }
+          tx.sign(...signers);
+        }
+
+        // If still no fee payer is set, try to infer it from existing signatures
+        if (!tx.feePayer) {
+          if (
+            tx.signatures &&
+            tx.signatures.length > 0 &&
+            tx.signatures[0].publicKey
+          ) {
+            tx.feePayer = tx.signatures[0].publicKey;
+          }
+        }
       }
 
       // Process the transaction through LiteSVM
@@ -221,7 +351,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           const errorStr = error.toString();
 
           throw new Error(
-            `Transaction failed:\nError: ${errorStr}\nLogs:\n${logs.join("\n")}`
+            `Transaction failed:\nError: ${errorStr}\nLogs:\n${logs.join("\n")}`,
           );
         }
 
@@ -372,7 +502,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     onLogs: (
       filter: any,
       callback: (logs: any, ctx: any) => void,
-      commitment?: any
+      commitment?: any,
     ) => {
       // Register a log listener
       const listenerId = _nextListenerId++;
@@ -387,6 +517,131 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       // Remove a log listener by ID
       _logListeners = _logListeners.filter((l) => l.id !== listenerId);
     },
+    simulateTransaction: async (
+      tx: Transaction | VersionedTransaction,
+      options?: any,
+    ) => {
+      console.log("🎯 simulateTransaction called");
+      // Set blockhash and fee payer if needed
+      if (tx instanceof Transaction) {
+        tx.recentBlockhash = litesvm.latestBlockhash();
+        // If no fee payer is set, check various sources
+        if (!tx.feePayer) {
+          // Try to get from options (signerPubkeys from simulateTransaction options)
+          if (options?.signerPubkeys && options.signerPubkeys.length > 0) {
+            tx.feePayer = options.signerPubkeys[0];
+          }
+          // Try to get from first signature if available
+          else if (
+            tx.signatures &&
+            tx.signatures.length > 0 &&
+            tx.signatures[0].publicKey
+          ) {
+            tx.feePayer = tx.signatures[0].publicKey;
+          }
+          // Use a default public key for simulation (SystemProgram is always valid)
+          else {
+            // Use a dummy fee payer just for simulation - it won't actually execute
+            tx.feePayer = new PublicKey("11111111111111111111111111111111");
+          }
+        }
+
+        // For simulation, we need to ensure the transaction has a signature
+        // even if it's not a valid one (simulation doesn't verify signatures)
+        if (
+          !tx.signatures ||
+          tx.signatures.length === 0 ||
+          !tx.signatures[0].signature
+        ) {
+          // Add a dummy signature for the fee payer (if set)
+          if (tx.feePayer) {
+            const dummySignature = Buffer.alloc(64, 0);
+            tx.signatures = [
+              {
+                signature: dummySignature,
+                publicKey: tx.feePayer,
+              },
+            ];
+          }
+        }
+      }
+
+      // Simulate the transaction through LiteSVM
+      // @ts-expect-error - Transaction types are structurally compatible
+      const result = litesvm.simulateTransaction(tx);
+
+      // Check if simulation failed
+      if ("err" in result) {
+        const error = result.err();
+        const logs = result.meta().logs();
+        console.log("❌ Simulation failed with error:", error);
+
+        return {
+          context: { slot: Number(litesvm.getClock().slot) },
+          value: {
+            err: error,
+            logs,
+            accounts: null,
+            unitsConsumed: 0,
+            returnData: null,
+          },
+        };
+      }
+
+      console.log("✅ Simulation succeeded");
+
+      // Simulation succeeded
+      const logs = result.meta().logs();
+      const postAccounts = result.postAccounts();
+      const accounts = postAccounts.map((acc: any) => {
+        const account = acc.account();
+        const accountData = account.data();
+        return {
+          data: [Buffer.from(accountData).toString("base64"), "base64"],
+          executable: account.executable(),
+          lamports: Number(account.lamports()),
+          owner: new PublicKey(account.owner()),
+          rentEpoch: Number(account.rentEpoch()),
+        };
+      });
+
+      // Get return data from simulation
+      let returnData = null;
+      try {
+        const returnDataResult = result.meta().returnData();
+        if (returnDataResult) {
+          const data = returnDataResult.data();
+          const programId = returnDataResult.programId();
+          returnData = {
+            programId: new PublicKey(programId),
+            data: [Buffer.from(data).toString("base64"), "base64"],
+          };
+          console.log("📦 Simulation returnData:", {
+            programId: returnData.programId.toBase58(),
+            dataLength: data.length,
+            dataHex: Buffer.from(data).toString("hex").slice(0, 40),
+          });
+        } else {
+          console.log("⚠️  No returnData in simulation result");
+        }
+      } catch (e) {
+        console.log(
+          "⚠️  Error getting returnData:",
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+
+      return {
+        context: { slot: Number(litesvm.getClock().slot) },
+        value: {
+          err: null,
+          logs,
+          accounts,
+          unitsConsumed: Number(result.meta().computeUnitsConsumed()),
+          returnData,
+        },
+      };
+    },
   };
 }
 
@@ -394,7 +649,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
  * Create funded keypair for testing
  */
 export async function createFundedKeypair(
-  lamports: number = 100e9
+  lamports: number = 100e9,
 ): Promise<Keypair> {
   const litesvm = getLiteSVM();
   const keypair = Keypair.generate();
@@ -435,4 +690,49 @@ export function loadPreloadAccount(relativePath: string): void {
   });
 
   console.log(`✅ Loaded preload account: ${pubkey.toBase58()}`);
+}
+
+/**
+ * Get the current blockchain timestamp from LiteSVM
+ */
+export function getCurrentTimestamp(): number {
+  const litesvm = getLiteSVM();
+  return Number(litesvm.getClock().unixTimestamp);
+}
+
+/**
+ * Warp the blockchain clock forward by the specified number of seconds
+ * Also advances the slot and expires the blockhash to ensure fresh transactions
+ *
+ * @param seconds - Number of seconds to advance the clock
+ */
+export function warpClock(seconds: number): void {
+  const litesvm = getLiteSVM();
+  const currentClock = litesvm.getClock();
+
+  // Advance time
+  const newTimestamp = currentClock.unixTimestamp + BigInt(seconds);
+
+  // Advance slot significantly to force new blockhash generation
+  // Solana generates new blockhashes every ~150 slots, so we advance by at least 300
+  const slotsToAdvance = BigInt(Math.max(300, seconds * 2));
+  const newSlot = currentClock.slot + slotsToAdvance;
+
+  const newClock = new Clock(
+    newSlot,
+    currentClock.epochStartTimestamp,
+    currentClock.epoch,
+    currentClock.leaderScheduleEpoch,
+    newTimestamp,
+  );
+
+  litesvm.setClock(newClock);
+
+  // Expire the current blockhash to force generation of a new one
+  // This ensures subsequent transactions use a fresh blockhash
+  litesvm.expireBlockhash();
+
+  console.log(
+    `⏰ Warped clock: +${seconds}s (slot: ${currentClock.slot} -> ${newSlot}, time: ${currentClock.unixTimestamp} -> ${newTimestamp})`,
+  );
 }

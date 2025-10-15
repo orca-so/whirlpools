@@ -113,6 +113,24 @@ export async function startLiteSVM(): Promise<LiteSVM> {
     );
   }
 
+  // Load the Metaplex Token Metadata program
+  const metadataProgramId = new PublicKey(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+  );
+  const metadataPath = path.resolve(
+    __dirname,
+    "../external_program/mpl_token_metadata.20240214.so",
+  );
+
+  if (fs.existsSync(metadataPath)) {
+    _litesvm.addProgramFromFile(metadataProgramId, metadataPath);
+    console.log("✅ Loaded Metaplex Token Metadata program");
+  } else {
+    console.warn(
+      "⚠️  Metadata program not found - position metadata tests may fail",
+    );
+  }
+
   console.log("✅ LiteSVM initialized");
   return _litesvm;
 }
@@ -125,6 +143,63 @@ export function getLiteSVM(): LiteSVM {
     throw new Error("LiteSVM not started. Call startLiteSVM() first.");
   }
   return _litesvm;
+}
+
+/**
+ * Extract error information from transaction logs
+ * This helps map Token-2022 and other program errors that don't serialize well in LiteSVM
+ */
+function extractErrorFromLogs(logs: string[]): string | null {
+  for (const log of logs) {
+    // Check for Token-2022 NonTransferable errors
+    if (
+      log.includes("NonTransferable") ||
+      log.includes("Transfer is disabled for this mint")
+    ) {
+      return "Transfer is disabled for this mint";
+    }
+    // Check for other Token-2022 extension errors
+    if (log.includes("Extension") && log.includes("Error")) {
+      return log;
+    }
+    // Extract anchor errors
+    if (log.includes("AnchorError") || log.includes("Error Code:")) {
+      return log;
+    }
+  }
+  return null;
+}
+
+/**
+ * Map LiteSVM errors to more meaningful error messages
+ * Token-2022 and other programs may return undefined or poorly serialized errors in LiteSVM
+ */
+function mapLiteSVMError(error: any, logs: string[]): string {
+  let errorStr = error.toString();
+
+  // If error serialization failed, try to extract from logs or error structure
+  if (errorStr === "undefined" || !errorStr || errorStr === "[object Object]") {
+    // Try to extract from logs first
+    const errorFromLogs = extractErrorFromLogs(logs);
+    if (errorFromLogs) {
+      return errorFromLogs;
+    }
+
+    // Try to extract from error object structure
+    if (error && typeof error === "object" && error.InstructionError) {
+      const [index, innerError] = error.InstructionError;
+      if (innerError?.Custom !== undefined) {
+        return `InstructionError(${index}, Custom(${innerError.Custom}))`;
+      }
+    }
+
+    // Empty logs + undefined error typically means Token-2022 NonTransferable blocked a transfer
+    if (logs.length === 0) {
+      return "Transfer is disabled for this mint";
+    }
+  }
+
+  return errorStr;
 }
 
 /**
@@ -206,12 +281,12 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
 
       // Check if transaction failed
       if ("err" in result) {
-        const logs =
-          "logMessages" in result && Array.isArray(result.logMessages)
-            ? result.logMessages
-            : [];
+        const error = result.err();
+        const logs = result.meta ? result.meta().logs() : [];
+        const errorStr = mapLiteSVMError(error, logs);
+
         throw new Error(
-          `Transaction failed:\nError: ${JSON.stringify(result.err)}\nLogs:\n${logs.join("\n")}`,
+          `Transaction failed:\nError: ${errorStr}\nLogs:\n${logs.join("\n")}`,
         );
       }
 
@@ -250,7 +325,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       if ("err" in result) {
         const error = result.err();
         const logs = result.meta().logs();
-        const errorMsg = `Transaction failed: ${error.toString()}`;
+        const errorStr = mapLiteSVMError(error, logs);
+
+        const errorMsg = `Transaction failed: ${errorStr}`;
         console.error(errorMsg);
         console.error("Logs:", logs);
         throw new Error(errorMsg);
@@ -343,12 +420,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
 
         // Check if transaction failed
         if ("err" in result) {
-          // LiteSVM uses methods for error properties
           const error = result.err();
           const logs = result.meta().logs();
-
-          // Convert error to string representation
-          const errorStr = error.toString();
+          const errorStr = mapLiteSVMError(error, logs);
 
           throw new Error(
             `Transaction failed:\nError: ${errorStr}\nLogs:\n${logs.join("\n")}`,

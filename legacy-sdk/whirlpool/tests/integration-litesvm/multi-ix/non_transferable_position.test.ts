@@ -45,33 +45,24 @@ import { PublicKey } from "@solana/web3.js";
 
 describe("non transferable position (litesvm)", () => {
   let provider: anchor.AnchorProvider;
-
   let program: anchor.Program;
-
   let ctx: WhirlpoolContext;
-
   let fetcher: any;
 
-
   beforeAll(async () => {
-
     await startLiteSVM();
-
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
-
     program = new anchor.Program(idl, programId, provider);
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  fetcher = ctx.fetcher;
 
+    anchor.setProvider(provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
   });
 
   async function buildTestPool(
@@ -260,10 +251,12 @@ describe("non transferable position (litesvm)", () => {
             IGNORE_CACHE,
           );
           assert.ok(whirlpool);
-          assert.ok(whirlpool.rewardInfos[2].extension.every((b) => b === 0));
+          assert.ok(
+            whirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+          );
           assert.ok(
             whirlpool.rewardInfos[1].extension.every(
-              (b, i) => i === 0 || b === 0,
+              (b: number, i: number) => i === 0 || b === 0,
             ),
           );
           assert.ok(

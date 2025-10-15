@@ -875,3 +875,72 @@ export async function pollForCondition<T>(
   // Return the last result even if condition not met (let caller handle assertion)
   return result!;
 }
+
+/**
+ * Mock implementation of amountToUiAmount for LiteSVM
+ * Simulates interest-bearing token conversion from raw amount to UI amount
+ */
+export async function mockAmountToUiAmount(
+  connection: anchor.web3.Connection,
+  mint: PublicKey,
+  rawAmount: number,
+  tokenProgramId: PublicKey,
+): Promise<string> {
+  try {
+    const mintAccount = await connection.getAccountInfo(mint);
+    if (!mintAccount) {
+      throw new Error("Mint account not found");
+    }
+    // For simplicity in LiteSVM, we'll parse the mint using SPL Token's getMint
+    // and calculate interest-bearing UI amounts based on the extension data
+    const { getMint, getInterestBearingMintConfigState } = await import(
+      "@solana/spl-token"
+    );
+    try {
+      const mintInfo = await getMint(
+        connection,
+        mint,
+        undefined,
+        tokenProgramId,
+      );
+
+      // Check if mint has interest-bearing extension
+      const interestConfig = getInterestBearingMintConfigState(mintInfo);
+
+      if (interestConfig === null) {
+        // No interest-bearing extension, return raw amount
+        return rawAmount.toString();
+      }
+
+      // Get current timestamp from LiteSVM
+      const litesvm = getLiteSVM();
+      const currentClock = litesvm.getClock();
+      const currentTimestamp = currentClock.unixTimestamp;
+
+      // Calculate time elapsed since last update (in seconds)
+      const lastUpdateTimestamp = interestConfig.lastUpdateTimestamp;
+      const timeElapsed =
+        Number(currentTimestamp) - Number(lastUpdateTimestamp);
+
+      // Interest rate is in basis points per YEAR (1 bp = 0.0001)
+      // Need to convert to per-second rate for the calculation
+      const rate = interestConfig.currentRate;
+      const annualRateDecimal = Number(rate) / 10000; // e.g., 10000 bps = 1.0 = 100%
+      const secondsPerYear = 365.25 * 24 * 60 * 60; // ~31557600 seconds
+      const perSecondRate = annualRateDecimal / secondsPerYear;
+
+      // For continuous compounding: UI = raw * e^(per_second_rate * time)
+      const growthFactor = Math.exp(perSecondRate * timeElapsed);
+      const uiAmount = rawAmount * growthFactor;
+
+      return Math.floor(uiAmount).toString(); // Return as integer string
+    } catch (parseError) {
+      console.warn("Failed to parse interest-bearing config:", parseError);
+      return rawAmount.toString();
+    }
+  } catch (e) {
+    console.warn("mockAmountToUiAmount error:", e);
+    // Fallback: return raw amount
+    return rawAmount.toString();
+  }
+}

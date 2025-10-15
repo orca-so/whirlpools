@@ -28,7 +28,13 @@ import {
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  resetLiteSVM,
+  getLiteSVM,
+  pollForCondition,
+} from "../../utils/litesvm";
 import {
   buildTestAquariums,
   getDefaultAquarium,
@@ -51,35 +57,21 @@ interface SharedTestContext {
 
 describe("sparse swap tests (litesvm)", () => {
   let provider: anchor.AnchorProvider;
-
   let program: anchor.Program;
-
-  let ctx: WhirlpoolContext;
-
-  let fetcher: any;
-
+  let testCtx: SharedTestContext;
 
   beforeAll(async () => {
-
     await startLiteSVM();
-
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
-
     program = new anchor.Program(idl, programId, provider);
 
-  let testCtx: SharedTestContext;
-
-  beforeAll(() => {
     anchor.setProvider(provider);
-    // program initialized in beforeAll
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
@@ -694,6 +686,12 @@ describe("sparse swap tests (litesvm)", () => {
     });
 
     describe("failures (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       async function buildTestEnvironment() {
         const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
           await initTestPoolWithTokens(
@@ -1109,6 +1107,12 @@ describe("sparse swap tests (litesvm)", () => {
     }
 
     describe("swap, b to a: 2816 --> 2816 + (64 * 88) * 2 (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       const aToB = false;
       const initialTickIndex = 2816;
       const targetTickIndex = 2816 + tickSpacing64 * 88 * 2; // --> 2 tick arrays
@@ -1143,6 +1147,27 @@ describe("sparse swap tests (litesvm)", () => {
           await (await pool.initTickArrayForTicks(
             tickArrayIndexes,
           ))!.buildAndExecute();
+
+          // Wait for LiteSVM state to sync for each initialized tick array
+          for (const tickIndex of tickArrayIndexes) {
+            const tickArrayPda = PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              tickIndex,
+            ).publicKey;
+            await pollForCondition(
+              () =>
+                testCtx.whirlpoolCtx.fetcher.getTickArray(
+                  tickArrayPda,
+                  IGNORE_CACHE,
+                ),
+              (ta) => ta !== null,
+              {
+                accountToReload: tickArrayPda,
+                connection: testCtx.whirlpoolCtx.connection,
+              },
+            );
+          }
         }
 
         // fetch tick arrays
@@ -1272,6 +1297,12 @@ describe("sparse swap tests (litesvm)", () => {
     });
 
     describe("swap, a to b: 2816 - (64 * 88) * 2 <-- 2816 (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       const aToB = true;
       const initialTickIndex = 2816;
       const targetTickIndex = 2816 - tickSpacing64 * 88 * 2; // <-- 2 tick arrays
@@ -1306,6 +1337,27 @@ describe("sparse swap tests (litesvm)", () => {
           await (await pool.initTickArrayForTicks(
             tickArrayIndexes,
           ))!.buildAndExecute();
+
+          // Wait for LiteSVM state to sync for each initialized tick array
+          for (const tickIndex of tickArrayIndexes) {
+            const tickArrayPda = PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              tickIndex,
+            ).publicKey;
+            await pollForCondition(
+              () =>
+                testCtx.whirlpoolCtx.fetcher.getTickArray(
+                  tickArrayPda,
+                  IGNORE_CACHE,
+                ),
+              (ta) => ta !== null,
+              {
+                accountToReload: tickArrayPda,
+                connection: testCtx.whirlpoolCtx.connection,
+              },
+            );
+          }
         }
 
         // fetch tick arrays
@@ -1436,6 +1488,12 @@ describe("sparse swap tests (litesvm)", () => {
     });
 
     describe("twoHopSwap, b to a: 2816 --> 2816 + (64 * 88) * 2 (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       const aToB = false;
       const initialTickIndex = 2816;
       const targetTickIndex = 2816 + tickSpacing64 * 88 * 2; // --> 2 tick arrays
@@ -1552,6 +1610,44 @@ describe("sparse swap tests (litesvm)", () => {
           await (await pool1.initTickArrayForTicks(
             tickArrayIndexes,
           ))!.buildAndExecute();
+
+          // Wait for LiteSVM state to sync for each initialized tick array
+          for (const tickIndex of tickArrayIndexes) {
+            const tickArrayPda0 = PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              pool0.getAddress(),
+              tickIndex,
+            ).publicKey;
+            const tickArrayPda1 = PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              pool1.getAddress(),
+              tickIndex,
+            ).publicKey;
+            await pollForCondition(
+              () =>
+                testCtx.whirlpoolCtx.fetcher.getTickArray(
+                  tickArrayPda0,
+                  IGNORE_CACHE,
+                ),
+              (ta) => ta !== null,
+              {
+                accountToReload: tickArrayPda0,
+                connection: testCtx.whirlpoolCtx.connection,
+              },
+            );
+            await pollForCondition(
+              () =>
+                testCtx.whirlpoolCtx.fetcher.getTickArray(
+                  tickArrayPda1,
+                  IGNORE_CACHE,
+                ),
+              (ta) => ta !== null,
+              {
+                accountToReload: tickArrayPda1,
+                connection: testCtx.whirlpoolCtx.connection,
+              },
+            );
+          }
         }
 
         // fetch tick arrays
@@ -1775,6 +1871,12 @@ describe("sparse swap tests (litesvm)", () => {
     });
 
     describe("twoHopSwap, a to b: 2816 + (64 * 88) * 2 <-- 2816 (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       const aToB = true;
       const initialTickIndex = 2816;
       const targetTickIndex = 2816 - tickSpacing64 * 88 * 2; // <-- 2 tick arrays
@@ -1891,6 +1993,44 @@ describe("sparse swap tests (litesvm)", () => {
           await (await pool1.initTickArrayForTicks(
             tickArrayIndexes,
           ))!.buildAndExecute();
+
+          // Wait for LiteSVM state to sync for each initialized tick array
+          for (const tickIndex of tickArrayIndexes) {
+            const tickArrayPda0 = PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              pool0.getAddress(),
+              tickIndex,
+            ).publicKey;
+            const tickArrayPda1 = PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              pool1.getAddress(),
+              tickIndex,
+            ).publicKey;
+            await pollForCondition(
+              () =>
+                testCtx.whirlpoolCtx.fetcher.getTickArray(
+                  tickArrayPda0,
+                  IGNORE_CACHE,
+                ),
+              (ta) => ta !== null,
+              {
+                accountToReload: tickArrayPda0,
+                connection: testCtx.whirlpoolCtx.connection,
+              },
+            );
+            await pollForCondition(
+              () =>
+                testCtx.whirlpoolCtx.fetcher.getTickArray(
+                  tickArrayPda1,
+                  IGNORE_CACHE,
+                ),
+              (ta) => ta !== null,
+              {
+                accountToReload: tickArrayPda1,
+                connection: testCtx.whirlpoolCtx.connection,
+              },
+            );
+          }
         }
 
         // fetch tick arrays
@@ -2116,6 +2256,12 @@ describe("sparse swap tests (litesvm)", () => {
 
   describe("supplemental TickArrays (v2 only) (litesvm)", () => {
     describe("swapV2 (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       async function buildTestEnvironment() {
         const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
           await initTestPoolWithTokens(
@@ -2477,6 +2623,12 @@ describe("sparse swap tests (litesvm)", () => {
     });
 
     describe("twoHopSwapV2 (litesvm)", () => {
+      beforeEach(async () => {
+        await resetLiteSVM();
+        // Re-fund the wallet after reset
+        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      });
+
       it("using 3 supplemental tick arrays", async () => {
         const aToB = false;
         const initialTickIndex = 2816;

@@ -203,13 +203,14 @@ function mapLiteSVMError(error: any, logs: string[]): string {
 }
 
 /**
- * Reset the LiteSVM instance, forcing a fresh blockchain state on next startLiteSVM()
+ * Reset the LiteSVM instance, forcing a fresh blockchain state
  * Use this in beforeEach() hooks to get isolated state between tests
  */
-export function resetLiteSVM(): void {
+export async function resetLiteSVM(): Promise<void> {
   _litesvm = null;
   _logListeners = [];
   _nextListenerId = 1;
+  await startLiteSVM();
 }
 
 /**
@@ -239,10 +240,12 @@ export async function createLiteSVMProvider(): Promise<anchor.AnchorProvider> {
 
 /**
  * Connection wrapper for LiteSVM
+ * Uses getLiteSVM() dynamically to support instance resets
  */
 function createLiteSVMConnection(litesvm: LiteSVM) {
   return {
     getAccountInfo: async (pubkey: PublicKey) => {
+      const litesvm = getLiteSVM();
       const account = litesvm.getAccount(pubkey);
       if (!account) return null;
       return {
@@ -254,6 +257,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       };
     },
     getMultipleAccountsInfo: async (pubkeys: PublicKey[]) => {
+      const litesvm = getLiteSVM();
       return pubkeys.map((pk) => {
         const account = litesvm.getAccount(pk);
         if (!account) return null;
@@ -270,6 +274,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       rawTransaction: Buffer | Uint8Array,
       options?: any,
     ) => {
+      const litesvm = getLiteSVM();
       // Deserialize transaction to extract signature after processing
       const tx = Transaction.from(rawTransaction);
 
@@ -305,6 +310,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       signers?: any[],
       options?: any,
     ) => {
+      const litesvm = getLiteSVM();
       // Set blockhash if needed
       if (tx instanceof Transaction) {
         tx.recentBlockhash = litesvm.latestBlockhash();
@@ -367,7 +373,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
 
       // Expire the blockhash to get a fresh one for next transaction
-      litesvm.expireBlockhash();
+      getLiteSVM().expireBlockhash();
 
       return signature;
     },
@@ -376,6 +382,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       signersOrOptions?: any[] | any,
       options?: any,
     ) => {
+      const litesvm = getLiteSVM();
       // Handle both (tx, options) and (tx, signers, options) signatures
       let signers: any[] = [];
       let finalOptions = options;
@@ -455,7 +462,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           err: null,
           logs,
         };
-        const context = { slot: Number(litesvm.getClock().slot) };
+        const context = { slot: Number(getLiteSVM().getClock().slot) };
 
         // Trigger all registered log listeners
         for (const listener of _logListeners) {
@@ -468,7 +475,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         }
 
         // Expire the blockhash to get a fresh one for next transaction
-        litesvm.expireBlockhash();
+        getLiteSVM().expireBlockhash();
 
         return signature;
       } catch (error) {
@@ -482,6 +489,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       value: { err: null },
     }),
     getLatestBlockhash: async () => {
+      const litesvm = getLiteSVM();
       const blockhash = litesvm.latestBlockhash();
       return {
         blockhash: blockhash,
@@ -489,13 +497,17 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       };
     },
     getBalance: async (pubkey: PublicKey) => {
+      const litesvm = getLiteSVM();
       const balance = litesvm.getBalance(pubkey);
       return balance ? Number(balance) : 0;
     },
     getMinimumBalanceForRentExemption: async (dataLength: number) => {
-      return Number(litesvm.minimumBalanceForRentExemption(BigInt(dataLength)));
+      return Number(
+        getLiteSVM().minimumBalanceForRentExemption(BigInt(dataLength)),
+      );
     },
     requestAirdrop: async (pubkey: PublicKey, lamports: number) => {
+      const litesvm = getLiteSVM();
       const result = litesvm.airdrop(pubkey, BigInt(lamports));
       if (result && "err" in result) {
         throw new Error(`Airdrop failed: ${JSON.stringify(result.err)}`);
@@ -503,6 +515,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       return "airdrop-sig";
     },
     getTokenSupply: async (mint: PublicKey) => {
+      const litesvm = getLiteSVM();
       const mintAccount = litesvm.getAccount(mint);
       if (!mintAccount || mintAccount.data.length < 45) {
         throw new Error("Invalid mint account");
@@ -535,6 +548,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     },
     getEpochInfo: async (commitment?: any) => {
       // Return a mock epoch info for testing
+      const litesvm = getLiteSVM();
       const clock = litesvm.getClock();
       return {
         epoch: Number(clock.epoch),
@@ -546,6 +560,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       };
     },
     getTokenAccountBalance: async (pubkey: PublicKey) => {
+      const litesvm = getLiteSVM();
       // Get the token account data
       const account = litesvm.getAccount(pubkey);
       if (!account || account.data.length < 72) {

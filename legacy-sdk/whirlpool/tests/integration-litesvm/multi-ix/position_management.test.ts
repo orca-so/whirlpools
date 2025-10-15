@@ -14,27 +14,21 @@ describe("position management tests (litesvm)", () => {
 
   let ctx: WhirlpoolContext;
 
-  let fetcher: any;
-
-
   beforeAll(async () => {
-
     await startLiteSVM();
 
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
 
     program = new anchor.Program(idl, programId, provider);
 
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
   });
 
   it("successfully closes and opens a position in one transaction", async () => {

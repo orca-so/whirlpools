@@ -736,3 +736,53 @@ export function warpClock(seconds: number): void {
     `⏰ Warped clock: +${seconds}s (slot: ${currentClock.slot} -> ${newSlot}, time: ${currentClock.unixTimestamp} -> ${newTimestamp})`,
   );
 }
+
+/**
+ * Poll for a condition to be met, with retries and account reload for state synchronization
+ * This is useful for LiteSVM which sometimes has delayed state updates
+ *
+ * @param checkFn - Async function that returns the result to check
+ * @param conditionFn - Function that checks if the condition is met on the result
+ * @param accountToReload - Optional account address to force reload before each check
+ * @param connection - Connection to use for account reload
+ * @param maxRetries - Maximum number of retries (default: 10)
+ * @param delayMs - Delay between retries in milliseconds (default: 10)
+ * @returns The result once the condition is met
+ * @throws Error if condition is not met after max retries
+ */
+export async function pollForCondition<T>(
+  checkFn: () => Promise<T>,
+  conditionFn: (result: T) => boolean,
+  options?: {
+    accountToReload?: PublicKey;
+    connection?: anchor.web3.Connection;
+    maxRetries?: number;
+    delayMs?: number;
+  },
+): Promise<T> {
+  const maxRetries = options?.maxRetries ?? 10;
+  const delayMs = options?.delayMs ?? 10;
+
+  let result: T;
+
+  for (let retry = 0; retry < maxRetries; retry++) {
+    // Force account reload if specified
+    if (options?.accountToReload && options?.connection) {
+      await options.connection.getAccountInfo(options.accountToReload);
+    }
+
+    result = await checkFn();
+
+    if (conditionFn(result)) {
+      return result;
+    }
+
+    // Wait before next retry
+    if (retry < maxRetries - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  // Return the last result even if condition not met (let caller handle assertion)
+  return result!;
+}

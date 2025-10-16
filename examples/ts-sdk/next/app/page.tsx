@@ -64,7 +64,7 @@ function SwapPage({ account }: SwapPageProps) {
   const [solscanLink, setSolscanLink] = useState<string | null>(null);
 
   const rpc = useMemo(
-    () => createSolanaRpc("https://api.devnet.solana.com"),
+    () => createSolanaRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com"),
     [],
   );
 

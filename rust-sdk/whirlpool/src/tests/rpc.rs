@@ -71,7 +71,7 @@ impl RpcContext {
             Account {
                 lamports: 100_000_000_000,
                 data: [
-                    WHIRLPOOLS_CONFIG_DISCRIMINATOR,
+                    WHIRLPOOLS_CONFIG_DISCRIMINATOR.as_slice(),
                     &signer.pubkey().to_bytes(), // fee_authority
                     &signer.pubkey().to_bytes(), // collect_protocol_fee_authority
                     &signer.pubkey().to_bytes(), // reward_emissions_super_authority
@@ -91,7 +91,7 @@ impl RpcContext {
             Account {
                 lamports: 100_000_000_000,
                 data: [
-                    FEE_TIER_DISCRIMINATOR,
+                    FEE_TIER_DISCRIMINATOR.as_slice(),
                     &config.to_bytes(),
                     &128u16.to_le_bytes(),
                     &1000u16.to_le_bytes(),
@@ -109,7 +109,7 @@ impl RpcContext {
             Account {
                 lamports: 100_000_000_000,
                 data: [
-                    FEE_TIER_DISCRIMINATOR,
+                    FEE_TIER_DISCRIMINATOR.as_slice(),
                     &config.to_bytes(),
                     &64u16.to_le_bytes(),
                     &300u16.to_le_bytes(),
@@ -129,7 +129,7 @@ impl RpcContext {
             Account {
                 lamports: 100_000_000_000,
                 data: [
-                    FEE_TIER_DISCRIMINATOR,
+                    FEE_TIER_DISCRIMINATOR.as_slice(),
                     &config.to_bytes(),
                     &SPLASH_POOL_TICK_SPACING.to_le_bytes(),
                     &1000u16.to_le_bytes(),

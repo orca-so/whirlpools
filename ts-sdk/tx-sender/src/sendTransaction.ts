@@ -2,7 +2,7 @@ import { getRpcConfig } from "./config";
 import type {
   Address,
   IInstruction,
-  KeyPairSigner,
+  TransactionSigner,
   FullySignedTransaction,
   Signature,
   Commitment,
@@ -19,7 +19,7 @@ import { buildTransaction } from "./buildTransaction";
  * Builds and sends a transaction with the given instructions, signers, and commitment level.
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction.
- * @param {KeyPairSigner} payer - The fee payer for the transaction.
+ * @param {TransactionSigner | Address} payer - The fee payer for the transaction.
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use.
  * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
@@ -39,7 +39,7 @@ import { buildTransaction } from "./buildTransaction";
  */
 export async function buildAndSendTransaction(
   instructions: IInstruction[],
-  payer: KeyPairSigner,
+  payer: TransactionSigner | Address,
   lookupTableAddresses?: (Address | string)[],
   commitment: Commitment = "confirmed",
 ) {
@@ -94,8 +94,11 @@ export async function sendTransaction(
   }
 
   const expiryTime = Date.now() + 90_000;
+  const retryIntervalMs = 500;
 
   while (Date.now() < expiryTime) {
+    const iterationStart = Date.now();
+    
     try {
       await rpc
         .sendTransaction(encodedTransaction, {
@@ -114,7 +117,12 @@ export async function sendTransaction(
         return txHash;
       }
     } catch {
-      continue;
+      // Continue to retry
+    }
+    const elapsed = Date.now() - iterationStart;
+    const remainingDelay = retryIntervalMs - elapsed;
+    if (remainingDelay > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingDelay));
     }
   }
 

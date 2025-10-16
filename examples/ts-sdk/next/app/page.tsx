@@ -10,15 +10,8 @@ import {
   createSolanaRpc,
   address,
   Address,
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signAndSendTransactionMessageWithSigners,
-  getBase58Decoder,
-  Signature,
 } from "@solana/kit";
+import { buildAndSendTransaction, buildTransaction, sendTransaction, setRpc } from "@orca-so/tx-sender";
 
 const SOL_MINT: Address = address(
   "So11111111111111111111111111111111111111112",
@@ -31,32 +24,6 @@ interface SwapPageProps {
   account: NonNullable<ReturnType<typeof useWallet>["account"]>;
 }
 
-async function awaitTxConfirmation(
-  rpcClient: any,
-  signature: Signature,
-  options?: { maxTimeMs?: number; pollIntervalMs?: number },
-): Promise<boolean> {
-  const maxTimeMs = options?.maxTimeMs ?? 90_000;
-  const pollIntervalMs = options?.pollIntervalMs ?? 500;
-  const startTime = Date.now();
-  while (Date.now() - startTime < maxTimeMs) {
-    const startLoopTime = Date.now();
-    const status = await rpcClient.getSignatureStatuses([signature]).send();
-    const info = status.value[0];
-    if (info && info.err === null && info.confirmationStatus === "finalized") {
-      return true;
-    }
-    const elapsedTime = Date.now() - startLoopTime;
-    const remainingTime = pollIntervalMs - elapsedTime;
-    if (remainingTime > 0) {
-      await new Promise((resolve) => setTimeout(resolve, remainingTime));
-    } else {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  }
-  return false;
-}
-
 function SwapPage({ account }: SwapPageProps) {
   const { signer } = useWallet();
   const [transactionStatus, setTransactionStatus] = useState<string>("");
@@ -64,7 +31,7 @@ function SwapPage({ account }: SwapPageProps) {
   const [solscanLink, setSolscanLink] = useState<string | null>(null);
 
   const rpc = useMemo(
-    () => createSolanaRpc("https://api.devnet.solana.com"),
+    () => createSolanaRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com"),
     [],
   );
 
@@ -89,34 +56,10 @@ function SwapPage({ account }: SwapPageProps) {
     );
 
     try {
-      const { value: latestBlockhash } = await rpc
-        .getLatestBlockhash({ commitment: "confirmed" })
-        .send();
-
-      const message = pipe(
-        createTransactionMessage({ version: 0 }),
-        (m) => setTransactionMessageFeePayerSigner(signer, m),
-        (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
-        (m) => appendTransactionMessageInstructions(instructions, m),
-      );
-
       setTransactionStatus("Signing and sending transaction...");
-
-      const signatureBytes =
-        await signAndSendTransactionMessageWithSigners(message);
-
-      const signature = getBase58Decoder().decode(signatureBytes) as Signature;
-
-      setTransactionStatus(`Awaiting transaction confirmation...`);
-      (async () => {
-        const isFinalized = await awaitTxConfirmation(rpc, signature);
-        if (isFinalized) {
-          setTransactionStatus("finalized");
-          setSolscanLink(`https://solscan.io/tx/${signature}?cluster=devnet`);
-        } else {
-          setTransactionStatus(`Transaction failed: timed out.`);
-        }
-      })();
+      const signature = await buildAndSendTransaction(instructions, signer);
+      setTransactionStatus("finalized");
+      setSolscanLink(`https://solscan.io/tx/${signature}?cluster=devnet`);
     } catch (error) {
       console.error("Swap failed:", error);
       setTransactionStatus(
@@ -261,6 +204,7 @@ function PageContent() {
 export default function Page() {
   useEffect(() => {
     setWhirlpoolsConfig("solanaDevnet");
+    setRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com");
   }, []);
 
   return (

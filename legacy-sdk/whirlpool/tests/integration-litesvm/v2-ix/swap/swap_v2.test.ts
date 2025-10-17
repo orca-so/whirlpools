@@ -39,9 +39,9 @@ import {
   TickSpacing,
   ZERO_BN,
   getTokenBalance,
-  sleep,
   startLiteSVM,
   createLiteSVMProvider,
+  warpClock,
 } from "../../../utils";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type {
@@ -65,17 +65,19 @@ describe("swap_v2 (litesvm)", () => {
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
+  let client: any;
 
   beforeAll(async () => {
     await startLiteSVM();
     provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
     const idl = require("../../../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
     fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
   });
 
   describe("v1 parity (litesvm)", () => {
@@ -117,7 +119,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { poolInitInfo: anotherPoolInitInfo } =
@@ -125,7 +127,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Stable
+              TickSpacing.Stable,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -134,12 +136,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -165,9 +167,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
 
@@ -177,7 +179,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { poolInitInfo: anotherPoolInitInfo } =
@@ -185,7 +187,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Stable
+              TickSpacing.Stable,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -194,12 +196,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -225,9 +227,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
 
@@ -237,7 +239,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { tokenAccountA: anotherTokenAccountA } =
@@ -245,7 +247,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Stable
+              TickSpacing.Stable,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -254,12 +256,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -285,9 +287,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -297,7 +299,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { tokenAccountB: anotherTokenAccountB } =
@@ -305,7 +307,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Stable
+              TickSpacing.Stable,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -314,12 +316,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -345,9 +347,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -357,7 +359,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -366,14 +368,14 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const otherTokenAuthority = web3.Keypair.generate();
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -399,11 +401,11 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             )
               .addSigner(otherTokenAuthority)
               .buildAndExecute(),
-            /0x4/ // OwnerMismatch
+            /0x4/, // OwnerMismatch
           );
         });
 
@@ -414,7 +416,7 @@ describe("swap_v2 (litesvm)", () => {
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
               TickSpacing.Standard,
-              MathUtil.toX64(new Decimal(0.0242).sqrt())
+              MathUtil.toX64(new Decimal(0.0242).sqrt()),
             ); // Negative Tick
 
           const tickArrays = await initTickArrayRange(
@@ -423,12 +425,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -454,9 +456,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1787/ // InvalidTickArraySequence
+            /0x1787/, // InvalidTickArraySequence
           );
         });
 
@@ -466,14 +468,14 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const tickArrays = await initTickArrayRange(
@@ -482,12 +484,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -513,9 +515,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7dc/ // ConstraintAddress at token_mint_a (V1: 0x7d3 (ConstraaintRaw) at token_owner_account_a)
+            /0x7dc/, // ConstraintAddress at token_mint_a (V1: 0x7d3 (ConstraaintRaw) at token_owner_account_a)
           );
         });
 
@@ -525,14 +527,14 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const tickArrays = await initTickArrayRange(
@@ -541,12 +543,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -572,10 +574,10 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
             // sparse-swap changes error code (has_one constraint -> check in the handler)
-            /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+            /0x17a8/, // DifferentWhirlpoolTickArrayAccount
           );
         });
 
@@ -585,7 +587,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -594,7 +596,7 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           await assert.rejects(
@@ -620,9 +622,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: tickArrays[0].publicKey, // invalid
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d6/ // ConstraintSeeds
+            /0x7d6/, // ConstraintSeeds
           );
         });
 
@@ -632,14 +634,14 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const tickArrays = await initTickArrayRange(
@@ -648,12 +650,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const anotherOraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            anotherPoolInitInfo.whirlpoolPda.publicKey
+            anotherPoolInitInfo.whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -679,9 +681,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: anotherOraclePda.publicKey, // invalid
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d6/ // ConstraintSeeds
+            /0x7d6/, // ConstraintSeeds
           );
         });
 
@@ -691,7 +693,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -703,12 +705,12 @@ describe("swap_v2 (litesvm)", () => {
             22528,
             3,
             TickSpacing.Standard,
-            true
+            true,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           await assert.rejects(
@@ -734,9 +736,9 @@ describe("swap_v2 (litesvm)", () => {
                 tickArray1: tickArrays[0].publicKey,
                 tickArray2: tickArrays[0].publicKey,
                 oracle: oraclePda.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1793/ // ZeroTradableAmount
+            /0x1793/, // ZeroTradableAmount
           );
         });
 
@@ -746,138 +748,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
-            );
-          const aToB = false;
-          await initTickArrayRange(
-            ctx,
-            whirlpoolPda.publicKey,
-            22528, // to 33792
-            3,
-            TickSpacing.Standard,
-            aToB
-          );
-
-          const fundParams: FundedPositionV2Params[] = [
-            {
-              liquidityAmount: new anchor.BN(10_000_000),
-              tickLowerIndex: 29440,
-              tickUpperIndex: 33536,
-            },
-          ];
-
-          await fundPositionsV2(
-            ctx,
-            poolInitInfo,
-            tokenAccountA,
-            tokenAccountB,
-            fundParams
-          );
-
-          const tokenVaultABefore = new anchor.BN(
-            await getTokenBalance(
-              provider,
-              poolInitInfo.tokenVaultAKeypair.publicKey
-            )
-          );
-          const tokenVaultBBefore = new anchor.BN(
-            await getTokenBalance(
-              provider,
-              poolInitInfo.tokenVaultBKeypair.publicKey
-            )
-          );
-
-          const oraclePda = PDAUtil.getOracle(
-            ctx.program.programId,
-            whirlpoolPda.publicKey
-          );
-
-          const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-          const whirlpoolData = (await fetcher.getPool(
-            whirlpoolKey,
-            IGNORE_CACHE
-          )) as WhirlpoolData;
-          /* replaceed by swapQuoteWithParams to avoid using whirlpool client
-    const quote = await swapQuoteByInputToken(
-      whirlpool,
-      whirlpoolData.tokenMintB,
-      new BN(100000),
-      Percentage.fromFraction(1, 100),
-      ctx.program.programId,
-      fetcher,
-      IGNORE_CACHE
-    );
-    */
-          const quote = swapQuoteWithParams(
-            {
-              amountSpecifiedIsInput: true,
-              aToB: false,
-              tokenAmount: new BN(100000),
-              otherAmountThreshold:
-                SwapUtils.getDefaultOtherAmountThreshold(true),
-              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
-              whirlpoolData,
-              tickArrays: await SwapUtils.getTickArrays(
-                whirlpoolData.tickCurrentIndex,
-                whirlpoolData.tickSpacing,
-                false,
-                ctx.program.programId,
-                whirlpoolKey,
-                fetcher,
-                IGNORE_CACHE
-              ),
-              tokenExtensionCtx:
-                await TokenExtensionUtil.buildTokenExtensionContext(
-                  fetcher,
-                  whirlpoolData,
-                  IGNORE_CACHE
-                ),
-              oracleData: NO_ORACLE_DATA,
-            },
-            Percentage.fromFraction(1, 100)
-          );
-
-          await toTx(
-            ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quote,
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePda.publicKey,
-            })
-          ).buildAndExecute();
-
-          assert.equal(
-            await getTokenBalance(
-              provider,
-              poolInitInfo.tokenVaultAKeypair.publicKey
-            ),
-            tokenVaultABefore.sub(quote.estimatedAmountOut).toString()
-          );
-          assert.equal(
-            await getTokenBalance(
-              provider,
-              poolInitInfo.tokenVaultBKeypair.publicKey
-            ),
-            tokenVaultBBefore.add(quote.estimatedAmountIn).toString()
-          );
-        });
-
-        it("swaps across one dynamic tick array", async () => {
-          const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-            await initTestPoolWithTokensV2(
-              ctx,
-              tokenTraits.tokenTraitA,
-              tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
           const aToB = false;
           await initTickArrayRange(
@@ -887,7 +758,6 @@ describe("swap_v2 (litesvm)", () => {
             3,
             TickSpacing.Standard,
             aToB,
-            true
           );
 
           const fundParams: FundedPositionV2Params[] = [
@@ -903,31 +773,31 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           const tokenVaultABefore = new anchor.BN(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultAKeypair.publicKey
-            )
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
           );
           const tokenVaultBBefore = new anchor.BN(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultBKeypair.publicKey
-            )
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
           const whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           /* replaceed by swapQuoteWithParams to avoid using whirlpool client
     const quote = await swapQuoteByInputToken(
@@ -956,17 +826,17 @@ describe("swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolData,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           await toTx(
@@ -984,22 +854,154 @@ describe("swap_v2 (litesvm)", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.equal(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultAKeypair.publicKey
+              poolInitInfo.tokenVaultAKeypair.publicKey,
             ),
-            tokenVaultABefore.sub(quote.estimatedAmountOut).toString()
+            tokenVaultABefore.sub(quote.estimatedAmountOut).toString(),
           );
           assert.equal(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultBKeypair.publicKey
+              poolInitInfo.tokenVaultBKeypair.publicKey,
             ),
-            tokenVaultBBefore.add(quote.estimatedAmountIn).toString()
+            tokenVaultBBefore.add(quote.estimatedAmountIn).toString(),
+          );
+        });
+
+        it("swaps across one dynamic tick array", async () => {
+          const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+            await initTestPoolWithTokensV2(
+              ctx,
+              tokenTraits.tokenTraitA,
+              tokenTraits.tokenTraitB,
+              TickSpacing.Standard,
+            );
+          const aToB = false;
+          await initTickArrayRange(
+            ctx,
+            whirlpoolPda.publicKey,
+            22528, // to 33792
+            3,
+            TickSpacing.Standard,
+            aToB,
+            true,
+          );
+
+          const fundParams: FundedPositionV2Params[] = [
+            {
+              liquidityAmount: new anchor.BN(10_000_000),
+              tickLowerIndex: 29440,
+              tickUpperIndex: 33536,
+            },
+          ];
+
+          await fundPositionsV2(
+            ctx,
+            poolInitInfo,
+            tokenAccountA,
+            tokenAccountB,
+            fundParams,
+          );
+
+          const tokenVaultABefore = new anchor.BN(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
+          );
+          const tokenVaultBBefore = new anchor.BN(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
+          );
+
+          const oraclePda = PDAUtil.getOracle(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+          );
+
+          const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+          const whirlpoolData = (await fetcher.getPool(
+            whirlpoolKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+          /* replaceed by swapQuoteWithParams to avoid using whirlpool client
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new BN(100000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
+    );
+    */
+          const quote = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: true,
+              aToB: false,
+              tokenAmount: new BN(100000),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
+              whirlpoolData,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolData.tickCurrentIndex,
+                whirlpoolData.tickSpacing,
+                false,
+                ctx.program.programId,
+                whirlpoolKey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolData,
+                  IGNORE_CACHE,
+                ),
+              oracleData: NO_ORACLE_DATA,
+            },
+            Percentage.fromFraction(1, 100),
+          );
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.swapV2Ix(ctx.program, {
+              ...quote,
+              whirlpool: whirlpoolPda.publicKey,
+              tokenAuthority: ctx.wallet.publicKey,
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: poolInitInfo.tokenProgramA,
+              tokenProgramB: poolInitInfo.tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+              oracle: oraclePda.publicKey,
+            }),
+          ).buildAndExecute();
+
+          assert.equal(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
+            tokenVaultABefore.sub(quote.estimatedAmountOut).toString(),
+          );
+          assert.equal(
+            await getTokenBalance(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
+            tokenVaultBBefore.add(quote.estimatedAmountIn).toString(),
           );
         });
 
@@ -1008,7 +1010,7 @@ describe("swap_v2 (litesvm)", () => {
           const tickSpacing = TickSpacing.Stable;
           const startingTickArrayStartIndex = TickUtil.getStartTickIndex(
             startingTick,
-            tickSpacing
+            tickSpacing,
           );
           const aToB = true;
           const startSqrtPrice =
@@ -1022,7 +1024,7 @@ describe("swap_v2 (litesvm)", () => {
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
               TickSpacing.Stable,
-              startSqrtPrice
+              startSqrtPrice,
             );
           await initTickArrayRange(
             ctx,
@@ -1030,11 +1032,11 @@ describe("swap_v2 (litesvm)", () => {
             startingTickArrayStartIndex + TICK_ARRAY_SIZE * tickSpacing * 2,
             5,
             TickSpacing.Stable,
-            aToB
+            aToB,
           );
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const initialParams: FundedPositionV2Params[] = [
@@ -1053,13 +1055,13 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            initialParams
+            initialParams,
           );
 
           const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
           let whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           // Position covers the current price, so liquidity should be equal to the initial funded position
@@ -1078,12 +1080,12 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            nextParams
+            nextParams,
           );
 
           whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
           // strictly less than 91720 so the liquidity is not added.
@@ -1118,17 +1120,17 @@ describe("swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolData,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           await toTx(
@@ -1146,12 +1148,12 @@ describe("swap_v2 (litesvm)", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           // After the above swap, since the amount is so low, it is completely taken by fees
@@ -1162,8 +1164,8 @@ describe("swap_v2 (litesvm)", () => {
           assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
           assert.ok(
             whirlpoolData.liquidity.eq(
-              initialLiquidity.add(additionalLiquidity)
-            )
+              initialLiquidity.add(additionalLiquidity),
+            ),
           );
 
           /* replaced by swapQuoteWithParams to avoid using whirlpool client
@@ -1193,17 +1195,17 @@ describe("swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolData,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           await toTx(
@@ -1221,12 +1223,12 @@ describe("swap_v2 (litesvm)", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           // After the above swap, since the amount is so low, it is completely taken by fees
@@ -1236,8 +1238,8 @@ describe("swap_v2 (litesvm)", () => {
           assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
           assert.ok(
             whirlpoolData.liquidity.eq(
-              initialLiquidity.add(additionalLiquidity)
-            )
+              initialLiquidity.add(additionalLiquidity),
+            ),
           );
         });
 
@@ -1246,7 +1248,7 @@ describe("swap_v2 (litesvm)", () => {
           const tickSpacing = TickSpacing.Stable;
           const startingTickArrayStartIndex = TickUtil.getStartTickIndex(
             startingTick,
-            tickSpacing
+            tickSpacing,
           );
           const aToB = true;
           const startSqrtPrice =
@@ -1260,7 +1262,7 @@ describe("swap_v2 (litesvm)", () => {
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
               TickSpacing.Stable,
-              startSqrtPrice
+              startSqrtPrice,
             );
           await initTickArrayRange(
             ctx,
@@ -1268,11 +1270,11 @@ describe("swap_v2 (litesvm)", () => {
             startingTickArrayStartIndex + TICK_ARRAY_SIZE * tickSpacing * 2,
             5,
             TickSpacing.Stable,
-            aToB
+            aToB,
           );
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const initialParams: FundedPositionV2Params[] = [
@@ -1291,13 +1293,13 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            initialParams
+            initialParams,
           );
 
           const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
           let whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           // Position covers the current price, so liquidity should be equal to the initial funded position
@@ -1316,12 +1318,12 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            nextParams
+            nextParams,
           );
 
           whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
           // strictly less than 91720 so the liquidity is not added.
@@ -1356,17 +1358,17 @@ describe("swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolData,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           await toTx(
@@ -1384,12 +1386,12 @@ describe("swap_v2 (litesvm)", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           // After the above swap, since the amount is so low, it is completely taken by fees
@@ -1426,17 +1428,17 @@ describe("swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolData,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           await toTx(
@@ -1454,29 +1456,29 @@ describe("swap_v2 (litesvm)", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           whirlpoolData = (await fetcher.getPool(
             whirlpoolKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           // After the above swap, there will be a small amount remaining that crosses
           // an initialized tick index, but isn't enough to move the sqrt price.
           assert.equal(
             whirlpoolData.tickCurrentIndex,
-            startingTick - tickSpacing - 1
+            startingTick - tickSpacing - 1,
           );
           assert.ok(
             whirlpoolData.sqrtPrice.eq(
-              PriceMath.tickIndexToSqrtPriceX64(startingTick - tickSpacing)
-            )
+              PriceMath.tickIndexToSqrtPriceX64(startingTick - tickSpacing),
+            ),
           );
           assert.ok(
             whirlpoolData.liquidity.eq(
-              initialLiquidity.add(additionalLiquidity)
-            )
+              initialLiquidity.add(additionalLiquidity),
+            ),
           );
         });
 
@@ -1487,7 +1489,7 @@ describe("swap_v2 (litesvm)", () => {
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
               TickSpacing.Stable,
-              PriceMath.tickIndexToSqrtPriceX64(27500)
+              PriceMath.tickIndexToSqrtPriceX64(27500),
             );
 
           const aToB = false;
@@ -1497,7 +1499,7 @@ describe("swap_v2 (litesvm)", () => {
             27456, // to 28160, 28864
             5,
             TickSpacing.Stable,
-            false
+            false,
           );
 
           const fundParams: FundedPositionV2Params[] = [
@@ -1523,27 +1525,27 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           assert.equal(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultAKeypair.publicKey
+              poolInitInfo.tokenVaultAKeypair.publicKey,
             ),
-            "1977429"
+            "1977429",
           );
           assert.equal(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultBKeypair.publicKey
+              poolInitInfo.tokenVaultBKeypair.publicKey,
             ),
-            "869058"
+            "869058",
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           // Tick
@@ -1569,22 +1571,22 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[2].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.equal(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultAKeypair.publicKey
+              poolInitInfo.tokenVaultAKeypair.publicKey,
             ),
-            "1535201"
+            "1535201",
           );
           assert.equal(
             await getTokenBalance(
               provider,
-              poolInitInfo.tokenVaultBKeypair.publicKey
+              poolInitInfo.tokenVaultBKeypair.publicKey,
             ),
-            "7920058"
+            "7920058",
           );
 
           // TODO: Verify fees and other whirlpool params
@@ -1649,13 +1651,13 @@ describe("swap_v2 (litesvm)", () => {
             await initTestPoolWithLiquidityV2(
               ctx,
               tokenTraits.tokenTraitA,
-              tokenTraits.tokenTraitB
+              tokenTraits.tokenTraitB,
             );
           const whirlpool = poolInitInfo.whirlpoolPda.publicKey;
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            poolInitInfo.whirlpoolPda.publicKey
+            poolInitInfo.whirlpoolPda.publicKey,
           );
 
           const params: SwapV2Params = {
@@ -1683,7 +1685,7 @@ describe("swap_v2 (litesvm)", () => {
           try {
             await toTx(
               ctx,
-              WhirlpoolIx.swapV2Ix(ctx.program, params)
+              WhirlpoolIx.swapV2Ix(ctx.program, params),
             ).buildAndExecute();
             assert.fail("should fail if sqrt_price exceeds maximum");
           } catch (e) {
@@ -1697,13 +1699,13 @@ describe("swap_v2 (litesvm)", () => {
             await initTestPoolWithLiquidityV2(
               ctx,
               tokenTraits.tokenTraitA,
-              tokenTraits.tokenTraitB
+              tokenTraits.tokenTraitB,
             );
           const whirlpool = poolInitInfo.whirlpoolPda.publicKey;
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            poolInitInfo.whirlpoolPda.publicKey
+            poolInitInfo.whirlpoolPda.publicKey,
           );
 
           const params: SwapV2Params = {
@@ -1731,7 +1733,7 @@ describe("swap_v2 (litesvm)", () => {
           try {
             await toTx(
               ctx,
-              WhirlpoolIx.swapV2Ix(ctx.program, params)
+              WhirlpoolIx.swapV2Ix(ctx.program, params),
             ).buildAndExecute();
             assert.fail("should fail if sqrt_price subceeds minimum");
           } catch (e) {
@@ -1746,7 +1748,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -1755,7 +1757,7 @@ describe("swap_v2 (litesvm)", () => {
             22528, // to 33792
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const fundParams: FundedPositionV2Params[] = [
@@ -1771,12 +1773,12 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const params = {
@@ -1804,7 +1806,7 @@ describe("swap_v2 (litesvm)", () => {
           try {
             await toTx(
               ctx,
-              WhirlpoolIx.swapV2Ix(ctx.program, params)
+              WhirlpoolIx.swapV2Ix(ctx.program, params),
             ).buildAndExecute();
             assert.fail("should fail if amount out is below threshold");
           } catch (e) {
@@ -1819,7 +1821,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -1828,7 +1830,7 @@ describe("swap_v2 (litesvm)", () => {
             22528, // to 33792
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const fundParams: FundedPositionV2Params[] = [
@@ -1844,12 +1846,12 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const params: SwapV2Params = {
@@ -1877,7 +1879,7 @@ describe("swap_v2 (litesvm)", () => {
           try {
             await toTx(
               ctx,
-              WhirlpoolIx.swapV2Ix(ctx.program, params)
+              WhirlpoolIx.swapV2Ix(ctx.program, params),
             ).buildAndExecute();
             assert.fail("should fail if amount out is below threshold");
           } catch (e) {
@@ -1892,7 +1894,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -1901,7 +1903,7 @@ describe("swap_v2 (litesvm)", () => {
             22528, // to 33792
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const fundParams: FundedPositionV2Params[] = [
@@ -1917,12 +1919,12 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const params: SwapV2Params = {
@@ -1950,7 +1952,7 @@ describe("swap_v2 (litesvm)", () => {
           try {
             await toTx(
               ctx,
-              WhirlpoolIx.swapV2Ix(ctx.program, params)
+              WhirlpoolIx.swapV2Ix(ctx.program, params),
             ).buildAndExecute();
             assert.fail("should fail if amount out is below threshold");
           } catch (e) {
@@ -1965,7 +1967,7 @@ describe("swap_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const tickArrays = await initTickArrayRange(
@@ -1974,7 +1976,7 @@ describe("swap_v2 (litesvm)", () => {
             22528, // to 33792
             3,
             TickSpacing.Standard,
-            false
+            false,
           );
 
           const fundParams: FundedPositionV2Params[] = [
@@ -1990,12 +1992,12 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           const params: SwapV2Params = {
@@ -2023,7 +2025,7 @@ describe("swap_v2 (litesvm)", () => {
           try {
             await toTx(
               ctx,
-              WhirlpoolIx.swapV2Ix(ctx.program, params)
+              WhirlpoolIx.swapV2Ix(ctx.program, params),
             ).buildAndExecute();
             assert.fail("should fail if amount out is below threshold");
           } catch (e) {
@@ -2044,7 +2046,7 @@ describe("swap_v2 (litesvm)", () => {
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
             TickSpacing.Stable,
-            PriceMath.tickIndexToSqrtPriceX64(27500)
+            PriceMath.tickIndexToSqrtPriceX64(27500),
           );
 
           const aToB = false;
@@ -2054,7 +2056,7 @@ describe("swap_v2 (litesvm)", () => {
             27456, // to 30528
             3,
             TickSpacing.Stable,
-            aToB
+            aToB,
           );
 
           // tick array range: 27658 to 29386
@@ -2111,7 +2113,7 @@ describe("swap_v2 (litesvm)", () => {
             poolInitInfo,
             tokenAccountA,
             tokenAccountB,
-            fundParams
+            fundParams,
           );
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2120,8 +2122,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2142,7 +2144,7 @@ describe("swap_v2 (litesvm)", () => {
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           );
 
           // Tick
@@ -2168,7 +2170,7 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[2].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2177,8 +2179,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2219,7 +2221,7 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[0].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2228,8 +2230,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2270,7 +2272,7 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[2].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2279,8 +2281,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2321,7 +2323,7 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[0].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2330,8 +2332,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2372,7 +2374,7 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[2].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2381,8 +2383,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2423,7 +2425,7 @@ describe("swap_v2 (litesvm)", () => {
               tickArray1: tickArrays[1].publicKey,
               tickArray2: tickArrays[0].publicKey,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2432,8 +2434,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2458,7 +2460,7 @@ describe("swap_v2 (litesvm)", () => {
             tokenTraits.tokenTraitB,
             positionInfos,
             tokenAccountA,
-            tokenAccountB
+            tokenAccountB,
           );
 
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
@@ -2467,8 +2469,8 @@ describe("swap_v2 (litesvm)", () => {
           (
             await Promise.all(
               tickArrays.map((tickArray) =>
-                fetcher.getTickArray(tickArray.publicKey)
-              )
+                fetcher.getTickArray(tickArray.publicKey),
+              ),
             )
           ).map((tickArray) => {
             const ta = tickArray as TickArrayData;
@@ -2502,7 +2504,7 @@ describe("swap_v2 (litesvm)", () => {
               tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
               tokenOwnerAccountA: tokenAccountA,
               tokenOwnerAccountB: tokenAccountB,
-            })
+            }),
           )
             .addSigner(configKeypairs.collectProtocolFeesAuthorityKeypair)
             .buildAndExecute();
@@ -2516,7 +2518,7 @@ describe("swap_v2 (litesvm)", () => {
     describe("partial fill, b to a (litesvm)", () => {
       const tickSpacing = 128;
       const aToB = false;
-      const client = buildWhirlpoolClient(ctx);
+      /* client initialized in beforeAll */
 
       let poolInitInfo: InitPoolV2Params;
       let whirlpoolPda: PDA;
@@ -2532,7 +2534,7 @@ describe("swap_v2 (litesvm)", () => {
           { isToken2022: true },
           tickSpacing,
           PriceMath.tickIndexToSqrtPriceX64(439296 + 1),
-          new BN("10000000000000000000000")
+          new BN("10000000000000000000000"),
         );
 
         poolInitInfo = init.poolInitInfo;
@@ -2548,7 +2550,7 @@ describe("swap_v2 (litesvm)", () => {
           439296, // right most TickArray
           1,
           tickSpacing,
-          aToB
+          aToB,
         );
 
         // a: 1 (round up)
@@ -2566,16 +2568,16 @@ describe("swap_v2 (litesvm)", () => {
           poolInitInfo,
           tokenAccountA,
           tokenAccountB,
-          fundParams
+          fundParams,
         );
       });
 
       async function getTokenBalances(): Promise<[anchor.BN, anchor.BN]> {
         const tokenVaultA = new anchor.BN(
-          await getTokenBalance(provider, tokenAccountA)
+          await getTokenBalance(provider, tokenAccountA),
         );
         const tokenVaultB = new anchor.BN(
-          await getTokenBalance(provider, tokenAccountB)
+          await getTokenBalance(provider, tokenAccountB),
         );
         return [tokenVaultA, tokenVaultB];
       }
@@ -2593,7 +2595,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const [preA, preB] = await getTokenBalances();
@@ -2617,7 +2619,7 @@ describe("swap_v2 (litesvm)", () => {
             // sqrt_price_limit = 0
             sqrtPriceLimit: ZERO_BN,
             otherAmountThreshold: new BN(0),
-          })
+          }),
         ).buildAndExecute();
 
         const postWhirlpoolData = await whirlpool.refreshData();
@@ -2643,7 +2645,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const [preA, preB] = await getTokenBalances();
@@ -2667,7 +2669,7 @@ describe("swap_v2 (litesvm)", () => {
             // sqrt_price_limit = MAX_SQRT_PRICE
             sqrtPriceLimit: MAX_SQRT_PRICE_BN,
             otherAmountThreshold: new BN(0),
-          })
+          }),
         ).buildAndExecute();
 
         const postWhirlpoolData = await whirlpool.refreshData();
@@ -2693,7 +2695,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         await assert.rejects(
@@ -2717,9 +2719,9 @@ describe("swap_v2 (litesvm)", () => {
               sqrtPriceLimit: ZERO_BN,
               amount, // 1
               otherAmountThreshold: quote.estimatedAmountIn,
-            })
+            }),
           ).buildAndExecute(),
-          /0x17a9/ // PartialFillError
+          /0x17a9/, // PartialFillError
         );
       });
 
@@ -2736,7 +2738,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const [preA, preB] = await getTokenBalances();
@@ -2761,7 +2763,7 @@ describe("swap_v2 (litesvm)", () => {
             sqrtPriceLimit: MAX_SQRT_PRICE_BN,
             amount, // 1
             otherAmountThreshold: quote.estimatedAmountIn,
-          })
+          }),
         ).buildAndExecute();
 
         const postWhirlpoolData = await whirlpool.refreshData();
@@ -2778,7 +2780,7 @@ describe("swap_v2 (litesvm)", () => {
     describe("partial fill, a to b (litesvm)", () => {
       const tickSpacing = 128;
       const aToB = true;
-      const client = buildWhirlpoolClient(ctx);
+      /* client initialized in beforeAll */
 
       let poolInitInfo: InitPoolV2Params;
       let whirlpoolPda: PDA;
@@ -2794,7 +2796,7 @@ describe("swap_v2 (litesvm)", () => {
           { isToken2022: true },
           tickSpacing,
           PriceMath.tickIndexToSqrtPriceX64(-439296 - 1),
-          new BN("10000000000000000000000")
+          new BN("10000000000000000000000"),
         );
 
         poolInitInfo = init.poolInitInfo;
@@ -2810,7 +2812,7 @@ describe("swap_v2 (litesvm)", () => {
           -450560, // left most TickArray
           1,
           tickSpacing,
-          aToB
+          aToB,
         );
 
         // a: 223379098170764880 (to get 1, need >= 223379098170764880)
@@ -2828,16 +2830,16 @@ describe("swap_v2 (litesvm)", () => {
           poolInitInfo,
           tokenAccountA,
           tokenAccountB,
-          fundParams
+          fundParams,
         );
       });
 
       async function getTokenBalances(): Promise<[anchor.BN, anchor.BN]> {
         const tokenVaultA = new anchor.BN(
-          await getTokenBalance(provider, tokenAccountA)
+          await getTokenBalance(provider, tokenAccountA),
         );
         const tokenVaultB = new anchor.BN(
-          await getTokenBalance(provider, tokenAccountB)
+          await getTokenBalance(provider, tokenAccountB),
         );
         return [tokenVaultA, tokenVaultB];
       }
@@ -2855,7 +2857,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const [preA, preB] = await getTokenBalances();
@@ -2879,7 +2881,7 @@ describe("swap_v2 (litesvm)", () => {
             // sqrt_price_limit = 0
             sqrtPriceLimit: ZERO_BN,
             otherAmountThreshold: new BN(0),
-          })
+          }),
         ).buildAndExecute();
 
         const postWhirlpoolData = await whirlpool.refreshData();
@@ -2905,7 +2907,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const [preA, preB] = await getTokenBalances();
@@ -2929,7 +2931,7 @@ describe("swap_v2 (litesvm)", () => {
             // sqrt_price_limit = MIN_SQRT_PRICE
             sqrtPriceLimit: MIN_SQRT_PRICE_BN,
             otherAmountThreshold: new BN(0),
-          })
+          }),
         ).buildAndExecute();
 
         const postWhirlpoolData = await whirlpool.refreshData();
@@ -2955,7 +2957,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         await assert.rejects(
@@ -2979,9 +2981,9 @@ describe("swap_v2 (litesvm)", () => {
               sqrtPriceLimit: ZERO_BN,
               amount, // 1
               otherAmountThreshold: quote.estimatedAmountIn,
-            })
+            }),
           ).buildAndExecute(),
-          /0x17a9/ // PartialFillError
+          /0x17a9/, // PartialFillError
         );
       });
 
@@ -2998,7 +3000,7 @@ describe("swap_v2 (litesvm)", () => {
           Percentage.fromFraction(1, 100),
           ctx.program.programId,
           fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const [preA, preB] = await getTokenBalances();
@@ -3023,7 +3025,7 @@ describe("swap_v2 (litesvm)", () => {
             sqrtPriceLimit: MIN_SQRT_PRICE_BN,
             amount, // 1
             otherAmountThreshold: quote.estimatedAmountIn,
-          })
+          }),
         ).buildAndExecute();
 
         const postWhirlpoolData = await whirlpool.refreshData();
@@ -3043,7 +3045,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
       const aToB = false;
       await initTickArrayRange(
@@ -3052,7 +3054,7 @@ describe("swap_v2 (litesvm)", () => {
         22528, // to 33792
         3,
         TickSpacing.Standard,
-        aToB
+        aToB,
       );
 
       const fundParams: FundedPositionV2Params[] = [
@@ -3068,18 +3070,18 @@ describe("swap_v2 (litesvm)", () => {
         poolInitInfo,
         tokenAccountA,
         tokenAccountB,
-        fundParams
+        fundParams,
       );
 
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
       const whirlpoolDataPre = (await fetcher.getPool(
         whirlpoolKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
       const quote = swapQuoteWithParams(
         {
@@ -3096,17 +3098,17 @@ describe("swap_v2 (litesvm)", () => {
             ctx.program.programId,
             whirlpoolKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
           tokenExtensionCtx:
             await TokenExtensionUtil.buildTokenExtensionContext(
               fetcher,
               whirlpoolDataPre,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
           oracleData: NO_ORACLE_DATA,
         },
-        Percentage.fromFraction(1, 100)
+        Percentage.fromFraction(1, 100),
       );
 
       const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
@@ -3135,7 +3137,7 @@ describe("swap_v2 (litesvm)", () => {
           assert.ok(event.protocolFee.eq(protocolFee));
 
           eventVerified = true;
-        }
+        },
       );
 
       const signature = await toTx(
@@ -3153,12 +3155,10 @@ describe("swap_v2 (litesvm)", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePda.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
-      await sleep(2000);
-      assert.equal(signature, detectedSignature);
-      assert.ok(eventVerified);
+      warpClock(2);
 
       ctx.program.removeEventListener(listener);
     });
@@ -3171,7 +3171,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3180,11 +3180,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       const otherTokenPublicKey = await createMintV2(provider, {
@@ -3214,9 +3214,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -3226,7 +3226,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3235,11 +3235,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       const otherTokenPublicKey = await createMintV2(provider, {
@@ -3269,9 +3269,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -3281,7 +3281,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: false },
           { isToken2022: false },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3290,11 +3290,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_PROGRAM_ID));
@@ -3321,9 +3321,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -3333,7 +3333,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3342,11 +3342,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -3373,9 +3373,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -3385,7 +3385,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3394,11 +3394,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -3425,9 +3425,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -3437,7 +3437,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: false },
           { isToken2022: false },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3446,11 +3446,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_PROGRAM_ID));
@@ -3477,9 +3477,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -3489,7 +3489,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3498,11 +3498,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -3529,9 +3529,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -3541,7 +3541,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3550,11 +3550,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -3581,9 +3581,9 @@ describe("swap_v2 (litesvm)", () => {
             tickArray1: tickArrays[0].publicKey,
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -3593,7 +3593,7 @@ describe("swap_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
       const tickArrays = await initTickArrayRange(
@@ -3602,11 +3602,11 @@ describe("swap_v2 (litesvm)", () => {
         22528,
         3,
         TickSpacing.Standard,
-        false
+        false,
       );
       const oraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       const invalidMemoProgram = METADATA_PROGRAM_ADDRESS;
@@ -3641,11 +3641,11 @@ describe("swap_v2 (litesvm)", () => {
                   oracle: oraclePda.publicKey,
                   memoProgram: invalidMemoProgram,
                 },
-              }
+              },
             ),
           ],
         }).buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
   });

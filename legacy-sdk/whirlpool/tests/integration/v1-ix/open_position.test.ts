@@ -26,20 +26,39 @@ import {
   createMintInstructions,
   mintToDestination,
   systemTransferTx,
+  startLiteSVM,
+  createLiteSVMProvider,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
-describe("open_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("open_position (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   let defaultParams: OpenPositionParams;
   let defaultMint: Keypair;
@@ -65,14 +84,14 @@ describe("open_position", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
     defaultParams = params;
     defaultMint = mint;
     await systemTransferTx(
       provider,
       funderKeypair.publicKey,
-      ONE_SOL,
+      ONE_SOL
     ).buildAndExecute();
   });
 
@@ -81,12 +100,12 @@ describe("open_position", () => {
       ctx,
       whirlpoolPda.publicKey,
       tickLowerIndex,
-      tickUpperIndex,
+      tickUpperIndex
     );
     const { positionPda, positionMintAddress } = positionInitInfo.params;
 
     const position = (await fetcher.getPosition(
-      positionPda.publicKey,
+      positionPda.publicKey
     )) as PositionData;
 
     assert.strictEqual(position.tickLowerIndex, tickLowerIndex);
@@ -104,27 +123,27 @@ describe("open_position", () => {
 
   it("successfully open position and verify position address contents for full-range only pool", async () => {
     const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(
-      TickSpacing.FullRangeOnly,
+      TickSpacing.FullRangeOnly
     );
 
     const positionInitInfo = await openPosition(
       ctx,
       fullRangeOnlyWhirlpoolPda.publicKey,
       lowerTickIndex,
-      upperTickIndex,
+      upperTickIndex
     );
     const { positionPda, positionMintAddress } = positionInitInfo.params;
 
     const position = (await fetcher.getPosition(
-      positionPda.publicKey,
+      positionPda.publicKey
     )) as PositionData;
 
     assert.strictEqual(position.tickLowerIndex, lowerTickIndex);
     assert.strictEqual(position.tickUpperIndex, upperTickIndex);
     assert.ok(
       position.whirlpool.equals(
-        fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey,
-      ),
+        fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey
+      )
     );
     assert.ok(position.positionMint.equals(positionMintAddress));
     assert.ok(position.liquidity.eq(ZERO_BN));
@@ -141,7 +160,7 @@ describe("open_position", () => {
       tickLowerIndex,
       tickUpperIndex,
       provider.wallet.publicKey,
-      funderKeypair,
+      funderKeypair
     );
   });
 
@@ -153,7 +172,7 @@ describe("open_position", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      newOwner.publicKey,
+      newOwner.publicKey
     );
     const {
       positionMintAddress,
@@ -162,7 +181,7 @@ describe("open_position", () => {
 
     const userTokenAccount = await getAccount(
       ctx.connection,
-      positionTokenAccountAddress,
+      positionTokenAccountAddress
     );
     assert.ok(userTokenAccount.amount === 1n);
     assert.ok(userTokenAccount.owner.equals(newOwner.publicKey));
@@ -172,9 +191,9 @@ describe("open_position", () => {
         provider,
         positionMintAddress,
         positionTokenAccountAddress,
-        1,
+        1
       ),
-      /0x5/, // the total supply of this token is fixed
+      /0x5/ // the total supply of this token is fixed
     );
   });
 
@@ -184,14 +203,14 @@ describe("open_position", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
 
     const positionPda = positionInitInfo.params.positionPda.publicKey;
     const position = await ctx.connection.getAccountInfo(positionPda);
     assert.ok(position);
     const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
-      position.data.length,
+      position.data.length
     );
     assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
@@ -199,11 +218,11 @@ describe("open_position", () => {
   it("user must pass the valid token ATA account", async () => {
     const anotherMintKey = await createMint(
       provider,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
       anotherMintKey,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
 
     await assert.rejects(
@@ -212,15 +231,15 @@ describe("open_position", () => {
         WhirlpoolIx.openPositionIx(ctx.program, {
           ...defaultParams,
           positionTokenAccount: positionTokenAccountAddress,
-        }),
+        })
       )
         .addSigner(defaultMint)
         .buildAndExecute(),
-      /An account required by the instruction is missing/,
+      /An account required by the instruction is missing/
     );
   });
 
-  describe("invalid ticks", () => {
+  describe("invalid ticks (litesvm)", () => {
     async function assertTicksFail(lowerTick: number, upperTick: number) {
       await assert.rejects(
         openPosition(
@@ -229,9 +248,9 @@ describe("open_position", () => {
           lowerTick,
           upperTick,
           provider.wallet.publicKey,
-          funderKeypair,
+          funderKeypair
         ),
-        /0x177a/, // InvalidTickIndex
+        /0x177a/ // InvalidTickIndex
       );
     }
 
@@ -264,12 +283,12 @@ describe("open_position", () => {
     const positionMintKeypair = anchor.web3.Keypair.generate();
     const positionPda = PDAUtil.getPosition(
       ctx.program.programId,
-      positionMintKeypair.publicKey,
+      positionMintKeypair.publicKey
     );
 
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
       positionMintKeypair.publicKey,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
 
     const tx = new web3.Transaction();
@@ -277,8 +296,8 @@ describe("open_position", () => {
       ...(await createMintInstructions(
         provider,
         provider.wallet.publicKey,
-        positionMintKeypair.publicKey,
-      )),
+        positionMintKeypair.publicKey
+      ))
     );
 
     await provider.sendAndConfirm(tx, [positionMintKeypair], {
@@ -297,11 +316,11 @@ describe("open_position", () => {
           whirlpool: whirlpoolPda.publicKey,
           tickLowerIndex: 0,
           tickUpperIndex: 128,
-        }),
+        })
       )
         .addSigner(positionMintKeypair)
         .buildAndExecute(),
-      /0x0/,
+      /0x0/
     );
   });
 
@@ -313,9 +332,9 @@ describe("open_position", () => {
         tickLowerIndex,
         tickUpperIndex,
         provider.wallet.publicKey,
-        funderKeypair,
+        funderKeypair
       ),
-      /0x17a6/, // FullRangeOnlyPool
+      /0x17a6/ // FullRangeOnlyPool
     );
   });
 });

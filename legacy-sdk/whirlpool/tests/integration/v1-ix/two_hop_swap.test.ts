@@ -23,7 +23,7 @@ import {
 import type { TwoHopSwapParams } from "../../../src/instructions";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { getTokenBalance, sleep, TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import type {
   FundedPositionParams,
   InitAquariumParams,
@@ -35,16 +35,34 @@ import {
 } from "../../utils/init-utils";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
 
-describe("two-hop swap", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("two-hop swap (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+  let client: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   let aqConfig: InitAquariumParams;
   beforeEach(async () => {
@@ -82,7 +100,7 @@ describe("two-hop swap", () => {
     aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
   });
 
-  describe("fails [2] with two-hop swap, invalid accounts", () => {
+  describe("fails [2] with two-hop swap, invalid accounts (litesvm)", () => {
     let baseIxParams: TwoHopSwapParams;
     beforeEach(async () => {
       const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
@@ -915,7 +933,7 @@ describe("two-hop swap", () => {
     );
   });
 
-  describe("partial fill", () => {
+  describe("partial fill (litesvm)", () => {
     // Partial fill on second swap in ExactOut is allowed
     // |--***T**-S-| --> |--***T,limit**-S-| (where *: liquidity, S: start, T: end)
     it("ExactOut, partial fill on second swap", async () => {

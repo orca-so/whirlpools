@@ -4,18 +4,40 @@ import * as assert from "assert";
 import type { WhirlpoolData } from "../../../src";
 import { PoolUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
 import { TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 
-describe("set_reward_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("set_reward_authority (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+
+  beforeAll(async () => {
+
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+  // program initialized in beforeAll
+  ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  fetcher = ctx.fetcher;
+
+  });
 
   it("successfully set_reward_authority", async () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(

@@ -3,22 +3,44 @@ import * as assert from "assert";
 import type { FeeTierData } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import {
   initFeeTier,
   initializeConfigWithDefaultConfigParams,
 } from "../../utils/init-utils";
 import { generateDefaultInitFeeTierParams } from "../../utils/test-builders";
 
-describe("initialize_fee_tier", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("initialize_fee_tier (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+
+  beforeAll(async () => {
+
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+  // program initialized in beforeAll
+  ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  fetcher = ctx.fetcher;
+
+  });
 
   it("successfully init a FeeRate stable account", async () => {
     const { configInitInfo, configKeypairs } =

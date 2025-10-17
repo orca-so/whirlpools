@@ -30,22 +30,46 @@ import {
   WhirlpoolIx,
   toTx,
 } from "../../../src";
-import { ONE_SOL, TickSpacing, ZERO_BN, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
+  systemTransferTx,
+  startLiteSVM,
+  createLiteSVMProvider,
+} from "../../utils";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
 import type { OpenPositionWithTokenExtensionsParams } from "../../../src/instructions";
 import { useMaxCU } from "../../utils/v2/init-utils-v2";
 
-describe("open_position_with_token_extensions", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("open_position_with_token_extensions (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 11392;
@@ -59,7 +83,7 @@ describe("open_position_with_token_extensions", () => {
     await systemTransferTx(
       provider,
       funderKeypair.publicKey,
-      ONE_SOL,
+      ONE_SOL
     ).buildAndExecute();
   });
 
@@ -67,7 +91,7 @@ describe("open_position_with_token_extensions", () => {
     tokenMetadata: TokenMetadata,
     positionMint: PublicKey,
     poolAddress: PublicKey,
-    positionAddress: PublicKey,
+    positionAddress: PublicKey
   ) {
     const WP_2022_METADATA_NAME_PREFIX = "OWP";
     const WP_2022_METADATA_SYMBOL = "OWP";
@@ -100,11 +124,11 @@ describe("open_position_with_token_extensions", () => {
   async function checkMintState(
     positionMint: PublicKey,
     withTokenMetadataExtension: boolean,
-    poolAddress: PublicKey,
+    poolAddress: PublicKey
   ) {
     const positionPda = PDAUtil.getPosition(
       ctx.program.programId,
-      positionMint,
+      positionMint
     );
 
     const mint = await fetcher.getMintInfo(positionMint, IGNORE_CACHE);
@@ -162,7 +186,7 @@ describe("open_position_with_token_extensions", () => {
       const tokenMetadata = (() => {
         const data = getExtensionData(
           ExtensionType.TokenMetadata,
-          mint.tlvData,
+          mint.tlvData
         );
         if (data === null) return null;
         return unpackTokenMetadata(data);
@@ -172,7 +196,7 @@ describe("open_position_with_token_extensions", () => {
         tokenMetadata,
         positionMint,
         poolAddress,
-        positionPda.publicKey,
+        positionPda.publicKey
       );
     }
   }
@@ -180,11 +204,11 @@ describe("open_position_with_token_extensions", () => {
   async function checkTokenAccountState(
     positionTokenAccount: PublicKey,
     positionMint: PublicKey,
-    owner: PublicKey,
+    owner: PublicKey
   ) {
     const tokenAccount = await fetcher.getTokenInfo(
       positionTokenAccount,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
 
     assert.ok(tokenAccount !== null);
@@ -203,10 +227,10 @@ describe("open_position_with_token_extensions", () => {
   }
 
   async function checkInitialPositionState(
-    params: OpenPositionWithTokenExtensionsParams,
+    params: OpenPositionWithTokenExtensionsParams
   ) {
     const position = (await fetcher.getPosition(
-      params.positionPda.publicKey,
+      params.positionPda.publicKey
     )) as PositionData;
     assert.strictEqual(position.tickLowerIndex, params.tickLowerIndex);
     assert.strictEqual(position.tickUpperIndex, params.tickUpperIndex);
@@ -230,11 +254,11 @@ describe("open_position_with_token_extensions", () => {
         withTokenMetadataExtension,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey,
+        provider.wallet.publicKey
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .prependInstruction(useMaxCU())
@@ -244,14 +268,14 @@ describe("open_position_with_token_extensions", () => {
     await checkMintState(
       params.positionMint,
       withTokenMetadataExtension,
-      whirlpoolPda.publicKey,
+      whirlpoolPda.publicKey
     );
 
     // check TokenAccount state
     await checkTokenAccountState(
       params.positionTokenAccount,
       params.positionMint,
-      params.owner,
+      params.owner
     );
 
     // check Position state
@@ -269,11 +293,11 @@ describe("open_position_with_token_extensions", () => {
         withTokenMetadataExtension,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey,
+        provider.wallet.publicKey
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .buildAndExecute();
@@ -282,14 +306,14 @@ describe("open_position_with_token_extensions", () => {
     await checkMintState(
       params.positionMint,
       withTokenMetadataExtension,
-      whirlpoolPda.publicKey,
+      whirlpoolPda.publicKey
     );
 
     // check TokenAccount state
     await checkTokenAccountState(
       params.positionTokenAccount,
       params.positionMint,
-      params.owner,
+      params.owner
     );
 
     // check Position state
@@ -305,11 +329,11 @@ describe("open_position_with_token_extensions", () => {
         tickLowerIndex,
         tickUpperIndex,
         provider.wallet.publicKey, // owner
-        funderKeypair.publicKey, // funder
+        funderKeypair.publicKey // funder
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .addSigner(funderKeypair)
@@ -328,11 +352,11 @@ describe("open_position_with_token_extensions", () => {
         true,
         tickLowerIndex,
         tickUpperIndex,
-        ownerKeypair.publicKey, // owner
+        ownerKeypair.publicKey // owner
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .buildAndExecute();
@@ -341,7 +365,7 @@ describe("open_position_with_token_extensions", () => {
 
     const tokenAccount = await fetcher.getTokenInfo(
       params.positionTokenAccount,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(tokenAccount !== null);
     assert.ok(tokenAccount.owner.equals(ownerKeypair.publicKey));
@@ -355,19 +379,19 @@ describe("open_position_with_token_extensions", () => {
         true,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey, // owner
+        provider.wallet.publicKey // owner
       );
 
     const preLamports = 1_000_000;
     await systemTransferTx(
       provider,
       mint.publicKey,
-      preLamports,
+      preLamports
     ).buildAndExecute();
 
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .buildAndExecute();
@@ -376,7 +400,7 @@ describe("open_position_with_token_extensions", () => {
 
     const tokenAccount = await fetcher.getTokenInfo(
       params.positionTokenAccount,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(tokenAccount !== null);
 
@@ -384,7 +408,7 @@ describe("open_position_with_token_extensions", () => {
     assert.ok(mintAccount !== null);
     const rentExemptLamports =
       await ctx.connection.getMinimumBalanceForRentExemption(
-        mintAccount.data.length,
+        mintAccount.data.length
       );
     assert.ok(mintAccount.lamports > preLamports);
     assert.ok(mintAccount.lamports === rentExemptLamports);
@@ -398,19 +422,19 @@ describe("open_position_with_token_extensions", () => {
         true,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey, // owner
+        provider.wallet.publicKey // owner
       );
 
     const preLamports = 1_000_000_000;
     await systemTransferTx(
       provider,
       mint.publicKey,
-      preLamports,
+      preLamports
     ).buildAndExecute();
 
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .buildAndExecute();
@@ -419,7 +443,7 @@ describe("open_position_with_token_extensions", () => {
 
     const tokenAccount = await fetcher.getTokenInfo(
       params.positionTokenAccount,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(tokenAccount !== null);
 
@@ -427,7 +451,7 @@ describe("open_position_with_token_extensions", () => {
     assert.ok(mintAccount !== null);
     const rentExemptLamports =
       await ctx.connection.getMinimumBalanceForRentExemption(
-        mintAccount.data.length,
+        mintAccount.data.length
       );
     assert.ok(mintAccount.lamports === preLamports);
     assert.ok(mintAccount.lamports >= rentExemptLamports);
@@ -442,11 +466,11 @@ describe("open_position_with_token_extensions", () => {
         true,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey,
+        provider.wallet.publicKey
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .buildAndExecute();
@@ -455,7 +479,7 @@ describe("open_position_with_token_extensions", () => {
     const position = await ctx.connection.getAccountInfo(positionPda);
     assert.ok(position);
     const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
-      position.data.length,
+      position.data.length
     );
     assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
@@ -468,11 +492,11 @@ describe("open_position_with_token_extensions", () => {
         true,
         tickLowerIndex,
         tickUpperIndex,
-        ctx.wallet.publicKey,
+        ctx.wallet.publicKey
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
     )
       .addSigner(mint)
       .buildAndExecute();
@@ -488,7 +512,7 @@ describe("open_position_with_token_extensions", () => {
           provider.wallet.publicKey,
           1n,
           undefined,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_2022_PROGRAM_ID
         ),
       ],
       cleanupInstructions: [],
@@ -497,11 +521,11 @@ describe("open_position_with_token_extensions", () => {
 
     await assert.rejects(
       builder.buildAndExecute(),
-      /0x5/, // the total supply of this token is fixed
+      /0x5/ // the total supply of this token is fixed
     );
   });
 
-  describe("should be failed: invalid ticks", () => {
+  describe("should be failed: invalid ticks (litesvm)", () => {
     async function assertTicksFail(lowerTick: number, upperTick: number) {
       const { params, mint } =
         await generateDefaultOpenPositionWithTokenExtensionsParams(
@@ -510,17 +534,17 @@ describe("open_position_with_token_extensions", () => {
           true,
           lowerTick,
           upperTick,
-          provider.wallet.publicKey,
+          provider.wallet.publicKey
         );
 
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
         )
           .addSigner(mint)
           .buildAndExecute(),
-        /0x177a/, // InvalidTickIndex
+        /0x177a/ // InvalidTickIndex
       );
     }
 
@@ -549,7 +573,7 @@ describe("open_position_with_token_extensions", () => {
     });
   });
 
-  describe("should be failed: invalid account constraints", () => {
+  describe("should be failed: invalid account constraints (litesvm)", () => {
     let defaultParams: OpenPositionWithTokenExtensionsParams;
     let defaultMint: Keypair;
 
@@ -561,7 +585,7 @@ describe("open_position_with_token_extensions", () => {
           true,
           tickLowerIndex,
           tickUpperIndex,
-          provider.wallet.publicKey, // owner
+          provider.wallet.publicKey // owner
         );
 
       defaultParams = params;
@@ -577,12 +601,12 @@ describe("open_position_with_token_extensions", () => {
           tickLowerIndex,
           tickUpperIndex,
           provider.wallet.publicKey, // owner
-          funderKeypair.publicKey, // funder
+          funderKeypair.publicKey // funder
         );
 
       const ix = WhirlpoolIx.openPositionWithTokenExtensionsIx(
         ctx.program,
-        params,
+        params
       ).instructions[0];
 
       // drop isSigner flag
@@ -610,7 +634,7 @@ describe("open_position_with_token_extensions", () => {
           .addSigner(mint)
           // no signature of funder
           .buildAndExecute(),
-        /0xbc2/, // AccountNotSigner
+        /0xbc2/ // AccountNotSigner
       );
     });
 
@@ -622,20 +646,20 @@ describe("open_position_with_token_extensions", () => {
             ...defaultParams,
             positionPda: PDAUtil.getPosition(
               ctx.program.programId,
-              Keypair.generate().publicKey,
+              Keypair.generate().publicKey
             ),
-          }),
+          })
         )
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0x7d6/, // ConstraintSeeds
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
     it("no signature of position mint", async () => {
       const ix = WhirlpoolIx.openPositionWithTokenExtensionsIx(
         ctx.program,
-        defaultParams,
+        defaultParams
       ).instructions[0];
 
       // drop isSigner flag
@@ -662,7 +686,7 @@ describe("open_position_with_token_extensions", () => {
         })
           // no signature of position mint
           .buildAndExecute(),
-        /0xbc2/, // AccountNotSigner
+        /0xbc2/ // AccountNotSigner
       );
     });
 
@@ -674,7 +698,7 @@ describe("open_position_with_token_extensions", () => {
           true,
           tickLowerIndex,
           tickUpperIndex,
-          provider.wallet.publicKey,
+          provider.wallet.publicKey
         );
 
       await createMint(
@@ -685,23 +709,23 @@ describe("open_position_with_token_extensions", () => {
         6,
         mint,
         { commitment: "confirmed" },
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
 
       const created = await fetcher.getMintInfo(
         params.positionMint,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(created !== null);
 
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
         )
           .addSigner(mint)
           .buildAndExecute(),
-        /0xbbf/, // AccountOwnedByWrongProgram
+        /0xbbf/ // AccountOwnedByWrongProgram
       );
     });
 
@@ -711,7 +735,7 @@ describe("open_position_with_token_extensions", () => {
         anotherMint.publicKey,
         defaultParams.owner,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
 
       await assert.rejects(
@@ -720,11 +744,11 @@ describe("open_position_with_token_extensions", () => {
           WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, {
             ...defaultParams,
             positionTokenAccount: ataForAnotherMint,
-          }),
+          })
         )
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /An account required by the instruction is missing/, // missing valid ATA address
+        /An account required by the instruction is missing/ // missing valid ATA address
       );
     });
 
@@ -733,11 +757,11 @@ describe("open_position_with_token_extensions", () => {
         defaultParams.positionMint,
         defaultParams.owner,
         true,
-        TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID
       );
 
       assert.ok(
-        !defaultParams.positionTokenAccount.equals(ataWithTokenProgram),
+        !defaultParams.positionTokenAccount.equals(ataWithTokenProgram)
       );
 
       await assert.rejects(
@@ -746,11 +770,11 @@ describe("open_position_with_token_extensions", () => {
           WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, {
             ...defaultParams,
             positionTokenAccount: ataWithTokenProgram,
-          }),
+          })
         )
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /An account required by the instruction is missing/, // missing valid ATA address
+        /An account required by the instruction is missing/ // missing valid ATA address
       );
     });
 
@@ -762,11 +786,11 @@ describe("open_position_with_token_extensions", () => {
           WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, {
             ...defaultParams,
             whirlpool: Keypair.generate().publicKey,
-          }),
+          })
         )
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0xbc4/, // AccountNotInitialized
+        /0xbc4/ // AccountNotInitialized
       );
 
       // not Whirlpool account
@@ -776,18 +800,18 @@ describe("open_position_with_token_extensions", () => {
           WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, {
             ...defaultParams,
             whirlpool: poolInitInfo.whirlpoolsConfig,
-          }),
+          })
         )
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0xbba/, // AccountDiscriminatorMismatch
+        /0xbba/ // AccountDiscriminatorMismatch
       );
     });
 
     it("invalid token 2022 program", async () => {
       const ix = WhirlpoolIx.openPositionWithTokenExtensionsIx(
         ctx.program,
-        defaultParams,
+        defaultParams
       ).instructions[0];
       const ixWithWrongAccount = {
         ...ix,
@@ -807,14 +831,14 @@ describe("open_position_with_token_extensions", () => {
         })
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
 
     it("invalid system program", async () => {
       const ix = WhirlpoolIx.openPositionWithTokenExtensionsIx(
         ctx.program,
-        defaultParams,
+        defaultParams
       ).instructions[0];
       const ixWithWrongAccount = {
         ...ix,
@@ -834,14 +858,14 @@ describe("open_position_with_token_extensions", () => {
         })
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
 
     it("invalid associated token program", async () => {
       const ix = WhirlpoolIx.openPositionWithTokenExtensionsIx(
         ctx.program,
-        defaultParams,
+        defaultParams
       ).instructions[0];
       const ixWithWrongAccount = {
         ...ix,
@@ -861,14 +885,14 @@ describe("open_position_with_token_extensions", () => {
         })
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
 
     it("invalid metadata update auth", async () => {
       const ix = WhirlpoolIx.openPositionWithTokenExtensionsIx(
         ctx.program,
-        defaultParams,
+        defaultParams
       ).instructions[0];
       const ixWithWrongAccount = {
         ...ix,
@@ -888,7 +912,7 @@ describe("open_position_with_token_extensions", () => {
         })
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -900,7 +924,7 @@ describe("open_position_with_token_extensions", () => {
           true,
           tickLowerIndex,
           tickUpperIndex,
-          provider.wallet.publicKey,
+          provider.wallet.publicKey
         );
 
       await toTx(ctx, {
@@ -920,7 +944,7 @@ describe("open_position_with_token_extensions", () => {
       }).buildAndExecute();
 
       const allocated = await ctx.connection.getAccountInfo(
-        params.positionMint,
+        params.positionMint
       );
       assert.ok(allocated !== null);
       assert.ok(allocated.lamports > 0);
@@ -930,11 +954,11 @@ describe("open_position_with_token_extensions", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
         )
           .addSigner(mint)
           .buildAndExecute(),
-        /`from` must not carry data/, // allocated account should be rejected
+        /`from` must not carry data/ // allocated account should be rejected
       );
     });
   });

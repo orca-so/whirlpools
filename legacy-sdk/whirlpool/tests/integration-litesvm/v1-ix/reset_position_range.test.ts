@@ -19,6 +19,7 @@ import {
   systemTransferTx,
   startLiteSVM,
   createLiteSVMProvider,
+  loadPreloadAccount,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
@@ -45,10 +46,25 @@ describe("reset_position_range (litesvm)", () => {
   beforeAll(async () => {
     await startLiteSVM();
 
+    // Load all preload accounts needed for this test
+    loadPreloadAccount("reset_position_range/whirlpool.json");
+    loadPreloadAccount("reset_position_range/position.json");
+    loadPreloadAccount("reset_position_range/position_mint.json");
+    loadPreloadAccount("reset_position_range/position_ata.json");
+    loadPreloadAccount("reset_position_range/token_a.json");
+    loadPreloadAccount("reset_position_range/token_b.json");
+    loadPreloadAccount("reset_position_range/token_a_ata.json");
+    loadPreloadAccount("reset_position_range/token_b_ata.json");
+    loadPreloadAccount("reset_position_range/vault_a.json");
+    loadPreloadAccount("reset_position_range/vault_b.json");
+    loadPreloadAccount("reset_position_range/fixed_tick_array_lower.json");
+    loadPreloadAccount("reset_position_range/fixed_tick_array_upper.json");
+    loadPreloadAccount("reset_position_range/owner_wallet.json");
+
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
@@ -83,20 +99,20 @@ describe("reset_position_range (litesvm)", () => {
     await systemTransferTx(
       provider,
       funderKeypair.publicKey,
-      ONE_SOL
+      ONE_SOL,
     ).buildAndExecute();
   });
 
   async function initializeDefaultPosition(
     whirlpool: PublicKey,
     lowerTick: number = tickLowerIndex,
-    upperTick: number = tickUpperIndex
+    upperTick: number = tickUpperIndex,
   ) {
     const positionInitInfo = await openPosition(
       ctx,
       whirlpool,
       lowerTick,
-      upperTick
+      upperTick,
     );
     const { positionPda, positionMintAddress } = positionInitInfo.params;
 
@@ -106,7 +122,7 @@ describe("reset_position_range (litesvm)", () => {
       whirlpool,
       0,
       lowerTick,
-      upperTick
+      upperTick,
     );
 
     return positionInitInfo;
@@ -118,7 +134,7 @@ describe("reset_position_range (litesvm)", () => {
     whirlpool: PublicKey = whirlpoolPda.publicKey,
     tickSpacingDiff: number = poolInitInfo.tickSpacing,
     lowerIndex: number = tickLowerIndex,
-    upperIndex: number = tickUpperIndex
+    upperIndex: number = tickUpperIndex,
   ) {
     const position = (await fetcher.getPosition(positionKey, {
       maxAge: 0,
@@ -150,7 +166,7 @@ describe("reset_position_range (litesvm)", () => {
         positionTokenAccount,
         tickLowerIndex: tickLowerIndex + poolInitInfo.tickSpacing,
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
-      })
+      }),
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
@@ -173,7 +189,7 @@ describe("reset_position_range (litesvm)", () => {
         positionTokenAccount,
         tickLowerIndex: tickLowerIndex + poolInitInfo.tickSpacing,
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
-      })
+      }),
     ).buildAndExecute();
 
     await validatePosition(positionPda.publicKey, positionMintAddress);
@@ -190,11 +206,11 @@ describe("reset_position_range (litesvm)", () => {
         withTokenMetadataExtension,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
     await toTx(
       ctx,
-      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params)
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
     )
       .addSigner(mint)
       .prependInstruction(useMaxCU())
@@ -210,7 +226,7 @@ describe("reset_position_range (litesvm)", () => {
         positionTokenAccount: params.positionTokenAccount,
         tickLowerIndex: tickLowerIndex + poolInitInfo.tickSpacing,
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
-      })
+      }),
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
@@ -220,13 +236,13 @@ describe("reset_position_range (litesvm)", () => {
 
   it("fails to reset range for full-range only pool", async () => {
     const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(
-      TickSpacing.FullRangeOnly
+      TickSpacing.FullRangeOnly,
     );
 
     const positionInitInfo = await initializeDefaultPosition(
       fullRangeOnlyWhirlpoolPda.publicKey,
       lowerTickIndex,
-      upperTickIndex
+      upperTickIndex,
     );
     const { positionPda, positionTokenAccount } = positionInitInfo.params;
 
@@ -241,11 +257,11 @@ describe("reset_position_range (litesvm)", () => {
           positionTokenAccount,
           tickLowerIndex: lowerTickIndex - TickSpacing.FullRangeOnly,
           tickUpperIndex: upperTickIndex + TickSpacing.FullRangeOnly,
-        })
+        }),
       )
         .addSigner(funderKeypair)
         .buildAndExecute(),
-      /0x177a/ // InvalidTickIndex
+      /0x177a/, // InvalidTickIndex
     );
   });
 
@@ -265,18 +281,18 @@ describe("reset_position_range (litesvm)", () => {
           positionTokenAccount,
           tickLowerIndex: tickLowerIndex,
           tickUpperIndex: tickUpperIndex,
-        })
+        }),
       )
         .addSigner(funderKeypair)
         .buildAndExecute(),
-      /0x17ac/ // SameTickRangeNotAllowed
+      /0x17ac/, // SameTickRangeNotAllowed
     );
   });
 
   it("successfully opens bundled position and verify position address contents", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const bundleIndex = 0;
@@ -286,7 +302,7 @@ describe("reset_position_range (litesvm)", () => {
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       bundleIndex,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
     const { params } = positionInitInfo;
     const { bundledPositionPda } = params;
@@ -295,7 +311,7 @@ describe("reset_position_range (litesvm)", () => {
       bundledPositionPda.publicKey,
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       whirlpoolPda.publicKey,
-      0
+      0,
     );
 
     await toTx(
@@ -308,14 +324,14 @@ describe("reset_position_range (litesvm)", () => {
         positionTokenAccount: positionBundleInfo.positionBundleTokenAccount,
         tickLowerIndex: tickLowerIndex + poolInitInfo.tickSpacing,
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
-      })
+      }),
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
 
     await validatePosition(
       bundledPositionPda.publicKey,
-      positionBundleInfo.positionBundleMintKeypair.publicKey
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
     );
   });
 
@@ -335,11 +351,11 @@ describe("reset_position_range (litesvm)", () => {
             positionTokenAccount,
             tickLowerIndex: lowerTick,
             tickUpperIndex: upperTick,
-          })
+          }),
         )
           .addSigner(funderKeypair)
           .buildAndExecute(),
-        /0x177a/ // InvalidTickIndex
+        /0x177a/, // InvalidTickIndex
       );
     }
 
@@ -347,14 +363,14 @@ describe("reset_position_range (litesvm)", () => {
       await assertResetRangeFails(
         0,
         (Math.ceil(MAX_TICK_INDEX / TickSpacing.Standard) + 1) *
-          TickSpacing.Standard
+          TickSpacing.Standard,
       );
     });
 
     it("fail when user pass in a lower tick index that is higher than the upper-index", async () => {
       await assertResetRangeFails(
         -TickSpacing.Standard,
-        -TickSpacing.Standard * 2
+        -TickSpacing.Standard * 2,
       );
     });
 
@@ -366,7 +382,7 @@ describe("reset_position_range (litesvm)", () => {
       await assertResetRangeFails(
         Math.floor(MIN_TICK_INDEX / TickSpacing.Standard - 1) *
           TickSpacing.Standard,
-        0
+        0,
       );
     });
 
@@ -387,7 +403,7 @@ describe("reset_position_range (litesvm)", () => {
 
       const positionRentReq =
         await provider.connection.getMinimumBalanceForRentExemption(
-          positionAccountInfo.data.length
+          positionAccountInfo.data.length,
         );
 
       const tickRentReq = TICK_RENT_AMOUNT * 2;
@@ -402,7 +418,7 @@ describe("reset_position_range (litesvm)", () => {
 
     async function ensurePositionBalance(
       positionKey: PublicKey,
-      targetBalance: number
+      targetBalance: number,
     ) {
       let position_balance = await provider.connection.getBalance(positionKey);
       if (position_balance > targetBalance) {
@@ -413,7 +429,7 @@ describe("reset_position_range (litesvm)", () => {
         await systemTransferTx(
           provider,
           positionKey,
-          targetBalance - position_balance
+          targetBalance - position_balance,
         ).buildAndExecute();
 
         position_balance = await provider.connection.getBalance(positionKey);
@@ -428,10 +444,10 @@ describe("reset_position_range (litesvm)", () => {
       preFunderBalance: number,
       postFunderBalance: number,
       ensuredPositionBalance: number,
-      postPositionBalance: number
+      postPositionBalance: number,
     ) {
       let balance = await provider.connection.getBalance(
-        funderKeypair.publicKey
+        funderKeypair.publicKey,
       );
       assert.strictEqual(balance, preFunderBalance);
       await ensurePositionBalance(positionKey, ensuredPositionBalance);
@@ -446,7 +462,7 @@ describe("reset_position_range (litesvm)", () => {
           positionTokenAccount,
           tickLowerIndex: tickLowerIndex + poolInitInfo.tickSpacing,
           tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
-        })
+        }),
       )
         .addSigner(funderKeypair)
         .buildAndExecute();
@@ -455,7 +471,7 @@ describe("reset_position_range (litesvm)", () => {
       assert.strictEqual(balance, postFunderBalance);
       assert.strictEqual(
         await provider.connection.getBalance(positionKey),
-        postPositionBalance
+        postPositionBalance,
       );
       await validatePosition(positionKey, postiionMintAddress);
     }
@@ -463,14 +479,14 @@ describe("reset_position_range (litesvm)", () => {
     it("successfully collects rent for position with insufficient balance", async () => {
       // preload whirlpool and position without additional rent for ticks
       const preloadWalletKeypair = anchor.web3.Keypair.fromSecretKey(
-        new Uint8Array(preloadWalletSecret)
+        new Uint8Array(preloadWalletSecret),
       );
 
       const preloadWhirlpoolAddress = new anchor.web3.PublicKey(
-        "EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4"
+        "EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4",
       );
       const preloadPositionAddress = new anchor.web3.PublicKey(
-        "J6DFYFKUsoMYgxkbeAqVnpSb8fniA9tHR44ZQu8KBgMS"
+        "J6DFYFKUsoMYgxkbeAqVnpSb8fniA9tHR44ZQu8KBgMS",
       );
 
       const preloadWhirlpool = await fetcher.getPool(preloadWhirlpoolAddress);
@@ -480,18 +496,18 @@ describe("reset_position_range (litesvm)", () => {
 
       const preloadPositionMintAddress = preloadPosition.positionMint;
       const preloadPositionMint = await fetcher.getMintInfo(
-        preloadPositionMintAddress
+        preloadPositionMintAddress,
       );
       assert.ok(preloadPositionMint);
       const preloadPositionTokenAccount = getAssociatedTokenAddressSync(
         preloadPositionMintAddress,
         preloadWalletKeypair.publicKey,
         undefined,
-        preloadPositionMint.tokenProgram
+        preloadPositionMint.tokenProgram,
       );
 
       const { positionRentReq, allRentReq, tickRentReq } = await calculateRents(
-        preloadPositionAddress
+        preloadPositionAddress,
       );
 
       // reset position range (Fixed Tick Arrays -> Dynamic Tick Arrays)
@@ -510,12 +526,12 @@ describe("reset_position_range (litesvm)", () => {
       assert.ok(preloadPosition.tickUpperIndex !== newTickUpperIndex);
 
       let balance = await provider.connection.getBalance(
-        funderKeypair.publicKey
+        funderKeypair.publicKey,
       );
       assert.strictEqual(balance, preFunderBalance);
       await ensurePositionBalance(
         preloadPositionAddress,
-        ensuredPositionBalance
+        ensuredPositionBalance,
       );
 
       await toTx(
@@ -528,7 +544,7 @@ describe("reset_position_range (litesvm)", () => {
           positionTokenAccount: preloadPositionTokenAccount,
           tickLowerIndex: newTickLowerIndex,
           tickUpperIndex: newTickUpperIndex,
-        })
+        }),
       )
         .addSigner(funderKeypair)
         .addSigner(preloadWalletKeypair)
@@ -538,7 +554,7 @@ describe("reset_position_range (litesvm)", () => {
       assert.strictEqual(balance, postFunderBalance);
       assert.strictEqual(
         await provider.connection.getBalance(preloadPositionAddress),
-        postPositionBalance
+        postPositionBalance,
       );
       await validatePosition(
         preloadPositionAddress,
@@ -546,14 +562,14 @@ describe("reset_position_range (litesvm)", () => {
         preloadWhirlpoolAddress,
         0,
         newTickLowerIndex,
-        newTickUpperIndex
+        newTickUpperIndex,
       );
 
       // initialize Dynamic Tick Arrays
       const dynamicTickArrayLowerPda = PDAUtil.getTickArray(
         ctx.program.programId,
         preloadWhirlpoolAddress,
-        -118272
+        -118272,
       );
       await toTx(
         ctx,
@@ -562,12 +578,12 @@ describe("reset_position_range (litesvm)", () => {
           funder: ctx.wallet.publicKey,
           startTick: -118272,
           tickArrayPda: dynamicTickArrayLowerPda,
-        })
+        }),
       ).buildAndExecute();
       const dynamicTickArrayUpperPda = PDAUtil.getTickArray(
         ctx.program.programId,
         preloadWhirlpoolAddress,
-        -112640
+        -112640,
       );
       await toTx(
         ctx,
@@ -576,7 +592,7 @@ describe("reset_position_range (litesvm)", () => {
           funder: ctx.wallet.publicKey,
           startTick: -112640,
           tickArrayPda: dynamicTickArrayUpperPda,
-        })
+        }),
       ).buildAndExecute();
 
       // increase liquidity
@@ -586,7 +602,7 @@ describe("reset_position_range (litesvm)", () => {
         preloadWhirlpool.sqrtPrice,
         newTickLowerIndex,
         newTickUpperIndex,
-        { tokenA: tokenMaxA, tokenB: tokenMaxB }
+        { tokenA: tokenMaxA, tokenB: tokenMaxB },
       );
 
       const preRentDynamicTickArrayLower = (
@@ -614,17 +630,17 @@ describe("reset_position_range (litesvm)", () => {
           tickArrayUpper: dynamicTickArrayUpperPda.publicKey,
           tokenOwnerAccountA: getAssociatedTokenAddressSync(
             preloadWhirlpool.tokenMintA,
-            preloadWalletKeypair.publicKey
+            preloadWalletKeypair.publicKey,
           ),
           tokenOwnerAccountB: getAssociatedTokenAddressSync(
             preloadWhirlpool.tokenMintB,
-            preloadWalletKeypair.publicKey
+            preloadWalletKeypair.publicKey,
           ),
           tokenMaxA,
           tokenMaxB,
           tokenVaultA: preloadWhirlpool.tokenVaultA,
           tokenVaultB: preloadWhirlpool.tokenVaultB,
-        })
+        }),
       )
         .addSigner(preloadWalletKeypair)
         .buildAndExecute();
@@ -652,10 +668,10 @@ describe("reset_position_range (litesvm)", () => {
       assert.ok(rentDiffPosition === tickRentReq);
       assert.ok(
         rentDiffPosition ===
-          rentDiffDynamicTickArrayLower + rentDiffDynamicTickArrayUpper
+          rentDiffDynamicTickArrayLower + rentDiffDynamicTickArrayUpper,
       );
       assert.ok(
-        rentDiffDynamicTickArrayLower === rentDiffDynamicTickArrayUpper
+        rentDiffDynamicTickArrayLower === rentDiffDynamicTickArrayUpper,
       );
     });
 
@@ -672,7 +688,7 @@ describe("reset_position_range (litesvm)", () => {
         ONE_SOL,
         ONE_SOL,
         allRentReq,
-        allRentReq
+        allRentReq,
       );
     });
 
@@ -689,7 +705,7 @@ describe("reset_position_range (litesvm)", () => {
         ONE_SOL,
         ONE_SOL,
         allRentReq + 10,
-        allRentReq + 10
+        allRentReq + 10,
       );
     });
   });

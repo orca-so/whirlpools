@@ -882,12 +882,22 @@ export function loadPreloadAccount(relativePath: string): void {
   const data = Buffer.from(account.data[0], account.data[1]);
 
   // Set the account in LiteSVM
+  // Note: Some preloaded accounts use u64::MAX for rentEpoch (18446744073709551615),
+  // which cannot be represented precisely as a JS Number and may round up to 2^64,
+  // causing "Bigint too large for u64" inside LiteSVM. We clamp such values to 0.
+  const lamportsNumber = Number(account.lamports);
+  const rentEpochRaw = account.rentEpoch ?? 0;
+  const rentEpochNumber =
+    typeof rentEpochRaw === "number" && rentEpochRaw > Number.MAX_SAFE_INTEGER
+      ? 0
+      : Number(rentEpochRaw);
+
   litesvm.setAccount(pubkey, {
-    lamports: Number(account.lamports),
+    lamports: lamportsNumber,
     data: new Uint8Array(data),
     owner: new PublicKey(account.owner),
     executable: account.executable,
-    rentEpoch: Number(account.rentEpoch ?? 0),
+    rentEpoch: rentEpochNumber,
   });
 
   console.log(`✅ Loaded preload account: ${pubkey.toBase58()}`);

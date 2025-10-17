@@ -3,22 +3,31 @@ import * as assert from "assert";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { dropIsSignerFlag, TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import { initTestPoolWithAdaptiveFee } from "../../utils/v2/init-utils-v2";
 import { MathUtil } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 import { Keypair, PublicKey } from "@solana/web3.js";
 
-describe("set_fee_rate_by_delegated_fee_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("set_fee_rate_by_delegated_fee_authority (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
+
 
   const delegatedFeeAuthorityKeypair = Keypair.generate();
 

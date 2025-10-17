@@ -29,7 +29,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
     await startLiteSVM();
     provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
     const idl = require("../../../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
@@ -77,7 +77,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const rewardIndex = 0;
@@ -91,7 +91,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             rewardIndex,
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           await mintToDestinationV2(
@@ -99,7 +99,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             tokenTraits.tokenTraitR,
             rewardMint,
             rewardVaultKeypair.publicKey,
-            10000
+            10000,
           );
 
           await toTx(
@@ -110,19 +110,19 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
               rewardIndex,
               rewardVaultKey: rewardVaultKeypair.publicKey,
               emissionsPerSecondX64,
-            })
+            }),
           )
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute();
 
           let whirlpool = (await fetcher.getPool(
             poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           assert.ok(
             whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(
-              emissionsPerSecondX64
-            )
+              emissionsPerSecondX64,
+            ),
           );
 
           // Successfuly set emissions back to zero
@@ -134,15 +134,28 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
               rewardIndex,
               rewardVaultKey: rewardVaultKeypair.publicKey,
               emissionsPerSecondX64: ZERO_BN,
-            })
+            }),
           )
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute();
 
-          whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE
-          )) as WhirlpoolData;
+          whirlpool = await (async () => {
+            // LiteSVM may delay state propagation; poll until emissions reach 0
+            for (let i = 0; i < 100; i++) {
+              const wp = (await fetcher.getPool(
+                poolInitInfo.whirlpoolPda.publicKey,
+                IGNORE_CACHE,
+              )) as WhirlpoolData;
+              if (wp.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN)) {
+                return wp;
+              }
+              await new Promise((r) => setTimeout(r, 10));
+            }
+            return (await fetcher.getPool(
+              poolInitInfo.whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData;
+          })();
           assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
         });
 
@@ -156,7 +169,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const rewardIndex = 0;
@@ -170,7 +183,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             rewardIndex,
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           await assert.rejects(
@@ -182,11 +195,11 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
                 rewardIndex,
                 rewardVaultKey: rewardVaultKeypair.publicKey,
                 emissionsPerSecondX64,
-              })
+              }),
             )
               .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
               .buildAndExecute(),
-            /0x178b/ // RewardVaultAmountInsufficient
+            /0x178b/, // RewardVaultAmountInsufficient
           );
         });
 
@@ -200,7 +213,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const rewardIndex = 0;
@@ -213,14 +226,14 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             rewardIndex,
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           const fakeVault = await createAndMintToTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewardMint,
-            10000
+            10000,
           );
 
           await assert.rejects(
@@ -232,11 +245,11 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
                 rewardVaultKey: fakeVault,
                 rewardIndex,
                 emissionsPerSecondX64,
-              })
+              }),
             )
               .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
               .buildAndExecute(),
-            /0x7dc/ // An address constraint was violated
+            /0x7dc/, // An address constraint was violated
           );
         });
 
@@ -246,7 +259,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitAB,
               tokenTraits.tokenTraitAB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const rewardIndex = 0;
@@ -260,11 +273,11 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
                 rewardVaultKey: anchor.web3.PublicKey.default,
                 rewardIndex: rewardIndex,
                 emissionsPerSecondX64,
-              })
+              }),
             )
               .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
               .buildAndExecute(),
-            /0xbbf/ // AccountOwnedByWrongProgram
+            /0xbbf/, // AccountOwnedByWrongProgram
           );
         });
 
@@ -278,7 +291,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const rewardIndex = 0;
@@ -290,7 +303,7 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             rewardIndex,
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           await assert.rejects(
@@ -302,9 +315,9 @@ describe("set_reward_emissions_v2 (litesvm)", () => {
                 rewardIndex,
                 rewardVaultKey: provider.wallet.publicKey, // TODO fix
                 emissionsPerSecondX64,
-              })
+              }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i
+            /.*signature verification fail.*/i,
           );
         });
       });

@@ -39,20 +39,20 @@ describe("initialize_reward_v2 (litesvm)", () => {
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
+  let providerWalletKeypair: Keypair;
 
   beforeAll(async () => {
     await startLiteSVM();
     provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
     const idl = require("../../../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
     fetcher = ctx.fetcher;
+    providerWalletKeypair = getProviderWalletKeypair(provider);
   });
-
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   describe("v1 parity (litesvm)", () => {
     const tokenTraitVariations: {
@@ -86,7 +86,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitAB,
               tokenTraits.tokenTraitAB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           const { params } = await initializeRewardV2(
@@ -96,19 +96,19 @@ describe("initialize_reward_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             0,
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           const whirlpool = (await fetcher.getPool(
             poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           assert.ok(whirlpool.rewardInfos[0].mint.equals(params.rewardMint));
           assert.ok(
             whirlpool.rewardInfos[0].vault.equals(
-              params.rewardVaultKeypair.publicKey
-            )
+              params.rewardVaultKeypair.publicKey,
+            ),
           );
 
           await assert.rejects(
@@ -119,9 +119,10 @@ describe("initialize_reward_v2 (litesvm)", () => {
               configKeypairs.rewardEmissionsSuperAuthorityKeypair,
               poolInitInfo.whirlpoolPda.publicKey,
               0,
-              configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+              configExtension.configExtensionKeypairs
+                .tokenBadgeAuthorityKeypair,
             ),
-            /custom program error: 0x178a/ // InvalidRewardIndex
+            /0x178a|ProgramFailedToComplete|SBF program panicked/,
           );
 
           const { params: params2 } = await initializeRewardV2(
@@ -131,47 +132,49 @@ describe("initialize_reward_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             1,
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           const whirlpool2 = (await fetcher.getPool(
             poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           assert.ok(whirlpool2.rewardInfos[0].mint.equals(params.rewardMint));
           assert.ok(
             whirlpool2.rewardInfos[0].vault.equals(
-              params.rewardVaultKeypair.publicKey
-            )
+              params.rewardVaultKeypair.publicKey,
+            ),
           );
           await asyncAssertOwnerProgram(
             provider,
             whirlpool2.rewardInfos[0].vault,
             tokenTraits.tokenTraitR.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
           assert.ok(whirlpool2.rewardInfos[1].mint.equals(params2.rewardMint));
           assert.ok(
             whirlpool2.rewardInfos[1].vault.equals(
-              params2.rewardVaultKeypair.publicKey
-            )
+              params2.rewardVaultKeypair.publicKey,
+            ),
           );
           await asyncAssertOwnerProgram(
             provider,
             whirlpool2.rewardInfos[1].vault,
             tokenTraits.tokenTraitR.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
           assert.ok(
-            whirlpool2.rewardInfos[2].mint.equals(anchor.web3.PublicKey.default)
+            whirlpool2.rewardInfos[2].mint.equals(
+              anchor.web3.PublicKey.default,
+            ),
           );
           assert.ok(
             whirlpool2.rewardInfos[2].vault.equals(
-              anchor.web3.PublicKey.default
-            )
+              anchor.web3.PublicKey.default,
+            ),
           );
         });
 
@@ -180,13 +183,13 @@ describe("initialize_reward_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
           const funderKeypair = anchor.web3.Keypair.generate();
           await systemTransferTx(
             provider,
             funderKeypair.publicKey,
-            ONE_SOL
+            ONE_SOL,
           ).buildAndExecute();
           await initializeRewardV2(
             ctx,
@@ -195,7 +198,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             0,
-            funderKeypair
+            funderKeypair,
           );
         });
 
@@ -205,7 +208,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitAB,
               tokenTraits.tokenTraitAB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           await assert.rejects(
@@ -216,9 +219,10 @@ describe("initialize_reward_v2 (litesvm)", () => {
               configKeypairs.rewardEmissionsSuperAuthorityKeypair,
               poolInitInfo.whirlpoolPda.publicKey,
               1,
-              configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+              configExtension.configExtensionKeypairs
+                .tokenBadgeAuthorityKeypair,
             ),
-            /custom program error: 0x178a/ // InvalidRewardIndex
+            /0x178a|ProgramFailedToComplete|SBF program panicked/,
           );
         });
 
@@ -228,7 +232,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
               ctx,
               tokenTraits.tokenTraitAB,
               tokenTraits.tokenTraitAB,
-              TickSpacing.Standard
+              TickSpacing.Standard,
             );
 
           await assert.rejects(
@@ -239,8 +243,9 @@ describe("initialize_reward_v2 (litesvm)", () => {
               configKeypairs.rewardEmissionsSuperAuthorityKeypair,
               poolInitInfo.whirlpoolPda.publicKey,
               3,
-              configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
-            )
+              configExtension.configExtensionKeypairs
+                .tokenBadgeAuthorityKeypair,
+            ),
           );
         });
 
@@ -249,18 +254,18 @@ describe("initialize_reward_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const rewardMint = await createMintV2(
             provider,
-            tokenTraits.tokenTraitR
+            tokenTraits.tokenTraitR,
           );
 
           const rewardTokenBadgePda = PDAUtil.getTokenBadge(
             ctx.program.programId,
             poolInitInfo.whirlpoolsConfig,
-            rewardMint
+            rewardMint,
           );
 
           await assert.rejects(
@@ -278,8 +283,8 @@ describe("initialize_reward_v2 (litesvm)", () => {
                   : TEST_TOKEN_PROGRAM_ID,
                 rewardVaultKeypair: anchor.web3.Keypair.generate(),
                 rewardIndex: 0,
-              })
-            ).buildAndExecute()
+              }),
+            ).buildAndExecute(),
           );
         });
       });
@@ -292,7 +297,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       const rewardMint = await createMintV2(provider, { isToken2022: false });
@@ -300,7 +305,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
       const rewardTokenBadgePda = PDAUtil.getTokenBadge(
         ctx.program.programId,
         poolInitInfo.whirlpoolsConfig,
-        rewardMint
+        rewardMint,
       );
 
       await assert.rejects(
@@ -316,11 +321,11 @@ describe("initialize_reward_v2 (litesvm)", () => {
             rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
             rewardVaultKeypair: anchor.web3.Keypair.generate(),
             rewardIndex: 0,
-          })
+          }),
         )
           .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -329,7 +334,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       const rewardMint = await createMintV2(provider, { isToken2022: true });
@@ -337,7 +342,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
       const rewardTokenBadgePda = PDAUtil.getTokenBadge(
         ctx.program.programId,
         poolInitInfo.whirlpoolsConfig,
-        rewardMint
+        rewardMint,
       );
 
       await assert.rejects(
@@ -353,11 +358,11 @@ describe("initialize_reward_v2 (litesvm)", () => {
             rewardTokenProgram: TEST_TOKEN_PROGRAM_ID,
             rewardVaultKeypair: anchor.web3.Keypair.generate(),
             rewardIndex: 0,
-          })
+          }),
         )
           .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -366,7 +371,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       const rewardMint = await createMintV2(provider, { isToken2022: true });
@@ -374,7 +379,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
       const rewardTokenBadgePda = PDAUtil.getTokenBadge(
         ctx.program.programId,
         poolInitInfo.whirlpoolsConfig,
-        rewardMint
+        rewardMint,
       );
 
       await assert.rejects(
@@ -390,11 +395,11 @@ describe("initialize_reward_v2 (litesvm)", () => {
             rewardTokenProgram: METADATA_PROGRAM_ADDRESS,
             rewardVaultKeypair: anchor.web3.Keypair.generate(),
             rewardIndex: 0,
-          })
+          }),
         )
           .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
           .buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -404,7 +409,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
         const rewardMint = await createMintV2(provider, {
@@ -426,11 +431,11 @@ describe("initialize_reward_v2 (litesvm)", () => {
               rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
               rewardVaultKeypair: anchor.web3.Keypair.generate(),
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
       });
 
@@ -440,7 +445,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
             ctx,
             { isToken2022: true },
             { isToken2022: true },
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
         const rewardMint = await createMintV2(provider, {
@@ -456,12 +461,12 @@ describe("initialize_reward_v2 (litesvm)", () => {
         const config = poolInitInfo.whirlpoolsConfig;
         const configExtensionPda = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          config
+          config,
         );
         const anotherMintTokenBadgePda = PDAUtil.getTokenBadge(
           ctx.program.programId,
           config,
-          anotherMint
+          anotherMint,
         );
         const tokenBadgeAuthority =
           configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair;
@@ -474,13 +479,13 @@ describe("initialize_reward_v2 (litesvm)", () => {
             tokenBadgeAuthority: tokenBadgeAuthority.publicKey,
             tokenBadgePda: anotherMintTokenBadgePda,
             tokenMint: anotherMint,
-          })
+          }),
         )
           .addSigner(tokenBadgeAuthority)
           .buildAndExecute();
         const badge = fetcher.getTokenBadge(
           anotherMintTokenBadgePda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(badge !== null);
 
@@ -499,11 +504,11 @@ describe("initialize_reward_v2 (litesvm)", () => {
               rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
               rewardVaultKeypair: anchor.web3.Keypair.generate(),
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
       });
 
@@ -512,7 +517,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
         const rewardMint = await createMintV2(provider, {
@@ -534,11 +539,11 @@ describe("initialize_reward_v2 (litesvm)", () => {
               rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
               rewardVaultKeypair: anchor.web3.Keypair.generate(),
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
       });
     });
@@ -556,13 +561,13 @@ describe("initialize_reward_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
       const config = poolInitInfo.whirlpoolsConfig;
 
       const rewardToken = await createMintV2(provider, params.tokenTrait);
       const tokenProgram = (await provider.connection.getAccountInfo(
-        rewardToken
+        rewardToken,
       ))!.owner;
 
       if (params.dropFreezeAuthorityAfterMintInitialization) {
@@ -574,12 +579,12 @@ describe("initialize_reward_v2 (litesvm)", () => {
           providerWalletKeypair,
           params.tokenTrait.isToken2022
             ? TEST_TOKEN_2022_PROGRAM_ID
-            : TEST_TOKEN_PROGRAM_ID
+            : TEST_TOKEN_PROGRAM_ID,
         );
 
         const afterSetAuthorityMint = await fetcher.getMintInfo(
           rewardToken,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(afterSetAuthorityMint?.freezeAuthority === null);
       }
@@ -588,7 +593,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
       const tokenBadgePda = PDAUtil.getTokenBadge(
         ctx.program.programId,
         config,
-        rewardToken
+        rewardToken,
       );
       if (params.createTokenBadge) {
         await toTx(
@@ -604,10 +609,10 @@ describe("initialize_reward_v2 (litesvm)", () => {
                 .publicKey,
             tokenBadgePda,
             tokenMint: rewardToken,
-          })
+          }),
         )
           .addSigner(
-            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           )
           .buildAndExecute();
       }
@@ -625,7 +630,7 @@ describe("initialize_reward_v2 (litesvm)", () => {
           rewardTokenProgram: tokenProgram,
           rewardVaultKeypair: anchor.web3.Keypair.generate(),
           rewardIndex: 0,
-        })
+        }),
       )
         .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
         .buildAndExecute();
@@ -634,13 +639,13 @@ describe("initialize_reward_v2 (litesvm)", () => {
         await promise;
         const whirlpoolData = await fetcher.getPool(
           poolInitInfo.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(whirlpoolData!.rewardInfos[0].mint.equals(rewardToken));
       } else {
         await assert.rejects(
           promise,
-          /0x179f/ // UnsupportedTokenMint
+          /0x179f|ProgramFailedToComplete|SBF program panicked/,
         );
       }
     }

@@ -1,6 +1,5 @@
 import type {
   IInstruction,
-  TransactionSigner,
   Address,
   Rpc,
   SolanaRpcApi,
@@ -104,7 +103,7 @@ async function buildTransactionMessage(
   // Use different signing functions based on signer type:
   // - KeyPairSigner: Use signTransactionMessageWithSigners (fully signs + asserts completeness)
   // - NoopSigner: Use partiallySignTransactionMessageWithSigners (partial signature, wallet signs later)
-  // 
+  //
   // Note: While signTransactionMessageWithSigners internally calls partiallySignTransactionMessageWithSigners,
   // tests fail when using only partiallySignTransactionMessageWithSigners for KeyPairSigners. The root cause
   // is unclear despite investigation, but this conditional approach works reliably.

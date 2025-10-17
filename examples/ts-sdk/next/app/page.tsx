@@ -10,8 +10,14 @@ import {
   createSolanaRpc,
   address,
   Address,
+  createNoopSigner,
+  assertTransactionIsFullySigned,
 } from "@solana/kit";
-import { buildAndSendTransaction, buildTransaction, sendTransaction, setRpc } from "@orca-so/tx-sender";
+import { 
+  buildTransaction, 
+  sendTransaction, 
+  setRpc,
+} from "@orca-so/tx-sender";
 
 const SOL_MINT: Address = address(
   "So11111111111111111111111111111111111111112",
@@ -44,6 +50,14 @@ function SwapPage({ account }: SwapPageProps) {
     setIsSwapping(true);
     setSolscanLink(null);
     setTransactionStatus("Creating swap transaction...");
+    
+    // Create NoopSigner once for the wallet address
+    // IMPORTANT: The SAME NoopSigner instance must be used for both:
+    // 1. Building instructions (embeds the signer object in instruction accounts)
+    // 2. Building the transaction (sets the fee payer)
+    // Using different instances (even with the same address) will cause a
+    // "Multiple distinct signers" error because Solana checks object identity.
+    const noopSigner = createNoopSigner(signer.address);
     const { instructions } = await swapInstructions(
       rpc,
       {
@@ -52,13 +66,21 @@ function SwapPage({ account }: SwapPageProps) {
       },
       POOL_ADDRESS,
       100,
-      signer,
+      noopSigner,
     );
 
     try {
-      setTransactionStatus("Signing and sending transaction...");
-      const signature = await buildAndSendTransaction(instructions, signer);
-      setTransactionStatus("finalized");
+      setTransactionStatus("Building transaction...");
+      const partialTx = await buildTransaction(instructions, noopSigner);
+      
+      setTransactionStatus("Requesting wallet signature...")
+      const [signedTx] = await signer.transactionSigner.modifyAndSignTransactions([partialTx]);
+      assertTransactionIsFullySigned(signedTx);
+      
+      setTransactionStatus("Sending transaction...");
+      const signature = await sendTransaction(signedTx, "confirmed");
+      
+      setTransactionStatus("confirmed");
       setSolscanLink(`https://solscan.io/tx/${signature}?cluster=devnet`);
     } catch (error) {
       console.error("Swap failed:", error);
@@ -139,7 +161,7 @@ function SwapPage({ account }: SwapPageProps) {
                 : "#1d4ed8",
             }}
           >
-            {transactionStatus === "finalized" && solscanLink ? (
+            {transactionStatus === "confirmed" && solscanLink ? (
               <span>
                 Confirmed! View details on{" "}
                 <a
@@ -204,7 +226,10 @@ function PageContent() {
 export default function Page() {
   useEffect(() => {
     setWhirlpoolsConfig("solanaDevnet");
-    setRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com");
+    setRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com", {
+      pollIntervalMs: 500,
+      resendOnPoll: false,
+    });
   }, []);
 
   return (

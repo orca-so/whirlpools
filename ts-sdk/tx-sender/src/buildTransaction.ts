@@ -6,6 +6,7 @@ import type {
   SolanaRpcApi,
   FullySignedTransaction,
   TransactionWithLifetime,
+  Transaction,
 } from "@solana/kit";
 import {
   compressTransactionMessageUsingAddressLookupTables,
@@ -16,7 +17,7 @@ import {
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
-  createNoopSigner,
+  partiallySignTransactionMessageWithSigners,
 } from "@solana/kit";
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
@@ -27,40 +28,46 @@ import { getRpcConfig } from "./config";
  * Builds and signs a transaction from the given instructions and configuration.
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
- * @param {TransactionSigner} feePayer - The signer that will pay for the transaction
+ * @param {TransactionSigner} feePayer - The signer that will pay for the transaction (must be the SAME instance used to build instructions)
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
  *
- * @returns {Promise<Readonly<FullySignedTransaction & TransactionWithLifetime>>} A signed and encoded transaction
+ * @returns {Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>>} 
+ *   - FullySignedTransaction if feePayer is a KeyPairSigner (has keyPair property)
+ *   - Transaction (partially signed) if feePayer is NoopSigner (no keyPair property)
  *
  * @example
- * const instructions = [createATAix, createTransferSolInstruction];
- * const feePayer = wallet.publicKey;
- * const message = await buildTransaction(
- *   instructions,
- *   feePayer,
- * );
+ * // Node.js with KeyPairSigner - fully signed automatically
+ * const { instructions } = await swapInstructions(rpc, params, pool, 100, keypairSigner);
+ * const tx = await buildTransaction(instructions, keypairSigner);
+ * await sendTransaction(tx);
+ * 
+ * // Browser with NoopSigner - partially signed, wallet signs separately
+ * const noopSigner = createNoopSigner(walletAddress);
+ * const { instructions } = await swapInstructions(rpc, params, pool, 100, noopSigner);
+ * const partialTx = await buildTransaction(instructions, noopSigner); // Same instance!
+ * const [signedTx] = await wallet.modifyAndSignTransactions([partialTx]);
+ * await sendTransaction(signedTx);
  */
 export async function buildTransaction(
   instructions: IInstruction[],
-  feePayer: TransactionSigner | Address,
+  feePayer: TransactionSigner,
   lookupTableAddresses?: (Address | string)[],
-): Promise<Readonly<FullySignedTransaction & TransactionWithLifetime>> {
-  return buildTransactionMessage(
-    instructions,
-    !("address" in feePayer) ? createNoopSigner(feePayer) : feePayer,
-    normalizeAddresses(lookupTableAddresses),
-  );
+): Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>> {
+  return buildTransactionMessage(instructions, feePayer, normalizeAddresses(lookupTableAddresses));
 }
 
 async function buildTransactionMessage(
   instructions: IInstruction[],
-  signer: TransactionSigner,
+  feePayer: TransactionSigner,
   lookupTableAddresses?: Address[],
 ) {
+  const hasKeyPair = 'keyPair' in feePayer;
+  const usePartialSigning = !hasKeyPair;
+  
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
 
-  let message = await prepareTransactionMessage(instructions, rpc, signer);
+  let message = await prepareTransactionMessage(instructions, rpc, feePayer);
 
   if (lookupTableAddresses?.length) {
     const lookupTableAccounts = await fetchAllMaybeAddressLookupTable(
@@ -83,15 +90,21 @@ async function buildTransactionMessage(
     );
   }
 
-  return signTransactionMessageWithSigners(
-    await addPriorityInstructions(message, signer),
-  );
+  const messageWithPriorityFees = await addPriorityInstructions(message, feePayer);
+
+  if (usePartialSigning) {
+    const partiallySigned = await partiallySignTransactionMessageWithSigners(messageWithPriorityFees);
+    return partiallySigned;
+  }
+
+  const signed = await signTransactionMessageWithSigners(messageWithPriorityFees);
+  return signed;
 }
 
 async function prepareTransactionMessage(
   instructions: IInstruction[],
   rpc: Rpc<SolanaRpcApi>,
-  signer: TransactionSigner,
+  feePayer: TransactionSigner,
 ) {
   const { value: blockhash } = await rpc
     .getLatestBlockhash({
@@ -101,7 +114,7 @@ async function prepareTransactionMessage(
   return pipe(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+    (tx) => setTransactionMessageFeePayerSigner(feePayer, tx),
     (tx) => appendTransactionMessageInstructions(instructions, tx),
   );
 }

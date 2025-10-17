@@ -29,6 +29,7 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   jitoBlockEngineUrl: "https://bundles.jito.wtf",
 };
 
+
 /**
  * Retrieves the current RPC configuration.
  *
@@ -49,6 +50,7 @@ const getPriorityConfig = (): TransactionConfig => {
   }
   return globalConfig.transactionConfig;
 };
+
 
 /**
  * Retrieves the current Jito fee settings.
@@ -100,18 +102,31 @@ const setGlobalConfig = (config: {
  * Initializes the global RPC configuration and returns an RPC instance.
  *
  * @param {string} url - The Solana RPC endpoint URL.
- * @param {boolean} [supportsPriorityFeePercentile=false] - Whether the RPC supports percentile-based priority fees. Set this to true if the RPC provider is Triton.
+ * @param {object} [options] - Optional RPC configuration
+ * @param {boolean} [options.supportsPriorityFeePercentile=false] - Whether the RPC supports percentile-based priority fees. Set this to true if the RPC provider is Triton.
+ * @param {number} [options.pollIntervalMs=0] - Milliseconds between confirmation status checks. Set to 0 for continuous polling (default).
+ * @param {boolean} [options.resendOnPoll=true] - Whether to resend the transaction on each poll attempt (default: true).
  * @returns {Promise<Rpc<SolanaRpcApi>>} A Promise that resolves to an RPC instance configured for the specified endpoint.
  *
  * @example
  * ```ts
- * const rpc = await setRpc("https://api.mainnet-beta.solana.com");
- * const slot = await rpc.getSlot().send();
+ * // Premium RPC: Use defaults for maximum landing rate
+ * const rpc = await setRpc("https://mainnet.helius-rpc.com/?api-key=...");
+ * 
+ * // Lower tier RPCs: Configure to reduce RPC usage
+ * const rpc = await setRpc("https://api.devnet.solana.com", {
+ *   pollIntervalMs: 1000,
+ *   resendOnPoll: false,
+ * });
  * ```
  */
 export async function setRpc(
   url: string,
-  supportsPriorityFeePercentile: boolean = false,
+  options: {
+    supportsPriorityFeePercentile?: boolean;
+    pollIntervalMs?: number;
+    resendOnPoll?: boolean;
+  } = {},
 ): Promise<Rpc<SolanaRpcApi>> {
   const rpc = rpcFromUrl(url);
   const chainId = await getChainIdFromGenesisHash(rpc);
@@ -120,8 +135,10 @@ export async function setRpc(
     ...globalConfig,
     rpcConfig: {
       rpcUrl: url,
-      supportsPriorityFeePercentile,
+      supportsPriorityFeePercentile: options.supportsPriorityFeePercentile ?? false,
       chainId,
+      pollIntervalMs: options.pollIntervalMs ?? 0,
+      resendOnPoll: options.resendOnPoll ?? true,
     },
   });
 
@@ -304,10 +321,37 @@ export type ChainId =
   | "unknown";
 
 /**
- * Configuration for RPC settings.
+ * Configuration for RPC settings and transaction sending strategy.
+ * 
+ * The transaction sending strategy should be configured based on your RPC tier:
+ * - **Premium RPC** (e.g., Helius, Triton): Can use default aggressive settings with resend enabled
+ * - **Public/Free RPC**: Should use conservative settings to avoid rate limits
+ * 
+ * @property {string} rpcUrl - The RPC endpoint URL
+ * @property {boolean} supportsPriorityFeePercentile - Whether the RPC supports percentile-based priority fee estimation
+ * @property {ChainId} chainId - The blockchain network chain ID
+ * @property {number} [pollIntervalMs=0] - Milliseconds between confirmation status checks. 
+ *   Set to 0 for continuous polling (no delay).
+ * @property {boolean} [resendOnPoll=true] - Whether to resend the transaction on each poll attempt.
+ *   - `true` (default): Resend transaction on every poll. Higher RPC usage, best for premium RPCs.
+ *   - `false`: Send once, then only poll for status. Lower RPC usage, recommended for public RPCs.
+ * 
+ * @example
+ * ```ts
+ * // Premium RPC: Use defaults for maximum landing rate
+ * setRpc("https://mainnet.helius-rpc.com/?api-key=...");
+ * 
+ * // Public/Free RPC: Conservative settings to control RPC usage
+ * setRpc("https://api.devnet.solana.com", {
+ *   pollIntervalMs: 1000,
+ *   resendOnPoll: false,
+ * });
+ * ```
  */
 export type RpcConfig = {
   rpcUrl: string;
   supportsPriorityFeePercentile: boolean;
   chainId: ChainId;
+  pollIntervalMs: number;
+  resendOnPoll: boolean;
 };

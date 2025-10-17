@@ -1,15 +1,18 @@
-import { createContext, useContext, useState, useMemo } from "react";
+import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { UiWalletAccount, UiWallet } from "@wallet-standard/react";
-import { useWalletAccountMessageSigner, useWalletAccountTransactionSigner } from "@solana/react";
-import type { MessagePartialSigner, TransactionPartialSigner } from "@solana/kit";
+import { useWalletAccountTransactionSigner } from "@solana/react";
+import type { Address } from "@solana/kit";
 
 interface ConnectedWallet {
   account: UiWalletAccount;
   wallet: UiWallet;
 }
 
-type CompositeSigner = MessagePartialSigner & TransactionPartialSigner;
+type WalletAdapter = {
+  address: Address;
+  transactionSigner: ReturnType<typeof useWalletAccountTransactionSigner>;
+};
 
 interface WalletContextType {
   account: UiWalletAccount | null;
@@ -17,7 +20,7 @@ interface WalletContextType {
   connectedWallet: ConnectedWallet | null;
   setConnectedWallet: (wallet: ConnectedWallet | null) => void;
   isConnected: boolean;
-  signer: CompositeSigner | null;
+  signer: WalletAdapter | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -31,46 +34,15 @@ function WalletProviderInner({
   connectedWallet: ConnectedWallet;
   setConnectedWallet: (wallet: ConnectedWallet | null) => void;
 }) {
-  const messageSigner = useWalletAccountMessageSigner(
-    connectedWallet.account,
-  );
   const transactionSigner = useWalletAccountTransactionSigner(
     connectedWallet.account,
-    "solana:devnet", // Use the appropriate chain
+    "solana:devnet",
   );
 
-  // Combine both signers into a composite signer that implements both interfaces
-  const signer = useMemo<CompositeSigner>(() => ({
-    address: messageSigner.address,
-    // MessagePartialSigner: Return signature dictionaries from signed messages
-    signMessages: async (messages) => {
-      const signedMessages = await messageSigner.modifyAndSignMessages(messages);
-      return signedMessages.map(msg => {
-        // Filter out null signatures
-        const filtered: Record<string, Uint8Array> = {};
-        for (const [addr, sig] of Object.entries(msg.signatures)) {
-          if (sig !== null) {
-            filtered[addr] = sig;
-          }
-        }
-        return filtered as any;
-      });
-    },
-    // TransactionPartialSigner: Return signature dictionaries from signed transactions
-    signTransactions: async (transactions) => {
-      const signedTransactions = await transactionSigner.modifyAndSignTransactions(transactions);
-      return signedTransactions.map(tx => {
-        // Filter out null signatures
-        const filtered: Record<string, Uint8Array> = {};
-        for (const [addr, sig] of Object.entries(tx.signatures)) {
-          if (sig !== null) {
-            filtered[addr] = sig;
-          }
-        }
-        return filtered as any;
-      });
-    },
-  }), [messageSigner, transactionSigner]);
+  const signer: WalletAdapter = {
+    address: transactionSigner.address,
+    transactionSigner,
+  };
 
   return (
     <WalletContext.Provider

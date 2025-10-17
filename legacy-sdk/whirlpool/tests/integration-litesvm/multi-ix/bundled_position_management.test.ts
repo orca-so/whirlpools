@@ -360,9 +360,15 @@ describe("bundled position management tests (litesvm)", () => {
         receiver: ctx.wallet.publicKey,
       }),
     ).buildAndExecute();
-    const positionBundleAccount = await ctx.fetcher.getPositionBundle(
-      positionBundlePubkey,
-      IGNORE_CACHE,
+
+    // Poll for the account to be closed (litesvm has delayed state updates)
+    const positionBundleAccount = await pollForCondition(
+      () => ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE),
+      (account) => account === null,
+      {
+        accountToReload: positionBundlePubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(positionBundleAccount === null);
   });

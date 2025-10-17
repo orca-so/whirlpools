@@ -19,7 +19,11 @@ import {
   TickSpacing,
   transferToken,
 } from "../../utils";
-import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  pollForCondition,
+} from "../../utils/litesvm";
 import type { TestConfigExtensionParams } from "../../utils/v2/init-utils-v2";
 import {
   buildTestPoolV2Params,
@@ -567,10 +571,14 @@ describe("non transferable position (litesvm)", () => {
 
     await toTx(ctx, closePositionWithTokenExtensions).buildAndExecute();
 
-    // position should be closed
-    const closedPosition = await fetcher.getPosition(
-      positionPda.publicKey,
-      IGNORE_CACHE,
+    // position should be closed (poll for state update in litesvm)
+    const closedPosition = await pollForCondition(
+      () => fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE),
+      (account) => account === null,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(!closedPosition);
   });

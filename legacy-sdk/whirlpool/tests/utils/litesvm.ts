@@ -241,8 +241,8 @@ export async function createLiteSVMProvider(): Promise<anchor.AnchorProvider> {
   // Create wallet
   const wallet = Keypair.generate();
 
-  // Fund the wallet using airdrop
-  litesvm.airdrop(wallet.publicKey, BigInt(100e9));
+  // Fund the wallet using airdrop (500 SOL for tests that need large transfers)
+  litesvm.airdrop(wallet.publicKey, BigInt(500e9));
 
   // Create connection wrapper
   const connection = createLiteSVMConnection(litesvm);

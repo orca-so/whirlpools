@@ -10,7 +10,11 @@ import { PDAUtil, TICK_ARRAY_SIZE, WhirlpoolIx, toTx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  resetLiteSVM,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initializePositionBundle } from "../../utils/init-utils";
 
@@ -18,17 +22,23 @@ type PositionBundleFixture = Awaited<
   ReturnType<typeof initializePositionBundle>
 >;
 
-describe("dynamic tick array multi ix tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
+describe("dynamic tick array multi ix tests (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let ctx: WhirlpoolContext;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
   });
 
@@ -303,8 +313,8 @@ describe("dynamic tick array multi ix tests", () => {
     }
   }
 
-  describe("multiple transactions", () => {
-    describe("initialize all ticks then uninitialize them (two DynamicTickArray)", () => {
+  describe("multiple transactions (litesvm)", () => {
+    describe("initialize all ticks then uninitialize them (two DynamicTickArray) (litesvm)", () => {
       async function test(
         tickSpacing: number,
         initializeOrder: number[],
@@ -559,6 +569,18 @@ describe("dynamic tick array multi ix tests", () => {
     });
 
     it("initialize all ticks then uninitialize them (one DynamicTickArray)", async () => {
+      // Reset LiteSVM to avoid SOL depletion from previous heavy tests
+      resetLiteSVM();
+      await startLiteSVM();
+      provider = await createLiteSVMProvider();
+      const programId = new anchor.web3.PublicKey(
+        "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+      );
+      const idl = require("../../../src/artifacts/whirlpool.json");
+      program = new anchor.Program(idl, programId, provider);
+      anchor.setProvider(provider);
+      ctx = WhirlpoolContext.fromWorkspace(provider, program);
+
       const tickSpacing = 64;
 
       const { positionBundle, whirlpool, tickArrayPos, startTickPos } =
@@ -692,6 +714,18 @@ describe("dynamic tick array multi ix tests", () => {
     });
 
     it("open multiple positions on the same ticks", async () => {
+      // Reset LiteSVM to avoid SOL depletion from previous heavy tests
+      resetLiteSVM();
+      await startLiteSVM();
+      provider = await createLiteSVMProvider();
+      const programId = new anchor.web3.PublicKey(
+        "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+      );
+      const idl = require("../../../src/artifacts/whirlpool.json");
+      program = new anchor.Program(idl, programId, provider);
+      anchor.setProvider(provider);
+      ctx = WhirlpoolContext.fromWorkspace(provider, program);
+
       const tickSpacing = 64;
 
       const { positionBundle, whirlpool, tickArrayPos, startTickPos } =
@@ -824,7 +858,21 @@ describe("dynamic tick array multi ix tests", () => {
     });
   });
 
-  describe("single transaction (atomic execution)", () => {
+  describe("single transaction (atomic execution) (litesvm)", () => {
+    beforeEach(async () => {
+      // Reset LiteSVM before each test to avoid SOL depletion
+      resetLiteSVM();
+      await startLiteSVM();
+      provider = await createLiteSVMProvider();
+      const programId = new anchor.web3.PublicKey(
+        "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+      );
+      const idl = require("../../../src/artifacts/whirlpool.json");
+      program = new anchor.Program(idl, programId, provider);
+      anchor.setProvider(provider);
+      ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    });
+
     it("1st tx: open 6 positions, 2nd tx: close 6 positions (different ticks)", async () => {
       const tickSpacing = 64;
       const numPosition = 6;

@@ -100,6 +100,25 @@ pub enum ConfigFeatureFlag {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = WhirlpoolsConfig::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:WhirlpoolsConfig | sha256sum | cut -c 1-16
+        // 9d1431e0d957c1fe
+        assert_eq!(
+            discriminator,
+            [0x9d, 0x14, 0x31, 0xe0, 0xd9, 0x57, 0xc1, 0xfe]
+        );
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

@@ -177,6 +177,15 @@ function extractErrorFromLogs(logs: string[]): string | null {
 function mapLiteSVMError(error: any, logs: string[]): string {
   let errorStr = error.toString();
 
+  // Map common Solana error codes to human-readable messages
+  if (errorStr === "6") {
+    errorStr = "6 (NotEnoughAccountKeys)";
+  } else if (errorStr === "7") {
+    errorStr = "7 (AccountBorrowFailed)";
+  } else if (errorStr === "11") {
+    errorStr = "11 (signature verification fail)";
+  }
+
   // If error serialization failed, try to extract from logs or error structure
   if (errorStr === "undefined" || !errorStr || errorStr === "[object Object]") {
     // Try to extract from logs first

@@ -156,10 +156,15 @@ export async function buildTestAquariums(
 
   const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
-  await ctx.connection.requestAirdrop(
+  const balance = await ctx.connection.getBalance(
     ctx.provider.wallet.publicKey,
-    100_000_000_000_000,
   );
+  if (balance < 10_000_000_000) {
+    await ctx.connection.requestAirdrop(
+      ctx.provider.wallet.publicKey,
+      50_000_000_000, // 50 SOL
+    );
+  }
   for (const initParam of initParams) {
     // Create configs
     let configParams = initParam.configParams;
@@ -709,6 +714,16 @@ export async function initTickArray(
     startTickIndex,
     funder?.publicKey,
   );
+
+  // Check if tick array already exists (for LiteSVM deduplication)
+  const existingAccount = await ctx.connection.getAccountInfo(
+    params.tickArrayPda.publicKey,
+  );
+  if (existingAccount) {
+    // Tick array already exists, return without initializing
+    return { txId: "", params };
+  }
+
   const tx = toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, params));
   if (funder) {
     tx.addSigner(funder);
@@ -728,6 +743,16 @@ export async function initDynamicTickArray(
     startTickIndex,
     funder?.publicKey,
   );
+
+  // Check if tick array already exists (for LiteSVM deduplication)
+  const existingAccount = await ctx.connection.getAccountInfo(
+    params.tickArrayPda.publicKey,
+  );
+  if (existingAccount) {
+    // Tick array already exists, return without initializing
+    return { txId: "", params };
+  }
+
   const tx = toTx(ctx, WhirlpoolIx.initDynamicTickArrayIx(ctx.program, params));
   if (funder) {
     tx.addSigner(funder);
@@ -751,17 +776,20 @@ export async function initTestPoolWithTokens(
 
   // Airdrop SOL into provider's wallet for SOL native token testing.
   const connection = ctx.provider.connection;
-  const airdropTx = await connection.requestAirdrop(
-    ctx.provider.wallet.publicKey,
-    100_000_000_000_000,
-  );
-  await ctx.connection.confirmTransaction(
-    {
-      signature: airdropTx,
-      ...(await ctx.connection.getLatestBlockhash("confirmed")),
-    },
-    "confirmed",
-  );
+  const balance = await connection.getBalance(ctx.provider.wallet.publicKey);
+  if (balance < 10_000_000_000) {
+    const airdropTx = await connection.requestAirdrop(
+      ctx.provider.wallet.publicKey,
+      50_000_000_000, // 50 SOL
+    );
+    await ctx.connection.confirmTransaction(
+      {
+        signature: airdropTx,
+        ...(await ctx.connection.getLatestBlockhash("confirmed")),
+      },
+      "confirmed",
+    );
+  }
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,
@@ -834,90 +862,87 @@ export async function withdrawPositions(
   tokenOwnerAccountB: PublicKey,
 ) {
   const fetcher = ctx.fetcher;
-  await Promise.all(
-    positionInfos.map(async (info) => {
-      const pool = await fetcher.getPool(info.initParams.whirlpool);
-      const position = await fetcher.getPosition(
-        info.initParams.positionPda.publicKey,
+  // Withdraw positions sequentially to avoid AccountBorrowFailed errors in LiteSVM
+  for (const info of positionInfos) {
+    const pool = await fetcher.getPool(info.initParams.whirlpool);
+    const position = await fetcher.getPosition(
+      info.initParams.positionPda.publicKey,
+    );
+
+    if (!pool) {
+      throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
+    }
+
+    if (!position) {
+      throw new Error(
+        `Failed to fetch position - ${info.initParams.whirlpool}`,
       );
+    }
 
-      if (!pool) {
-        throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
-      }
+    const priceLower = PriceMath.tickIndexToSqrtPriceX64(
+      position.tickLowerIndex,
+    );
+    const priceUpper = PriceMath.tickIndexToSqrtPriceX64(
+      position.tickUpperIndex,
+    );
 
-      if (!position) {
-        throw new Error(
-          `Failed to fetch position - ${info.initParams.whirlpool}`,
-        );
-      }
+    const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+      position.liquidity,
+      pool.sqrtPrice,
+      priceLower,
+      priceUpper,
+      false,
+    );
 
-      const priceLower = PriceMath.tickIndexToSqrtPriceX64(
-        position.tickLowerIndex,
-      );
-      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(
-        position.tickUpperIndex,
-      );
+    const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
+    const lowerStartTick =
+      position.tickLowerIndex - (position.tickLowerIndex % numTicksInTickArray);
+    const tickArrayLower = PDAUtil.getTickArray(
+      ctx.program.programId,
+      info.initParams.whirlpool,
+      lowerStartTick,
+    );
+    const upperStartTick =
+      position.tickUpperIndex - (position.tickUpperIndex % numTicksInTickArray);
+    const tickArrayUpper = PDAUtil.getTickArray(
+      ctx.program.programId,
+      info.initParams.whirlpool,
+      upperStartTick,
+    );
 
-      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
-        position.liquidity,
-        pool.sqrtPrice,
-        priceLower,
-        priceUpper,
-        false,
-      );
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        liquidityAmount: position.liquidity,
+        tokenMinA: tokenA,
+        tokenMinB: tokenB,
+        whirlpool: info.initParams.whirlpool,
+        positionAuthority: ctx.provider.wallet.publicKey,
+        position: info.initParams.positionPda.publicKey,
+        positionTokenAccount: info.initParams.positionTokenAccount,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA: pool.tokenVaultA,
+        tokenVaultB: pool.tokenVaultB,
+        tickArrayLower: tickArrayLower.publicKey,
+        tickArrayUpper: tickArrayUpper.publicKey,
+      }),
+    ).buildAndExecute();
 
-      const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
-      const lowerStartTick =
-        position.tickLowerIndex -
-        (position.tickLowerIndex % numTicksInTickArray);
-      const tickArrayLower = PDAUtil.getTickArray(
-        ctx.program.programId,
-        info.initParams.whirlpool,
-        lowerStartTick,
-      );
-      const upperStartTick =
-        position.tickUpperIndex -
-        (position.tickUpperIndex % numTicksInTickArray);
-      const tickArrayUpper = PDAUtil.getTickArray(
-        ctx.program.programId,
-        info.initParams.whirlpool,
-        upperStartTick,
-      );
-
-      await toTx(
-        ctx,
-        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-          liquidityAmount: position.liquidity,
-          tokenMinA: tokenA,
-          tokenMinB: tokenB,
-          whirlpool: info.initParams.whirlpool,
-          positionAuthority: ctx.provider.wallet.publicKey,
-          position: info.initParams.positionPda.publicKey,
-          positionTokenAccount: info.initParams.positionTokenAccount,
-          tokenOwnerAccountA,
-          tokenOwnerAccountB,
-          tokenVaultA: pool.tokenVaultA,
-          tokenVaultB: pool.tokenVaultB,
-          tickArrayLower: tickArrayLower.publicKey,
-          tickArrayUpper: tickArrayUpper.publicKey,
-        }),
-      ).buildAndExecute();
-
-      await toTx(
-        ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
-          whirlpool: info.initParams.whirlpool,
-          positionAuthority: ctx.provider.wallet.publicKey,
-          position: info.initParams.positionPda.publicKey,
-          positionTokenAccount: info.initParams.positionTokenAccount,
-          tokenOwnerAccountA,
-          tokenOwnerAccountB,
-          tokenVaultA: pool.tokenVaultA,
-          tokenVaultB: pool.tokenVaultB,
-        }),
-      ).buildAndExecute();
-    }),
-  );
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectFeesIx(ctx.program, {
+        whirlpool: info.initParams.whirlpool,
+        positionAuthority: ctx.provider.wallet.publicKey,
+        position: info.initParams.positionPda.publicKey,
+        positionTokenAccount: info.initParams.positionTokenAccount,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA: pool.tokenVaultA,
+        tokenVaultB: pool.tokenVaultB,
+      }),
+    ).buildAndExecute();
+  }
 }
 
 export interface FundedPositionInfo {
@@ -985,69 +1010,70 @@ export async function fundPositions(
     initSqrtPrice,
   } = poolInitInfo;
 
-  return await Promise.all(
-    fundParams.map(async (param): Promise<FundedPositionInfo> => {
-      const { params: positionInfo, mint } = await openPosition(
-        ctx,
-        whirlpool,
-        param.tickLowerIndex,
-        param.tickUpperIndex,
-        undefined,
-        undefined,
-        param.isTokenExtensionsBasedPosition ?? false,
+  // Initialize positions sequentially to avoid AccountBorrowFailed errors in LiteSVM
+  const results: FundedPositionInfo[] = [];
+  for (const param of fundParams) {
+    const { params: positionInfo, mint } = await openPosition(
+      ctx,
+      whirlpool,
+      param.tickLowerIndex,
+      param.tickUpperIndex,
+      undefined,
+      undefined,
+      param.isTokenExtensionsBasedPosition ?? false,
+    );
+
+    const tickArrayLower = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpool,
+      TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing),
+    ).publicKey;
+
+    const tickArrayUpper = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpool,
+      TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing),
+    ).publicKey;
+
+    if (param.liquidityAmount.gt(ZERO_BN)) {
+      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+        param.liquidityAmount,
+        initSqrtPrice,
+        PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
+        PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
+        true,
       );
-
-      const tickArrayLower = PDAUtil.getTickArray(
-        ctx.program.programId,
-        whirlpool,
-        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing),
-      ).publicKey;
-
-      const tickArrayUpper = PDAUtil.getTickArray(
-        ctx.program.programId,
-        whirlpool,
-        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing),
-      ).publicKey;
-
-      if (param.liquidityAmount.gt(ZERO_BN)) {
-        const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
-          param.liquidityAmount,
-          initSqrtPrice,
-          PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
-          PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
-          true,
-        );
-        await toTx(
-          ctx,
-          WhirlpoolIx.increaseLiquidityIx(ctx.program, {
-            liquidityAmount: param.liquidityAmount,
-            tokenMaxA: tokenA,
-            tokenMaxB: tokenB,
-            whirlpool: whirlpool,
-            positionAuthority: ctx.provider.wallet.publicKey,
-            position: positionInfo.positionPda.publicKey,
-            positionTokenAccount: positionInfo.positionTokenAccount,
-            tokenOwnerAccountA: tokenAccountA,
-            tokenOwnerAccountB: tokenAccountB,
-            tokenVaultA: tokenVaultAKeypair.publicKey,
-            tokenVaultB: tokenVaultBKeypair.publicKey,
-            tickArrayLower,
-            tickArrayUpper,
-          }),
-        )
-          .addInstruction(useMaxCU())
-          .buildAndExecute();
-      }
-      return {
-        initParams: positionInfo,
-        publicKey: positionInfo.positionPda.publicKey,
-        tokenAccount: positionInfo.positionTokenAccount,
-        mintKeypair: mint,
-        tickArrayLower,
-        tickArrayUpper,
-      };
-    }),
-  );
+      await toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount: param.liquidityAmount,
+          tokenMaxA: tokenA,
+          tokenMaxB: tokenB,
+          whirlpool: whirlpool,
+          positionAuthority: ctx.provider.wallet.publicKey,
+          position: positionInfo.positionPda.publicKey,
+          positionTokenAccount: positionInfo.positionTokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArrayLower,
+          tickArrayUpper,
+        }),
+      )
+        .addInstruction(useMaxCU())
+        .buildAndExecute();
+    }
+    results.push({
+      initParams: positionInfo,
+      publicKey: positionInfo.positionPda.publicKey,
+      tokenAccount: positionInfo.positionTokenAccount,
+      mintKeypair: mint,
+      tickArrayLower,
+      tickArrayUpper,
+    });
+  }
+  return results;
 }
 
 export async function initTestPoolWithLiquidity(

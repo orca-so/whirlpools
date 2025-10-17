@@ -126,10 +126,15 @@ export async function buildTestAquariumsV2(
 
   const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
-  await ctx.connection.requestAirdrop(
+  const balance = await ctx.connection.getBalance(
     ctx.provider.wallet.publicKey,
-    100_000_000_000_000,
   );
+  if (balance < 10_000_000_000) {
+    await ctx.connection.requestAirdrop(
+      ctx.provider.wallet.publicKey,
+      50_000_000_000, // 50 SOL
+    );
+  }
   for (const initParam of initParams) {
     // Create configs
     let configParams = initParam.configParams;
@@ -273,116 +278,110 @@ export async function buildTestAquariumsV2(
       }),
     );
 
-    const pools = await Promise.all(
-      initPoolParams.map(async (initPoolParam) => {
-        const {
-          tickSpacing,
-          mintIndices,
-          initSqrtPrice = DEFAULT_SQRT_PRICE,
-          feeTierIndex = 0,
-        } = initPoolParam;
-        const [mintOne, mintTwo] = mintIndices.map((idx) => mintKeys[idx]);
-        const [tokenMintA, tokenMintB] = PoolUtil.orderMints(
-          mintOne,
-          mintTwo,
-        ).map(AddressUtil.toPubKey);
+    // Initialize pools sequentially to avoid AccountBorrowFailed errors in LiteSVM
+    const pools: InitPoolV2Params[] = [];
+    for (const initPoolParam of initPoolParams) {
+      const {
+        tickSpacing,
+        mintIndices,
+        initSqrtPrice = DEFAULT_SQRT_PRICE,
+        feeTierIndex = 0,
+      } = initPoolParam;
+      const [mintOne, mintTwo] = mintIndices.map((idx) => mintKeys[idx]);
+      const [tokenMintA, tokenMintB] = PoolUtil.orderMints(
+        mintOne,
+        mintTwo,
+      ).map(AddressUtil.toPubKey);
 
-        const isInverted = mintOne.equals(tokenMintB);
-        invariant(!isInverted, "should not be inverted");
+      const isInverted = mintOne.equals(tokenMintB);
+      invariant(!isInverted, "should not be inverted");
 
-        const configKey =
-          configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
-        const whirlpoolPda = PDAUtil.getWhirlpool(
-          ctx.program.programId,
-          configKey,
-          tokenMintA,
-          tokenMintB,
-          tickSpacing,
-        );
+      const configKey =
+        configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
+      const whirlpoolPda = PDAUtil.getWhirlpool(
+        ctx.program.programId,
+        configKey,
+        tokenMintA,
+        tokenMintB,
+        tickSpacing,
+      );
 
-        const tokenBadgeAPda = PDAUtil.getTokenBadge(
-          ctx.program.programId,
-          configKey,
-          tokenMintA,
-        );
-        const tokenBadgeBPda = PDAUtil.getTokenBadge(
-          ctx.program.programId,
-          configKey,
-          tokenMintB,
-        );
+      const tokenBadgeAPda = PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        configKey,
+        tokenMintA,
+      );
+      const tokenBadgeBPda = PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        configKey,
+        tokenMintB,
+      );
 
-        const tokenProgramA = (await ctx.connection.getAccountInfo(tokenMintA))!
-          .owner;
-        const tokenProgramB = (await ctx.connection.getAccountInfo(tokenMintB))!
-          .owner;
+      const tokenProgramA = (await ctx.connection.getAccountInfo(tokenMintA))!
+        .owner;
+      const tokenProgramB = (await ctx.connection.getAccountInfo(tokenMintB))!
+        .owner;
 
-        const poolParam: InitPoolV2Params = {
-          initSqrtPrice,
-          whirlpoolsConfig: configKey,
-          tokenMintA,
-          tokenMintB,
-          tokenBadgeA: tokenBadgeAPda.publicKey,
-          tokenBadgeB: tokenBadgeBPda.publicKey,
-          tokenProgramA,
-          tokenProgramB,
-          whirlpoolPda,
-          tokenVaultAKeypair: Keypair.generate(),
-          tokenVaultBKeypair: Keypair.generate(),
-          feeTierKey: feeTierParams[feeTierIndex].feeTierPda.publicKey,
-          tickSpacing,
-          // TODO: funder
-          funder: ctx.wallet.publicKey,
-        };
+      const poolParam: InitPoolV2Params = {
+        initSqrtPrice,
+        whirlpoolsConfig: configKey,
+        tokenMintA,
+        tokenMintB,
+        tokenBadgeA: tokenBadgeAPda.publicKey,
+        tokenBadgeB: tokenBadgeBPda.publicKey,
+        tokenProgramA,
+        tokenProgramB,
+        whirlpoolPda,
+        tokenVaultAKeypair: Keypair.generate(),
+        tokenVaultBKeypair: Keypair.generate(),
+        feeTierKey: feeTierParams[feeTierIndex].feeTierPda.publicKey,
+        tickSpacing,
+        // TODO: funder
+        funder: ctx.wallet.publicKey,
+      };
 
-        const tx = toTx(
-          ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, poolParam),
-        );
-        await tx.buildAndExecute();
-        return poolParam;
-      }),
-    );
+      const tx = toTx(
+        ctx,
+        WhirlpoolIx.initializePoolV2Ix(ctx.program, poolParam),
+      );
+      await tx.buildAndExecute();
+      pools.push(poolParam);
+    }
 
-    const tickArrays = await Promise.all(
-      initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const {
-          poolIndex,
-          startTickIndex,
-          arrayCount,
-          aToB,
-          dynamicTickArrays,
-        } = initTickArrayRangeParam;
-        const pool = pools[poolIndex];
-        const pdas = await initTickArrayRange(
-          ctx,
-          pool.whirlpoolPda.publicKey,
-          startTickIndex,
-          arrayCount,
-          pool.tickSpacing,
-          aToB,
-          dynamicTickArrays,
-        );
-        return {
-          params: initTickArrayRangeParam,
-          pdas,
-        };
-      }),
-    );
+    // Initialize tick arrays sequentially to avoid AccountBorrowFailed errors in LiteSVM
+    const tickArrays = [];
+    for (const initTickArrayRangeParam of initTickArrayRangeParams) {
+      const { poolIndex, startTickIndex, arrayCount, aToB, dynamicTickArrays } =
+        initTickArrayRangeParam;
+      const pool = pools[poolIndex];
+      const pdas = await initTickArrayRange(
+        ctx,
+        pool.whirlpoolPda.publicKey,
+        startTickIndex,
+        arrayCount,
+        pool.tickSpacing,
+        aToB,
+        dynamicTickArrays,
+      );
+      tickArrays.push({
+        params: initTickArrayRangeParam,
+        pdas,
+      });
+    }
 
-    await Promise.all(
-      initPositionParams.map(async (initPositionParam) => {
-        const { poolIndex, fundParams } = initPositionParam;
-        const pool = pools[poolIndex];
-        const tokenAccKeys = getTokenAccsForPoolsV2([pool], tokenAccounts);
-        await fundPositionsV2(
-          ctx,
-          pool,
-          tokenAccKeys[0],
-          tokenAccKeys[1],
-          fundParams,
-        );
-      }),
-    );
+    // Fund positions sequentially to avoid AccountBorrowFailed errors in LiteSVM
+    for (const initPositionParam of initPositionParams) {
+      const { poolIndex, fundParams } = initPositionParam;
+      const pool = pools[poolIndex];
+      const tokenAccKeys = getTokenAccsForPoolsV2([pool], tokenAccounts);
+      await fundPositionsV2(
+        ctx,
+        pool,
+        tokenAccKeys[0],
+        tokenAccKeys[1],
+        fundParams,
+      );
+    }
 
     aquariums.push({
       configParams,

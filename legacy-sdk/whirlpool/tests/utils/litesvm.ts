@@ -12,6 +12,12 @@ import { LiteSVM, Clock } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
 import * as path from "path";
+import {
+  NATIVE_MINT,
+  NATIVE_MINT_2022,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 
 let _litesvm: LiteSVM | null = null;
 
@@ -33,6 +39,124 @@ interface TransactionRecord {
   blockTime: number;
 }
 let _transactionHistory: Map<string, TransactionRecord> = new Map();
+
+function ensureNativeMintAccounts(vm: LiteSVM) {
+  // Minimal mint layout: set owner and 82-byte data buffer
+  const ensure = (mint: PublicKey, owner: PublicKey) => {
+    const acc = vm.getAccount(mint);
+    if (!acc) {
+      const data = Buffer.alloc(82, 0);
+      // supply at offset 36 (u64) -> 0
+      // decimals at offset 44 (u8)
+      data.writeUInt8(9, 44);
+      // isInitialized at offset 45 (bool)
+      data.writeUInt8(1, 45);
+      vm.setAccount(mint, {
+        lamports: 1_000_000, // non-zero rent to look realistic
+        data: new Uint8Array(data),
+        owner,
+        executable: false,
+        rentEpoch: 0,
+      });
+    }
+  };
+  ensure(NATIVE_MINT, TOKEN_PROGRAM_ID);
+  ensure(NATIVE_MINT_2022, TOKEN_2022_PROGRAM_ID);
+}
+
+// Normalize logs so Anchor's EventParser can decode events reliably.
+// Solana RPC emits binary event data as: "Program data: <base64>".
+// Some LiteSVM builds may emit hex or numeric arrays instead; convert them to base64.
+function convertPayloadToBase64(payload: string): string | null {
+  let p = payload.trim();
+  // Try numeric array format: [1, 2, 255]
+  const arrayMatch = p.match(/^\[(.*)\]$/);
+  if (arrayMatch) {
+    const nums = arrayMatch[1]
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+    if (nums.length > 0 && nums.every((n) => n >= 0 && n <= 255)) {
+      return Buffer.from(Uint8Array.from(nums)).toString("base64");
+    }
+  }
+  // Try hex string (with or without 0x)
+  if (p.startsWith("0x")) p = p.slice(2);
+  if (/^[0-9a-fA-F]+$/.test(p) && p.length % 2 === 0) {
+    const bytes: number[] = [];
+    for (let i = 0; i < p.length; i += 2) {
+      bytes.push(parseInt(p.slice(i, i + 2), 16));
+    }
+    return Buffer.from(Uint8Array.from(bytes)).toString("base64");
+  }
+  return null;
+}
+
+function normalizeLogsForAnchor(logs: string[]): string[] {
+  const PROGRAM_LOG_PREFIX = "Program log:";
+  const PROGRAM_DATA_PREFIX = "Program data:";
+  return logs.map((line) => {
+    if (typeof line !== "string") return line as unknown as string;
+    const trimmed = line.trim();
+
+    // Preserve memo lines as-is
+    if (trimmed.startsWith("Program log: Memo (len")) {
+      return line;
+    }
+
+    // Helper: emit canonical Program data form understood by Anchor
+    const emitProgramData = (payloadBase64: string) =>
+      `${PROGRAM_DATA_PREFIX} ${payloadBase64}`;
+
+    // Case 1: Already Program data; ensure payload is base64
+    if (trimmed.startsWith(PROGRAM_DATA_PREFIX)) {
+      const payload = trimmed.slice(PROGRAM_DATA_PREFIX.length).trim();
+      const isBase64 =
+        /^[A-Za-z0-9+/]+={0,2}$/.test(payload) && payload.length % 4 === 0;
+      if (isBase64) return line;
+      const converted = convertPayloadToBase64(payload);
+      if (converted) return emitProgramData(converted);
+      return line;
+    }
+
+    // Case 2: "Program log: data: <...>"
+    const dataMatch = trimmed.match(/^Program log:\s*data:\s*(.+)$/i);
+    if (dataMatch && dataMatch[1]) {
+      const converted = convertPayloadToBase64(dataMatch[1]);
+      if (converted) return emitProgramData(converted);
+      return line;
+    }
+
+    // Case 3: "Program log: <...>" where payload could be numeric array, hex, or comma list
+    const logPayloadMatch = trimmed.match(/^Program log:\s*(.+)$/);
+    if (logPayloadMatch && logPayloadMatch[1]) {
+      const raw = logPayloadMatch[1].trim();
+      // If raw already base64, convert to Program data form
+      const isBase64 =
+        /^[A-Za-z0-9+/]+={0,2}$/.test(raw) && raw.length % 4 === 0;
+      if (isBase64) return emitProgramData(raw);
+
+      // Support comma-separated numbers "1, 2, 3"
+      if (/^(?:\d+\s*,\s*)*\d+$/.test(raw)) {
+        const nums = raw
+          .split(",")
+          .map((s) => parseInt(s.trim(), 10))
+          .filter((n) => !Number.isNaN(n));
+        if (nums.length > 0 && nums.every((n) => n >= 0 && n <= 255)) {
+          return emitProgramData(
+            Buffer.from(Uint8Array.from(nums)).toString("base64"),
+          );
+        }
+      }
+
+      const converted = convertPayloadToBase64(raw);
+      if (converted) return emitProgramData(converted);
+      return line;
+    }
+
+    return line;
+  });
+}
 
 /**
  * Initialize LiteSVM with the Whirlpool program and external dependencies
@@ -142,6 +266,12 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   }
 
   console.log("✅ LiteSVM initialized");
+  // Ensure native mint accounts exist in VM state so on-chain checks don't fail
+  try {
+    ensureNativeMintAccounts(_litesvm);
+  } catch (e) {
+    console.warn("⚠️  Failed to ensure native mint accounts:", e);
+  }
   return _litesvm;
 }
 
@@ -266,7 +396,28 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     getAccountInfo: async (pubkey: PublicKey) => {
       const litesvm = getLiteSVM();
       const account = litesvm.getAccount(pubkey);
-      if (!account) return null;
+      if (!account) {
+        // Synthesize native mint accounts if missing so tests can read owner
+        if (pubkey.equals(NATIVE_MINT)) {
+          return {
+            data: Buffer.alloc(82),
+            executable: false,
+            lamports: 0,
+            owner: TOKEN_PROGRAM_ID,
+            rentEpoch: 0,
+          };
+        }
+        if (pubkey.equals(NATIVE_MINT_2022)) {
+          return {
+            data: Buffer.alloc(82),
+            executable: false,
+            lamports: 0,
+            owner: TOKEN_2022_PROGRAM_ID,
+            rentEpoch: 0,
+          };
+        }
+        return null;
+      }
       return {
         data: Buffer.from(account.data),
         executable: account.executable,
@@ -279,7 +430,27 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       const litesvm = getLiteSVM();
       return pubkeys.map((pk) => {
         const account = litesvm.getAccount(pk);
-        if (!account) return null;
+        if (!account) {
+          if (pk.equals(NATIVE_MINT)) {
+            return {
+              data: Buffer.alloc(82),
+              executable: false,
+              lamports: 0,
+              owner: TOKEN_PROGRAM_ID,
+              rentEpoch: 0,
+            };
+          }
+          if (pk.equals(NATIVE_MINT_2022)) {
+            return {
+              data: Buffer.alloc(82),
+              executable: false,
+              lamports: 0,
+              owner: TOKEN_2022_PROGRAM_ID,
+              rentEpoch: 0,
+            };
+          }
+          return null;
+        }
         return {
           data: Buffer.from(account.data),
           executable: account.executable,
@@ -327,7 +498,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
 
       // Store transaction for getParsedTransaction
-      const txLogs = result.logs();
+      const txLogs = normalizeLogsForAnchor(result.logs());
       _transactionHistory.set(signature, {
         signature,
         logs: txLogs,
@@ -388,7 +559,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
 
       // Get transaction logs and trigger any registered listeners
-      const txLogs = result.logs();
+      const txLogs = normalizeLogsForAnchor(result.logs());
       // Store transaction for getParsedTransaction
       _transactionHistory.set(signature, {
         signature,
@@ -494,7 +665,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         }
 
         // Get transaction logs and trigger any registered listeners
-        const txLogs = result.logs();
+        const txLogs = normalizeLogsForAnchor(result.logs());
 
         // Store transaction for getParsedTransaction
         _transactionHistory.set(signature, {
@@ -795,12 +966,15 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       const innerInstructions: any[] = [];
       const instructions: any[] = [];
 
-      // Look for memo program logs in the format: "Program log: Memo (len X): "message""
+      // Normalize logs before parsing
+      const logs = normalizeLogsForAnchor(txRecord.logs);
+
+      // Look for memo program logs in the format: "Program log: Memo (len X): \"message\""
       const MEMO_PROGRAM_ADDRESS = new PublicKey(
         "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
       );
 
-      for (const log of txRecord.logs) {
+      for (const log of logs) {
         const memoMatch = log.match(/Program log: Memo \(len \d+\): "(.+)"/);
         if (memoMatch) {
           instructions.push({
@@ -824,7 +998,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           err: null,
           fee: 5000,
           innerInstructions,
-          logMessages: txRecord.logs,
+          logMessages: logs,
           postBalances: [],
           postTokenBalances: [],
           preBalances: [],

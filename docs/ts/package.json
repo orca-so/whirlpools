@@ -13,6 +13,6 @@
     "@orca-so/whirlpools-core": "*",
     "typedoc": "^0.28.1",
     "typedoc-plugin-merge-modules": "^7.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.3"
   }
 }

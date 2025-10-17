@@ -32,7 +32,11 @@ import {
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type { FundedPositionV2Params } from "../../utils/v2/init-utils-v2";
 import {
@@ -61,17 +65,36 @@ import {
   RemainingAccountsType,
 } from "../../../src/utils/remaining-accounts-util";
 
-describe("TokenExtension/TransferHook", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+describe("TokenExtension/TransferHook (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  describe("collect_fees_v2, collect_protocol_fees_v2", () => {
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  let client: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
+
+  describe("collect_fees_v2, collect_protocol_fees_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let feeAccountA: PublicKey;
     let feeAccountB: PublicKey;
@@ -1078,7 +1101,7 @@ describe("TokenExtension/TransferHook", () => {
     });
   });
 
-  describe("collect_reward_v2", () => {
+  describe("collect_reward_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let rewardAccounts: PublicKey[];
     let tokenTransferHookAccounts: (AccountMeta[] | undefined)[];
@@ -1134,7 +1157,7 @@ describe("TokenExtension/TransferHook", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,
@@ -1332,7 +1355,7 @@ describe("TokenExtension/TransferHook", () => {
     });
   });
 
-  describe("increase_liquidity_v2", () => {
+  describe("increase_liquidity_v2 (litesvm)", () => {
     const tickLowerIndex = 7168;
     const tickUpperIndex = 8960;
     const currTick = Math.round((tickLowerIndex + tickUpperIndex) / 2);
@@ -1846,7 +1869,7 @@ describe("TokenExtension/TransferHook", () => {
     });
   });
 
-  describe("decrease_liquidity_v2", () => {
+  describe("decrease_liquidity_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let removalQuote: DecreaseLiquidityQuote;
     let destAccountA: PublicKey;
@@ -2046,7 +2069,7 @@ describe("TokenExtension/TransferHook", () => {
     });
   });
 
-  describe("swap_v2", () => {
+  describe("swap_v2 (litesvm)", () => {
     let poolInitInfo: InitPoolV2Params;
     let whirlpoolPda: PDA;
     let tokenAccountA: PublicKey;
@@ -2400,7 +2423,7 @@ describe("TokenExtension/TransferHook", () => {
     });
   });
 
-  describe("two_hop_swap", () => {
+  describe("two_hop_swap (litesvm)", () => {
     let aqConfig: InitAquariumV2Params;
     let baseIxParams: TwoHopSwapV2Params;
     let tokenMintIn: PublicKey;
@@ -2930,8 +2953,8 @@ describe("TokenExtension/TransferHook", () => {
     });
   });
 
-  describe("Special Errors", () => {
-    describe("TransferHook program rejects transfer", () => {
+  describe("Special Errors (litesvm)", () => {
+    describe("TransferHook program rejects transfer (litesvm)", () => {
       const TOO_LARGE_THRESHOLD_U64 = new BN(1_000_000_000_000);
 
       // We know that all transfers are executed 2 functions depending on the direction, so 2 test cases.
@@ -3047,7 +3070,9 @@ describe("TokenExtension/TransferHook", () => {
             .buildAndExecute(),
           (err) => {
             // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
-            return JSON.stringify(err).includes("AmountTooBig");
+            const errorString =
+              err instanceof Error ? err.message : String(err);
+            return errorString.includes("AmountTooBig");
           },
         );
       });
@@ -3169,7 +3194,9 @@ describe("TokenExtension/TransferHook", () => {
             .buildAndExecute(),
           (err) => {
             // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
-            return JSON.stringify(err).includes("AmountTooBig");
+            const errorString =
+              err instanceof Error ? err.message : String(err);
+            return errorString.includes("AmountTooBig");
           },
         );
       });

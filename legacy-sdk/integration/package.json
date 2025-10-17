@@ -7,6 +7,6 @@
   },
   "scripts": {
     "build": "RUSTUP_TOOLCHAIN=1.78.0 anchor build",
-    "test": "RUSTUP_TOOLCHAIN=1.78.0 anchor test --skip-build"
+    "test": "yarn workspace @orca-so/whirlpools-sdk test"
   }
 }

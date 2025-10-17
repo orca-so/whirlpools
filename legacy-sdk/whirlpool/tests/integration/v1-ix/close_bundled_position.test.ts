@@ -21,7 +21,11 @@ import {
   systemTransferTx,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  expireBlockhash,
+} from "../../utils/litesvm";
 import {
   initTestPool,
   initializePositionBundle,
@@ -35,15 +39,34 @@ import {
 } from "../../utils/test-builders";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
-describe("close_bundled_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const client = buildWhirlpoolClient(ctx);
-  const fetcher = ctx.fetcher;
+describe("close_bundled_position (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  let client: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    client = buildWhirlpoolClient(ctx);
+    fetcher = ctx.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;
@@ -311,7 +334,7 @@ describe("close_bundled_position", () => {
     );
   });
 
-  describe("invalid input account", () => {
+  describe("invalid input account (litesvm)", () => {
     it("should be failed: invalid bundled position", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
@@ -499,7 +522,7 @@ describe("close_bundled_position", () => {
     });
   });
 
-  describe("authority delegation", () => {
+  describe("authority delegation (litesvm)", () => {
     it("successfully closes bundled position with delegated authority", async () => {
       const positionBundleInfo = await initializePositionBundle(ctx);
 
@@ -539,7 +562,26 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         1,
       );
-      await tx.buildAndExecute();
+
+      // Expire blockhash to get a fresh one for the next transaction
+      expireBlockhash();
+
+      // Rebuild transaction for second attempt (litesvm requires fresh tx)
+      const tx2 = toTx(
+        ctx,
+        WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+          bundledPosition: positionInitInfo.params.bundledPositionPda.publicKey,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: funderKeypair.publicKey,
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          receiver: ctx.wallet.publicKey,
+        }),
+      );
+      tx2.addSigner(funderKeypair);
+
+      await tx2.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
         IGNORE_CACHE,
@@ -629,14 +671,33 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         0,
       );
+
+      // Expire blockhash to get a fresh one for the next transaction
+      expireBlockhash();
+
+      // Rebuild transaction for second attempt (litesvm requires fresh tx)
+      const tx2 = toTx(
+        ctx,
+        WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+          bundledPosition: positionInitInfo.params.bundledPositionPda.publicKey,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: funderKeypair.publicKey,
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          receiver: ctx.wallet.publicKey,
+        }),
+      );
+      tx2.addSigner(funderKeypair);
+
       await assert.rejects(
-        tx.buildAndExecute(),
+        tx2.buildAndExecute(),
         /0x1784/, // InvalidPositionTokenAmount
       );
     });
   });
 
-  describe("transfer position bundle", () => {
+  describe("transfer position bundle (litesvm)", () => {
     it("successfully closes bundled position after position bundle token transfer", async () => {
       const positionBundleInfo = await initializePositionBundle(ctx);
 
@@ -689,7 +750,7 @@ describe("close_bundled_position", () => {
     });
   });
 
-  describe("non-bundled position", () => {
+  describe("non-bundled position (litesvm)", () => {
     it("should be failed: try to close NON-bundled position (TokenProgram based)", async () => {
       const positionBundleInfo = await initializePositionBundle(ctx);
 

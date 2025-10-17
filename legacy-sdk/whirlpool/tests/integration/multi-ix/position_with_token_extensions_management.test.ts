@@ -8,12 +8,19 @@ import {
   increaseLiquidityQuoteByLiquidityWithParams,
   PDAUtil,
   toTx,
+  WhirlpoolAccountFetcherInterface,
+  WhirlpoolClient,
   WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { sleep, TickSpacing, ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { TickSpacing, ZERO_BN } from "../../utils";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  pollForCondition,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import { createTokenAccountV2 } from "../../utils/v2/token-2022";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -23,15 +30,29 @@ import { initTestPool } from "../../utils/init-utils";
 import { Keypair } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 
-describe("position with token extensions management tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const client = buildWhirlpoolClient(ctx);
-  const fetcher = ctx.fetcher;
+describe("position with token extensions management tests (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let client: WhirlpoolClient;
+  let fetcher: WhirlpoolAccountFetcherInterface;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+
+    anchor.setProvider(provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    client = buildWhirlpoolClient(ctx);
+    fetcher = ctx.fetcher;
+  });
 
   async function getRent(address: PublicKey): Promise<number> {
     const rent = (await ctx.connection.getAccountInfo(address))?.lamports;
@@ -166,7 +187,15 @@ describe("position with token extensions management tests", () => {
             }),
       ).buildAndExecute();
 
-      const positionStep1 = await fetcher.getPosition(position, IGNORE_CACHE);
+      // Wait for finalized state transition in LiteSVM
+      const positionStep1 = await pollForCondition(
+        () => fetcher.getPosition(position, IGNORE_CACHE),
+        (pos) => pos!.liquidity.eq(depositQuote.liquidityAmount),
+        {
+          accountToReload: position,
+          connection: ctx.connection,
+        },
+      );
       assert.ok(positionStep1!.liquidity.eq(depositQuote.liquidityAmount));
 
       // Accrue fees in token A
@@ -222,7 +251,7 @@ describe("position with token extensions management tests", () => {
       ).buildAndExecute();
 
       // accrue rewards
-      await sleep(2000);
+      warpClock(2000);
 
       const positionStep2 = await fetcher.getPosition(position, IGNORE_CACHE);
       assert.ok(positionStep2!.feeOwedA.isZero());
@@ -240,7 +269,18 @@ describe("position with token extensions management tests", () => {
         }),
       ).buildAndExecute();
 
-      const positionStep3 = await fetcher.getPosition(position, IGNORE_CACHE);
+      // Wait for finalized state transition in LiteSVM
+      const positionStep3 = await pollForCondition(
+        () => fetcher.getPosition(position, IGNORE_CACHE),
+        (pos) =>
+          pos!.feeOwedA.gtn(0) &&
+          pos!.feeOwedB.gtn(0) &&
+          pos!.rewardInfos[0].amountOwed.gtn(0),
+        {
+          accountToReload: position,
+          connection: ctx.connection,
+        },
+      );
       assert.ok(!positionStep3!.feeOwedA.isZero());
       assert.ok(!positionStep3!.feeOwedB.isZero());
       assert.ok(!positionStep3!.rewardInfos[0].amountOwed.isZero());
@@ -265,7 +305,15 @@ describe("position with token extensions management tests", () => {
             }),
       ).buildAndExecute();
 
-      const positionStep4 = await fetcher.getPosition(position, IGNORE_CACHE);
+      // Wait for finalized state transition in LiteSVM
+      const positionStep4 = await pollForCondition(
+        () => fetcher.getPosition(position, IGNORE_CACHE),
+        (pos) => pos!.liquidity.isZero(),
+        {
+          accountToReload: position,
+          connection: ctx.connection,
+        },
+      );
       assert.ok(positionStep4!.liquidity.isZero());
 
       // collect fees
@@ -298,7 +346,15 @@ describe("position with token extensions management tests", () => {
             }),
       ).buildAndExecute();
 
-      const positionStep5 = await fetcher.getPosition(position, IGNORE_CACHE);
+      // Wait for finalized state transition in LiteSVM
+      const positionStep5 = await pollForCondition(
+        () => fetcher.getPosition(position, IGNORE_CACHE),
+        (pos) => pos!.feeOwedA.isZero() && pos!.feeOwedB.isZero(),
+        {
+          accountToReload: position,
+          connection: ctx.connection,
+        },
+      );
       assert.ok(positionStep5!.feeOwedA.isZero());
       assert.ok(positionStep5!.feeOwedB.isZero());
 
@@ -330,7 +386,15 @@ describe("position with token extensions management tests", () => {
             }),
       ).buildAndExecute();
 
-      const positionStep6 = await fetcher.getPosition(position, IGNORE_CACHE);
+      // Wait for finalized state transition in LiteSVM
+      const positionStep6 = await pollForCondition(
+        () => fetcher.getPosition(position, IGNORE_CACHE),
+        (pos) => pos!.rewardInfos[0].amountOwed.isZero(),
+        {
+          accountToReload: position,
+          connection: ctx.connection,
+        },
+      );
       assert.ok(positionStep6!.rewardInfos[0].amountOwed.isZero());
 
       // close position

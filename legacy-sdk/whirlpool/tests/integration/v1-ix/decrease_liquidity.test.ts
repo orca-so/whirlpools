@@ -17,12 +17,11 @@ import {
   createTokenAccount,
   sleep,
   transferToken,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
 } from "../../utils";
-import {
-  defaultConfirmOptions,
-  TICK_INIT_SIZE,
-  TICK_RENT_AMOUNT,
-} from "../../utils/const";
+import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initTestPool,
@@ -32,15 +31,32 @@ import {
 } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
-describe("decrease_liquidity", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("decrease_liquidity (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   it("successfully decrease liquidity (partial) from position in one fixed tick array", async () => {
     const liquidityAmount = new anchor.BN(1_250_000);
@@ -67,7 +83,7 @@ describe("decrease_liquidity", () => {
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -175,7 +191,7 @@ describe("decrease_liquidity", () => {
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -484,7 +500,7 @@ describe("decrease_liquidity", () => {
     assert.ok(tickArrayBefore);
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,

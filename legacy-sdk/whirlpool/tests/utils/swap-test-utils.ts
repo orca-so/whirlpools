@@ -39,19 +39,19 @@ export interface SwapTestSetup {
 
 export async function setupSwapTest(
   setup: SwapTestPoolParams,
-  tokenAIsNative = false,
+  tokenAIsNative = false
 ) {
   const { whirlpoolPda } = await initTestPoolWithTokens(
     setup.ctx,
     setup.tickSpacing,
     setup.initSqrtPrice,
     setup.tokenMintAmount,
-    tokenAIsNative ? NATIVE_MINT : undefined,
+    tokenAIsNative ? NATIVE_MINT : undefined
   );
 
   const whirlpool = await setup.client.getPool(
     whirlpoolPda.publicKey,
-    IGNORE_CACHE,
+    IGNORE_CACHE
   );
 
   for (const tick of setup.initArrayStartTicks) {
@@ -62,7 +62,7 @@ export async function setupSwapTest(
   await fundPositionsWithClient(
     setup.client,
     whirlpoolPda.publicKey,
-    setup.fundedPositions,
+    setup.fundedPositions
   );
 
   return whirlpool;
@@ -75,7 +75,7 @@ export interface ArrayTickIndex {
 
 export function arrayTickIndexToTickIndex(
   index: ArrayTickIndex,
-  tickSpacing: number,
+  tickSpacing: number
 ) {
   return (
     index.arrayIndex * TICK_ARRAY_SIZE * tickSpacing +
@@ -87,7 +87,7 @@ export function buildPosition(
   lower: ArrayTickIndex,
   upper: ArrayTickIndex,
   tickSpacing: number,
-  liquidityAmount: anchor.BN,
+  liquidityAmount: anchor.BN
 ) {
   return {
     tickLowerIndex: arrayTickIndexToTickIndex(lower, tickSpacing),

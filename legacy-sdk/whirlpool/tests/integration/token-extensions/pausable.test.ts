@@ -18,7 +18,7 @@ import {
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
@@ -33,14 +33,36 @@ import {
   getPausableConfig,
 } from "@solana/spl-token";
 
-describe("TokenExtension/Pausable", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("TokenExtension/Pausable (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+
+  beforeAll(async () => {
+
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+  // program initialized in beforeAll
+  ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  fetcher = ctx.fetcher;
+
+  });
 
   // Since Pausable mint is no different from normal mint as far as paused is disabled,
   // swap_v2 is executed to check the owner to vault and vault to owner logic.

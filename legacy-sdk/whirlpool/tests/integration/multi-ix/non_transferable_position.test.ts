@@ -19,7 +19,11 @@ import {
   TickSpacing,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  pollForCondition,
+} from "../../utils/litesvm";
 import type { TestConfigExtensionParams } from "../../utils/v2/init-utils-v2";
 import {
   buildTestPoolV2Params,
@@ -43,14 +47,27 @@ import Decimal from "decimal.js";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import { PublicKey } from "@solana/web3.js";
 
-describe("non transferable position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("non transferable position (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+
+    anchor.setProvider(provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   async function buildTestPool(
     tokenARequiresNonTransferablePosition: boolean,
@@ -183,7 +200,7 @@ describe("non transferable position", () => {
     };
   }
 
-  describe("create non transferable position", () => {
+  describe("create non transferable position (litesvm)", () => {
     const variations = [
       [false, false, false],
       [false, false, true],
@@ -238,10 +255,12 @@ describe("non transferable position", () => {
             IGNORE_CACHE,
           );
           assert.ok(whirlpool);
-          assert.ok(whirlpool.rewardInfos[2].extension.every((b) => b === 0));
+          assert.ok(
+            whirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+          );
           assert.ok(
             whirlpool.rewardInfos[1].extension.every(
-              (b, i) => i === 0 || b === 0,
+              (b: number, i: number) => i === 0 || b === 0,
             ),
           );
           assert.ok(
@@ -361,7 +380,7 @@ describe("non transferable position", () => {
     );
   });
 
-  describe("block opening position w/o TE", () => {
+  describe("block opening position w/o TE (litesvm)", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
 
@@ -552,10 +571,14 @@ describe("non transferable position", () => {
 
     await toTx(ctx, closePositionWithTokenExtensions).buildAndExecute();
 
-    // position should be closed
-    const closedPosition = await fetcher.getPosition(
-      positionPda.publicKey,
-      IGNORE_CACHE,
+    // position should be closed (poll for state update in litesvm)
+    const closedPosition = await pollForCondition(
+      () => fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE),
+      (account) => account === null,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(!closedPosition);
   });

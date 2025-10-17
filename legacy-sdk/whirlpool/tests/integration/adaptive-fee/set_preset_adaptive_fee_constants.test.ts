@@ -14,7 +14,7 @@ import {
   WhirlpoolIx,
 } from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initializeConfigWithDefaultConfigParams,
@@ -27,15 +27,24 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 
-describe("set_preset_adaptive_fee_constants", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("set_preset_adaptive_fee_constants (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
+
 
   const tickSpacing = 64;
   const feeTierIndex = 1024 + tickSpacing;
@@ -361,7 +370,7 @@ describe("set_preset_adaptive_fee_constants", () => {
     );
   });
 
-  describe("fails when adaptive fee constants are invalid", () => {
+  describe("fails when adaptive fee constants are invalid (litesvm)", () => {
     const tickSpacing = 128;
     const feeTierIndex = 1024 + tickSpacing;
 

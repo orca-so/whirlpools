@@ -12,7 +12,7 @@ import {
   transferToken,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initializePositionBundle,
@@ -23,13 +23,34 @@ import {
 } from "../../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
 
-describe("close_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+describe("close_position (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+
+  beforeAll(async () => {
+
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+  // program initialized in beforeAll
+  ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  });
 
   it("successfully closes an open position", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
@@ -499,7 +520,7 @@ describe("close_position", () => {
     );
   });
 
-  describe("bundled position and TokenExtensions based position", () => {
+  describe("bundled position and TokenExtensions based position (litesvm)", () => {
     it("fails if position is BUNDLED position", async () => {
       const fixture = await new WhirlpoolTestFixture(ctx).init({
         tickSpacing: TickSpacing.Standard,

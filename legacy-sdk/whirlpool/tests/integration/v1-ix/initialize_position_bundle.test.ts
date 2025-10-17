@@ -17,17 +17,34 @@ import {
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createMintInstructions, mintToDestination } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { initializePositionBundle } from "../../utils/init-utils";
 
-describe("initialize_position_bundle", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("initialize_position_bundle (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  });
 
   async function createInitializePositionBundleTx(
     ctx: WhirlpoolContext,
@@ -245,11 +262,12 @@ describe("initialize_position_bundle", () => {
       positionBundleMintKeypair,
     );
     await assert.rejects(tx.buildAndExecute(), (err) => {
-      return JSON.stringify(err).includes("already in use");
+      const errorString = err instanceof Error ? err.message : String(err);
+      return errorString.includes("already in use");
     });
   });
 
-  describe("invalid input account", () => {
+  describe("invalid input account (litesvm)", () => {
     it("should be failed: invalid position bundle address", async () => {
       const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter

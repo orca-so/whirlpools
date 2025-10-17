@@ -1,3 +1,9 @@
+/**
+ * Token Badge Initialize Test - LiteSVM Version
+ *
+ * Migrated from legacy-sdk/whirlpool/tests/integration/token-badge/initialize_token_badge.test.ts
+ * to use Bankrun instead of solana-test-validator for faster test execution.
+ */
 import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
@@ -9,22 +15,19 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
-} from "../../../src";
+} from "@orca-so/whirlpools-sdk";
 import { defaultConfirmOptions } from "../../utils/const";
-import type { InitializeTokenBadgeParams } from "../../../src/instructions";
+import type { InitializeTokenBadgeParams } from "@orca-so/whirlpools-sdk/dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 
-describe("initialize_token_badge", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("initialize_token_badge (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -33,11 +36,23 @@ describe("initialize_token_badge", () => {
   const initialTokenBadgeAuthorityKeypair = feeAuthorityKeypair;
   const updatedTokenBadgeAuthorityKeypair = Keypair.generate();
 
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
+
   async function createOtherWallet(): Promise<Keypair> {
     const keypair = Keypair.generate();
     const signature = await provider.connection.requestAirdrop(
       keypair.publicKey,
-      100 * LAMPORTS_PER_SOL,
+      100 * LAMPORTS_PER_SOL
     );
     await provider.connection.confirmTransaction(signature, "confirmed");
     return keypair;
@@ -56,7 +71,7 @@ describe("initialize_token_badge", () => {
         defaultProtocolFeeRate: 300,
         funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
-      }),
+      })
     );
     initConfigTx.addInstruction(
       WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -65,7 +80,7 @@ describe("initialize_token_badge", () => {
         featureFlag: {
           tokenBadge: [true],
         },
-      }),
+      })
     );
 
     return initConfigTx
@@ -83,7 +98,7 @@ describe("initialize_token_badge", () => {
         funder: provider.wallet.publicKey,
         whirlpoolsConfig: config,
         whirlpoolsConfigExtensionPda: pda,
-      }),
+      })
     )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
@@ -93,16 +108,16 @@ describe("initialize_token_badge", () => {
     config: PublicKey,
     mint: PublicKey,
     overwrite: Partial<InitializeTokenBadgeParams>,
-    signers: Keypair[] = [initialTokenBadgeAuthorityKeypair],
+    signers: Keypair[] = [initialTokenBadgeAuthorityKeypair]
   ) {
     const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(
       ctx.program.programId,
-      config,
+      config
     ).publicKey;
     const tokenBadgePda = PDAUtil.getTokenBadge(
       ctx.program.programId,
       config,
-      mint,
+      mint
     );
     const tx = toTx(
       ctx,
@@ -114,7 +129,7 @@ describe("initialize_token_badge", () => {
         tokenBadgePda,
         tokenMint: mint,
         ...overwrite,
-      }),
+      })
     );
     signers.forEach((signer) => tx.addSigner(signer));
     return tx.buildAndExecute();
@@ -123,11 +138,11 @@ describe("initialize_token_badge", () => {
   async function updateTokenBadgeAuthority(
     config: PublicKey,
     authority: Keypair,
-    newAuthority: PublicKey,
+    newAuthority: PublicKey
   ) {
     const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(
       ctx.program.programId,
-      config,
+      config
     ).publicKey;
     return toTx(
       ctx,
@@ -136,7 +151,7 @@ describe("initialize_token_badge", () => {
         whirlpoolsConfigExtension,
         configExtensionAuthority: authority.publicKey,
         newTokenBadgeAuthority: newAuthority,
-      }),
+      })
     )
       .addSigner(authority)
       .buildAndExecute();
@@ -153,7 +168,7 @@ describe("initialize_token_badge", () => {
         const whirlpoolsConfigKeypair = Keypair.generate();
         await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
         await initializeWhirlpoolsConfigExtension(
-          whirlpoolsConfigKeypair.publicKey,
+          whirlpoolsConfigKeypair.publicKey
         );
 
         const mint = await createMintV2(provider, tokenTrait);
@@ -162,16 +177,16 @@ describe("initialize_token_badge", () => {
         const tokenBadgePda = PDAUtil.getTokenBadge(
           ctx.program.programId,
           whirlpoolsConfigKeypair.publicKey,
-          mint,
+          mint
         );
         const tokenBadgeData = await fetcher.getTokenBadge(
           tokenBadgePda.publicKey,
-          IGNORE_CACHE,
+          IGNORE_CACHE
         );
         assert.ok(
           tokenBadgeData!.whirlpoolsConfig.equals(
-            whirlpoolsConfigKeypair.publicKey,
-          ),
+            whirlpoolsConfigKeypair.publicKey
+          )
         );
         assert.ok(tokenBadgeData!.tokenMint.equals(mint));
       });
@@ -182,7 +197,7 @@ describe("initialize_token_badge", () => {
     const whirlpoolsConfigKeypair = Keypair.generate();
     await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
     await initializeWhirlpoolsConfigExtension(
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     );
 
     const mint = await createMintV2(provider, { isToken2022: true });
@@ -196,7 +211,7 @@ describe("initialize_token_badge", () => {
       {
         funder: otherWallet.publicKey,
       },
-      [initialTokenBadgeAuthorityKeypair, otherWallet],
+      [initialTokenBadgeAuthorityKeypair, otherWallet]
     );
 
     const postBalance = await ctx.connection.getBalance(ctx.wallet.publicKey);
@@ -207,16 +222,14 @@ describe("initialize_token_badge", () => {
     const tokenBadgePda = PDAUtil.getTokenBadge(
       ctx.program.programId,
       whirlpoolsConfigKeypair.publicKey,
-      mint,
+      mint
     );
     const tokenBadgeData = await fetcher.getTokenBadge(
       tokenBadgePda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(
-      tokenBadgeData!.whirlpoolsConfig.equals(
-        whirlpoolsConfigKeypair.publicKey,
-      ),
+      tokenBadgeData!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey)
     );
     assert.ok(tokenBadgeData!.tokenMint.equals(mint));
   });
@@ -227,7 +240,7 @@ describe("initialize_token_badge", () => {
     const whirlpoolsConfigKeypair = Keypair.generate();
     await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
     await initializeWhirlpoolsConfigExtension(
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     );
 
     const mint = await createMintV2(provider, { isToken2022: true });
@@ -236,12 +249,12 @@ describe("initialize_token_badge", () => {
     const tokenBadgePda = PDAUtil.getTokenBadge(
       ctx.program.programId,
       whirlpoolsConfigKeypair.publicKey,
-      mint,
+      mint
     );
 
     const account = await ctx.connection.getAccountInfo(
       tokenBadgePda.publicKey,
-      "confirmed",
+      "confirmed"
     );
     assert.equal(account!.data.length, tokenBadgeAccountSizeIncludingReserve);
   });
@@ -250,7 +263,7 @@ describe("initialize_token_badge", () => {
     const whirlpoolsConfigKeypair = Keypair.generate();
     await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
     await initializeWhirlpoolsConfigExtension(
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     );
 
     const mint = await createMintV2(provider, { isToken2022: true });
@@ -260,20 +273,24 @@ describe("initialize_token_badge", () => {
     const tokenBadgePda = PDAUtil.getTokenBadge(
       ctx.program.programId,
       whirlpoolsConfigKeypair.publicKey,
-      mint,
+      mint
     );
     const tokenBadgeData = await fetcher.getTokenBadge(
       tokenBadgePda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(tokenBadgeData !== null);
 
     // re-initialize
     await assert.rejects(
       initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
-      },
+      (err: any) => {
+        const errStr = JSON.stringify(err);
+        return (
+          errStr.includes("already in use") ||
+          (err.message && err.message.includes("already in use"))
+        );
+      }
     );
   });
 
@@ -292,32 +309,32 @@ describe("initialize_token_badge", () => {
         defaultProtocolFeeRate: 300,
         funder: admin.publicKey,
         whirlpoolsConfigKeypair,
-      }),
+      })
     )
       .addSigner(admin)
       .addSigner(whirlpoolsConfigKeypair)
       .buildAndExecute();
 
     await initializeWhirlpoolsConfigExtension(
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     );
 
     const mint = await createMintV2(provider, { isToken2022: true });
     const tokenBadgePda = PDAUtil.getTokenBadge(
       ctx.program.programId,
       whirlpoolsConfigKeypair.publicKey,
-      mint,
+      mint
     );
 
     // should be failed: feature is not enabled
     await assert.rejects(
       initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
-      /0x17b2/, // FeatureIsNotEnabled
+      /0x17b2/ // FeatureIsNotEnabled
     );
 
     const tokenBadgeData = await fetcher.getTokenBadge(
       tokenBadgePda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(tokenBadgeData === null);
 
@@ -330,7 +347,7 @@ describe("initialize_token_badge", () => {
         featureFlag: {
           tokenBadge: [true],
         },
-      }),
+      })
     )
       .addSigner(admin)
       .buildAndExecute();
@@ -340,7 +357,7 @@ describe("initialize_token_badge", () => {
 
     const tokenBadgeDataAgain = await fetcher.getTokenBadge(
       tokenBadgePda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(tokenBadgeDataAgain !== null);
   });
@@ -350,7 +367,7 @@ describe("initialize_token_badge", () => {
       const whirlpoolsConfigKeypair = Keypair.generate();
       await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
 
       const mint = await createMintV2(provider, { isToken2022: true });
@@ -361,7 +378,7 @@ describe("initialize_token_badge", () => {
         initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {
           whirlpoolsConfig: anotherWhirlpoolsConfigKeypair.publicKey,
         }),
-        /0xbc4/, // AccountNotInitialized
+        /0xbc4/ // AccountNotInitialized
       );
 
       // config initialized, but not match to whirlpools_config_extension
@@ -370,7 +387,7 @@ describe("initialize_token_badge", () => {
         initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {
           whirlpoolsConfig: anotherWhirlpoolsConfigKeypair.publicKey,
         }),
-        /0x7d6/, // ConstraintSeeds (token_badge (PDA) is not valid)
+        /0x7d6/ // ConstraintSeeds (token_badge (PDA) is not valid)
       );
 
       // with fake PDA
@@ -380,10 +397,10 @@ describe("initialize_token_badge", () => {
           tokenBadgePda: PDAUtil.getTokenBadge(
             ctx.program.programId,
             anotherWhirlpoolsConfigKeypair.publicKey,
-            mint,
+            mint
           ),
         }),
-        /0x7d1/, // ConstraintHasOne
+        /0x7d1/ // ConstraintHasOne
       );
     });
 
@@ -397,26 +414,26 @@ describe("initialize_token_badge", () => {
         initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {
           whirlpoolsConfigExtension: PDAUtil.getConfigExtension(
             ctx.program.programId,
-            whirlpoolsConfigKeypair.publicKey,
+            whirlpoolsConfigKeypair.publicKey
           ).publicKey,
         }),
-        /0xbc4/, // AccountNotInitialized
+        /0xbc4/ // AccountNotInitialized
       );
 
       // initialized, but fake config_extension
       const anotherWhirlpoolsConfigKeypair = Keypair.generate();
       await initializeWhirlpoolsConfig(anotherWhirlpoolsConfigKeypair);
       await initializeWhirlpoolsConfigExtension(
-        anotherWhirlpoolsConfigKeypair.publicKey,
+        anotherWhirlpoolsConfigKeypair.publicKey
       );
       await assert.rejects(
         initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {
           whirlpoolsConfigExtension: PDAUtil.getConfigExtension(
             ctx.program.programId,
-            anotherWhirlpoolsConfigKeypair.publicKey,
+            anotherWhirlpoolsConfigKeypair.publicKey
           ).publicKey,
         }),
-        /0x7d1/, // ConstraintHasOne
+        /0x7d1/ // ConstraintHasOne
       );
     });
 
@@ -426,7 +443,7 @@ describe("initialize_token_badge", () => {
       const mint = await createMintV2(provider, { isToken2022: true });
 
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
 
       const fakeAuthority = Keypair.generate();
@@ -437,9 +454,9 @@ describe("initialize_token_badge", () => {
           {
             tokenBadgeAuthority: fakeAuthority.publicKey,
           },
-          [fakeAuthority],
+          [fakeAuthority]
         ),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -449,27 +466,27 @@ describe("initialize_token_badge", () => {
       const mint = await createMintV2(provider, { isToken2022: true });
 
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(
         ctx.program.programId,
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       ).publicKey;
 
       // update authority from provider.wallet
       await updateTokenBadgeAuthority(
         whirlpoolsConfigKeypair.publicKey,
         initialConfigExtensionAuthorityKeypair,
-        updatedTokenBadgeAuthorityKeypair.publicKey,
+        updatedTokenBadgeAuthorityKeypair.publicKey
       );
       const extension = await fetcher.getConfigExtension(
         whirlpoolsConfigExtension,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(
         extension?.tokenBadgeAuthority.equals(
-          updatedTokenBadgeAuthorityKeypair.publicKey,
-        ),
+          updatedTokenBadgeAuthorityKeypair.publicKey
+        )
       );
 
       const ix: TransactionInstruction =
@@ -482,7 +499,7 @@ describe("initialize_token_badge", () => {
             tokenBadge: PDAUtil.getTokenBadge(
               ctx.program.programId,
               whirlpoolsConfigKeypair.publicKey,
-              mint,
+              mint
             ).publicKey,
             funder: ctx.wallet.publicKey,
             systemProgram: SystemProgram.programId,
@@ -491,7 +508,7 @@ describe("initialize_token_badge", () => {
 
       assert.equal(ix.keys.length, 7);
       assert.ok(
-        ix.keys[2].pubkey.equals(updatedTokenBadgeAuthorityKeypair.publicKey),
+        ix.keys[2].pubkey.equals(updatedTokenBadgeAuthorityKeypair.publicKey)
       );
 
       // unset signer flag
@@ -505,7 +522,7 @@ describe("initialize_token_badge", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc2/, // AccountNotSigner
+        /0xbc2/ // AccountNotSigner
       );
     });
 
@@ -515,27 +532,27 @@ describe("initialize_token_badge", () => {
       const mint = await createMintV2(provider, { isToken2022: true });
 
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(
         ctx.program.programId,
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       ).publicKey;
 
       // update authority from provider.wallet
       await updateTokenBadgeAuthority(
         whirlpoolsConfigKeypair.publicKey,
         initialConfigExtensionAuthorityKeypair,
-        updatedTokenBadgeAuthorityKeypair.publicKey,
+        updatedTokenBadgeAuthorityKeypair.publicKey
       );
       const extension = await fetcher.getConfigExtension(
         whirlpoolsConfigExtension,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(
         extension?.tokenBadgeAuthority.equals(
-          updatedTokenBadgeAuthorityKeypair.publicKey,
-        ),
+          updatedTokenBadgeAuthorityKeypair.publicKey
+        )
       );
 
       const fakeAuthority = initialConfigExtensionAuthorityKeypair;
@@ -546,9 +563,9 @@ describe("initialize_token_badge", () => {
           {
             tokenBadgeAuthority: fakeAuthority.publicKey,
           },
-          [fakeAuthority],
+          [fakeAuthority]
         ),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -556,7 +573,7 @@ describe("initialize_token_badge", () => {
       const whirlpoolsConfigKeypair = Keypair.generate();
       await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
 
       // mint is not uninitialized
@@ -565,9 +582,9 @@ describe("initialize_token_badge", () => {
         initializeTokenBadge(
           whirlpoolsConfigKeypair.publicKey,
           uninitializedMint,
-          {},
+          {}
         ),
-        /0xbc4/, // AccountNotInitialized
+        /0xbc4/ // AccountNotInitialized
       );
 
       // different mint
@@ -577,7 +594,7 @@ describe("initialize_token_badge", () => {
         initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mintA, {
           tokenMint: mintB,
         }),
-        /0x7d6/, // ConstraintSeeds (token_badge (PDA) is not valid)
+        /0x7d6/ // ConstraintSeeds (token_badge (PDA) is not valid)
       );
     });
 
@@ -585,7 +602,7 @@ describe("initialize_token_badge", () => {
       const whirlpoolsConfigKeypair = Keypair.generate();
       await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
 
       // different mint
@@ -594,13 +611,13 @@ describe("initialize_token_badge", () => {
       const pdaForMintB = PDAUtil.getTokenBadge(
         ctx.program.programId,
         whirlpoolsConfigKeypair.publicKey,
-        mintB,
+        mintB
       );
       await assert.rejects(
         initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mintA, {
           tokenBadgePda: pdaForMintB,
         }),
-        /0x7d6/, // ConstraintSeeds (token_badge (PDA) is not valid)
+        /0x7d6/ // ConstraintSeeds (token_badge (PDA) is not valid)
       );
     });
 
@@ -612,11 +629,11 @@ describe("initialize_token_badge", () => {
       const mint = await createMintV2(provider, { isToken2022: true });
 
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(
         ctx.program.programId,
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       ).publicKey;
 
       const ix: TransactionInstruction =
@@ -629,7 +646,7 @@ describe("initialize_token_badge", () => {
             tokenBadge: PDAUtil.getTokenBadge(
               ctx.program.programId,
               whirlpoolsConfigKeypair.publicKey,
-              mint,
+              mint
             ).publicKey,
             funder: otherWallet.publicKey,
             systemProgram: SystemProgram.programId,
@@ -650,7 +667,7 @@ describe("initialize_token_badge", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc2/, // AccountNotSigner
+        /0xbc2/ // AccountNotSigner
       );
     });
 
@@ -660,11 +677,11 @@ describe("initialize_token_badge", () => {
       const mint = await createMintV2(provider, { isToken2022: true });
 
       await initializeWhirlpoolsConfigExtension(
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(
         ctx.program.programId,
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       ).publicKey;
 
       const invalidSystemProgram = TOKEN_PROGRAM_ID;
@@ -678,7 +695,7 @@ describe("initialize_token_badge", () => {
             tokenBadge: PDAUtil.getTokenBadge(
               ctx.program.programId,
               whirlpoolsConfigKeypair.publicKey,
-              mint,
+              mint
             ).publicKey,
             funder: ctx.wallet.publicKey,
             systemProgram: invalidSystemProgram,
@@ -693,7 +710,7 @@ describe("initialize_token_badge", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
   });

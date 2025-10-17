@@ -1,22 +1,42 @@
+/**
+ * initialize_config_extension Test - LiteSVM Version
+ *
+ * Migrated from legacy-sdk/whirlpool/tests/integration/token-badge/initialize_config_extension.test.ts
+ * to use Bankrun instead of solana-test-validator for faster test execution.
+ */
 import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import {
+  PDAUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "@orca-so/whirlpools-sdk";
 import { defaultConfirmOptions } from "../../utils/const";
-import type { InitConfigExtensionParams } from "../../../src/instructions";
+import type { InitConfigExtensionParams } from "@orca-so/whirlpools-sdk/dist/instructions";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 
-describe("initialize_config_extension", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("initialize_config_extension (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -26,7 +46,7 @@ describe("initialize_config_extension", () => {
     const keypair = Keypair.generate();
     const signature = await provider.connection.requestAirdrop(
       keypair.publicKey,
-      100 * LAMPORTS_PER_SOL,
+      100 * LAMPORTS_PER_SOL
     );
     await provider.connection.confirmTransaction(signature, "confirmed");
     return keypair;
@@ -45,7 +65,7 @@ describe("initialize_config_extension", () => {
         defaultProtocolFeeRate: 300,
         funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
-      }),
+      })
     );
     initConfigTx.addInstruction(
       WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -54,7 +74,7 @@ describe("initialize_config_extension", () => {
         featureFlag: {
           tokenBadge: [true],
         },
-      }),
+      })
     );
 
     return initConfigTx
@@ -66,7 +86,7 @@ describe("initialize_config_extension", () => {
   async function initializeWhirlpoolsConfigExtension(
     config: PublicKey,
     overwrite: Partial<InitConfigExtensionParams>,
-    signers: Keypair[] = [feeAuthorityKeypair],
+    signers: Keypair[] = [feeAuthorityKeypair]
   ) {
     const pda = PDAUtil.getConfigExtension(ctx.program.programId, config);
     const tx = toTx(
@@ -77,7 +97,7 @@ describe("initialize_config_extension", () => {
         whirlpoolsConfig: config,
         whirlpoolsConfigExtensionPda: pda,
         ...overwrite,
-      }),
+      })
     );
     signers.forEach((signer) => tx.addSigner(signer));
     return tx.buildAndExecute();
@@ -89,31 +109,29 @@ describe("initialize_config_extension", () => {
 
     const configExtensionPubkey = PDAUtil.getConfigExtension(
       ctx.program.programId,
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     ).publicKey;
     await initializeWhirlpoolsConfigExtension(
       whirlpoolsConfigKeypair.publicKey,
-      {},
+      {}
     );
 
     const configExtension = await fetcher.getConfigExtension(
-      configExtensionPubkey,
+      configExtensionPubkey
     );
 
     assert.ok(
       configExtension!.whirlpoolsConfig.equals(
-        whirlpoolsConfigKeypair.publicKey,
-      ),
+        whirlpoolsConfigKeypair.publicKey
+      )
     );
     assert.ok(
       configExtension!.configExtensionAuthority.equals(
-        feeAuthorityKeypair.publicKey,
-      ),
+        feeAuthorityKeypair.publicKey
+      )
     );
     assert.ok(
-      configExtension!.tokenBadgeAuthority.equals(
-        feeAuthorityKeypair.publicKey,
-      ),
+      configExtension!.tokenBadgeAuthority.equals(feeAuthorityKeypair.publicKey)
     );
   });
 
@@ -126,14 +144,14 @@ describe("initialize_config_extension", () => {
 
     const configExtensionPubkey = PDAUtil.getConfigExtension(
       ctx.program.programId,
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     ).publicKey;
     await initializeWhirlpoolsConfigExtension(
       whirlpoolsConfigKeypair.publicKey,
       {
         funder: otherWallet.publicKey,
       },
-      [feeAuthorityKeypair, otherWallet],
+      [feeAuthorityKeypair, otherWallet]
     );
 
     const postBalance = await ctx.connection.getBalance(ctx.wallet.publicKey);
@@ -142,23 +160,21 @@ describe("initialize_config_extension", () => {
     assert.ok(diffBalance < minRent); // ctx.wallet didn't pay any rent
 
     const configExtension = await fetcher.getConfigExtension(
-      configExtensionPubkey,
+      configExtensionPubkey
     );
 
     assert.ok(
       configExtension!.whirlpoolsConfig.equals(
-        whirlpoolsConfigKeypair.publicKey,
-      ),
+        whirlpoolsConfigKeypair.publicKey
+      )
     );
     assert.ok(
       configExtension!.configExtensionAuthority.equals(
-        feeAuthorityKeypair.publicKey,
-      ),
+        feeAuthorityKeypair.publicKey
+      )
     );
     assert.ok(
-      configExtension!.tokenBadgeAuthority.equals(
-        feeAuthorityKeypair.publicKey,
-      ),
+      configExtension!.tokenBadgeAuthority.equals(feeAuthorityKeypair.publicKey)
     );
   });
 
@@ -171,20 +187,20 @@ describe("initialize_config_extension", () => {
 
     const configExtensionPubkey = PDAUtil.getConfigExtension(
       ctx.program.programId,
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     ).publicKey;
     await initializeWhirlpoolsConfigExtension(
       whirlpoolsConfigKeypair.publicKey,
-      {},
+      {}
     );
 
     const account = await ctx.connection.getAccountInfo(
       configExtensionPubkey,
-      "confirmed",
+      "confirmed"
     );
     assert.equal(
       account!.data.length,
-      whirlpoolsConfigExtensionAccountSizeIncludingReserve,
+      whirlpoolsConfigExtensionAccountSizeIncludingReserve
     );
   });
 
@@ -194,32 +210,36 @@ describe("initialize_config_extension", () => {
 
     const configExtensionPubkey = PDAUtil.getConfigExtension(
       ctx.program.programId,
-      whirlpoolsConfigKeypair.publicKey,
+      whirlpoolsConfigKeypair.publicKey
     ).publicKey;
     await initializeWhirlpoolsConfigExtension(
       whirlpoolsConfigKeypair.publicKey,
-      {},
+      {}
     );
 
     // initialized
     const configExtension = await fetcher.getConfigExtension(
-      configExtensionPubkey,
+      configExtensionPubkey
     );
     assert.ok(
       configExtension!.whirlpoolsConfig.equals(
-        whirlpoolsConfigKeypair.publicKey,
-      ),
+        whirlpoolsConfigKeypair.publicKey
+      )
     );
 
     // re-initialize
     await assert.rejects(
       initializeWhirlpoolsConfigExtension(
         whirlpoolsConfigKeypair.publicKey,
-        {},
+        {}
       ),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
-      },
+      (err: any) => {
+        const errStr = JSON.stringify(err);
+        return (
+          errStr.includes("already in use") ||
+          (err.message && err.message.includes("already in use"))
+        );
+      }
     );
   });
 
@@ -232,9 +252,9 @@ describe("initialize_config_extension", () => {
       await assert.rejects(
         initializeWhirlpoolsConfigExtension(
           whirlpoolsConfigKeypair.publicKey,
-          {},
+          {}
         ),
-        /0xbc4/, // AccountNotInitialized
+        /0xbc4/ // AccountNotInitialized
       );
     });
 
@@ -245,13 +265,13 @@ describe("initialize_config_extension", () => {
       const invalidPda = PDAUtil.getFeeTier(
         ctx.program.programId,
         whirlpoolsConfigKeypair.publicKey,
-        64,
+        64
       );
       await assert.rejects(
         initializeWhirlpoolsConfigExtension(whirlpoolsConfigKeypair.publicKey, {
           whirlpoolsConfigExtensionPda: invalidPda,
         }),
-        /0x7d6/, // ConstraintSeeds
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
@@ -263,7 +283,7 @@ describe("initialize_config_extension", () => {
 
       const whirlpoolsConfigExtensionPda = PDAUtil.getConfigExtension(
         ctx.program.programId,
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
       const ix: TransactionInstruction =
         program.instruction.initializeConfigExtension({
@@ -290,7 +310,7 @@ describe("initialize_config_extension", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc2/, // AccountNotSigner
+        /0xbc2/ // AccountNotSigner
       );
     });
 
@@ -305,9 +325,9 @@ describe("initialize_config_extension", () => {
           {
             feeAuthority: invalidAuthorityKeypair.publicKey,
           },
-          [invalidAuthorityKeypair],
+          [invalidAuthorityKeypair]
         ),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -319,7 +339,7 @@ describe("initialize_config_extension", () => {
 
       const whirlpoolsConfigExtensionPda = PDAUtil.getConfigExtension(
         ctx.program.programId,
-        whirlpoolsConfigKeypair.publicKey,
+        whirlpoolsConfigKeypair.publicKey
       );
       const ix: TransactionInstruction =
         program.instruction.initializeConfigExtension({
@@ -340,7 +360,7 @@ describe("initialize_config_extension", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
   });

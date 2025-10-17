@@ -34,21 +34,40 @@ import {
   createMintInstructions,
   mintToDestination,
   systemTransferTx,
+  startLiteSVM,
+  createLiteSVMProvider,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 import { MetaplexHttpClient } from "../../utils/metaplex";
 
-describe("open_position_with_metadata", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("open_position_with_metadata (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const metaplex = new MetaplexHttpClient();
 
@@ -76,41 +95,41 @@ describe("open_position_with_metadata", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
     defaultParams = params;
     defaultMint = mint;
     await systemTransferTx(
       provider,
       funderKeypair.publicKey,
-      ONE_SOL,
+      ONE_SOL
     ).buildAndExecute();
   });
 
   async function checkMetadata(
     metadataPda: PDA | undefined,
-    positionMint: PublicKey,
+    positionMint: PublicKey
   ) {
     assert.ok(metadataPda != null);
 
     const metadataAccountInfo = await provider.connection.getAccountInfo(
-      metadataPda.publicKey,
+      metadataPda.publicKey
     );
     assert.ok(metadataAccountInfo !== null);
     const metadata = metaplex.parseOnChainMetadata(
       metadataPda.publicKey,
-      metadataAccountInfo!.data,
+      metadataAccountInfo!.data
     );
     assert.ok(metadata !== null);
 
     assert.ok(
       metadata.updateAuthority.toBase58() ===
-        "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
+        "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"
     );
     assert.ok(metadata.mint.toBase58() === positionMint.toString());
     assert.ok(
       metadata.uri.replace(/\0/g, "") ===
-        `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`,
+        `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`
     );
   }
 
@@ -119,12 +138,12 @@ describe("open_position_with_metadata", () => {
       ctx,
       whirlpoolPda.publicKey,
       tickLowerIndex,
-      tickUpperIndex,
+      tickUpperIndex
     );
     const { positionPda, metadataPda, positionMintAddress } =
       positionInitInfo.params;
     const position = (await fetcher.getPosition(
-      positionPda.publicKey,
+      positionPda.publicKey
     )) as PositionData;
 
     assert.strictEqual(position.tickLowerIndex, tickLowerIndex);
@@ -143,27 +162,27 @@ describe("open_position_with_metadata", () => {
 
   it("successfully opens position and verify position address contents for full-range only pool", async () => {
     const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(
-      TickSpacing.FullRangeOnly,
+      TickSpacing.FullRangeOnly
     );
 
     const positionInitInfo = await openPositionWithMetadata(
       ctx,
       fullRangeOnlyWhirlpoolPda.publicKey,
       lowerTickIndex,
-      upperTickIndex,
+      upperTickIndex
     );
     const { positionPda, metadataPda, positionMintAddress } =
       positionInitInfo.params;
     const position = (await fetcher.getPosition(
-      positionPda.publicKey,
+      positionPda.publicKey
     )) as PositionData;
 
     assert.strictEqual(position.tickLowerIndex, lowerTickIndex);
     assert.strictEqual(position.tickUpperIndex, upperTickIndex);
     assert.ok(
       position.whirlpool.equals(
-        fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey,
-      ),
+        fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey
+      )
     );
     assert.ok(position.positionMint.equals(positionMintAddress));
     assert.ok(position.liquidity.eq(ZERO_BN));
@@ -182,7 +201,7 @@ describe("open_position_with_metadata", () => {
       tickLowerIndex,
       tickUpperIndex,
       provider.wallet.publicKey,
-      funderKeypair,
+      funderKeypair
     );
 
     await checkMetadata(params.metadataPda, params.positionMintAddress);
@@ -196,7 +215,7 @@ describe("open_position_with_metadata", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      newOwner.publicKey,
+      newOwner.publicKey
     );
     const {
       metadataPda,
@@ -208,7 +227,7 @@ describe("open_position_with_metadata", () => {
 
     const userTokenAccount = await getAccount(
       ctx.connection,
-      positionTokenAccountAddress,
+      positionTokenAccountAddress
     );
     assert.ok(userTokenAccount.amount === 1n);
     assert.ok(userTokenAccount.owner.equals(newOwner.publicKey));
@@ -218,9 +237,9 @@ describe("open_position_with_metadata", () => {
         provider,
         positionMintAddress,
         positionTokenAccountAddress,
-        1,
+        1
       ),
-      /0x5/, // the total supply of this token is fixed
+      /0x5/ // the total supply of this token is fixed
     );
   });
 
@@ -230,14 +249,14 @@ describe("open_position_with_metadata", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
 
     const positionPda = positionInitInfo.params.positionPda.publicKey;
     const position = await ctx.connection.getAccountInfo(positionPda);
     assert.ok(position);
     const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
-      position.data.length,
+      position.data.length
     );
     assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
@@ -245,11 +264,11 @@ describe("open_position_with_metadata", () => {
   it("user must pass the valid token ATA account", async () => {
     const anotherMintKey = await createMint(
       provider,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
       anotherMintKey,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
 
     await assert.rejects(
@@ -258,15 +277,15 @@ describe("open_position_with_metadata", () => {
         WhirlpoolIx.openPositionWithMetadataIx(ctx.program, {
           ...defaultParams,
           positionTokenAccount: positionTokenAccountAddress,
-        }),
+        })
       )
         .addSigner(defaultMint)
         .buildAndExecute(),
-      /An account required by the instruction is missing/,
+      /An account required by the instruction is missing/
     );
   });
 
-  describe("invalid ticks", () => {
+  describe("invalid ticks (litesvm)", () => {
     async function assertTicksFail(lowerTick: number, upperTick: number) {
       await assert.rejects(
         openPositionWithMetadata(
@@ -275,9 +294,9 @@ describe("open_position_with_metadata", () => {
           lowerTick,
           upperTick,
           provider.wallet.publicKey,
-          funderKeypair,
+          funderKeypair
         ),
-        /0x177a/, // InvalidTickIndex
+        /0x177a/ // InvalidTickIndex
       );
     }
 
@@ -310,15 +329,15 @@ describe("open_position_with_metadata", () => {
     const positionMintKeypair = anchor.web3.Keypair.generate();
     const positionPda = PDAUtil.getPosition(
       ctx.program.programId,
-      positionMintKeypair.publicKey,
+      positionMintKeypair.publicKey
     );
     const metadataPda = PDAUtil.getPositionMetadata(
-      positionMintKeypair.publicKey,
+      positionMintKeypair.publicKey
     );
 
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
       positionMintKeypair.publicKey,
-      provider.wallet.publicKey,
+      provider.wallet.publicKey
     );
 
     const tx = new web3.Transaction();
@@ -326,8 +345,8 @@ describe("open_position_with_metadata", () => {
       ...(await createMintInstructions(
         provider,
         provider.wallet.publicKey,
-        positionMintKeypair.publicKey,
-      )),
+        positionMintKeypair.publicKey
+      ))
     );
 
     await provider.sendAndConfirm(tx, [positionMintKeypair], {
@@ -346,15 +365,15 @@ describe("open_position_with_metadata", () => {
           whirlpool: whirlpoolPda.publicKey,
           tickLowerIndex,
           tickUpperIndex,
-        }),
+        })
       )
         .addSigner(positionMintKeypair)
         .buildAndExecute(),
-      /0x0/,
+      /0x0/
     );
   });
 
-  describe("invalid account constraints", () => {
+  describe("invalid account constraints (litesvm)", () => {
     function buildOpenWithAccountOverrides(
       overrides: Partial<
         ReturnType<typeof openPositionAccounts> & {
@@ -362,7 +381,7 @@ describe("open_position_with_metadata", () => {
           metadataProgram: PublicKey;
           metadataUpdateAuth: PublicKey;
         }
-      >,
+      >
     ) {
       const { positionPda, metadataPda, tickLowerIndex, tickUpperIndex } =
         defaultParams;
@@ -382,11 +401,11 @@ describe("open_position_with_metadata", () => {
             positionMetadataAccount: metadataPda.publicKey,
             metadataProgram: METADATA_PROGRAM_ADDRESS,
             metadataUpdateAuth: new PublicKey(
-              "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
+              "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"
             ),
             ...overrides,
           },
-        },
+        }
       );
 
       return {
@@ -406,13 +425,13 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.openPositionWithMetadataIx(ctx.program, invalidParams),
+          WhirlpoolIx.openPositionWithMetadataIx(ctx.program, invalidParams)
         )
           .addSigner(defaultMint)
           .buildAndExecute(),
         // Invalid Metadata Key
         // https://github.com/metaplex-foundation/mpl-token-metadata/blob/main/programs/token-metadata/program/src/error.rs#L34-L36
-        /0x5/,
+        /0x5/
       );
     });
 
@@ -421,18 +440,18 @@ describe("open_position_with_metadata", () => {
       const tx = new TransactionBuilder(
         ctx.provider.connection,
         ctx.wallet,
-        ctx.txBuilderOpts,
+        ctx.txBuilderOpts
       ).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: notMetadataProgram.publicKey,
-        }),
+        })
       );
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
         // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
-        /0xbc0/,
+        /0xbc0/
       );
     });
 
@@ -440,18 +459,18 @@ describe("open_position_with_metadata", () => {
       const tx = new TransactionBuilder(
         ctx.provider.connection,
         ctx.wallet,
-        ctx.txBuilderOpts,
+        ctx.txBuilderOpts
       ).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: TOKEN_PROGRAM_ID,
-        }),
+        })
       );
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
         // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
-        /0xbc0/,
+        /0xbc0/
       );
     });
 
@@ -460,18 +479,18 @@ describe("open_position_with_metadata", () => {
       const tx = new TransactionBuilder(
         ctx.provider.connection,
         ctx.wallet,
-        ctx.txBuilderOpts,
+        ctx.txBuilderOpts
       ).addInstruction(
         buildOpenWithAccountOverrides({
           metadataUpdateAuth: notUpdateAuth.publicKey,
-        }),
+        })
       );
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // ConstraintAddress
         // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L89-L91
-        /0x7dc/,
+        /0x7dc/
       );
     });
   });
@@ -484,9 +503,9 @@ describe("open_position_with_metadata", () => {
         tickLowerIndex,
         tickUpperIndex,
         provider.wallet.publicKey,
-        funderKeypair,
+        funderKeypair
       ),
-      /0x17a6/, // FullRangeOnlyPool
+      /0x17a6/ // FullRangeOnlyPool
     );
   });
 });

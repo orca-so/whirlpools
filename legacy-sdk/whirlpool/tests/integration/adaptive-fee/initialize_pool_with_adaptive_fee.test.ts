@@ -32,7 +32,7 @@ import {
   sleep,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import {
   buildTestPoolWithAdaptiveFeeParams,
@@ -45,6 +45,7 @@ import {
   createMintV2,
   initializeNativeMint2022Idempotent,
 } from "../../utils/v2/token-2022";
+import { initializeNativeMintIdempotent } from "../../utils/v2/token";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import {
@@ -63,19 +64,28 @@ import {
 } from "../../utils/init-utils";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 
-describe("initialize_pool_with_adaptive_fee", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("initialize_pool_with_adaptive_fee (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
+  let providerWalletKeypair: Keypair;
 
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    providerWalletKeypair = getProviderWalletKeypair(provider);
+  });
 
-  describe("v2 parity", () => {
-    describe("v1 parity", () => {
+  describe("v2 parity (litesvm)", () => {
+    describe("v1 parity (litesvm)", () => {
       const tokenTraitVariations: {
         tokenTraitA: TokenTrait;
         tokenTraitB: TokenTrait;
@@ -116,10 +126,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 getDefaultPresetAdaptiveFeeConstants(tickSpacing),
                 undefined,
                 undefined,
-                price,
+                price
               );
             const whirlpool = (await fetcher.getPool(
-              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.whirlpoolPda.publicKey
             )) as WhirlpoolData;
 
             const expectedWhirlpoolPda = PDAUtil.getWhirlpool(
@@ -127,64 +137,64 @@ describe("initialize_pool_with_adaptive_fee", () => {
               configInitInfo.whirlpoolsConfigKeypair.publicKey,
               poolInitInfo.tokenMintA,
               poolInitInfo.tokenMintB,
-              feeTierIndex,
+              feeTierIndex
             );
 
             assert.ok(
               poolInitInfo.whirlpoolPda.publicKey.equals(
-                expectedWhirlpoolPda.publicKey,
-              ),
+                expectedWhirlpoolPda.publicKey
+              )
             );
             assert.equal(expectedWhirlpoolPda.bump, whirlpool.whirlpoolBump[0]);
 
             assert.ok(
-              whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig),
+              whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig)
             );
 
             assert.ok(whirlpool.tokenMintA.equals(poolInitInfo.tokenMintA));
             assert.ok(
               whirlpool.tokenVaultA.equals(
-                poolInitInfo.tokenVaultAKeypair.publicKey,
-              ),
+                poolInitInfo.tokenVaultAKeypair.publicKey
+              )
             );
             await asyncAssertOwnerProgram(
               provider,
               whirlpool.tokenMintA,
               tokenTraits.tokenTraitA.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
 
             assert.ok(whirlpool.tokenMintB.equals(poolInitInfo.tokenMintB));
             assert.ok(
               whirlpool.tokenVaultB.equals(
-                poolInitInfo.tokenVaultBKeypair.publicKey,
-              ),
+                poolInitInfo.tokenVaultBKeypair.publicKey
+              )
             );
             await asyncAssertOwnerProgram(
               provider,
               whirlpool.tokenMintB,
               tokenTraits.tokenTraitB.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
 
             assert.equal(whirlpool.feeRate, feeTierParams.defaultBaseFeeRate);
             assert.equal(
               whirlpool.protocolFeeRate,
-              configInitInfo.defaultProtocolFeeRate,
+              configInitInfo.defaultProtocolFeeRate
             );
 
             assert.ok(
               whirlpool.sqrtPrice.eq(
-                new anchor.BN(poolInitInfo.initSqrtPrice.toString()),
-              ),
+                new anchor.BN(poolInitInfo.initSqrtPrice.toString())
+              )
             );
             assert.ok(whirlpool.liquidity.eq(ZERO_BN));
 
             assert.equal(
               whirlpool.tickCurrentIndex,
-              PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
+              PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice)
             );
 
             assert.ok(whirlpool.protocolFeeOwedA.eq(ZERO_BN));
@@ -196,7 +206,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             assert.ok(
               whirlpool.feeTierIndexSeed[0] +
                 whirlpool.feeTierIndexSeed[1] * 256 ===
-                feeTierIndex,
+                feeTierIndex
             );
 
             await asyncAssertTokenVaultV2(
@@ -206,7 +216,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               poolInitInfo.whirlpoolPda.publicKey,
               tokenTraits.tokenTraitA.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
             await asyncAssertTokenVaultV2(
               provider,
@@ -215,7 +225,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               poolInitInfo.whirlpoolPda.publicKey,
               tokenTraits.tokenTraitB.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
 
             whirlpool.rewardInfos.forEach((rewardInfo) => {
@@ -227,8 +237,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
 
             assert.ok(
               PoolUtil.getRewardAuthority(whirlpool).equals(
-                configInitInfo.rewardEmissionsSuperAuthority,
-              ),
+                configInitInfo.rewardEmissionsSuperAuthority
+              )
             );
             assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
             assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
@@ -237,7 +247,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             await asyncAssertOracle(
               poolInitInfo.oraclePda.publicKey,
               poolInitInfo.whirlpoolPda.publicKey,
-              feeTierParams,
+              feeTierParams
             );
           });
 
@@ -256,60 +266,60 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 getDefaultPresetAdaptiveFeeConstants(tickSpacing),
                 undefined,
                 undefined,
-                price,
+                price
               );
             const whirlpool = (await fetcher.getPool(
-              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.whirlpoolPda.publicKey
             )) as WhirlpoolData;
 
             assert.ok(
-              whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig),
+              whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig)
             );
 
             assert.ok(whirlpool.tokenMintA.equals(poolInitInfo.tokenMintA));
             assert.ok(
               whirlpool.tokenVaultA.equals(
-                poolInitInfo.tokenVaultAKeypair.publicKey,
-              ),
+                poolInitInfo.tokenVaultAKeypair.publicKey
+              )
             );
             await asyncAssertOwnerProgram(
               provider,
               whirlpool.tokenMintA,
               tokenTraits.tokenTraitA.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
 
             assert.ok(whirlpool.tokenMintB.equals(poolInitInfo.tokenMintB));
             assert.ok(
               whirlpool.tokenVaultB.equals(
-                poolInitInfo.tokenVaultBKeypair.publicKey,
-              ),
+                poolInitInfo.tokenVaultBKeypair.publicKey
+              )
             );
             await asyncAssertOwnerProgram(
               provider,
               whirlpool.tokenMintB,
               tokenTraits.tokenTraitB.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
 
             assert.equal(whirlpool.feeRate, feeTierParams.defaultBaseFeeRate);
             assert.equal(
               whirlpool.protocolFeeRate,
-              configInitInfo.defaultProtocolFeeRate,
+              configInitInfo.defaultProtocolFeeRate
             );
 
             assert.ok(
               whirlpool.sqrtPrice.eq(
-                new anchor.BN(poolInitInfo.initSqrtPrice.toString()),
-              ),
+                new anchor.BN(poolInitInfo.initSqrtPrice.toString())
+              )
             );
             assert.ok(whirlpool.liquidity.eq(ZERO_BN));
 
             assert.equal(
               whirlpool.tickCurrentIndex,
-              PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
+              PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice)
             );
 
             assert.ok(whirlpool.protocolFeeOwedA.eq(ZERO_BN));
@@ -321,7 +331,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             assert.ok(
               whirlpool.feeTierIndexSeed[0] +
                 whirlpool.feeTierIndexSeed[1] * 256 ===
-                feeTierIndex,
+                feeTierIndex
             );
 
             await asyncAssertTokenVaultV2(
@@ -331,7 +341,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               poolInitInfo.whirlpoolPda.publicKey,
               tokenTraits.tokenTraitA.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
             await asyncAssertTokenVaultV2(
               provider,
@@ -340,7 +350,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               poolInitInfo.whirlpoolPda.publicKey,
               tokenTraits.tokenTraitB.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID,
+                : TEST_TOKEN_PROGRAM_ID
             );
 
             whirlpool.rewardInfos.forEach((rewardInfo) => {
@@ -352,8 +362,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
 
             assert.ok(
               PoolUtil.getRewardAuthority(whirlpool).equals(
-                configInitInfo.rewardEmissionsSuperAuthority,
-              ),
+                configInitInfo.rewardEmissionsSuperAuthority
+              )
             );
             assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
             assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
@@ -362,7 +372,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             await asyncAssertOracle(
               poolInitInfo.oraclePda.publicKey,
               poolInitInfo.whirlpoolPda.publicKey,
-              feeTierParams,
+              feeTierParams
             );
           });
 
@@ -371,7 +381,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             await systemTransferTx(
               provider,
               funderKeypair.publicKey,
-              ONE_SOL,
+              ONE_SOL
             ).buildAndExecute();
 
             const price = MathUtil.toX64(new Decimal(5));
@@ -389,7 +399,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               price,
               undefined,
-              funderKeypair,
+              funderKeypair
             );
           });
 
@@ -406,48 +416,48 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               getDefaultPresetAdaptiveFeeConstants(tickSpacing),
               PublicKey.default,
-              PublicKey.default,
+              PublicKey.default
             );
 
             const preLamports = 1_000_000;
             await systemTransferTx(
               provider,
               poolInitInfo.tokenVaultAKeypair.publicKey,
-              preLamports,
+              preLamports
             ).buildAndExecute();
             await systemTransferTx(
               provider,
               poolInitInfo.tokenVaultBKeypair.publicKey,
-              preLamports,
+              preLamports
             ).buildAndExecute();
 
             await toTx(
               ctx,
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                 ctx.program,
-                poolInitInfo,
-              ),
+                poolInitInfo
+              )
             ).buildAndExecute();
             await asyncAssertTokenVaultV2(
               provider,
               poolInitInfo.tokenVaultAKeypair.publicKey,
               poolInitInfo.tokenMintA,
               poolInitInfo.whirlpoolPda.publicKey,
-              poolInitInfo.tokenProgramA,
+              poolInitInfo.tokenProgramA
             );
             await asyncAssertTokenVaultV2(
               provider,
               poolInitInfo.tokenVaultBKeypair.publicKey,
               poolInitInfo.tokenMintB,
               poolInitInfo.whirlpoolPda.publicKey,
-              poolInitInfo.tokenProgramB,
+              poolInitInfo.tokenProgramB
             );
 
             const vaultA = await provider.connection.getAccountInfo(
-              poolInitInfo.tokenVaultAKeypair.publicKey,
+              poolInitInfo.tokenVaultAKeypair.publicKey
             );
             const vaultB = await provider.connection.getAccountInfo(
-              poolInitInfo.tokenVaultBKeypair.publicKey,
+              poolInitInfo.tokenVaultBKeypair.publicKey
             );
             assert.ok(vaultA!.lamports > preLamports);
             assert.ok(vaultB!.lamports > preLamports);
@@ -466,48 +476,48 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               getDefaultPresetAdaptiveFeeConstants(tickSpacing),
               PublicKey.default,
-              PublicKey.default,
+              PublicKey.default
             );
 
             const preLamports = 1_000_000_000;
             await systemTransferTx(
               provider,
               poolInitInfo.tokenVaultAKeypair.publicKey,
-              preLamports,
+              preLamports
             ).buildAndExecute();
             await systemTransferTx(
               provider,
               poolInitInfo.tokenVaultBKeypair.publicKey,
-              preLamports,
+              preLamports
             ).buildAndExecute();
 
             await toTx(
               ctx,
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                 ctx.program,
-                poolInitInfo,
-              ),
+                poolInitInfo
+              )
             ).buildAndExecute();
             await asyncAssertTokenVaultV2(
               provider,
               poolInitInfo.tokenVaultAKeypair.publicKey,
               poolInitInfo.tokenMintA,
               poolInitInfo.whirlpoolPda.publicKey,
-              poolInitInfo.tokenProgramA,
+              poolInitInfo.tokenProgramA
             );
             await asyncAssertTokenVaultV2(
               provider,
               poolInitInfo.tokenVaultBKeypair.publicKey,
               poolInitInfo.tokenMintB,
               poolInitInfo.whirlpoolPda.publicKey,
-              poolInitInfo.tokenProgramB,
+              poolInitInfo.tokenProgramB
             );
 
             const vaultA = await provider.connection.getAccountInfo(
-              poolInitInfo.tokenVaultAKeypair.publicKey,
+              poolInitInfo.tokenVaultAKeypair.publicKey
             );
             const vaultB = await provider.connection.getAccountInfo(
-              poolInitInfo.tokenVaultBKeypair.publicKey,
+              poolInitInfo.tokenVaultBKeypair.publicKey
             );
             assert.ok(vaultA!.lamports === preLamports);
             assert.ok(vaultB!.lamports === preLamports);
@@ -526,11 +536,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               getDefaultPresetAdaptiveFeeConstants(tickSpacing),
               PublicKey.default,
-              PublicKey.default,
+              PublicKey.default
             );
             const otherTokenPublicKey = await createMintV2(
               provider,
-              tokenTraits.tokenTraitA,
+              tokenTraits.tokenTraitA
             );
 
             const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -543,10 +553,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 ctx,
                 WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                   ctx.program,
-                  modifiedPoolInitInfo,
-                ),
+                  modifiedPoolInitInfo
+                )
               ).buildAndExecute(),
-              /custom program error: 0x7d6/, // ConstraintSeeds
+              /custom program error: 0x7d6/ // ConstraintSeeds
             );
           });
 
@@ -563,11 +573,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               getDefaultPresetAdaptiveFeeConstants(tickSpacing),
               PublicKey.default,
-              PublicKey.default,
+              PublicKey.default
             );
             const otherTokenPublicKey = await createMintV2(
               provider,
-              tokenTraits.tokenTraitB,
+              tokenTraits.tokenTraitB
             );
 
             const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -580,10 +590,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 ctx,
                 WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                   ctx.program,
-                  modifiedPoolInitInfo,
-                ),
+                  modifiedPoolInitInfo
+                )
               ).buildAndExecute(),
-              /custom program error: 0x7d6/, // ConstraintSeeds
+              /custom program error: 0x7d6/ // ConstraintSeeds
             );
           });
 
@@ -601,7 +611,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 undefined,
                 getDefaultPresetAdaptiveFeeConstants(tickSpacing),
                 PublicKey.default,
-                PublicKey.default,
+                PublicKey.default
               );
 
             const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -609,12 +619,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
               configInitInfo.whirlpoolsConfigKeypair.publicKey,
               poolInitInfo.tokenMintB,
               poolInitInfo.tokenMintA,
-              feeTierIndex,
+              feeTierIndex
             );
 
             const oraclePda = PDAUtil.getOracle(
               ctx.program.programId,
-              whirlpoolPda.publicKey,
+              whirlpoolPda.publicKey
             );
 
             const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -638,10 +648,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 ctx,
                 WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                   ctx.program,
-                  modifiedPoolInitInfo,
-                ),
+                  modifiedPoolInitInfo
+                )
               ).buildAndExecute(),
-              /custom program error: 0x1788/, // InvalidTokenMintOrder
+              /custom program error: 0x1788/ // InvalidTokenMintOrder
             );
           });
 
@@ -659,7 +669,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 undefined,
                 getDefaultPresetAdaptiveFeeConstants(tickSpacing),
                 PublicKey.default,
-                PublicKey.default,
+                PublicKey.default
               );
 
             const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -667,12 +677,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
               configInitInfo.whirlpoolsConfigKeypair.publicKey,
               poolInitInfo.tokenMintA,
               poolInitInfo.tokenMintA,
-              feeTierIndex,
+              feeTierIndex
             );
 
             const oraclePda = PDAUtil.getOracle(
               ctx.program.programId,
-              whirlpoolPda.publicKey,
+              whirlpoolPda.publicKey
             );
 
             const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -691,10 +701,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 ctx,
                 WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                   ctx.program,
-                  modifiedPoolInitInfo,
-                ),
+                  modifiedPoolInitInfo
+                )
               ).buildAndExecute(),
-              /custom program error: 0x1788/, // InvalidTokenMintOrder
+              /custom program error: 0x1788/ // InvalidTokenMintOrder
             );
           });
 
@@ -711,13 +721,13 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               getDefaultPresetAdaptiveFeeConstants(tickSpacing),
               PublicKey.default,
-              PublicKey.default,
+              PublicKey.default
             );
 
             const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
               ...poolInitInfo,
               initSqrtPrice: new anchor.BN(MAX_SQRT_PRICE).add(
-                new anchor.BN(1),
+                new anchor.BN(1)
               ),
             };
 
@@ -726,10 +736,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 ctx,
                 WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                   ctx.program,
-                  modifiedPoolInitInfo,
-                ),
+                  modifiedPoolInitInfo
+                )
               ).buildAndExecute(),
-              /custom program error: 0x177b/, // SqrtPriceOutOfBounds
+              /custom program error: 0x177b/ // SqrtPriceOutOfBounds
             );
           });
 
@@ -746,13 +756,13 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               getDefaultPresetAdaptiveFeeConstants(tickSpacing),
               PublicKey.default,
-              PublicKey.default,
+              PublicKey.default
             );
 
             const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
               ...poolInitInfo,
               initSqrtPrice: new anchor.BN(MIN_SQRT_PRICE).sub(
-                new anchor.BN(1),
+                new anchor.BN(1)
               ),
             };
 
@@ -761,10 +771,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 ctx,
                 WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
                   ctx.program,
-                  modifiedPoolInitInfo,
-                ),
+                  modifiedPoolInitInfo
+                )
               ).buildAndExecute(),
-              /custom program error: 0x177b/, // SqrtPriceOutOfBounds
+              /custom program error: 0x177b/ // SqrtPriceOutOfBounds
             );
           });
 
@@ -775,7 +785,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
 
     // no tick_spacing parameter (it should be copied from AdaptiveFeeTier)
 
-    describe("v2 specific accounts", () => {
+    describe("v2 specific accounts (litesvm)", () => {
       it("fails when passed token_program_a is not token program (token-2022 is passed)", async () => {
         const tickSpacing = TickSpacing.Standard;
         const feeTierIndex = 1024 + tickSpacing;
@@ -789,7 +799,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
         assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_PROGRAM_ID));
@@ -803,10 +813,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
               ctx.program,
-              modifiedPoolInitInfo,
-            ),
+              modifiedPoolInitInfo
+            )
           ).buildAndExecute(),
-          /0x7dc/, // ConstraintAddress
+          /0x7dc/ // ConstraintAddress
         );
       });
 
@@ -823,11 +833,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
         assert.ok(
-          poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID),
+          poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID)
         );
         const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
           ...poolInitInfo,
@@ -839,10 +849,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
               ctx.program,
-              modifiedPoolInitInfo,
-            ),
+              modifiedPoolInitInfo
+            )
           ).buildAndExecute(),
-          /0x7dc/, // ConstraintAddress
+          /0x7dc/ // ConstraintAddress
         );
       });
 
@@ -859,11 +869,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
         assert.ok(
-          poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID),
+          poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID)
         );
         const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
           ...poolInitInfo,
@@ -875,10 +885,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
               ctx.program,
-              modifiedPoolInitInfo,
-            ),
+              modifiedPoolInitInfo
+            )
           ).buildAndExecute(),
-          /0xbc0/, // InvalidProgramId
+          /0xbc0/ // InvalidProgramId
         );
       });
 
@@ -895,7 +905,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
         assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_PROGRAM_ID));
@@ -909,10 +919,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
               ctx.program,
-              modifiedPoolInitInfo,
-            ),
+              modifiedPoolInitInfo
+            )
           ).buildAndExecute(),
-          /0x7dc/, // ConstraintAddress
+          /0x7dc/ // ConstraintAddress
         );
       });
 
@@ -929,11 +939,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
         assert.ok(
-          poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID),
+          poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID)
         );
         const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
           ...poolInitInfo,
@@ -945,10 +955,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
               ctx.program,
-              modifiedPoolInitInfo,
-            ),
+              modifiedPoolInitInfo
+            )
           ).buildAndExecute(),
-          /0x7dc/, // ConstraintAddress
+          /0x7dc/ // ConstraintAddress
         );
       });
 
@@ -965,11 +975,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
         assert.ok(
-          poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID),
+          poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID)
         );
         const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
           ...poolInitInfo,
@@ -981,14 +991,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
               ctx.program,
-              modifiedPoolInitInfo,
-            ),
+              modifiedPoolInitInfo
+            )
           ).buildAndExecute(),
-          /0xbc0/, // InvalidProgramId
+          /0xbc0/ // InvalidProgramId
         );
       });
 
-      describe("invalid badge account", () => {
+      describe("invalid badge account (litesvm)", () => {
         let baseIxParams: InitPoolWithAdaptiveFeeParams;
 
         beforeEach(async () => {
@@ -1001,13 +1011,13 @@ describe("initialize_pool_with_adaptive_fee", () => {
             provider,
             { isToken2022: true, hasPermanentDelegate: true },
             undefined,
-            tokenAKeypair,
+            tokenAKeypair
           );
           await createMintV2(
             provider,
             { isToken2022: true, hasPermanentDelegate: true },
             undefined,
-            tokenBKeypair,
+            tokenBKeypair
           );
 
           // create config and feetier
@@ -1022,7 +1032,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               defaultProtocolFeeRate: 300,
               funder: admin.publicKey,
               whirlpoolsConfigKeypair: configKeypair,
-            }),
+            })
           );
           initConfigTx.addInstruction(
             WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -1031,7 +1041,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               featureFlag: {
                 tokenBadge: [true],
               },
-            }),
+            })
           );
           await initConfigTx
             .addSigner(admin)
@@ -1043,7 +1053,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           const feeTierPda = PDAUtil.getFeeTier(
             ctx.program.programId,
             configKeypair.publicKey,
-            feeTierIndex,
+            feeTierIndex
           );
           const presetAdaptiveFeeConstants =
             getDefaultPresetAdaptiveFeeConstants(tickSpacing);
@@ -1067,13 +1077,13 @@ describe("initialize_pool_with_adaptive_fee", () => {
               presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
               presetMajorSwapThresholdTicks:
                 presetAdaptiveFeeConstants.majorSwapThresholdTicks,
-            }),
+            })
           ).buildAndExecute();
 
           // create config extension
           const configExtensionPda = PDAUtil.getConfigExtension(
             ctx.program.programId,
-            configKeypair.publicKey,
+            configKeypair.publicKey
           );
           await toTx(
             ctx,
@@ -1082,7 +1092,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               funder: provider.wallet.publicKey,
               whirlpoolsConfig: configKeypair.publicKey,
               whirlpoolsConfigExtensionPda: configExtensionPda,
-            }),
+            })
           ).buildAndExecute();
 
           const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -1090,11 +1100,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
             configKeypair.publicKey,
             tokenAKeypair.publicKey,
             tokenBKeypair.publicKey,
-            feeTierIndex,
+            feeTierIndex
           );
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey,
+            whirlpoolPda.publicKey
           );
           baseIxParams = {
             oraclePda,
@@ -1110,12 +1120,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
             tokenBadgeA: PDAUtil.getTokenBadge(
               ctx.program.programId,
               configKeypair.publicKey,
-              tokenAKeypair.publicKey,
+              tokenAKeypair.publicKey
             ).publicKey,
             tokenBadgeB: PDAUtil.getTokenBadge(
               ctx.program.programId,
               configKeypair.publicKey,
-              tokenBKeypair.publicKey,
+              tokenBKeypair.publicKey
             ).publicKey,
             tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
             tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
@@ -1131,9 +1141,9 @@ describe("initialize_pool_with_adaptive_fee", () => {
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
                 ...baseIxParams,
                 tokenBadgeA: fakeAddress,
-              }),
+              })
             ).buildAndExecute(),
-            /custom program error: 0x7d6/, // ConstraintSeeds
+            /custom program error: 0x7d6/ // ConstraintSeeds
           );
 
           await assert.rejects(
@@ -1142,9 +1152,9 @@ describe("initialize_pool_with_adaptive_fee", () => {
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
                 ...baseIxParams,
                 tokenBadgeB: fakeAddress,
-              }),
+              })
             ).buildAndExecute(),
-            /custom program error: 0x7d6/, // ConstraintSeeds
+            /custom program error: 0x7d6/ // ConstraintSeeds
           );
         });
 
@@ -1156,18 +1166,18 @@ describe("initialize_pool_with_adaptive_fee", () => {
             provider,
             { isToken2022: true },
             undefined,
-            anotherTokenKeypair,
+            anotherTokenKeypair
           );
 
           // initialize another badge
           const configExtension = PDAUtil.getConfigExtension(
             ctx.program.programId,
-            config,
+            config
           ).publicKey;
           const tokenBadgePda = PDAUtil.getTokenBadge(
             ctx.program.programId,
             config,
-            anotherTokenKeypair.publicKey,
+            anotherTokenKeypair.publicKey
           );
           await toTx(
             ctx,
@@ -1178,11 +1188,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
               tokenBadgeAuthority: provider.wallet.publicKey,
               tokenBadgePda,
               tokenMint: anotherTokenKeypair.publicKey,
-            }),
+            })
           ).buildAndExecute();
           const badge = fetcher.getTokenBadge(
             tokenBadgePda.publicKey,
-            IGNORE_CACHE,
+            IGNORE_CACHE
           );
           assert.ok(badge !== null);
 
@@ -1194,9 +1204,9 @@ describe("initialize_pool_with_adaptive_fee", () => {
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
                 ...baseIxParams,
                 tokenBadgeA: fakeAddress,
-              }),
+              })
             ).buildAndExecute(),
-            /custom program error: 0x7d6/, // ConstraintSeeds
+            /custom program error: 0x7d6/ // ConstraintSeeds
           );
 
           await assert.rejects(
@@ -1205,9 +1215,9 @@ describe("initialize_pool_with_adaptive_fee", () => {
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
                 ...baseIxParams,
                 tokenBadgeB: fakeAddress,
-              }),
+              })
             ).buildAndExecute(),
-            /custom program error: 0x7d6/, // ConstraintSeeds
+            /custom program error: 0x7d6/ // ConstraintSeeds
           );
         });
 
@@ -1217,7 +1227,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             ctx,
             { isToken2022: true },
             { isToken2022: true },
-            TickSpacing.Standard,
+            TickSpacing.Standard
           );
 
           const fakeAddress = poolInitInfo.whirlpoolPda.publicKey;
@@ -1230,9 +1240,9 @@ describe("initialize_pool_with_adaptive_fee", () => {
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
                 ...baseIxParams,
                 tokenBadgeA: fakeAddress,
-              }),
+              })
             ).buildAndExecute(),
-            /custom program error: 0x7d6/, // ConstraintSeeds
+            /custom program error: 0x7d6/ // ConstraintSeeds
           );
 
           await assert.rejects(
@@ -1241,15 +1251,15 @@ describe("initialize_pool_with_adaptive_fee", () => {
               WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
                 ...baseIxParams,
                 tokenBadgeB: fakeAddress,
-              }),
+              })
             ).buildAndExecute(),
-            /custom program error: 0x7d6/, // ConstraintSeeds
+            /custom program error: 0x7d6/ // ConstraintSeeds
           );
         });
       });
     });
 
-    describe("Supported Tokens", () => {
+    describe("Supported Tokens (litesvm)", () => {
       function generate3MintAddress(): [Keypair, Keypair, Keypair] {
         const keypairs = [
           Keypair.generate(),
@@ -1264,7 +1274,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         whirlpoolsConfig: PublicKey,
         tokenMintA: PublicKey,
         tokenMintB: PublicKey,
-        feeTierIndex: number,
+        feeTierIndex: number
       ) {
         const tokenVaultAKeypair = Keypair.generate();
         const tokenVaultBKeypair = Keypair.generate();
@@ -1274,33 +1284,33 @@ describe("initialize_pool_with_adaptive_fee", () => {
           whirlpoolsConfig,
           tokenMintA,
           tokenMintB,
-          feeTierIndex,
+          feeTierIndex
         );
         const oraclePda = PDAUtil.getOracle(
           ctx.program.programId,
-          whirlpoolPda.publicKey,
+          whirlpoolPda.publicKey
         );
         const feeTierKey = PDAUtil.getFeeTier(
           ctx.program.programId,
           whirlpoolsConfig,
-          feeTierIndex,
+          feeTierIndex
         ).publicKey;
         const tokenBadgeA = PDAUtil.getTokenBadge(
           ctx.program.programId,
           whirlpoolsConfig,
-          tokenMintA,
+          tokenMintA
         ).publicKey;
         const tokenBadgeB = PDAUtil.getTokenBadge(
           ctx.program.programId,
           whirlpoolsConfig,
-          tokenMintB,
+          tokenMintB
         ).publicKey;
 
         const tokenProgramA = (await provider.connection.getAccountInfo(
-          tokenMintA,
+          tokenMintA
         ))!.owner;
         const tokenProgramB = (await provider.connection.getAccountInfo(
-          tokenMintB,
+          tokenMintB
         ))!.owner;
 
         const promise = toTx(
@@ -1321,21 +1331,21 @@ describe("initialize_pool_with_adaptive_fee", () => {
             whirlpoolPda,
             initializePoolAuthority: provider.wallet.publicKey,
             oraclePda,
-          }),
+          })
         ).buildAndExecute();
 
         if (supported) {
           await promise;
           const whirlpoolData = await fetcher.getPool(
             whirlpoolPda.publicKey,
-            IGNORE_CACHE,
+            IGNORE_CACHE
           );
           assert.ok(whirlpoolData!.tokenMintA.equals(tokenMintA));
           assert.ok(whirlpoolData!.tokenMintB.equals(tokenMintB));
         } else {
           await assert.rejects(
             promise,
-            /0x179f/, // UnsupportedTokenMint
+            /0x179f/ // UnsupportedTokenMint
           );
         }
       }
@@ -1361,12 +1371,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
             providerWalletKeypair,
             params.tokenTrait.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID,
+              : TEST_TOKEN_PROGRAM_ID
           );
 
           const afterSetAuthorityMint = await fetcher.getMintInfo(
             tokenTarget.publicKey,
-            IGNORE_CACHE,
+            IGNORE_CACHE
           );
           assert.ok(afterSetAuthorityMint?.freezeAuthority === null);
         }
@@ -1383,7 +1393,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             defaultProtocolFeeRate: 300,
             funder: admin.publicKey,
             whirlpoolsConfigKeypair: configKeypair,
-          }),
+          })
         );
         initConfigTx.addInstruction(
           WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -1392,7 +1402,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             featureFlag: {
               tokenBadge: [true],
             },
-          }),
+          })
         );
         await initConfigTx
           .addSigner(admin)
@@ -1415,7 +1425,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             feeTierPda: PDAUtil.getFeeTier(
               ctx.program.programId,
               configKeypair.publicKey,
-              feeTierIndex,
+              feeTierIndex
             ),
             presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
             presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
@@ -1427,14 +1437,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
             presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
             presetMajorSwapThresholdTicks:
               presetAdaptiveFeeConstants.majorSwapThresholdTicks,
-          }),
+          })
         ).buildAndExecute();
 
         // create token badge if wanted
         if (params.createTokenBadge) {
           const pda = PDAUtil.getConfigExtension(
             ctx.program.programId,
-            configKeypair.publicKey,
+            configKeypair.publicKey
           );
           await toTx(
             ctx,
@@ -1443,17 +1453,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
               funder: provider.wallet.publicKey,
               whirlpoolsConfig: configKeypair.publicKey,
               whirlpoolsConfigExtensionPda: pda,
-            }),
+            })
           ).buildAndExecute();
 
           const configExtension = PDAUtil.getConfigExtension(
             ctx.program.programId,
-            configKeypair.publicKey,
+            configKeypair.publicKey
           ).publicKey;
           const tokenBadgePda = PDAUtil.getTokenBadge(
             ctx.program.programId,
             configKeypair.publicKey,
-            tokenTarget.publicKey,
+            tokenTarget.publicKey
           );
           await toTx(
             ctx,
@@ -1464,14 +1474,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
               tokenBadgeAuthority: provider.wallet.publicKey,
               tokenBadgePda,
               tokenMint: tokenTarget.publicKey,
-            }),
+            })
           ).buildAndExecute();
         }
 
         const isSupportedToken = await PoolUtil.isSupportedToken(
           ctx,
           configKeypair.publicKey,
-          tokenTarget.publicKey,
+          tokenTarget.publicKey
         );
         assert.equal(isSupportedToken, params.supported);
 
@@ -1481,14 +1491,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
           configKeypair.publicKey,
           tokenA.publicKey,
           tokenTarget.publicKey,
-          feeTierIndex,
+          feeTierIndex
         ); // as TokenB
         await checkSupported(
           params.supported,
           configKeypair.publicKey,
           tokenTarget.publicKey,
           tokenB.publicKey,
-          feeTierIndex,
+          feeTierIndex
         ); // as TokenA
       }
 
@@ -1497,8 +1507,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
         createTokenBadge: boolean;
         isToken2022NativeMint: boolean;
       }) {
-        // We need to call this to use NATIVE_MINT_2022
-        await initializeNativeMint2022Idempotent(provider);
+        // Initialize the appropriate native mint for LiteSVM
+        if (params.isToken2022NativeMint) {
+          await initializeNativeMint2022Idempotent(provider);
+        } else {
+          await initializeNativeMintIdempotent(provider);
+        }
 
         // create tokens
         const nativeMint = params.isToken2022NativeMint
@@ -1514,11 +1528,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
 
         assert.ok(
           PoolUtil.orderMints(tokenA.publicKey, nativeMint)[1].toString() ===
-            nativeMint.toString(),
+            nativeMint.toString()
         );
         assert.ok(
           PoolUtil.orderMints(nativeMint, tokenB.publicKey)[0].toString() ===
-            nativeMint.toString(),
+            nativeMint.toString()
         );
 
         await createMintV2(provider, { isToken2022: false }, undefined, tokenA);
@@ -1536,7 +1550,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             defaultProtocolFeeRate: 300,
             funder: admin.publicKey,
             whirlpoolsConfigKeypair: configKeypair,
-          }),
+          })
         );
         initConfigTx.addInstruction(
           WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -1545,7 +1559,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             featureFlag: {
               tokenBadge: [true],
             },
-          }),
+          })
         );
         await initConfigTx
           .addSigner(admin)
@@ -1568,7 +1582,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
             feeTierPda: PDAUtil.getFeeTier(
               ctx.program.programId,
               configKeypair.publicKey,
-              feeTierIndex,
+              feeTierIndex
             ),
             presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
             presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
@@ -1580,14 +1594,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
             presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
             presetMajorSwapThresholdTicks:
               presetAdaptiveFeeConstants.majorSwapThresholdTicks,
-          }),
+          })
         ).buildAndExecute();
 
         // create token badge if wanted
         if (params.createTokenBadge) {
           const pda = PDAUtil.getConfigExtension(
             ctx.program.programId,
-            configKeypair.publicKey,
+            configKeypair.publicKey
           );
           await toTx(
             ctx,
@@ -1596,17 +1610,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
               funder: provider.wallet.publicKey,
               whirlpoolsConfig: configKeypair.publicKey,
               whirlpoolsConfigExtensionPda: pda,
-            }),
+            })
           ).buildAndExecute();
 
           const configExtension = PDAUtil.getConfigExtension(
             ctx.program.programId,
-            configKeypair.publicKey,
+            configKeypair.publicKey
           ).publicKey;
           const tokenBadgePda = PDAUtil.getTokenBadge(
             ctx.program.programId,
             configKeypair.publicKey,
-            nativeMint,
+            nativeMint
           );
           await toTx(
             ctx,
@@ -1617,7 +1631,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               tokenBadgeAuthority: provider.wallet.publicKey,
               tokenBadgePda,
               tokenMint: nativeMint,
-            }),
+            })
           ).buildAndExecute();
         }
 
@@ -1627,14 +1641,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
           configKeypair.publicKey,
           tokenA.publicKey,
           nativeMint,
-          feeTierIndex,
+          feeTierIndex
         ); // as TokenB
         await checkSupported(
           params.supported,
           configKeypair.publicKey,
           nativeMint,
           tokenB.publicKey,
-          feeTierIndex,
+          feeTierIndex
         ); // as TokenA
       }
 
@@ -2011,7 +2025,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
     });
   });
 
-  describe("with_adaptive_fee specific accounts", () => {
+  describe("with_adaptive_fee specific accounts (litesvm)", () => {
     it("[FAIL] when adaptive_fee_tier belongs to different config", async () => {
       const tickSpacing = TickSpacing.Standard;
       const feeTierIndex = 1024 + tickSpacing;
@@ -2025,7 +2039,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         PublicKey.default,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const { poolInitInfo: anotherPoolInitInfo } =
@@ -2039,7 +2053,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
       const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -2052,10 +2066,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
           ctx,
           WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
             ctx.program,
-            modifiedPoolInitInfo,
-          ),
+            modifiedPoolInitInfo
+          )
         ).buildAndExecute(),
-        /0x7d6/, // ConstraintSeeds
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
@@ -2073,7 +2087,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           undefined,
           getDefaultPresetAdaptiveFeeConstants(tickSpacing),
           PublicKey.default,
-          PublicKey.default,
+          PublicKey.default
         );
 
       const { params: nonAdaptiveFeeTierParams } = await initFeeTier(
@@ -2081,7 +2095,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         configInitInfo,
         configKeypairs.feeAuthorityKeypair,
         tickSpacing,
-        3000,
+        3000
       );
 
       const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -2094,10 +2108,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
           ctx,
           WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
             ctx.program,
-            modifiedPoolInitInfo,
-          ),
+            modifiedPoolInitInfo
+          )
         ).buildAndExecute(),
-        /0xbba/, // AccountDiscriminatorMismatch.
+        /0xbba/ // AccountDiscriminatorMismatch.
       );
     });
 
@@ -2114,12 +2128,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         PublicKey.default,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const wrongOraclePda = PDAUtil.getOracle(
         ctx.program.programId,
-        Keypair.generate().publicKey,
+        Keypair.generate().publicKey
       );
 
       const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -2132,10 +2146,10 @@ describe("initialize_pool_with_adaptive_fee", () => {
           ctx,
           WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
             ctx.program,
-            modifiedPoolInitInfo,
-          ),
+            modifiedPoolInitInfo
+          )
         ).buildAndExecute(),
-        /0x7d6/, // ConstraintSeeds
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
@@ -2144,7 +2158,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
       await systemTransferTx(
         provider,
         initializePoolAuthorityKeypair.publicKey,
-        ONE_SOL,
+        ONE_SOL
       ).buildAndExecute();
 
       const tickSpacing = TickSpacing.Standard;
@@ -2160,7 +2174,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -2172,15 +2186,15 @@ describe("initialize_pool_with_adaptive_fee", () => {
         ctx,
         WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
           ctx.program,
-          modifiedPoolInitInfo,
-        ),
+          modifiedPoolInitInfo
+        )
       )
         .addSigner(initializePoolAuthorityKeypair)
         .buildAndExecute();
 
       const whirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(whirlpoolData !== null);
     });
@@ -2190,14 +2204,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
       await systemTransferTx(
         provider,
         initializePoolAuthorityKeypair.publicKey,
-        ONE_SOL,
+        ONE_SOL
       ).buildAndExecute();
 
       const fakeAuthorityKeypair = anchor.web3.Keypair.generate();
       await systemTransferTx(
         provider,
         fakeAuthorityKeypair.publicKey,
-        ONE_SOL,
+        ONE_SOL
       ).buildAndExecute();
 
       const tickSpacing = TickSpacing.Standard;
@@ -2214,7 +2228,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const modifiedPoolInitInfoWithFakeAuthority: InitPoolWithAdaptiveFeeParams =
@@ -2228,17 +2242,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
           ctx,
           WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
             ctx.program,
-            modifiedPoolInitInfoWithFakeAuthority,
-          ),
+            modifiedPoolInitInfoWithFakeAuthority
+          )
         )
           .addSigner(fakeAuthorityKeypair)
           .buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7d3/ // ConstraintRaw
       );
 
       const emptyWhirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(emptyWhirlpoolData === null);
 
@@ -2251,15 +2265,15 @@ describe("initialize_pool_with_adaptive_fee", () => {
         ctx,
         WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
           ctx.program,
-          modifiedPoolInitInfo,
-        ),
+          modifiedPoolInitInfo
+        )
       )
         .addSigner(initializePoolAuthorityKeypair)
         .buildAndExecute();
 
       const whirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(whirlpoolData !== null);
     });
@@ -2269,14 +2283,14 @@ describe("initialize_pool_with_adaptive_fee", () => {
       await systemTransferTx(
         provider,
         initializePoolAuthorityKeypair.publicKey,
-        ONE_SOL,
+        ONE_SOL
       ).buildAndExecute();
 
       const fakeAuthorityKeypair = anchor.web3.Keypair.generate();
       await systemTransferTx(
         provider,
         fakeAuthorityKeypair.publicKey,
-        ONE_SOL,
+        ONE_SOL
       ).buildAndExecute();
 
       const tickSpacing = TickSpacing.Standard;
@@ -2293,7 +2307,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const modifiedPoolInitInfoWithFakeAuthority: InitPoolWithAdaptiveFeeParams =
@@ -2307,17 +2321,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
           ctx,
           WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
             ctx.program,
-            modifiedPoolInitInfoWithFakeAuthority,
-          ),
+            modifiedPoolInitInfoWithFakeAuthority
+          )
         )
           .addSigner(fakeAuthorityKeypair)
           .buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7d3/ // ConstraintRaw
       );
 
       const emptyWhirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(emptyWhirlpoolData === null);
     });
@@ -2327,7 +2341,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
       await systemTransferTx(
         provider,
         initializePoolAuthorityKeypair.publicKey,
-        ONE_SOL,
+        ONE_SOL
       ).buildAndExecute();
 
       const tickSpacing = TickSpacing.Standard;
@@ -2344,7 +2358,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -2354,11 +2368,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
 
       const ix = WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
         ctx.program,
-        modifiedPoolInitInfo,
+        modifiedPoolInitInfo
       );
       const ixWithoutSigner = dropIsSignerFlag(
         ix.instructions[0],
-        initializePoolAuthorityKeypair.publicKey,
+        initializePoolAuthorityKeypair.publicKey
       );
 
       await assert.rejects(
@@ -2367,18 +2381,18 @@ describe("initialize_pool_with_adaptive_fee", () => {
           cleanupInstructions: [],
           signers: ix.signers, // vault keypairs
         }).buildAndExecute(),
-        /0xbc2/, // AccountNotSigner
+        /0xbc2/ // AccountNotSigner
       );
 
       const emptyWhirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(emptyWhirlpoolData === null);
     });
   });
 
-  describe("with_adaptive_fee specific parameter", () => {
+  describe("with_adaptive_fee specific parameter (litesvm)", () => {
     it("[FAIL] when trade_enable_timestamp is set with permission less Adaptive Fee tier", async () => {
       const tickSpacing = TickSpacing.Standard;
       const feeTierIndex = 1024 + tickSpacing;
@@ -2393,7 +2407,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
@@ -2408,26 +2422,26 @@ describe("initialize_pool_with_adaptive_fee", () => {
           ctx,
           WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
             ctx.program,
-            modifiedPoolInitInfo,
-          ),
+            modifiedPoolInitInfo
+          )
         ).buildAndExecute(),
-        /0x17af/, // InvalidTradeEnableTimestamp
+        /0x17af/ // InvalidTradeEnableTimestamp
       );
 
       await toTx(
         ctx,
-        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, poolInitInfo),
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, poolInitInfo)
       ).buildAndExecute();
 
       const whirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(whirlpoolData !== null);
 
       const oracleData = await fetcher.getOracle(
         poolInitInfo.oraclePda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(oracleData !== null);
       assert.ok(oracleData!.tradeEnableTimestamp.isZero());
@@ -2447,7 +2461,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
@@ -2461,19 +2475,19 @@ describe("initialize_pool_with_adaptive_fee", () => {
         ctx,
         WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
           ctx.program,
-          modifiedPoolInitInfo,
-        ),
+          modifiedPoolInitInfo
+        )
       ).buildAndExecute();
 
       const whirlpoolData = await fetcher.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(whirlpoolData !== null);
 
       const oracleData = await fetcher.getOracle(
         poolInitInfo.oraclePda.publicKey,
-        IGNORE_CACHE,
+        IGNORE_CACHE
       );
       assert.ok(oracleData !== null);
       assert.ok(oracleData!.tradeEnableTimestamp.eq(tradeEnableTimestamp));
@@ -2493,7 +2507,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         undefined,
         getDefaultPresetAdaptiveFeeConstants(tickSpacing),
         initializeFeeAuthorityOnAdaptiveFeeTier,
-        PublicKey.default,
+        PublicKey.default
       );
 
       const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
@@ -2513,9 +2527,9 @@ describe("initialize_pool_with_adaptive_fee", () => {
             WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
               ...poolInitInfo,
               tradeEnableTimestamp,
-            }),
+            })
           ).buildAndExecute(),
-          /0x17af/, // InvalidTradeEnableTimestamp
+          /0x17af/ // InvalidTradeEnableTimestamp
         );
       }
     });
@@ -2540,7 +2554,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
       feeTierIndex,
       tickSpacing,
       defaultBaseFeeRate,
-      presetAdaptiveFeeConstants,
+      presetAdaptiveFeeConstants
     );
 
     // initialize mint with various decimals
@@ -2568,7 +2582,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           decimalsA,
           ctx.wallet.publicKey,
           null,
-          TOKEN_PROGRAM_ID,
+          TOKEN_PROGRAM_ID
         ),
         SystemProgram.createAccount({
           fromPubkey: ctx.wallet.publicKey,
@@ -2583,7 +2597,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
           decimalsB,
           ctx.wallet.publicKey,
           null,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_2022_PROGRAM_ID
         ),
       ],
       cleanupInstructions: [],
@@ -2598,21 +2612,21 @@ describe("initialize_pool_with_adaptive_fee", () => {
       whirlpoolsConfig,
       tokenAKeypair.publicKey,
       tokenBKeypair.publicKey,
-      feeTierIndex,
+      feeTierIndex
     );
     const tokenBadgeA = PDAUtil.getTokenBadge(
       ctx.program.programId,
       whirlpoolsConfig,
-      tokenAKeypair.publicKey,
+      tokenAKeypair.publicKey
     ).publicKey;
     const tokenBadgeB = PDAUtil.getTokenBadge(
       ctx.program.programId,
       whirlpoolsConfig,
-      tokenBKeypair.publicKey,
+      tokenBKeypair.publicKey
     ).publicKey;
     const oraclePda = PDAUtil.getOracle(
       ctx.program.programId,
-      whirlpoolPda.publicKey,
+      whirlpoolPda.publicKey
     );
 
     // event verification
@@ -2634,7 +2648,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
         assert.ok(event.whirlpoolsConfig.equals(whirlpoolsConfig));
         eventVerified = true;
-      },
+      }
     );
 
     const signature = await toTx(
@@ -2655,7 +2669,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         tokenProgramB: TOKEN_2022_PROGRAM_ID,
         tokenVaultAKeypair,
         tokenVaultBKeypair,
-      }),
+      })
     )
       .addSigner(tokenVaultAKeypair)
       .addSigner(tokenVaultBKeypair)
@@ -2672,7 +2686,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
     oracle: PublicKey,
     whirlpool: PublicKey,
     feeTierParams: InitializeAdaptiveFeeTierParams,
-    tradeEnableTimestamp?: anchor.BN,
+    tradeEnableTimestamp?: anchor.BN
   ) {
     const oracleData = await fetcher.getOracle(oracle, IGNORE_CACHE);
     assert.ok(oracleData);
@@ -2680,8 +2694,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
     assert.ok(oracleData.whirlpool.equals(whirlpool));
     assert.ok(
       oracleData.tradeEnableTimestamp.eq(
-        tradeEnableTimestamp ?? new anchor.BN(0),
-      ),
+        tradeEnableTimestamp ?? new anchor.BN(0)
+      )
     );
 
     const consts = oracleData.adaptiveFeeConstants;
@@ -2690,11 +2704,11 @@ describe("initialize_pool_with_adaptive_fee", () => {
     assert.ok(consts.reductionFactor === feeTierParams.presetReductionFactor);
     assert.ok(
       consts.adaptiveFeeControlFactor ===
-        feeTierParams.presetAdaptiveFeeControlFactor,
+        feeTierParams.presetAdaptiveFeeControlFactor
     );
     assert.ok(
       consts.maxVolatilityAccumulator ===
-        feeTierParams.presetMaxVolatilityAccumulator,
+        feeTierParams.presetMaxVolatilityAccumulator
     );
     assert.ok(consts.tickGroupSize === feeTierParams.presetTickGroupSize);
 

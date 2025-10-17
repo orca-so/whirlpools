@@ -11,7 +11,10 @@ import type {
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
-import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 
 describe("set_token_badge_attribute", () => {
   let provider: anchor.AnchorProvider;
@@ -209,9 +212,13 @@ describe("set_token_badge_attribute", () => {
         });
 
         // true
-        const updatedTokenBadgeData = await fetcher.getTokenBadge(
-          tokenBadgePda.publicKey,
-          IGNORE_CACHE,
+        const updatedTokenBadgeData = await pollForCondition(
+          () => fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE),
+          (d) => !!d && d.attributeRequireNonTransferablePosition,
+          {
+            accountToReload: tokenBadgePda.publicKey,
+            connection: ctx.connection,
+          },
         );
         assert.ok(
           updatedTokenBadgeData!.attributeRequireNonTransferablePosition,
@@ -224,9 +231,13 @@ describe("set_token_badge_attribute", () => {
         });
 
         // false
-        const revertedTokenBadgeData = await fetcher.getTokenBadge(
-          tokenBadgePda.publicKey,
-          IGNORE_CACHE,
+        const revertedTokenBadgeData = await pollForCondition(
+          () => fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE),
+          (d) => !!d && !d.attributeRequireNonTransferablePosition,
+          {
+            accountToReload: tokenBadgePda.publicKey,
+            connection: ctx.connection,
+          },
         );
         assert.ok(
           !revertedTokenBadgeData!.attributeRequireNonTransferablePosition,

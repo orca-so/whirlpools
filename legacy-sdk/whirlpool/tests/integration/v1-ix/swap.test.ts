@@ -5,7 +5,12 @@ import type { PDA } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { InitPoolParams, SwapParams, TickArrayData } from "../../../src";
+import type {
+  InitPoolParams,
+  SwapParams,
+  TickArrayData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   MAX_SQRT_PRICE,
   MAX_SQRT_PRICE_BN,
@@ -15,7 +20,6 @@ import {
   PriceMath,
   TICK_ARRAY_SIZE,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
@@ -23,14 +27,9 @@ import {
   toTx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import {
-  MAX_U64,
-  TickSpacing,
-  ZERO_BN,
-  getTokenBalance,
-  sleep,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../../utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
+import { pollForCondition } from "../../utils/litesvm";
 import type { FundedPositionParams } from "../../utils/init-utils";
 import {
   fundPositions,
@@ -44,15 +43,18 @@ import type { PublicKey } from "@solana/web3.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
 
 describe("swap", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   it("fail on token vault mint a does not match whirlpool token a", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
@@ -1314,29 +1316,34 @@ describe("swap", () => {
     const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
     const listener = ctx.program.addEventListener(
       "traded",
       (event, _slot, signature) => {
+        // Ignore events from other pools/tests
+        if (!event.whirlpool.equals(whirlpoolPda.publicKey)) {
+          return;
+        }
+
         detectedSignature = signature;
         // verify
-        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
-        assert.ok(event.aToB === aToB);
-        assert.ok(event.preSqrtPrice.eq(preSqrtPrice));
-        assert.ok(event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice));
-        assert.ok(event.inputAmount.eq(quote.estimatedAmountIn));
-        assert.ok(event.outputAmount.eq(quote.estimatedAmountOut));
-        assert.ok(event.inputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
-        assert.ok(event.outputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        eventVerified =
+          event.aToB === aToB &&
+          event.preSqrtPrice.eq(preSqrtPrice) &&
+          event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice) &&
+          event.inputAmount.eq(quote.estimatedAmountIn) &&
+          event.outputAmount.eq(quote.estimatedAmountOut) &&
+          event.inputTransferFee.isZero() &&
+          event.outputTransferFee.isZero();
 
-        const protocolFee = quote.estimatedFeeAmount
-          .muln(whirlpool.getData().protocolFeeRate)
-          .div(PROTOCOL_FEE_RATE_MUL_VALUE);
-        const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
-        assert.ok(event.lpFee.eq(lpFee));
-        assert.ok(event.protocolFee.eq(protocolFee));
-
-        eventVerified = true;
+        if (eventVerified) {
+          const protocolFee = quote.estimatedFeeAmount
+            .muln(whirlpool.getData().protocolFeeRate)
+            .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+          const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
+          eventVerified =
+            event.lpFee.eq(lpFee) && event.protocolFee.eq(protocolFee);
+        }
       },
     );
 
@@ -1354,7 +1361,12 @@ describe("swap", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2000);
+    // Wait for our event to be observed (LiteSVM delivers logs async)
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (s) => s.detectedSignature === signature && s.eventVerified === true,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
 

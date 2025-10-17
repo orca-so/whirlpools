@@ -7,7 +7,10 @@ import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import type { InitializeTokenBadgeParams } from "../../../dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import { getLocalnetAdminKeypair0 } from "../../utils";
-import { initializeLiteSVMEnvironment, pollForCondition } from "../../utils/litesvm";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 
 describe("set_token_badge_authority", () => {
   let provider: anchor.AnchorProvider;
@@ -161,9 +164,17 @@ describe("set_token_badge_authority", () => {
       updatedTokenBadgeAuthorityKeypair.publicKey,
     );
 
-    const updatedExtensionData = await fetcher.getConfigExtension(
-      whirlpoolsConfigExtension,
-      IGNORE_CACHE,
+    const updatedExtensionData = await pollForCondition(
+      () => fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE),
+      (ext) =>
+        !!ext &&
+        ext.tokenBadgeAuthority.equals(
+          updatedTokenBadgeAuthorityKeypair.publicKey,
+        ),
+      {
+        accountToReload: whirlpoolsConfigExtension,
+        connection: ctx.connection,
+      },
     );
     assert.ok(
       updatedExtensionData!.tokenBadgeAuthority.equals(
@@ -362,7 +373,8 @@ describe("set_token_badge_authority", () => {
       );
 
       const updatedExtensionData = await pollForCondition(
-        () => fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE),
+        () =>
+          fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE),
         (ext) =>
           ext!.tokenBadgeAuthority.equals(
             updatedTokenBadgeAuthorityKeypair.publicKey,

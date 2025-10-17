@@ -3,27 +3,30 @@ import type { PDA } from "@orca-so/common-sdk";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { InitPoolParams, WhirlpoolData } from "../../../src";
+import type {
+  InitPoolParams,
+  WhirlpoolData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   IGNORE_CACHE,
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
   PDAUtil,
   PriceMath,
-  WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../../src";
+import type { Whirlpool } from "../../../src/artifacts/whirlpool";
 import {
   ONE_SOL,
   TickSpacing,
   ZERO_BN,
   asyncAssertTokenVault,
   createMint,
-  sleep,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   buildTestPoolParams,
   initFeeTier,
@@ -35,16 +38,21 @@ import {
 } from "@solana/spl-token";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
+import { pollForCondition } from "../../utils/litesvm";
 
 describe("initialize_pool", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program<Whirlpool>;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program as unknown as anchor.Program<Whirlpool>;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully init a Standard account", async () => {
     const price = MathUtil.toX64(new Decimal(5));
@@ -568,7 +576,7 @@ describe("initialize_pool", () => {
 
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
     const listener = ctx.program.addEventListener(
       "poolInitialized",
       (event, _slot, signature) => {
@@ -607,7 +615,12 @@ describe("initialize_pool", () => {
       .addSigner(tokenVaultBKeypair)
       .buildAndExecute();
 
-    await sleep(2000);
+    // Wait for our events to be observed (LiteSVM delivers logs async)
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === signature && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
 

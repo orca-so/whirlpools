@@ -5,7 +5,10 @@ import * as assert from "assert";
 import type { WhirlpoolContext } from "../../../src";
 import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import { getLocalnetAdminKeypair0 } from "../../utils";
-import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 
 describe("set_config_extension_authority", () => {
   let provider: anchor.AnchorProvider;
@@ -133,9 +136,17 @@ describe("set_config_extension_authority", () => {
       updatedConfigExtensionAuthorityKeypair.publicKey,
     );
 
-    const updatedExtensionData = await fetcher.getConfigExtension(
-      whirlpoolsConfigExtension,
-      IGNORE_CACHE,
+    const updatedExtensionData = await pollForCondition(
+      () => fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE),
+      (ext) =>
+        !!ext &&
+        ext.configExtensionAuthority.equals(
+          updatedConfigExtensionAuthorityKeypair.publicKey,
+        ),
+      {
+        accountToReload: whirlpoolsConfigExtension,
+        connection: ctx.connection,
+      },
     );
     assert.ok(
       updatedExtensionData!.configExtensionAuthority.equals(
@@ -155,9 +166,17 @@ describe("set_config_extension_authority", () => {
       initialConfigExtensionAuthorityKeypair.publicKey,
     );
 
-    const backExtensionData = await fetcher.getConfigExtension(
-      whirlpoolsConfigExtension,
-      IGNORE_CACHE,
+    const backExtensionData = await pollForCondition(
+      () => fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE),
+      (ext) =>
+        !!ext &&
+        ext.configExtensionAuthority.equals(
+          initialConfigExtensionAuthorityKeypair.publicKey,
+        ),
+      {
+        accountToReload: whirlpoolsConfigExtension,
+        connection: ctx.connection,
+      },
     );
     assert.ok(
       backExtensionData!.configExtensionAuthority.equals(

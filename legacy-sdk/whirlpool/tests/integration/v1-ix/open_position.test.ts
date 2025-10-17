@@ -8,13 +8,13 @@ import type {
   InitPoolParams,
   OpenPositionParams,
   PositionData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../../src";
@@ -26,20 +26,23 @@ import {
   createMintInstructions,
   mintToDestination,
   systemTransferTx,
+  initializeLiteSVMEnvironment,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
 describe("open_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   let defaultParams: OpenPositionParams;
   let defaultMint: Keypair;

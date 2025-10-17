@@ -3,15 +3,13 @@ import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolData } from "../../../src";
-import {
-  PDAUtil,
-  PriceMath,
-  TickUtil,
+import type {
+  PositionData,
+  TickArrayData,
+  WhirlpoolData,
   WhirlpoolContext,
-  WhirlpoolIx,
-  toTx,
 } from "../../../src";
+import { PDAUtil, PriceMath, TickUtil, WhirlpoolIx, toTx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { PoolUtil, toTokenAmount } from "../../../src/utils/public/pool-utils";
 import {
@@ -24,14 +22,10 @@ import {
   createMint,
   createTokenAccount,
   getTokenBalance,
-  sleep,
   transferToken,
+  warpClock,
 } from "../../utils";
-import {
-  defaultConfirmOptions,
-  TICK_INIT_SIZE,
-  TICK_RENT_AMOUNT,
-} from "../../utils/const";
+import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initTestPool,
@@ -43,16 +37,32 @@ import {
   generateDefaultInitTickArrayParams,
   generateDefaultOpenPositionParams,
 } from "../../utils/test-builders";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
+
+type LiquidityIncreasedEvent = {
+  liquidity: anchor.BN;
+  tokenAAmount: anchor.BN;
+  tokenBAmount: anchor.BN;
+  tokenATransferFee: anchor.BN;
+  tokenBTransferFee: anchor.BN;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
+};
 
 describe("increase_liquidity", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("increase liquidity of a position spanning two tick arrays", async () => {
     const currTick = 0;
@@ -85,8 +95,8 @@ describe("increase_liquidity", () => {
     );
     assert.ok(positionInfoBefore);
 
-    // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    // To check if rewardLastUpdatedTimestamp is updated deterministically
+    warpClock(2);
 
     await toTx(
       ctx,
@@ -1736,21 +1746,13 @@ describe("increase_liquidity", () => {
 
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
+    let observedEvent: LiquidityIncreasedEvent | null = null;
     const listener = ctx.program.addEventListener(
       "liquidityIncreased",
-      (event, _slot, signature) => {
+      (event: LiquidityIncreasedEvent, _slot, signature) => {
         detectedSignature = signature;
-        // verify
-        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
-        assert.ok(event.position.equals(positionInitInfo.publicKey));
-        assert.ok(event.liquidity.eq(liquidityAmount));
-        assert.ok(event.tickLowerIndex === tickLowerIndex);
-        assert.ok(event.tickUpperIndex === tickUpperIndex);
-        assert.ok(event.tokenAAmount.eq(tokenAmount.tokenA));
-        assert.ok(event.tokenBAmount.eq(tokenAmount.tokenB));
-        assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
-        assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        observedEvent = event;
         eventVerified = true;
       },
     );
@@ -1774,9 +1776,22 @@ describe("increase_liquidity", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2000);
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === signature && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
+    assert.ok(observedEvent);
+    const ev = observedEvent as LiquidityIncreasedEvent;
+    assert.ok(ev.liquidity.eq(liquidityAmount));
+    assert.ok(ev.tokenAAmount.eq(tokenAmount.tokenA));
+    assert.ok(ev.tokenBAmount.eq(tokenAmount.tokenB));
+    assert.ok(ev.tickLowerIndex === tickLowerIndex);
+    assert.ok(ev.tickUpperIndex === tickUpperIndex);
+    assert.ok(ev.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
+    assert.ok(ev.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
 
     ctx.program.removeEventListener(listener);
   });

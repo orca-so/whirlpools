@@ -14,6 +14,7 @@ import type {
   OpenPositionParams,
   OpenPositionWithMetadataBumpsData,
   PositionData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   MAX_TICK_INDEX,
@@ -21,7 +22,6 @@ import {
   MIN_TICK_INDEX,
   PDAUtil,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../../src";
@@ -34,21 +34,24 @@ import {
   createMintInstructions,
   mintToDestination,
   systemTransferTx,
+  initializeLiteSVMEnvironment,
 } from "../../utils";
-import { TICK_RENT_AMOUNT, defaultConfirmOptions } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../../utils/init-utils";
 import { MetaplexHttpClient } from "../../utils/metaplex";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
 describe("open_position_with_metadata", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const metaplex = new MetaplexHttpClient();
 

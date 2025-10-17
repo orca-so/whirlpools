@@ -4,27 +4,25 @@ import type {
   InitPoolParams,
   InitTickArrayParams,
   TickArrayData,
-} from "../../../src";
-import {
-  TICK_ARRAY_SIZE,
   WhirlpoolContext,
-  WhirlpoolIx,
-  toTx,
 } from "../../../src";
+import { TICK_ARRAY_SIZE, WhirlpoolIx, toTx } from "../../../src";
 import { ONE_SOL, TickSpacing, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool, initTickArray } from "../../utils/init-utils";
 import { generateDefaultInitTickArrayParams } from "../../utils/test-builders";
 
 describe("initialize_tick_array", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully init a TickArray account", async () => {
     const tickSpacing = TickSpacing.Standard;

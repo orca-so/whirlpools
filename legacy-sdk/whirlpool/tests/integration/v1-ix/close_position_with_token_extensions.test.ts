@@ -16,7 +16,7 @@ import {
   WhirlpoolIx,
 } from "../../../src";
 import type { InitPoolParams } from "../../../src";
-import { WhirlpoolContext } from "../../../src/context";
+import type { WhirlpoolContext } from "../../../src/context";
 import {
   approveToken,
   createTokenAccount,
@@ -27,7 +27,7 @@ import {
   TickSpacing,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initializePositionBundle,
@@ -43,13 +43,16 @@ import type { PublicKey } from "@solana/web3.js";
 import { createTokenAccountV2 } from "../../utils/v2/token-2022";
 
 describe("close_position_with_token_extensions", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = ctx.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 11392;

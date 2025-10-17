@@ -26,7 +26,6 @@ import {
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { defaultConfirmOptions } from "../../utils/const";
 import {
   warpClock,
   getCurrentTimestamp,
@@ -349,11 +348,11 @@ describe("adaptive fee tests", () => {
         it(`swap V${version}`, async () => {
           const poolInfo = await buildSwapTestPool(
             undefined,
-            PriceMath.tickIndexToSqrtPriceX64(150)
+            PriceMath.tickIndexToSqrtPriceX64(150),
           ); // tick_group_index = 2
           const pool = await testCtx.whirlpoolClient.getPool(
             poolInfo.whirlpool,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           );
 
           const tradeTokenAmount = new BN(20000);
@@ -364,7 +363,7 @@ describe("adaptive fee tests", () => {
               amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
               aToB: tradeAToB,
               otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                tradeAmountSpecifiedIsInput
+                tradeAmountSpecifiedIsInput,
               ),
               sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
               tickArrays: await SwapUtils.getTickArrays(
@@ -374,7 +373,7 @@ describe("adaptive fee tests", () => {
                 testCtx.whirlpoolCtx.program.programId,
                 pool.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenAmount: tradeTokenAmount,
               whirlpoolData: pool.getData(),
@@ -383,10 +382,10 @@ describe("adaptive fee tests", () => {
                 testCtx.whirlpoolCtx.program.programId,
                 pool.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             },
-            Percentage.fromFraction(0, 100)
+            Percentage.fromFraction(0, 100),
           );
 
           assert.ok(swapQuote.estimatedFeeRateMin === pool.getData().feeRate);
@@ -398,24 +397,24 @@ describe("adaptive fee tests", () => {
             pool,
             swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
             swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           );
 
           const preWhirlpool = await pool.refreshData();
           const preOracle = (await testCtx.whirlpoolCtx.fetcher.getOracle(
             poolInfo.oracle,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as OracleData;
 
           const preTokenAccountIn =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
           const preTokenAccountOut =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
 
           // initial state
@@ -429,7 +428,7 @@ describe("adaptive fee tests", () => {
           if (version == 1) {
             await toTx(
               testCtx.whirlpoolCtx,
-              WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, swapParams)
+              WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, swapParams),
             ).buildAndExecute();
           } else {
             await toTx(
@@ -440,7 +439,7 @@ describe("adaptive fee tests", () => {
                 tokenMintB: poolInfo.mintB,
                 tokenProgramA: TOKEN_PROGRAM_ID,
                 tokenProgramB: TOKEN_PROGRAM_ID,
-              })
+              }),
             ).buildAndExecute();
           }
 
@@ -449,71 +448,71 @@ describe("adaptive fee tests", () => {
             async () =>
               (await testCtx.whirlpoolCtx.fetcher.getOracle(
                 poolInfo.oracle,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               )) as OracleData,
             (o) =>
               o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
               o.adaptiveFeeVariables.lastReferenceUpdateTimestamp
-                .sub(new BN(Math.floor(Date.now() / 1000)))
+                .sub(new BN(getCurrentTimestamp()))
                 .abs()
                 .lten(10),
-            { maxRetries: 50, delayMs: 10 }
+            { maxRetries: 50, delayMs: 10 },
           )) as OracleData;
 
           const postVars = postOracle.adaptiveFeeVariables;
-          const currentSystemTimestamp = new BN(Math.floor(Date.now() / 1000));
+          const currentSystemTimestamp = new BN(getCurrentTimestamp());
           assert.ok(postVars.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
             postVars.lastReferenceUpdateTimestamp
               .sub(currentSystemTimestamp)
               .abs()
-              .lten(10)
+              .lten(10),
           ); // margin 10s
           assert.ok(
             postVars.lastMajorSwapTimestamp.eq(
-              postVars.lastReferenceUpdateTimestamp
-            )
+              postVars.lastReferenceUpdateTimestamp,
+            ),
           );
           assert.ok(
             postVars.tickGroupIndexReference ==
               Math.floor(
-                preWhirlpool.tickCurrentIndex / preWhirlpool.tickSpacing
-              )
+                preWhirlpool.tickCurrentIndex / preWhirlpool.tickSpacing,
+              ),
           );
           assert.ok(postVars.tickGroupIndexReference == 2);
           assert.ok(postVars.volatilityReference == 0);
 
           const updatedTickGroupIndex = Math.floor(
             PriceMath.sqrtPriceX64ToTickIndex(postWhirlpool.sqrtPrice) /
-              postWhirlpool.tickSpacing
+              postWhirlpool.tickSpacing,
           );
           const tickGroupIndexDelta = Math.abs(
-            updatedTickGroupIndex - postVars.tickGroupIndexReference
+            updatedTickGroupIndex - postVars.tickGroupIndexReference,
           );
           assert.ok(tickGroupIndexDelta > 0);
           assert.ok(
-            postVars.volatilityAccumulator == tickGroupIndexDelta * 10000
+            postVars.volatilityAccumulator == tickGroupIndexDelta * 10000,
           );
 
           const postTokenAccountIn =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
           const postTokenAccountOut =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
           assert.ok(
             postTokenAccountIn.amount ===
               preTokenAccountIn.amount -
-                BigInt(swapQuote.estimatedAmountIn.toString())
+                BigInt(swapQuote.estimatedAmountIn.toString()),
           );
           assert.ok(
             postTokenAccountOut.amount ===
               preTokenAccountOut.amount +
-                BigInt(swapQuote.estimatedAmountOut.toString())
+                BigInt(swapQuote.estimatedAmountOut.toString()),
           );
         });
       }
@@ -535,16 +534,16 @@ describe("adaptive fee tests", () => {
             undefined,
             undefined,
             PriceMath.tickIndexToSqrtPriceX64(192 + 50),
-            PriceMath.tickIndexToSqrtPriceX64(-128 + 10)
+            PriceMath.tickIndexToSqrtPriceX64(-128 + 10),
           );
 
           const poolOne = await testCtx.whirlpoolClient.getPool(
             whirlpoolOne,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           );
           const poolTwo = await testCtx.whirlpoolClient.getPool(
             whirlpoolTwo,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           );
 
           const tradeTokenAmount = new BN(80000);
@@ -556,7 +555,7 @@ describe("adaptive fee tests", () => {
               amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
               aToB: tradeAToBOne,
               otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                tradeAmountSpecifiedIsInput
+                tradeAmountSpecifiedIsInput,
               ),
               sqrtPriceLimit: tradeAToBOne
                 ? MIN_SQRT_PRICE_BN
@@ -568,7 +567,7 @@ describe("adaptive fee tests", () => {
                 testCtx.whirlpoolCtx.program.programId,
                 poolOne.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenAmount: tradeTokenAmount,
               whirlpoolData: poolOne.getData(),
@@ -577,10 +576,10 @@ describe("adaptive fee tests", () => {
                 testCtx.whirlpoolCtx.program.programId,
                 poolOne.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             },
-            Percentage.fromFraction(0, 100)
+            Percentage.fromFraction(0, 100),
           );
 
           const swapQuoteTwo = swapQuoteWithParams(
@@ -588,7 +587,7 @@ describe("adaptive fee tests", () => {
               amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
               aToB: tradeAToBOne,
               otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                tradeAmountSpecifiedIsInput
+                tradeAmountSpecifiedIsInput,
               ),
               sqrtPriceLimit: tradeAToBOne
                 ? MIN_SQRT_PRICE_BN
@@ -600,7 +599,7 @@ describe("adaptive fee tests", () => {
                 testCtx.whirlpoolCtx.program.programId,
                 poolTwo.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenAmount: swapQuoteOne.estimatedAmountOut,
               whirlpoolData: poolTwo.getData(),
@@ -609,10 +608,10 @@ describe("adaptive fee tests", () => {
                 testCtx.whirlpoolCtx.program.programId,
                 poolTwo.getAddress(),
                 testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             },
-            Percentage.fromFraction(0, 100)
+            Percentage.fromFraction(0, 100),
           );
 
           const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
@@ -644,7 +643,7 @@ describe("adaptive fee tests", () => {
               tokenVaultTwoB: poolTwo.getData().tokenVaultB,
               whirlpoolOne,
               whirlpoolTwo,
-            }
+            },
           );
 
           const twoHopSwapV2Ix = WhirlpoolIx.twoHopSwapV2Ix(
@@ -680,29 +679,29 @@ describe("adaptive fee tests", () => {
               tokenVaultTwoOutput: poolTwo.getData().tokenVaultB,
               whirlpoolOne,
               whirlpoolTwo,
-            }
+            },
           );
 
           const preWhirlpoolOne = await poolOne.refreshData();
           const preOracleOne = (await testCtx.whirlpoolCtx.fetcher.getOracle(
             oracleOne,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as OracleData;
           const preWhirlpoolTwo = await poolTwo.refreshData();
           const preOracleTwo = (await testCtx.whirlpoolCtx.fetcher.getOracle(
             oracleTwo,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as OracleData;
 
           const preTokenAccountIn =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               tokenAccountIn,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
           const preTokenAccountOut =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               tokenAccountOut,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
 
           // initial state
@@ -730,7 +729,7 @@ describe("adaptive fee tests", () => {
             async () =>
               (await testCtx.whirlpoolCtx.fetcher.getOracle(
                 oracleOne,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               )) as OracleData,
             (o) =>
               o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
@@ -738,59 +737,59 @@ describe("adaptive fee tests", () => {
                 .sub(new BN(Math.floor(Date.now() / 1000)))
                 .abs()
                 .lten(10),
-            { maxRetries: 50, delayMs: 10 }
+            { maxRetries: 50, delayMs: 10 },
           )) as OracleData;
           const postWhirlpoolTwo = await poolTwo.refreshData();
           const postOracleTwo = (await pollForCondition(
             async () =>
               (await testCtx.whirlpoolCtx.fetcher.getOracle(
                 oracleTwo,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               )) as OracleData,
             (o) =>
               o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
               o.adaptiveFeeVariables.lastReferenceUpdateTimestamp
-                .sub(new BN(Math.floor(Date.now() / 1000)))
+                .sub(new BN(getCurrentTimestamp()))
                 .abs()
                 .lten(10),
-            { maxRetries: 50, delayMs: 10 }
+            { maxRetries: 50, delayMs: 10 },
           )) as OracleData;
 
           const postVarsOne = postOracleOne.adaptiveFeeVariables;
           const postVarsTwo = postOracleTwo.adaptiveFeeVariables;
-          const currentSystemTimestamp = new BN(Math.floor(Date.now() / 1000));
+          const currentSystemTimestamp = new BN(getCurrentTimestamp());
 
           assert.ok(postVarsOne.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
             postVarsOne.lastReferenceUpdateTimestamp
               .sub(currentSystemTimestamp)
               .abs()
-              .lten(10)
+              .lten(10),
           ); // margin 10s
           assert.ok(
             postVarsOne.lastMajorSwapTimestamp.eq(
-              postVarsOne.lastReferenceUpdateTimestamp
-            )
+              postVarsOne.lastReferenceUpdateTimestamp,
+            ),
           );
           assert.ok(
             postVarsOne.tickGroupIndexReference ==
               Math.floor(
-                preWhirlpoolOne.tickCurrentIndex / preWhirlpoolOne.tickSpacing
-              )
+                preWhirlpoolOne.tickCurrentIndex / preWhirlpoolOne.tickSpacing,
+              ),
           );
           assert.ok(postVarsOne.tickGroupIndexReference == 3);
           assert.ok(postVarsOne.volatilityReference == 0);
 
           const updatedTickGroupIndexOne = Math.floor(
             PriceMath.sqrtPriceX64ToTickIndex(postWhirlpoolOne.sqrtPrice) /
-              postWhirlpoolOne.tickSpacing
+              postWhirlpoolOne.tickSpacing,
           );
           const tickGroupIndexDeltaOne = Math.abs(
-            updatedTickGroupIndexOne - postVarsOne.tickGroupIndexReference
+            updatedTickGroupIndexOne - postVarsOne.tickGroupIndexReference,
           );
           assert.ok(tickGroupIndexDeltaOne > 0);
           assert.ok(
-            postVarsOne.volatilityAccumulator == tickGroupIndexDeltaOne * 10000
+            postVarsOne.volatilityAccumulator == tickGroupIndexDeltaOne * 10000,
           );
 
           assert.ok(postVarsTwo.lastReferenceUpdateTimestamp.gtn(0));
@@ -798,53 +797,53 @@ describe("adaptive fee tests", () => {
             postVarsTwo.lastReferenceUpdateTimestamp
               .sub(currentSystemTimestamp)
               .abs()
-              .lten(10)
+              .lten(10),
           ); // margin 10s
           assert.ok(
             postVarsTwo.lastMajorSwapTimestamp.eq(
-              postVarsTwo.lastReferenceUpdateTimestamp
-            )
+              postVarsTwo.lastReferenceUpdateTimestamp,
+            ),
           );
           assert.ok(
             postVarsTwo.tickGroupIndexReference ==
               Math.floor(
-                preWhirlpoolTwo.tickCurrentIndex / preWhirlpoolTwo.tickSpacing
-              )
+                preWhirlpoolTwo.tickCurrentIndex / preWhirlpoolTwo.tickSpacing,
+              ),
           );
           assert.ok(postVarsTwo.tickGroupIndexReference == -2);
           assert.ok(postVarsTwo.volatilityReference == 0);
 
           const updatedTickGroupIndexTwo = Math.floor(
             PriceMath.sqrtPriceX64ToTickIndex(postWhirlpoolTwo.sqrtPrice) /
-              postWhirlpoolTwo.tickSpacing
+              postWhirlpoolTwo.tickSpacing,
           );
           const tickGroupIndexDeltaTwo = Math.abs(
-            updatedTickGroupIndexTwo - postVarsTwo.tickGroupIndexReference
+            updatedTickGroupIndexTwo - postVarsTwo.tickGroupIndexReference,
           );
           assert.ok(tickGroupIndexDeltaTwo > 0);
           assert.ok(
-            postVarsTwo.volatilityAccumulator == tickGroupIndexDeltaTwo * 10000
+            postVarsTwo.volatilityAccumulator == tickGroupIndexDeltaTwo * 10000,
           );
 
           const postTokenAccountIn =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               tokenAccountIn,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
           const postTokenAccountOut =
             (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
               tokenAccountOut,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as AccountWithTokenProgram;
           assert.ok(
             postTokenAccountIn.amount ===
               preTokenAccountIn.amount -
-                BigInt(swapQuoteOne.estimatedAmountIn.toString())
+                BigInt(swapQuoteOne.estimatedAmountIn.toString()),
           );
           assert.ok(
             postTokenAccountOut.amount ===
               preTokenAccountOut.amount +
-                BigInt(swapQuoteTwo.estimatedAmountOut.toString())
+                BigInt(swapQuoteTwo.estimatedAmountOut.toString()),
           );
         });
       }
@@ -862,11 +861,11 @@ describe("adaptive fee tests", () => {
 
           const poolInfo = await buildSwapTestPool(
             tradeEnableTimestamp,
-            undefined
+            undefined,
           );
           const pool = await testCtx.whirlpoolClient.getPool(
             poolInfo.whirlpool,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           );
 
           const tradeTokenAmount = new BN(20000);
@@ -876,7 +875,7 @@ describe("adaptive fee tests", () => {
             amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
             aToB: tradeAToB,
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-              tradeAmountSpecifiedIsInput
+              tradeAmountSpecifiedIsInput,
             ),
             sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
             tickArrays: await SwapUtils.getTickArrays(
@@ -886,7 +885,7 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               pool.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenAmount: tradeTokenAmount,
             whirlpoolData: pool.getData(),
@@ -895,7 +894,7 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               pool.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
           };
 
@@ -903,16 +902,16 @@ describe("adaptive fee tests", () => {
             () =>
               swapQuoteWithParams(
                 swapQuoteParams,
-                Percentage.fromFraction(0, 100)
+                Percentage.fromFraction(0, 100),
               ),
             (err) =>
               (err as WhirlpoolsError).errorCode ===
-              SwapErrorCode.TradeIsNotEnabled
+              SwapErrorCode.TradeIsNotEnabled,
           );
 
           const swapQuote = swapQuoteWithParams(
             { ...swapQuoteParams, timestampInSeconds: tradeEnableTimestamp },
-            Percentage.fromFraction(0, 100)
+            Percentage.fromFraction(0, 100),
           );
 
           const swapParams = SwapUtils.getSwapParamsFromQuote(
@@ -921,12 +920,12 @@ describe("adaptive fee tests", () => {
             pool,
             swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
             swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           );
 
           const swapIx = WhirlpoolIx.swapIx(
             testCtx.whirlpoolCtx.program,
-            swapParams
+            swapParams,
           );
           const swapV2Ix = WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
             ...swapParams,
@@ -939,12 +938,12 @@ describe("adaptive fee tests", () => {
           if (version == 1) {
             await assert.rejects(
               toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute(),
-              /0x17b0/ // TradeIsNotEnabled.
+              /0x17b0/, // TradeIsNotEnabled.
             );
           } else {
             await assert.rejects(
               toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute(),
-              /0x17b0/ // TradeIsNotEnabled.
+              /0x17b0/, // TradeIsNotEnabled.
             );
           }
           // wait until trade enable timestamp (margin: 5s)
@@ -1004,16 +1003,16 @@ describe("adaptive fee tests", () => {
               useTradeEnableTimestampOne ? tradeEnableTimestamp : undefined,
               useTradeEnableTimestampTwo ? tradeEnableTimestamp : undefined,
               undefined,
-              undefined
+              undefined,
             );
 
             const poolOne = await testCtx.whirlpoolClient.getPool(
               whirlpoolOne,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             );
             const poolTwo = await testCtx.whirlpoolClient.getPool(
               whirlpoolTwo,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             );
 
             const tradeTokenAmount = new BN(20000);
@@ -1025,7 +1024,7 @@ describe("adaptive fee tests", () => {
                 amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
                 aToB: tradeAToBOne,
                 otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                  tradeAmountSpecifiedIsInput
+                  tradeAmountSpecifiedIsInput,
                 ),
                 sqrtPriceLimit: tradeAToBOne
                   ? MIN_SQRT_PRICE_BN
@@ -1037,7 +1036,7 @@ describe("adaptive fee tests", () => {
                   testCtx.whirlpoolCtx.program.programId,
                   poolOne.getAddress(),
                   testCtx.whirlpoolCtx.fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
                 tokenAmount: tradeTokenAmount,
                 whirlpoolData: poolOne.getData(),
@@ -1046,11 +1045,11 @@ describe("adaptive fee tests", () => {
                   testCtx.whirlpoolCtx.program.programId,
                   poolOne.getAddress(),
                   testCtx.whirlpoolCtx.fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
                 timestampInSeconds: tradeEnableTimestamp,
               },
-              Percentage.fromFraction(0, 100)
+              Percentage.fromFraction(0, 100),
             );
 
             const swapQuoteTwo = swapQuoteWithParams(
@@ -1058,7 +1057,7 @@ describe("adaptive fee tests", () => {
                 amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
                 aToB: tradeAToBOne,
                 otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                  tradeAmountSpecifiedIsInput
+                  tradeAmountSpecifiedIsInput,
                 ),
                 sqrtPriceLimit: tradeAToBOne
                   ? MIN_SQRT_PRICE_BN
@@ -1070,7 +1069,7 @@ describe("adaptive fee tests", () => {
                   testCtx.whirlpoolCtx.program.programId,
                   poolTwo.getAddress(),
                   testCtx.whirlpoolCtx.fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
                 tokenAmount: swapQuoteOne.estimatedAmountOut,
                 whirlpoolData: poolTwo.getData(),
@@ -1079,11 +1078,11 @@ describe("adaptive fee tests", () => {
                   testCtx.whirlpoolCtx.program.programId,
                   poolTwo.getAddress(),
                   testCtx.whirlpoolCtx.fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
                 timestampInSeconds: tradeEnableTimestamp,
               },
-              Percentage.fromFraction(0, 100)
+              Percentage.fromFraction(0, 100),
             );
 
             const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
@@ -1115,7 +1114,7 @@ describe("adaptive fee tests", () => {
                 tokenVaultTwoB: poolTwo.getData().tokenVaultB,
                 whirlpoolOne,
                 whirlpoolTwo,
-              }
+              },
             );
 
             const twoHopSwapV2Ix = WhirlpoolIx.twoHopSwapV2Ix(
@@ -1151,18 +1150,18 @@ describe("adaptive fee tests", () => {
                 tokenVaultTwoOutput: poolTwo.getData().tokenVaultB,
                 whirlpoolOne,
                 whirlpoolTwo,
-              }
+              },
             );
 
             if (version == 1) {
               await assert.rejects(
                 toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute(),
-                /0x17b0/ // TradeIsNotEnabled.
+                /0x17b0/, // TradeIsNotEnabled.
               );
             } else {
               await assert.rejects(
                 toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute(),
-                /0x17b0/ // TradeIsNotEnabled.
+                /0x17b0/, // TradeIsNotEnabled.
               );
             }
 
@@ -1175,7 +1174,7 @@ describe("adaptive fee tests", () => {
             } else {
               await toTx(
                 testCtx.whirlpoolCtx,
-                twoHopSwapV2Ix
+                twoHopSwapV2Ix,
               ).buildAndExecute();
             }
           });
@@ -1244,12 +1243,12 @@ describe("adaptive fee tests", () => {
         } = aquarium;
         const tokenAccounts = getTokenAccsForPools(
           pools,
-          tokenAccountsUnsorted
+          tokenAccountsUnsorted,
         );
         const whirlpoolKey = pools[0].whirlpoolPda.publicKey;
         const whirlpool = await testCtx.whirlpoolClient.getPool(
           whirlpoolKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const [inputToken] = mintKeys;
 
@@ -1260,12 +1259,12 @@ describe("adaptive fee tests", () => {
           Percentage.fromFraction(1, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const oracle = PDAUtil.getOracle(
           testCtx.whirlpoolCtx.program.programId,
-          whirlpoolKey
+          whirlpoolKey,
         ).publicKey;
 
         const swapIx = WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
@@ -1297,7 +1296,11 @@ describe("adaptive fee tests", () => {
           cleanupInstructions: [],
           signers: [],
         }).buildAndExecute();
-        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        const postSqrtPrice = await pollForCondition(
+          async () => (await whirlpool.refreshData()).sqrtPrice,
+          (p) => !preSqrtPrice.eq(p),
+          { maxRetries: 50, delayMs: 10 },
+        );
         assert.ok(!preSqrtPrice.eq(postSqrtPrice));
       });
 
@@ -1313,18 +1316,18 @@ describe("adaptive fee tests", () => {
         } = aquarium;
         const tokenAccounts = getTokenAccsForPools(
           pools,
-          tokenAccountsUnsorted
+          tokenAccountsUnsorted,
         );
 
         const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
         const whirlpoolOne = await testCtx.whirlpoolClient.getPool(
           whirlpoolOneKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
         const whirlpoolTwo = await testCtx.whirlpoolClient.getPool(
           whirlpoolTwoKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const [inputToken, midToken] = mintKeys;
 
@@ -1335,7 +1338,7 @@ describe("adaptive fee tests", () => {
           Percentage.fromFraction(1, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const quoteTwo = await swapQuoteByInputToken(
           whirlpoolTwo,
@@ -1344,17 +1347,17 @@ describe("adaptive fee tests", () => {
           Percentage.fromFraction(1, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quoteOne, quoteTwo);
 
         const oracleOne = PDAUtil.getOracle(
           testCtx.whirlpoolCtx.program.programId,
-          whirlpoolOneKey
+          whirlpoolOneKey,
         ).publicKey;
         const oracleTwo = PDAUtil.getOracle(
           testCtx.whirlpoolCtx.program.programId,
-          whirlpoolTwoKey
+          whirlpoolTwoKey,
         ).publicKey;
 
         const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
@@ -1374,7 +1377,7 @@ describe("adaptive fee tests", () => {
             tokenVaultTwoA: whirlpoolTwo.getData().tokenVaultA,
             tokenVaultTwoB: whirlpoolTwo.getData().tokenVaultB,
             tokenAuthority: testCtx.provider.wallet.publicKey,
-          }
+          },
         ).instructions[0];
 
         // try to execute twoHopSwap ix on pools WITHOUT adaptive fee WITHOUT isWritable flags on oracle accounts
@@ -1415,7 +1418,7 @@ describe("adaptive fee tests", () => {
         const poolInfo = await buildSwapTestPool(undefined, undefined);
         const whirlpool = await testCtx.whirlpoolClient.getPool(
           poolInfo.whirlpool,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const tradeTokenAmount = new BN(20000);
@@ -1426,12 +1429,12 @@ describe("adaptive fee tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const oracle = PDAUtil.getOracle(
           testCtx.whirlpoolCtx.program.programId,
-          whirlpool.getAddress()
+          whirlpool.getAddress(),
         ).publicKey;
 
         const swapIx = WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
@@ -1463,7 +1466,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // now try with isWritable flag on oracle account (this is a hacky way)
@@ -1480,7 +1483,11 @@ describe("adaptive fee tests", () => {
           cleanupInstructions: [],
           signers: [],
         }).buildAndExecute();
-        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        const postSqrtPrice = await pollForCondition(
+          async () => (await whirlpool.refreshData()).sqrtPrice,
+          (p) => !preSqrtPrice.eq(p),
+          { maxRetries: 50, delayMs: 10 },
+        );
         assert.ok(!preSqrtPrice.eq(postSqrtPrice));
       });
 
@@ -1497,16 +1504,16 @@ describe("adaptive fee tests", () => {
           undefined,
           undefined,
           PriceMath.tickIndexToSqrtPriceX64(0),
-          PriceMath.tickIndexToSqrtPriceX64(0)
+          PriceMath.tickIndexToSqrtPriceX64(0),
         );
 
         const poolOne = await testCtx.whirlpoolClient.getPool(
           whirlpoolOne,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const poolTwo = await testCtx.whirlpoolClient.getPool(
           whirlpoolTwo,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const tradeTokenAmount = new BN(20000);
@@ -1518,7 +1525,7 @@ describe("adaptive fee tests", () => {
             amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
             aToB: tradeAToBOne,
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-              tradeAmountSpecifiedIsInput
+              tradeAmountSpecifiedIsInput,
             ),
             sqrtPriceLimit: tradeAToBOne
               ? MIN_SQRT_PRICE_BN
@@ -1530,7 +1537,7 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolOne.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
@@ -1539,10 +1546,10 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolOne.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const swapQuoteTwo = swapQuoteWithParams(
@@ -1550,7 +1557,7 @@ describe("adaptive fee tests", () => {
             amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
             aToB: tradeAToBOne,
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-              tradeAmountSpecifiedIsInput
+              tradeAmountSpecifiedIsInput,
             ),
             sqrtPriceLimit: tradeAToBOne
               ? MIN_SQRT_PRICE_BN
@@ -1562,7 +1569,7 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolTwo.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
@@ -1571,10 +1578,10 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolTwo.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
@@ -1606,7 +1613,7 @@ describe("adaptive fee tests", () => {
             tokenVaultTwoB: poolTwo.getData().tokenVaultB,
             whirlpoolOne,
             whirlpoolTwo,
-          }
+          },
         ).instructions[0];
 
         // try to execute twoHopSwap ix on pools WITH adaptive fee WITHOUT isWritable flags on oracle accounts
@@ -1634,7 +1641,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // oracle_one: writable
@@ -1660,7 +1667,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // oracle_one: readonly
@@ -1686,7 +1693,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // now try with isWritable flags on oracle accounts (this is a hacky way)
@@ -1727,7 +1734,7 @@ describe("adaptive fee tests", () => {
         const poolInfo = await buildSwapTestPool(undefined, undefined);
         const whirlpool = await testCtx.whirlpoolClient.getPool(
           poolInfo.whirlpool,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const tradeTokenAmount = new BN(20000);
@@ -1738,12 +1745,12 @@ describe("adaptive fee tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const oracle = PDAUtil.getOracle(
           testCtx.whirlpoolCtx.program.programId,
-          whirlpool.getAddress()
+          whirlpool.getAddress(),
         ).publicKey;
 
         const swapIx = WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
@@ -1775,7 +1782,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // now try with writable account in remaining accounts (this is an official way)
@@ -1811,16 +1818,16 @@ describe("adaptive fee tests", () => {
           undefined,
           undefined,
           PriceMath.tickIndexToSqrtPriceX64(0),
-          PriceMath.tickIndexToSqrtPriceX64(0)
+          PriceMath.tickIndexToSqrtPriceX64(0),
         );
 
         const poolOne = await testCtx.whirlpoolClient.getPool(
           whirlpoolOne,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const poolTwo = await testCtx.whirlpoolClient.getPool(
           whirlpoolTwo,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const tradeTokenAmount = new BN(20000);
@@ -1832,7 +1839,7 @@ describe("adaptive fee tests", () => {
             amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
             aToB: tradeAToBOne,
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-              tradeAmountSpecifiedIsInput
+              tradeAmountSpecifiedIsInput,
             ),
             sqrtPriceLimit: tradeAToBOne
               ? MIN_SQRT_PRICE_BN
@@ -1844,7 +1851,7 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolOne.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
@@ -1853,10 +1860,10 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolOne.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const swapQuoteTwo = swapQuoteWithParams(
@@ -1864,7 +1871,7 @@ describe("adaptive fee tests", () => {
             amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
             aToB: tradeAToBOne,
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-              tradeAmountSpecifiedIsInput
+              tradeAmountSpecifiedIsInput,
             ),
             sqrtPriceLimit: tradeAToBOne
               ? MIN_SQRT_PRICE_BN
@@ -1876,7 +1883,7 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolTwo.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
@@ -1885,10 +1892,10 @@ describe("adaptive fee tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               poolTwo.getAddress(),
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
@@ -1920,7 +1927,7 @@ describe("adaptive fee tests", () => {
             tokenVaultTwoB: poolTwo.getData().tokenVaultB,
             whirlpoolOne,
             whirlpoolTwo,
-          }
+          },
         ).instructions[0];
 
         // try to execute twoHopSwap ix on pools WITH adaptive fee WITHOUT isWritable flags on oracle accounts and WITHOUT writable oracle accounts in remaining accounts
@@ -1948,7 +1955,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // add writable oracle_one only
@@ -1967,7 +1974,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // add writable oracle_two only
@@ -1986,7 +1993,7 @@ describe("adaptive fee tests", () => {
             cleanupInstructions: [],
             signers: [],
           }).buildAndExecute(),
-          /0xbbe/ // AccountNotMutable
+          /0xbbe/, // AccountNotMutable
         );
 
         // add both writable oracle_one and oracle_two
@@ -2018,7 +2025,7 @@ describe("adaptive fee tests", () => {
 
   async function buildSwapTestPool(
     tradeEnableTimestamp: BN | undefined,
-    initialSqrtPrice: BN | undefined
+    initialSqrtPrice: BN | undefined,
   ) {
     const poolLiquidity = powBN(2, 24);
     const tickSpacing = 64;
@@ -2033,7 +2040,7 @@ describe("adaptive fee tests", () => {
       initialSqrtPrice ?? PriceMath.tickIndexToSqrtPriceX64(0),
       getDefaultPresetAdaptiveFeeConstants(tickSpacing, tickSpacing, 1),
       provider.wallet.publicKey, // permissioned
-      PublicKey.default
+      PublicKey.default,
     );
 
     const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
@@ -2044,25 +2051,25 @@ describe("adaptive fee tests", () => {
       testCtx.whirlpoolCtx,
       WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
         testCtx.whirlpoolCtx.program,
-        modifiedPoolInitInfo
-      )
+        modifiedPoolInitInfo,
+      ),
     ).buildAndExecute();
 
     const oracleData = await testCtx.whirlpoolCtx.fetcher.getOracle(
       poolInitInfo.oraclePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(oracleData);
 
     // init TickArrays
     const pool = await testCtx.whirlpoolClient.getPool(
-      poolInitInfo.whirlpoolPda.publicKey
+      poolInitInfo.whirlpoolPda.publicKey,
     );
     await (await pool.initTickArrayForTicks(
-      TickUtil.getFullRangeTickIndex(tickSpacing)
+      TickUtil.getFullRangeTickIndex(tickSpacing),
     ))!.buildAndExecute();
     const fullRange = TickUtil.getFullRangeTickIndex(
-      pool.getData().tickSpacing
+      pool.getData().tickSpacing,
     );
 
     // provide liquidity
@@ -2071,12 +2078,12 @@ describe("adaptive fee tests", () => {
     const tokenAccountA = await createAndMintToAssociatedTokenAccount(
       testCtx.provider,
       mintA,
-      U64_MAX
+      U64_MAX,
     );
     const tokenAccountB = await createAndMintToAssociatedTokenAccount(
       testCtx.provider,
       mintB,
-      U64_MAX
+      U64_MAX,
     );
     const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
       liquidity: poolLiquidity,
@@ -2090,7 +2097,7 @@ describe("adaptive fee tests", () => {
     const txAndMint = await pool.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuote
+      depositQuote,
     );
     await txAndMint.tx.buildAndExecute();
 
@@ -2108,7 +2115,7 @@ describe("adaptive fee tests", () => {
     tradeEnableTimestampOne: BN | undefined,
     tradeEnableTimestampTwo: BN | undefined,
     initialSqrtPriceOne: BN | undefined,
-    initialSqrtPriceTwo: BN | undefined
+    initialSqrtPriceTwo: BN | undefined,
   ) {
     const poolLiquidity = powBN(2, 24);
 
@@ -2126,7 +2133,7 @@ describe("adaptive fee tests", () => {
         defaultProtocolFeeRate: 300,
         funder: admin.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
-      })
+      }),
     )
       .addSigner(admin)
       .addSigner(configKeypair)
@@ -2137,22 +2144,22 @@ describe("adaptive fee tests", () => {
     const mintY = await createMint(testCtx.provider);
     const mintZ = await createMint(testCtx.provider);
     const [mintIn, mintMid, mintOut] = AddressUtil.toPubKeys(
-      [mintX, mintY, mintZ].sort((a, b) => PoolUtil.compareMints(a, b))
+      [mintX, mintY, mintZ].sort((a, b) => PoolUtil.compareMints(a, b)),
     );
     const tokenAccountIn = await createAndMintToAssociatedTokenAccount(
       testCtx.provider,
       mintIn,
-      U64_MAX
+      U64_MAX,
     );
     const tokenAccountMid = await createAndMintToAssociatedTokenAccount(
       testCtx.provider,
       mintMid,
-      U64_MAX
+      U64_MAX,
     );
     const tokenAccountOut = await createAndMintToAssociatedTokenAccount(
       testCtx.provider,
       mintOut,
-      U64_MAX
+      U64_MAX,
     );
 
     // init AdaptiveFeeTier
@@ -2161,7 +2168,7 @@ describe("adaptive fee tests", () => {
     const feeTierPda = PDAUtil.getFeeTier(
       testCtx.whirlpoolCtx.program.programId,
       configKeypair.publicKey,
-      feeTierIndex
+      feeTierIndex,
     );
     await toTx(
       testCtx.whirlpoolCtx,
@@ -2183,7 +2190,7 @@ describe("adaptive fee tests", () => {
         presetMaxVolatilityAccumulator: 350_000,
         presetTickGroupSize: tickSpacing,
         presetMajorSwapThresholdTicks: 1,
-      })
+      }),
     )
       .addSigner(authorityWhirlpoolsConfigKeypair)
       .buildAndExecute();
@@ -2194,39 +2201,39 @@ describe("adaptive fee tests", () => {
       configKeypair.publicKey,
       mintIn,
       mintMid,
-      feeTierIndex
+      feeTierIndex,
     );
     const whirlpoolPdaTwo = PDAUtil.getWhirlpool(
       testCtx.whirlpoolCtx.program.programId,
       configKeypair.publicKey,
       mintMid,
       mintOut,
-      feeTierIndex
+      feeTierIndex,
     );
 
     const oraclePdaOne = PDAUtil.getOracle(
       testCtx.whirlpoolCtx.program.programId,
-      whirlpoolPdaOne.publicKey
+      whirlpoolPdaOne.publicKey,
     );
     const oraclePdaTwo = PDAUtil.getOracle(
       testCtx.whirlpoolCtx.program.programId,
-      whirlpoolPdaTwo.publicKey
+      whirlpoolPdaTwo.publicKey,
     );
 
     const tokenBadgeInPda = PDAUtil.getTokenBadge(
       testCtx.whirlpoolCtx.program.programId,
       configKeypair.publicKey,
-      mintIn
+      mintIn,
     );
     const tokenBadgeMidPda = PDAUtil.getTokenBadge(
       testCtx.whirlpoolCtx.program.programId,
       configKeypair.publicKey,
-      mintMid
+      mintMid,
     );
     const tokenBadgeOutPda = PDAUtil.getTokenBadge(
       testCtx.whirlpoolCtx.program.programId,
       configKeypair.publicKey,
-      mintOut
+      mintOut,
     );
 
     await toTx(
@@ -2251,8 +2258,8 @@ describe("adaptive fee tests", () => {
           tokenVaultAKeypair: Keypair.generate(),
           tokenVaultBKeypair: Keypair.generate(),
           tradeEnableTimestamp: tradeEnableTimestampOne,
-        }
-      )
+        },
+      ),
     ).buildAndExecute();
 
     await toTx(
@@ -2277,17 +2284,17 @@ describe("adaptive fee tests", () => {
           tokenVaultAKeypair: Keypair.generate(),
           tokenVaultBKeypair: Keypair.generate(),
           tradeEnableTimestamp: tradeEnableTimestampTwo,
-        }
-      )
+        },
+      ),
     ).buildAndExecute();
 
     // init TickArrays
     const fullRange = TickUtil.getFullRangeTickIndex(tickSpacing);
     const poolOne = await testCtx.whirlpoolClient.getPool(
-      whirlpoolPdaOne.publicKey
+      whirlpoolPdaOne.publicKey,
     );
     const poolTwo = await testCtx.whirlpoolClient.getPool(
-      whirlpoolPdaTwo.publicKey
+      whirlpoolPdaTwo.publicKey,
     );
     await (await poolOne.initTickArrayForTicks(fullRange))!.buildAndExecute();
     await (await poolTwo.initTickArrayForTicks(fullRange))!.buildAndExecute();
@@ -2315,13 +2322,13 @@ describe("adaptive fee tests", () => {
     const txAndMintOne = await poolOne.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuoteOne
+      depositQuoteOne,
     );
     await txAndMintOne.tx.buildAndExecute();
     const txAndMintTwo = await poolTwo.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuoteTwo
+      depositQuoteTwo,
     );
     await txAndMintTwo.tx.buildAndExecute();
 

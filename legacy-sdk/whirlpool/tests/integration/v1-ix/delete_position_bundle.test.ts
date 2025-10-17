@@ -5,7 +5,7 @@ import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import type { InitPoolParams, PositionBundleData } from "../../../src";
 import { POSITION_BUNDLE_SIZE, WhirlpoolIx, toTx } from "../../../src";
-import { WhirlpoolContext } from "../../../src/context";
+import type { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   ONE_SOL,
@@ -16,7 +16,10 @@ import {
   systemTransferTx,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import {
   initTestPool,
   initializePositionBundle,
@@ -25,14 +28,18 @@ import {
 } from "../../utils/init-utils";
 
 describe("delete_position_bundle", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;
@@ -136,9 +143,17 @@ describe("delete_position_bundle", () => {
     );
 
     // PositionBundle account should be closed
-    const postPositionBundle = await fetcher.getPositionBundle(
-      positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE,
+    const postPositionBundle = await pollForCondition(
+      () =>
+        fetcher.getPositionBundle(
+          positionBundleInfo.positionBundlePda.publicKey,
+          IGNORE_CACHE,
+        ),
+      (p) => p === null,
+      {
+        accountToReload: positionBundleInfo.positionBundlePda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postPositionBundle === null);
 

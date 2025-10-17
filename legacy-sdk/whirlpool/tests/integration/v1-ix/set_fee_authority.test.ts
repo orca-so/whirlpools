@@ -1,20 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolsConfigData } from "../../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
+import type { WhirlpoolsConfigData, WhirlpoolContext } from "../../../src";
+import { toTx, WhirlpoolIx } from "../../../src";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
 import { getLocalnetAdminKeypair0 } from "../../utils";
 
 describe("set_fee_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully set_fee_authority", async () => {
     const admin = await getLocalnetAdminKeypair0(ctx);

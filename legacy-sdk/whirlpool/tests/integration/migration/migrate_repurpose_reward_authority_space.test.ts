@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { WhirlpoolContext } from "../../../src";
 import { toTx } from "../../../src";
+import { pollForCondition } from "../../utils/litesvm";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing } from "../../utils";
 import {
@@ -97,9 +98,13 @@ describe("migrate_repurpose_reward_authority_space", () => {
     );
     await migrateTx.buildAndExecute();
 
-    const migratedWhirlpool = await fetcher.getPool(
-      preloadWhirlpoolAddress,
-      IGNORE_CACHE,
+    const migratedWhirlpool = await pollForCondition(
+      async () =>
+        (await fetcher.getPool(preloadWhirlpoolAddress, IGNORE_CACHE))!,
+      (pool) =>
+        pool.rewardInfos[1].extension.every((b: number) => b === 0) &&
+        pool.rewardInfos[2].extension.every((b: number) => b === 0),
+      { maxRetries: 200, delayMs: 10 },
     );
     const migratedWhirlpoolRawData = await ctx.connection.getAccountInfo(
       preloadWhirlpoolAddress,

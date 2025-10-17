@@ -16,6 +16,7 @@ import type {
   LockConfigData,
   PositionBundleData,
   WhirlpoolData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   IGNORE_CACHE,
@@ -24,7 +25,6 @@ import {
   PDAUtil,
   SPLASH_POOL_TICK_SPACING,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   increaseLiquidityQuoteByLiquidityWithParams,
   toTx,
@@ -35,7 +35,11 @@ import {
   systemTransferTx,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
+import { getCurrentTimestamp } from "../../utils/litesvm";
 import {
   initializePositionBundle,
   openBundledPosition,
@@ -57,14 +61,16 @@ import {
 } from "../../utils/v2/token-2022";
 
 describe("lock_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const funderKeypair = anchor.web3.Keypair.generate();
   const delegatedAuthority = anchor.web3.Keypair.generate();
@@ -177,9 +183,11 @@ describe("lock_position", () => {
     shouldBeFrozen: boolean,
     shouldBeDelegated: boolean = false,
   ) {
-    const tokenAccount = await fetcher.getTokenInfo(
-      positionTokenAccount,
-      IGNORE_CACHE,
+    // Poll for account state to sync in LiteSVM
+    const tokenAccount = await pollForCondition(
+      async () => fetcher.getTokenInfo(positionTokenAccount, IGNORE_CACHE),
+      (account) => account !== null && account.isFrozen === shouldBeFrozen,
+      { maxRetries: 50, delayMs: 10 },
     );
 
     assert.ok(tokenAccount !== null);
@@ -222,7 +230,7 @@ describe("lock_position", () => {
     assert.ok(config.lockType.toString() === lockTypeLabel.toString());
 
     // within 10 seconds
-    const nowInSec = Math.floor(Date.now() / 1000);
+    const nowInSec = getCurrentTimestamp();
     assert.ok(Math.abs(config.lockedTimestamp.toNumber() - nowInSec) < 10);
   }
 
@@ -924,9 +932,14 @@ describe("lock_position", () => {
       }),
     ).buildAndExecute();
 
-    const postV1State = await fetcher.getPosition(
-      positionParams.positionPda.publicKey,
-      IGNORE_CACHE,
+    const postV1State = await pollForCondition(
+      () =>
+        fetcher.getPosition(positionParams.positionPda.publicKey, IGNORE_CACHE),
+      (p) => !!p && p.liquidity.eqn(2_000_000),
+      {
+        accountToReload: positionParams.positionPda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postV1State?.liquidity.eqn(2_000_000));
 
@@ -954,9 +967,14 @@ describe("lock_position", () => {
       }),
     ).buildAndExecute();
 
-    const postV2State = await fetcher.getPosition(
-      positionParams.positionPda.publicKey,
-      IGNORE_CACHE,
+    const postV2State = await pollForCondition(
+      () =>
+        fetcher.getPosition(positionParams.positionPda.publicKey, IGNORE_CACHE),
+      (p) => !!p && p.liquidity.eqn(3_000_000),
+      {
+        accountToReload: positionParams.positionPda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postV2State?.liquidity.eqn(3_000_000));
   });

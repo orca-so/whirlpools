@@ -84,13 +84,13 @@ describe("sparse swap tests", () => {
    */
   async function waitForTickArraySync(
     pool: Whirlpool,
-    tickArrayIndexes: number[]
+    tickArrayIndexes: number[],
   ): Promise<void> {
     for (const tickIndex of tickArrayIndexes) {
       const tickArrayPda = PDAUtil.getTickArray(
         testCtx.whirlpoolCtx.program.programId,
         pool.getAddress(),
-        tickIndex
+        tickIndex,
       ).publicKey;
       await pollForCondition(
         () =>
@@ -99,7 +99,7 @@ describe("sparse swap tests", () => {
         {
           accountToReload: tickArrayPda,
           connection: testCtx.whirlpoolCtx.connection,
-        }
+        },
       );
     }
   }
@@ -110,42 +110,42 @@ describe("sparse swap tests", () => {
   async function waitForTickArraySyncTwoPools(
     pool0: Whirlpool,
     pool1: Whirlpool,
-    tickArrayIndexes: number[]
+    tickArrayIndexes: number[],
   ): Promise<void> {
     for (const tickIndex of tickArrayIndexes) {
       const tickArrayPda0 = PDAUtil.getTickArray(
         testCtx.whirlpoolCtx.program.programId,
         pool0.getAddress(),
-        tickIndex
+        tickIndex,
       ).publicKey;
       const tickArrayPda1 = PDAUtil.getTickArray(
         testCtx.whirlpoolCtx.program.programId,
         pool1.getAddress(),
-        tickIndex
+        tickIndex,
       ).publicKey;
       await pollForCondition(
         () =>
           testCtx.whirlpoolCtx.fetcher.getTickArray(
             tickArrayPda0,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
         (ta) => ta !== null,
         {
           accountToReload: tickArrayPda0,
           connection: testCtx.whirlpoolCtx.connection,
-        }
+        },
       );
       await pollForCondition(
         () =>
           testCtx.whirlpoolCtx.fetcher.getTickArray(
             tickArrayPda1,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
         (ta) => ta !== null,
         {
           accountToReload: tickArrayPda1,
           connection: testCtx.whirlpoolCtx.connection,
-        }
+        },
       );
     }
   }
@@ -157,11 +157,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing64,
           PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-11264  ][-5632   ][0       ]
@@ -177,7 +177,7 @@ describe("sparse swap tests", () => {
         2944,
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(-9984, 2944, depositQuote)
@@ -191,7 +191,7 @@ describe("sparse swap tests", () => {
         Percentage.fromFraction(0, 100),
         testCtx.whirlpoolCtx.program.programId,
         testCtx.whirlpoolCtx.fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const params = SwapUtils.getSwapParamsFromQuote(
@@ -200,7 +200,7 @@ describe("sparse swap tests", () => {
         pool,
         tokenAccountA,
         tokenAccountB,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
 
       assert.ok((await pool.refreshData()).tickCurrentIndex >= 2944);
@@ -213,7 +213,7 @@ describe("sparse swap tests", () => {
           tickArray0: params.tickArray2,
           tickArray1: params.tickArray1,
           tickArray2: params.tickArray0,
-        })
+        }),
       ).buildAndExecute();
 
       // 3000 --> less than -5632
@@ -226,11 +226,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing64,
           PriceMath.tickIndexToSqrtPriceX64(-3000), // tickCurrentIndex = -3000
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-5632   ][0       ][5632    ]
@@ -246,7 +246,7 @@ describe("sparse swap tests", () => {
         9984,
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(-2944, 9984, depositQuote)
@@ -260,7 +260,7 @@ describe("sparse swap tests", () => {
         Percentage.fromFraction(0, 100),
         testCtx.whirlpoolCtx.program.programId,
         testCtx.whirlpoolCtx.fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const params = SwapUtils.getSwapParamsFromQuote(
@@ -269,7 +269,7 @@ describe("sparse swap tests", () => {
         pool,
         tokenAccountB,
         tokenAccountA,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
 
       assert.ok((await pool.refreshData()).tickCurrentIndex <= -2944);
@@ -282,7 +282,7 @@ describe("sparse swap tests", () => {
           tickArray0: params.tickArray2,
           tickArray1: params.tickArray1,
           tickArray2: params.tickArray0,
-        })
+        }),
       ).buildAndExecute();
 
       // -3000 --> larger than 5632
@@ -295,11 +295,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing64,
           PriceMath.tickIndexToSqrtPriceX64(64), // tickCurrentIndex = 64
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-11264  ][-5632   ][0       ]
@@ -315,7 +315,7 @@ describe("sparse swap tests", () => {
         -128,
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(-9984, -128, depositQuote)
@@ -329,7 +329,7 @@ describe("sparse swap tests", () => {
         Percentage.fromFraction(10, 100),
         testCtx.whirlpoolCtx.program.programId,
         testCtx.whirlpoolCtx.fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const params = SwapUtils.getSwapParamsFromQuote(
@@ -338,7 +338,7 @@ describe("sparse swap tests", () => {
         pool,
         tokenAccountA,
         tokenAccountB,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
 
       assert.ok((await pool.refreshData()).tickCurrentIndex >= 64);
@@ -356,15 +356,15 @@ describe("sparse swap tests", () => {
               Percentage.fromFraction(0, 100),
               testCtx.whirlpoolCtx.program.programId,
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             testCtx.whirlpoolCtx,
             pool,
             tokenAccountA,
             tokenAccountB,
-            testCtx.provider.wallet.publicKey
-          )
-        )
+            testCtx.provider.wallet.publicKey,
+          ),
+        ),
       ).buildAndExecute();
 
       assert.ok((await pool.refreshData()).tickCurrentIndex <= -128);
@@ -372,11 +372,16 @@ describe("sparse swap tests", () => {
 
       await toTx(
         testCtx.whirlpoolCtx,
-        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params)
+        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params),
       ).buildAndExecute();
 
-      // less than -128 --> less than -5632
-      assert.ok((await pool.refreshData()).tickCurrentIndex < -5632);
+      // less than -128 --> less than -5632 (wait for state update)
+      const finalTick = await pollForCondition(
+        async () => (await pool.refreshData()).tickCurrentIndex,
+        (i) => i < -5632,
+        { maxRetries: 50, delayMs: 10 },
+      );
+      assert.ok(finalTick < -5632);
     });
 
     it("skip ta0, ta1(ta0, ta1, ta2 => ta2), a to b", async () => {
@@ -385,11 +390,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing64,
           PriceMath.tickIndexToSqrtPriceX64(64), // tickCurrentIndex = 64
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-11264  ][-5632   ][0       ]
@@ -405,7 +410,7 @@ describe("sparse swap tests", () => {
         -5760,
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(-9984, -5760, depositQuote)
@@ -419,7 +424,7 @@ describe("sparse swap tests", () => {
         Percentage.fromFraction(10, 100),
         testCtx.whirlpoolCtx.program.programId,
         testCtx.whirlpoolCtx.fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const params = SwapUtils.getSwapParamsFromQuote(
@@ -428,7 +433,7 @@ describe("sparse swap tests", () => {
         pool,
         tokenAccountA,
         tokenAccountB,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
 
       assert.ok((await pool.refreshData()).tickCurrentIndex >= 64);
@@ -446,15 +451,15 @@ describe("sparse swap tests", () => {
               Percentage.fromFraction(0, 100),
               testCtx.whirlpoolCtx.program.programId,
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             testCtx.whirlpoolCtx,
             pool,
             tokenAccountA,
             tokenAccountB,
-            testCtx.provider.wallet.publicKey
-          )
-        )
+            testCtx.provider.wallet.publicKey,
+          ),
+        ),
       ).buildAndExecute();
 
       assert.ok((await pool.refreshData()).tickCurrentIndex <= -5760);
@@ -462,7 +467,7 @@ describe("sparse swap tests", () => {
 
       await toTx(
         testCtx.whirlpoolCtx,
-        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params)
+        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params),
       ).buildAndExecute();
 
       // less than -5760 --> less than -5760
@@ -475,11 +480,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing64,
           PriceMath.tickIndexToSqrtPriceX64(-64), // tickCurrentIndex = -64
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-5632   ][0       ][5632    ]
@@ -495,7 +500,7 @@ describe("sparse swap tests", () => {
         9984,
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(128, 9984, depositQuote)
@@ -509,7 +514,7 @@ describe("sparse swap tests", () => {
         Percentage.fromFraction(10, 100),
         testCtx.whirlpoolCtx.program.programId,
         testCtx.whirlpoolCtx.fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const params = SwapUtils.getSwapParamsFromQuote(
@@ -518,7 +523,7 @@ describe("sparse swap tests", () => {
         pool,
         tokenAccountB,
         tokenAccountA,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
 
       assert.ok((await pool.refreshData()).tickCurrentIndex <= -64);
@@ -536,15 +541,15 @@ describe("sparse swap tests", () => {
               Percentage.fromFraction(0, 100),
               testCtx.whirlpoolCtx.program.programId,
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             testCtx.whirlpoolCtx,
             pool,
             tokenAccountB,
             tokenAccountA,
-            testCtx.provider.wallet.publicKey
-          )
-        )
+            testCtx.provider.wallet.publicKey,
+          ),
+        ),
       ).buildAndExecute();
 
       assert.ok((await pool.refreshData()).tickCurrentIndex >= 128);
@@ -552,7 +557,7 @@ describe("sparse swap tests", () => {
 
       await toTx(
         testCtx.whirlpoolCtx,
-        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params)
+        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params),
       ).buildAndExecute();
 
       // greater than 128 --> greater than 5632
@@ -560,7 +565,7 @@ describe("sparse swap tests", () => {
       await pollForCondition(
         async () => (await pool.refreshData()).tickCurrentIndex,
         (tickIndex) => tickIndex > 5632,
-        { maxRetries: 50, delayMs: 10 }
+        { maxRetries: 50, delayMs: 10 },
       );
     });
 
@@ -570,11 +575,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing64,
           PriceMath.tickIndexToSqrtPriceX64(-64), // tickCurrentIndex = -64
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-5632   ][0       ][5632    ]
@@ -590,7 +595,7 @@ describe("sparse swap tests", () => {
         9984,
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(5760, 9984, depositQuote)
@@ -604,7 +609,7 @@ describe("sparse swap tests", () => {
         Percentage.fromFraction(10, 100),
         testCtx.whirlpoolCtx.program.programId,
         testCtx.whirlpoolCtx.fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const params = SwapUtils.getSwapParamsFromQuote(
@@ -613,7 +618,7 @@ describe("sparse swap tests", () => {
         pool,
         tokenAccountB,
         tokenAccountA,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
 
       assert.ok((await pool.refreshData()).tickCurrentIndex <= -64);
@@ -631,15 +636,15 @@ describe("sparse swap tests", () => {
               Percentage.fromFraction(0, 100),
               testCtx.whirlpoolCtx.program.programId,
               testCtx.whirlpoolCtx.fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             testCtx.whirlpoolCtx,
             pool,
             tokenAccountB,
             tokenAccountA,
-            testCtx.provider.wallet.publicKey
-          )
-        )
+            testCtx.provider.wallet.publicKey,
+          ),
+        ),
       ).buildAndExecute();
 
       assert.ok((await pool.refreshData()).tickCurrentIndex >= 5760);
@@ -647,11 +652,16 @@ describe("sparse swap tests", () => {
 
       await toTx(
         testCtx.whirlpoolCtx,
-        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params)
+        WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params),
       ).buildAndExecute();
 
-      // greater than 5760 --> greater than 5760
-      assert.ok((await pool.refreshData()).tickCurrentIndex > 5760);
+      // greater than 5760 --> greater than 5760 (wait for state update)
+      const tickAfter = await pollForCondition(
+        async () => (await pool.refreshData()).tickCurrentIndex,
+        (i) => i > 5760,
+        { maxRetries: 50, delayMs: 10 },
+      );
+      assert.ok(tickAfter > 5760);
     });
 
     it("a to b & b to a with same TickArray list", async () => {
@@ -660,11 +670,11 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           tickSpacing8192,
           PriceMath.tickIndexToSqrtPriceX64(0),
-          new BN(1_000_000)
+          new BN(1_000_000),
         );
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
 
       // [-720896 ][0       ]
@@ -679,7 +689,7 @@ describe("sparse swap tests", () => {
         fullrange[1],
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(fullrange[0], fullrange[1], depositQuote)
@@ -688,12 +698,12 @@ describe("sparse swap tests", () => {
       const ta0 = PDAUtil.getTickArray(
         testCtx.whirlpoolCtx.program.programId,
         whirlpoolPda.publicKey,
-        -720896
+        -720896,
       ).publicKey;
       const ta1 = PDAUtil.getTickArray(
         testCtx.whirlpoolCtx.program.programId,
         whirlpoolPda.publicKey,
-        0
+        0,
       ).publicKey;
 
       // a to b
@@ -706,13 +716,13 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(10, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         ),
         testCtx.whirlpoolCtx,
         pool,
         tokenAccountA,
         tokenAccountB,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
       await toTx(
         testCtx.whirlpoolCtx,
@@ -722,7 +732,7 @@ describe("sparse swap tests", () => {
           tickArray0: ta0,
           tickArray1: ta1,
           tickArray2: ta1,
-        })
+        }),
       ).buildAndExecute();
 
       // b to a
@@ -735,13 +745,13 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(10, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         ),
         testCtx.whirlpoolCtx,
         pool,
         tokenAccountB,
         tokenAccountA,
-        testCtx.provider.wallet.publicKey
+        testCtx.provider.wallet.publicKey,
       );
       await toTx(
         testCtx.whirlpoolCtx,
@@ -751,7 +761,7 @@ describe("sparse swap tests", () => {
           tickArray0: ta0,
           tickArray1: ta1,
           tickArray2: ta1,
-        })
+        }),
       ).buildAndExecute();
     });
 
@@ -767,11 +777,11 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             tickSpacing64,
             PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
-            new BN(1_000_000)
+            new BN(1_000_000),
           );
 
         const pool = await testCtx.whirlpoolClient.getPool(
-          whirlpoolPda.publicKey
+          whirlpoolPda.publicKey,
         );
 
         // [-11264  ][-5632   ][0       ]
@@ -787,7 +797,7 @@ describe("sparse swap tests", () => {
           2944,
           Percentage.fromFraction(0, 100),
           pool,
-          NO_TOKEN_EXTENSION_CONTEXT
+          NO_TOKEN_EXTENSION_CONTEXT,
         );
         await (
           await pool.openPosition(-9984, 2944, depositQuote)
@@ -801,7 +811,7 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const params = SwapUtils.getSwapParamsFromQuote(
@@ -810,7 +820,7 @@ describe("sparse swap tests", () => {
           pool,
           tokenAccountA,
           tokenAccountB,
-          testCtx.provider.wallet.publicKey
+          testCtx.provider.wallet.publicKey,
         );
 
         assert.ok((await pool.refreshData()).tickCurrentIndex >= 2944);
@@ -829,9 +839,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tokenVaultA, // owned by TokenProgram
               tickArray1: params.tickArray1,
               tickArray2: params.tickArray2,
-            })
+            }),
           ).buildAndExecute(),
-          /0xbbf/ // AccountOwnedByWrongProgram
+          /0xbbf/, // AccountOwnedByWrongProgram
         );
 
         await assert.rejects(
@@ -842,9 +852,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tickArray0,
               tickArray1: params.tokenVaultA, // owned by TokenProgram
               tickArray2: params.tickArray2,
-            })
+            }),
           ).buildAndExecute(),
-          /0xbbf/ // AccountOwnedByWrongProgram
+          /0xbbf/, // AccountOwnedByWrongProgram
         );
 
         await assert.rejects(
@@ -855,9 +865,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tickArray0,
               tickArray1: params.tickArray1,
               tickArray2: params.tokenVaultA, // owned by TokenProgram
-            })
+            }),
           ).buildAndExecute(),
-          /0xbbf/ // AccountOwnedByWrongProgram
+          /0xbbf/, // AccountOwnedByWrongProgram
         );
 
         await assert.rejects(
@@ -872,9 +882,9 @@ describe("sparse swap tests", () => {
               tokenProgramB: TOKEN_PROGRAM_ID,
               // supplemental
               supplementalTickArrays: [params.tokenVaultA],
-            })
+            }),
           ).buildAndExecute(),
-          /0xbbf/ // AccountOwnedByWrongProgram
+          /0xbbf/, // AccountOwnedByWrongProgram
         );
       });
 
@@ -889,9 +899,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.whirlpool, // owned by Whirlpool program, but Whirlpool account
               tickArray1: params.tickArray1,
               tickArray2: params.tickArray2,
-            })
+            }),
           ).buildAndExecute(),
-          /0xbba/ // AccountDiscriminatorMismatch
+          /0xbba/, // AccountDiscriminatorMismatch
         );
 
         await assert.rejects(
@@ -902,9 +912,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tickArray0,
               tickArray1: params.whirlpool, // owned by Whirlpool program, but Whirlpool account
               tickArray2: params.tickArray2,
-            })
+            }),
           ).buildAndExecute(),
-          /0xbba/ // AccountDiscriminatorMismatch
+          /0xbba/, // AccountDiscriminatorMismatch
         );
 
         await assert.rejects(
@@ -915,9 +925,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tickArray0,
               tickArray1: params.tickArray1,
               tickArray2: params.whirlpool, // owned by Whirlpool program, but Whirlpool account
-            })
+            }),
           ).buildAndExecute(),
-          /0xbba/ // AccountDiscriminatorMismatch
+          /0xbba/, // AccountDiscriminatorMismatch
         );
 
         await assert.rejects(
@@ -934,9 +944,9 @@ describe("sparse swap tests", () => {
               supplementalTickArrays: [
                 params.whirlpool, // owned by Whirlpool program, but Whirlpool account
               ],
-            })
+            }),
           ).buildAndExecute(),
-          /0xbba/ // AccountDiscriminatorMismatch
+          /0xbba/, // AccountDiscriminatorMismatch
         );
       });
 
@@ -948,11 +958,11 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             tickSpacing64,
             PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
-            new BN(1_000_000)
+            new BN(1_000_000),
           );
 
         const anotherPool = await testCtx.whirlpoolClient.getPool(
-          anotherWhirlpoolPda.publicKey
+          anotherWhirlpoolPda.publicKey,
         );
         await (await anotherPool.initTickArrayForTicks([
           -11264, -5632, 0,
@@ -961,11 +971,19 @@ describe("sparse swap tests", () => {
         const anotherWhirlpoolTickArray0 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           anotherWhirlpoolPda.publicKey,
-          0
+          0,
         ).publicKey;
-        const fetched = await testCtx.whirlpoolCtx.fetcher.getTickArray(
-          anotherWhirlpoolTickArray0,
-          IGNORE_CACHE
+        const fetched = await pollForCondition(
+          () =>
+            testCtx.whirlpoolCtx.fetcher.getTickArray(
+              anotherWhirlpoolTickArray0,
+              IGNORE_CACHE,
+            ),
+          (ta) => ta !== null,
+          {
+            accountToReload: anotherWhirlpoolTickArray0,
+            connection: testCtx.provider.connection,
+          },
         );
         assert.ok(fetched !== null);
 
@@ -977,9 +995,9 @@ describe("sparse swap tests", () => {
               tickArray0: anotherWhirlpoolTickArray0, // for another Whirlpool
               tickArray1: params.tickArray1,
               tickArray2: params.tickArray2,
-            })
+            }),
           ).buildAndExecute(),
-          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/, // DifferentWhirlpoolTickArrayAccount
         );
 
         await assert.rejects(
@@ -990,9 +1008,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tickArray0,
               tickArray1: anotherWhirlpoolTickArray0, // for another Whirlpool
               tickArray2: params.tickArray2,
-            })
+            }),
           ).buildAndExecute(),
-          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/, // DifferentWhirlpoolTickArrayAccount
         );
 
         await assert.rejects(
@@ -1003,9 +1021,9 @@ describe("sparse swap tests", () => {
               tickArray0: params.tickArray0,
               tickArray1: params.tickArray1,
               tickArray2: anotherWhirlpoolTickArray0, // for another Whirlpool
-            })
+            }),
           ).buildAndExecute(),
-          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/, // DifferentWhirlpoolTickArrayAccount
         );
 
         await assert.rejects(
@@ -1022,9 +1040,9 @@ describe("sparse swap tests", () => {
               supplementalTickArrays: [
                 anotherWhirlpoolTickArray0, // for another Whirlpool
               ],
-            })
+            }),
           ).buildAndExecute(),
-          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/, // DifferentWhirlpoolTickArrayAccount
         );
       });
 
@@ -1034,11 +1052,11 @@ describe("sparse swap tests", () => {
         const tickArrayNeg5632 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           poolInitInfo.whirlpoolPda.publicKey,
-          -5632
+          -5632,
         ).publicKey;
         const fetched = await testCtx.whirlpoolCtx.fetcher.getTickArray(
           tickArrayNeg5632,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(fetched !== null);
 
@@ -1051,9 +1069,9 @@ describe("sparse swap tests", () => {
               tickArray0: tickArrayNeg5632,
               tickArray1: tickArrayNeg5632,
               tickArray2: tickArrayNeg5632,
-            })
+            }),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         await assert.rejects(
@@ -1076,9 +1094,9 @@ describe("sparse swap tests", () => {
                 tickArrayNeg5632,
                 tickArrayNeg5632,
               ],
-            })
+            }),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
       });
 
@@ -1096,9 +1114,9 @@ describe("sparse swap tests", () => {
               tickArray0: uninitializedRandomAddress,
               tickArray1: uninitializedRandomAddress,
               tickArray2: uninitializedRandomAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         await assert.rejects(
@@ -1121,9 +1139,9 @@ describe("sparse swap tests", () => {
                 uninitializedRandomAddress,
                 uninitializedRandomAddress,
               ],
-            })
+            }),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
       });
     });
@@ -1141,12 +1159,12 @@ describe("sparse swap tests", () => {
         testCtx.whirlpoolCtx,
         tickSpacing64,
         PriceMath.tickIndexToSqrtPriceX64(2816),
-        new BN(1_000_000_000)
+        new BN(1_000_000_000),
       );
       const { poolInitInfo, whirlpoolPda } = initResult;
 
       const pool = await testCtx.whirlpoolClient.getPool(
-        whirlpoolPda.publicKey
+        whirlpoolPda.publicKey,
       );
       const fullrange = TickUtil.getFullRangeTickIndex(tickSpacing8192);
 
@@ -1163,7 +1181,7 @@ describe("sparse swap tests", () => {
         fullrange[1],
         Percentage.fromFraction(0, 100),
         pool,
-        NO_TOKEN_EXTENSION_CONTEXT
+        NO_TOKEN_EXTENSION_CONTEXT,
       );
       await (
         await pool.openPosition(fullrange[0], fullrange[1], depositQuote)
@@ -1191,14 +1209,14 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ): Promise<{ quote: SwapQuote; poolData: WhirlpoolData }> {
         const { poolInitInfo, tokenAccountA, tokenAccountB } =
           await buildTestEnvironment();
 
         const pool = await testCtx.whirlpoolClient.getPool(
           poolInitInfo.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const startTickIndexes = [0, 5632, 11264];
@@ -1213,7 +1231,7 @@ describe("sparse swap tests", () => {
         });
         if (tickArrayIndexes.length > 0) {
           await (await pool.initTickArrayForTicks(
-            tickArrayIndexes
+            tickArrayIndexes,
           ))!.buildAndExecute();
 
           // Wait for LiteSVM state to sync for each initialized tick array
@@ -1228,7 +1246,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // padding if needed
@@ -1237,7 +1255,7 @@ describe("sparse swap tests", () => {
             assert.ok(tickArrays[i].data === null);
             tickArrays[i].data = buildTickArrayData(
               startTickIndexes[i],
-              []
+              [],
             ).data;
             tickArrays[i].data!.whirlpool = pool.getAddress();
           } else {
@@ -1258,7 +1276,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote.estimatedAmountIn.gtn(0));
@@ -1271,7 +1289,7 @@ describe("sparse swap tests", () => {
             pool,
             tokenAccountB,
             tokenAccountA,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           ),
           amountSpecifiedIsInput: true,
           amount: quote.estimatedAmountIn,
@@ -1285,20 +1303,20 @@ describe("sparse swap tests", () => {
         };
 
         assert.ok(
-          (await pool.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         await toTx(
           testCtx.whirlpoolCtx,
           !v2
             ? WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params)
-            : WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params)
+            : WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params),
         ).buildAndExecute(undefined, { skipPreflight: true });
 
         // Poll for the tick index to update (LiteSVM state sync)
         await pollForCondition(
           async () => (await pool.refreshData()).tickCurrentIndex,
           (tickIndex) => tickIndex === targetTickIndex,
-          { maxRetries: 50, delayMs: 10 }
+          { maxRetries: 50, delayMs: 10 },
         );
         assert.ok(pool.getData().tickCurrentIndex === targetTickIndex);
 
@@ -1314,7 +1332,7 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ) {
         const swap = v2 ? "v2" : "v1";
         const ta0 = init0 ? "|****S***|" : "|----S---|";
@@ -1325,17 +1343,17 @@ describe("sparse swap tests", () => {
           const result = await runSwap(init0, init1, init2, v2);
           assert.ok(
             result.quote.estimatedAmountIn.eq(
-              referenceResult.quote.estimatedAmountIn
-            )
+              referenceResult.quote.estimatedAmountIn,
+            ),
           );
           assert.ok(
             result.quote.estimatedAmountOut.eq(
-              referenceResult.quote.estimatedAmountOut
-            )
+              referenceResult.quote.estimatedAmountOut,
+            ),
           );
           assert.ok(
             result.poolData.tickCurrentIndex ===
-              referenceResult.poolData.tickCurrentIndex
+              referenceResult.poolData.tickCurrentIndex,
           );
         });
       }
@@ -1367,14 +1385,14 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ): Promise<{ quote: SwapQuote; poolData: WhirlpoolData }> {
         const { poolInitInfo, tokenAccountA, tokenAccountB } =
           await buildTestEnvironment();
 
         const pool = await testCtx.whirlpoolClient.getPool(
           poolInitInfo.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const startTickIndexes = [0, -5632, -11264];
@@ -1389,7 +1407,7 @@ describe("sparse swap tests", () => {
         });
         if (tickArrayIndexes.length > 0) {
           await (await pool.initTickArrayForTicks(
-            tickArrayIndexes
+            tickArrayIndexes,
           ))!.buildAndExecute();
 
           // Wait for LiteSVM state to sync for each initialized tick array
@@ -1404,7 +1422,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // padding if needed
@@ -1413,7 +1431,7 @@ describe("sparse swap tests", () => {
             assert.ok(tickArrays[i].data === null);
             tickArrays[i].data = buildTickArrayData(
               startTickIndexes[i],
-              []
+              [],
             ).data;
             tickArrays[i].data!.whirlpool = pool.getAddress();
           } else {
@@ -1434,7 +1452,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote.estimatedAmountIn.gtn(0));
@@ -1447,7 +1465,7 @@ describe("sparse swap tests", () => {
             pool,
             tokenAccountA,
             tokenAccountB,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           ),
           amountSpecifiedIsInput: true,
           amount: quote.estimatedAmountIn,
@@ -1461,18 +1479,18 @@ describe("sparse swap tests", () => {
         };
 
         assert.ok(
-          (await pool.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         await toTx(
           testCtx.whirlpoolCtx,
           !v2
             ? WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, params)
-            : WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params)
+            : WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params),
         ).buildAndExecute(undefined, { skipPreflight: true });
         const updatedTick = await pollForCondition(
           async () => (await pool.refreshData()).tickCurrentIndex,
           (tick) => tick === targetTickIndex - 1,
-          { maxRetries: 50, delayMs: 10 }
+          { maxRetries: 50, delayMs: 10 },
         );
         assert.ok(updatedTick === targetTickIndex - 1 /* shift */);
 
@@ -1488,7 +1506,7 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ) {
         const swap = v2 ? "v2" : "v1";
         const ta0 = init0 ? "|****S***|" : "|----S---|";
@@ -1499,17 +1517,17 @@ describe("sparse swap tests", () => {
           const result = await runSwap(init0, init1, init2, v2);
           assert.ok(
             result.quote.estimatedAmountIn.eq(
-              referenceResult.quote.estimatedAmountIn
-            )
+              referenceResult.quote.estimatedAmountIn,
+            ),
           );
           assert.ok(
             result.quote.estimatedAmountOut.eq(
-              referenceResult.quote.estimatedAmountOut
-            )
+              referenceResult.quote.estimatedAmountOut,
+            ),
           );
           assert.ok(
             result.poolData.tickCurrentIndex ===
-              referenceResult.poolData.tickCurrentIndex
+              referenceResult.poolData.tickCurrentIndex,
           );
         });
       }
@@ -1541,7 +1559,7 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ): Promise<{
         quote0: SwapQuote;
         poolData0: WhirlpoolData;
@@ -1626,11 +1644,11 @@ describe("sparse swap tests", () => {
 
         const pool0 = await testCtx.whirlpoolClient.getPool(
           poolInit0.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const pool1 = await testCtx.whirlpoolClient.getPool(
           poolInit1.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // init tick arrays
@@ -1642,10 +1660,10 @@ describe("sparse swap tests", () => {
         });
         if (tickArrayIndexes.length > 0) {
           await (await pool0.initTickArrayForTicks(
-            tickArrayIndexes
+            tickArrayIndexes,
           ))!.buildAndExecute();
           await (await pool1.initTickArrayForTicks(
-            tickArrayIndexes
+            tickArrayIndexes,
           ))!.buildAndExecute();
 
           // Wait for LiteSVM state to sync for each initialized tick array
@@ -1660,7 +1678,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const tickArrays1 = await SwapUtils.getTickArrays(
           pool1.getData().tickCurrentIndex,
@@ -1669,7 +1687,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         // padding if needed
         init.forEach((v, i) => {
@@ -1677,13 +1695,13 @@ describe("sparse swap tests", () => {
             assert.ok(tickArrays0[i].data === null);
             tickArrays0[i].data = buildTickArrayData(
               startTickIndexes[i],
-              []
+              [],
             ).data;
             tickArrays0[i].data!.whirlpool = pool0.getAddress();
             assert.ok(tickArrays1[i].data === null);
             tickArrays1[i].data = buildTickArrayData(
               startTickIndexes[i],
-              []
+              [],
             ).data;
             tickArrays1[i].data!.whirlpool = pool1.getAddress();
           } else {
@@ -1705,7 +1723,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const quote0 = swapQuoteWithParams(
@@ -1721,7 +1739,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote0.estimatedAmountIn.gtn(0));
@@ -1737,11 +1755,11 @@ describe("sparse swap tests", () => {
           aToBTwo: aToB,
           oracleOne: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool1.getAddress()
+            pool1.getAddress(),
           ).publicKey,
           oracleTwo: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool0.getAddress()
+            pool0.getAddress(),
           ).publicKey,
           sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
           sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -1779,24 +1797,24 @@ describe("sparse swap tests", () => {
         };
 
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         await toTx(
           testCtx.whirlpoolCtx,
           !v2
             ? WhirlpoolIx.twoHopSwapIx(testCtx.whirlpoolCtx.program, params)
-            : WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params)
+            : WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params),
         )
           .addInstruction(useMaxCU())
           .buildAndExecute(undefined, { skipPreflight: true });
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex >= targetTickIndex
+          (await pool0.refreshData()).tickCurrentIndex >= targetTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex >= targetTickIndex
+          (await pool1.refreshData()).tickCurrentIndex >= targetTickIndex,
         );
 
         return {
@@ -1821,7 +1839,7 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ) {
         const swap = v2 ? "v2" : "v1";
         const ta0 = init0 ? "|****S***|" : "|----S---|";
@@ -1832,31 +1850,31 @@ describe("sparse swap tests", () => {
           const result = await runSwap(init0, init1, init2, v2);
           assert.ok(
             result.quote0.estimatedAmountIn.eq(
-              referenceResult.quote0.estimatedAmountIn
-            )
+              referenceResult.quote0.estimatedAmountIn,
+            ),
           );
           assert.ok(
             result.quote0.estimatedAmountOut.eq(
-              referenceResult.quote0.estimatedAmountOut
-            )
+              referenceResult.quote0.estimatedAmountOut,
+            ),
           );
           assert.ok(
             result.poolData0.tickCurrentIndex ===
-              referenceResult.poolData0.tickCurrentIndex
+              referenceResult.poolData0.tickCurrentIndex,
           );
           assert.ok(
             result.quote1.estimatedAmountIn.eq(
-              referenceResult.quote1.estimatedAmountIn
-            )
+              referenceResult.quote1.estimatedAmountIn,
+            ),
           );
           assert.ok(
             result.quote1.estimatedAmountOut.eq(
-              referenceResult.quote1.estimatedAmountOut
-            )
+              referenceResult.quote1.estimatedAmountOut,
+            ),
           );
           assert.ok(
             result.poolData1.tickCurrentIndex ===
-              referenceResult.poolData1.tickCurrentIndex
+              referenceResult.poolData1.tickCurrentIndex,
           );
         });
       }
@@ -1888,7 +1906,7 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ): Promise<{
         quote0: SwapQuote;
         poolData0: WhirlpoolData;
@@ -1973,11 +1991,11 @@ describe("sparse swap tests", () => {
 
         const pool0 = await testCtx.whirlpoolClient.getPool(
           poolInit0.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const pool1 = await testCtx.whirlpoolClient.getPool(
           poolInit1.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // init tick arrays
@@ -1989,10 +2007,10 @@ describe("sparse swap tests", () => {
         });
         if (tickArrayIndexes.length > 0) {
           await (await pool0.initTickArrayForTicks(
-            tickArrayIndexes
+            tickArrayIndexes,
           ))!.buildAndExecute();
           await (await pool1.initTickArrayForTicks(
-            tickArrayIndexes
+            tickArrayIndexes,
           ))!.buildAndExecute();
 
           // Wait for LiteSVM state to sync for each initialized tick array
@@ -2007,7 +2025,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const tickArrays1 = await SwapUtils.getTickArrays(
           pool1.getData().tickCurrentIndex,
@@ -2016,7 +2034,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         // padding if needed
         init.forEach((v, i) => {
@@ -2024,13 +2042,13 @@ describe("sparse swap tests", () => {
             assert.ok(tickArrays0[i].data === null);
             tickArrays0[i].data = buildTickArrayData(
               startTickIndexes[i],
-              []
+              [],
             ).data;
             tickArrays0[i].data!.whirlpool = pool0.getAddress();
             assert.ok(tickArrays1[i].data === null);
             tickArrays1[i].data = buildTickArrayData(
               startTickIndexes[i],
-              []
+              [],
             ).data;
             tickArrays1[i].data!.whirlpool = pool1.getAddress();
           } else {
@@ -2052,7 +2070,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const quote1 = swapQuoteWithParams(
@@ -2068,7 +2086,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote0.estimatedAmountIn.gtn(0));
@@ -2084,11 +2102,11 @@ describe("sparse swap tests", () => {
           aToBTwo: aToB,
           oracleOne: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool0.getAddress()
+            pool0.getAddress(),
           ).publicKey,
           oracleTwo: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool1.getAddress()
+            pool1.getAddress(),
           ).publicKey,
           sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
           sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -2126,24 +2144,24 @@ describe("sparse swap tests", () => {
         };
 
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         await toTx(
           testCtx.whirlpoolCtx,
           !v2
             ? WhirlpoolIx.twoHopSwapIx(testCtx.whirlpoolCtx.program, params)
-            : WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params)
+            : WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params),
         )
           .addInstruction(useMaxCU())
           .buildAndExecute(undefined, { skipPreflight: true });
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex <= targetTickIndex
+          (await pool0.refreshData()).tickCurrentIndex <= targetTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex <= targetTickIndex
+          (await pool1.refreshData()).tickCurrentIndex <= targetTickIndex,
         );
 
         return {
@@ -2168,7 +2186,7 @@ describe("sparse swap tests", () => {
         init0: boolean,
         init1: boolean,
         init2: boolean,
-        v2: boolean
+        v2: boolean,
       ) {
         const swap = v2 ? "v2" : "v1";
         const ta0 = init0 ? "|****S***|" : "|----S---|";
@@ -2179,31 +2197,31 @@ describe("sparse swap tests", () => {
           const result = await runSwap(init0, init1, init2, v2);
           assert.ok(
             result.quote0.estimatedAmountIn.eq(
-              referenceResult.quote0.estimatedAmountIn
-            )
+              referenceResult.quote0.estimatedAmountIn,
+            ),
           );
           assert.ok(
             result.quote0.estimatedAmountOut.eq(
-              referenceResult.quote0.estimatedAmountOut
-            )
+              referenceResult.quote0.estimatedAmountOut,
+            ),
           );
           assert.ok(
             result.poolData0.tickCurrentIndex ===
-              referenceResult.poolData0.tickCurrentIndex
+              referenceResult.poolData0.tickCurrentIndex,
           );
           assert.ok(
             result.quote1.estimatedAmountIn.eq(
-              referenceResult.quote1.estimatedAmountIn
-            )
+              referenceResult.quote1.estimatedAmountIn,
+            ),
           );
           assert.ok(
             result.quote1.estimatedAmountOut.eq(
-              referenceResult.quote1.estimatedAmountOut
-            )
+              referenceResult.quote1.estimatedAmountOut,
+            ),
           );
           assert.ok(
             result.poolData1.tickCurrentIndex ===
-              referenceResult.poolData1.tickCurrentIndex
+              referenceResult.poolData1.tickCurrentIndex,
           );
         });
       }
@@ -2233,11 +2251,11 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             tickSpacing64,
             PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
-            new BN(1_000_000)
+            new BN(1_000_000),
           );
 
         const pool = await testCtx.whirlpoolClient.getPool(
-          whirlpoolPda.publicKey
+          whirlpoolPda.publicKey,
         );
 
         // [-11264  ][-5632   ][0       ]
@@ -2253,7 +2271,7 @@ describe("sparse swap tests", () => {
           2944,
           Percentage.fromFraction(0, 100),
           pool,
-          NO_TOKEN_EXTENSION_CONTEXT
+          NO_TOKEN_EXTENSION_CONTEXT,
         );
         await (
           await pool.openPosition(-9984, 2944, depositQuote)
@@ -2267,7 +2285,7 @@ describe("sparse swap tests", () => {
           await buildTestEnvironment();
         const pool = await testCtx.whirlpoolClient.getPool(
           whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const swapQuote = await swapQuoteByOutputToken(
@@ -2277,28 +2295,28 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const taStart5632 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          5632
+          5632,
         ).publicKey;
         const taStart0 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          0
+          0,
         ).publicKey;
         const taStartNeg5632 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          -5632
+          -5632,
         ).publicKey;
         const taStartNeg11264 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          -11264
+          -11264,
         ).publicKey;
 
         const paramsWithoutSupplemental = {
@@ -2308,7 +2326,7 @@ describe("sparse swap tests", () => {
             pool,
             tokenAccountA,
             tokenAccountB,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           ),
           // v2 required
           tokenMintA: poolInitInfo.tokenMintA,
@@ -2327,10 +2345,10 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             WhirlpoolIx.swapV2Ix(
               testCtx.whirlpoolCtx.program,
-              paramsWithoutSupplemental
-            )
+              paramsWithoutSupplemental,
+            ),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         const paramsWithSupplemental = {
@@ -2348,8 +2366,8 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           WhirlpoolIx.swapV2Ix(
             testCtx.whirlpoolCtx.program,
-            paramsWithSupplemental
-          )
+            paramsWithSupplemental,
+          ),
         ).buildAndExecute(undefined, { skipPreflight: true });
 
         // 3000 --> less than -5632
@@ -2361,7 +2379,7 @@ describe("sparse swap tests", () => {
           await buildTestEnvironment();
         const pool = await testCtx.whirlpoolClient.getPool(
           whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const swapQuote = await swapQuoteByOutputToken(
@@ -2371,13 +2389,13 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const taStart5632 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          5632
+          5632,
         ).publicKey;
         const supplementalTickArrays = [
           taStart5632,
@@ -2392,7 +2410,7 @@ describe("sparse swap tests", () => {
             pool,
             tokenAccountA,
             tokenAccountB,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           ),
           // v2 required
           tokenMintA: poolInitInfo.tokenMintA,
@@ -2405,7 +2423,7 @@ describe("sparse swap tests", () => {
 
         assert.throws(
           () => WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params),
-          /Too many supplemental tick arrays provided/ // SDK error
+          /Too many supplemental tick arrays provided/, // SDK error
         );
 
         // bypass SDK
@@ -2419,7 +2437,7 @@ describe("sparse swap tests", () => {
           new RemainingAccountsBuilder()
             .addSlice(
               RemainingAccountsType.SupplementalTickArrays,
-              supplementalTickArrayAccountMetas
+              supplementalTickArrayAccountMetas,
             )
             .build();
 
@@ -2441,11 +2459,11 @@ describe("sparse swap tests", () => {
                     memoProgram: MEMO_PROGRAM_ADDRESS,
                   },
                   remainingAccounts,
-                }
+                },
               ),
             ],
           }).buildAndExecute(),
-          /0x17a7/ // TooManySupplementalTickArrays
+          /0x17a7/, // TooManySupplementalTickArrays
         );
       });
 
@@ -2455,11 +2473,11 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             tickSpacing64,
             PriceMath.tickIndexToSqrtPriceX64(-128), // tickCurrentIndex = -128
-            new BN(1_000_000)
+            new BN(1_000_000),
           );
 
         const pool = await testCtx.whirlpoolClient.getPool(
-          whirlpoolPda.publicKey
+          whirlpoolPda.publicKey,
         );
 
         // [-11264  ][-5632   ][0       ]
@@ -2475,7 +2493,7 @@ describe("sparse swap tests", () => {
           2944,
           Percentage.fromFraction(0, 100),
           pool,
-          NO_TOKEN_EXTENSION_CONTEXT
+          NO_TOKEN_EXTENSION_CONTEXT,
         );
         await (
           await pool.openPosition(-9984, 2944, depositQuote)
@@ -2489,18 +2507,18 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const taStart0 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          0
+          0,
         ).publicKey;
         const taStartNeg5632 = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool.getAddress(),
-          -5632
+          -5632,
         ).publicKey;
 
         const paramsWithoutSupplemental = {
@@ -2510,7 +2528,7 @@ describe("sparse swap tests", () => {
             pool,
             tokenAccountA,
             tokenAccountB,
-            testCtx.provider.wallet.publicKey
+            testCtx.provider.wallet.publicKey,
           ),
           // v2 required
           tokenMintA: poolInitInfo.tokenMintA,
@@ -2531,7 +2549,7 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         assert.ok(anotherSwapQuote.estimatedEndTickIndex > 128);
@@ -2543,7 +2561,7 @@ describe("sparse swap tests", () => {
 
         const preOutputBalance =
           await testCtx.whirlpoolCtx.connection.getTokenAccountBalance(
-            paramsWithoutSupplemental.tokenOwnerAccountB
+            paramsWithoutSupplemental.tokenOwnerAccountB,
           );
 
         // now tickCurrentIndex was push backed to > 128, so TickArray with startTickIndex 0 should be used as the first one
@@ -2552,10 +2570,10 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             WhirlpoolIx.swapV2Ix(
               testCtx.whirlpoolCtx.program,
-              paramsWithoutSupplemental
-            )
+              paramsWithoutSupplemental,
+            ),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         // If TickArray with startTickIndex 0 is included in supplementalTickArrays, it should work.
@@ -2567,22 +2585,22 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx,
           WhirlpoolIx.swapV2Ix(
             testCtx.whirlpoolCtx.program,
-            paramsWithSupplemental
-          )
+            paramsWithSupplemental,
+          ),
         ).buildAndExecute(undefined, { skipPreflight: true });
 
         assert.ok((await pool.refreshData()).tickCurrentIndex < 0);
 
         const postOutputBalance =
           await testCtx.whirlpoolCtx.connection.getTokenAccountBalance(
-            paramsWithoutSupplemental.tokenOwnerAccountB
+            paramsWithoutSupplemental.tokenOwnerAccountB,
           );
 
         // output balance should be increased (actual output will be better than quote due to the push back)
         assert.ok(
           new BN(postOutputBalance.value.amount)
             .sub(new BN(preOutputBalance.value.amount))
-            .gte(swapQuote.estimatedAmountOut)
+            .gte(swapQuote.estimatedAmountOut),
         );
       });
     });
@@ -2677,19 +2695,19 @@ describe("sparse swap tests", () => {
 
         const pool0 = await testCtx.whirlpoolClient.getPool(
           poolInit0.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const pool1 = await testCtx.whirlpoolClient.getPool(
           poolInit1.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // init tick arrays
         await (await pool0.initTickArrayForTicks(
-          startTickIndexes
+          startTickIndexes,
         ))!.buildAndExecute();
         await (await pool1.initTickArrayForTicks(
-          startTickIndexes
+          startTickIndexes,
         ))!.buildAndExecute();
 
         // fetch tick arrays
@@ -2700,7 +2718,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const tickArrays1 = await SwapUtils.getTickArrays(
           pool1.getData().tickCurrentIndex,
@@ -2709,7 +2727,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const quote1 = swapQuoteWithParams(
@@ -2725,7 +2743,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const quote0 = swapQuoteWithParams(
@@ -2741,7 +2759,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote0.estimatedAmountIn.gtn(0));
@@ -2758,11 +2776,11 @@ describe("sparse swap tests", () => {
           aToBTwo: aToB,
           oracleOne: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool1.getAddress()
+            pool1.getAddress(),
           ).publicKey,
           oracleTwo: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool0.getAddress()
+            pool0.getAddress(),
           ).publicKey,
           sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
           sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -2813,20 +2831,20 @@ describe("sparse swap tests", () => {
         ];
 
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         await assert.rejects(
           toTx(
             testCtx.whirlpoolCtx,
             WhirlpoolIx.twoHopSwapV2Ix(
               testCtx.whirlpoolCtx.program,
-              paramsWithoutSupplemental
-            )
+              paramsWithoutSupplemental,
+            ),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         const paramsWithSupplemental: TwoHopSwapV2Params = {
@@ -2836,25 +2854,25 @@ describe("sparse swap tests", () => {
         };
 
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         await toTx(
           testCtx.whirlpoolCtx,
           WhirlpoolIx.twoHopSwapV2Ix(
             testCtx.whirlpoolCtx.program,
-            paramsWithSupplemental
-          )
+            paramsWithSupplemental,
+          ),
         )
           .addInstruction(useMaxCU())
           .buildAndExecute();
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex >= targetTickIndex
+          (await pool0.refreshData()).tickCurrentIndex >= targetTickIndex,
         );
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex >= targetTickIndex
+          (await pool1.refreshData()).tickCurrentIndex >= targetTickIndex,
         );
       });
 
@@ -2941,19 +2959,19 @@ describe("sparse swap tests", () => {
 
         const pool0 = await testCtx.whirlpoolClient.getPool(
           poolInit0.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const pool1 = await testCtx.whirlpoolClient.getPool(
           poolInit1.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // init tick arrays
         await (await pool0.initTickArrayForTicks(
-          startTickIndexes
+          startTickIndexes,
         ))!.buildAndExecute();
         await (await pool1.initTickArrayForTicks(
-          startTickIndexes
+          startTickIndexes,
         ))!.buildAndExecute();
 
         // fetch tick arrays
@@ -2964,7 +2982,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const tickArrays1 = await SwapUtils.getTickArrays(
           pool1.getData().tickCurrentIndex,
@@ -2973,7 +2991,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const quote1 = swapQuoteWithParams(
@@ -2989,7 +3007,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const quote0 = swapQuoteWithParams(
@@ -3005,7 +3023,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote0.estimatedAmountIn.gtn(0));
@@ -3035,11 +3053,11 @@ describe("sparse swap tests", () => {
           aToBTwo: aToB,
           oracleOne: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool1.getAddress()
+            pool1.getAddress(),
           ).publicKey,
           oracleTwo: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool0.getAddress()
+            pool0.getAddress(),
           ).publicKey,
           sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
           sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -3082,7 +3100,7 @@ describe("sparse swap tests", () => {
         assert.throws(
           () =>
             WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params),
-          /Too many supplemental tick arrays provided/ // SDK error
+          /Too many supplemental tick arrays provided/, // SDK error
         );
 
         // bypass SDK
@@ -3096,7 +3114,7 @@ describe("sparse swap tests", () => {
           new RemainingAccountsBuilder()
             .addSlice(
               RemainingAccountsType.SupplementalTickArraysOne,
-              supplementalTickArrayOneAccountMetas
+              supplementalTickArrayOneAccountMetas,
             )
             .build();
 
@@ -3120,11 +3138,11 @@ describe("sparse swap tests", () => {
                     memoProgram: MEMO_PROGRAM_ADDRESS,
                   },
                   remainingAccounts: remainingAccountsOne,
-                }
+                },
               ),
             ],
           }).buildAndExecute(),
-          /0x17a7/ // TooManySupplementalTickArrays
+          /0x17a7/, // TooManySupplementalTickArrays
         );
 
         // bypass SDK
@@ -3138,7 +3156,7 @@ describe("sparse swap tests", () => {
           new RemainingAccountsBuilder()
             .addSlice(
               RemainingAccountsType.SupplementalTickArraysTwo,
-              supplementalTickArrayTwoAccountMetas
+              supplementalTickArrayTwoAccountMetas,
             )
             .build();
 
@@ -3162,11 +3180,11 @@ describe("sparse swap tests", () => {
                     memoProgram: MEMO_PROGRAM_ADDRESS,
                   },
                   remainingAccounts: remainingAccountsTwo,
-                }
+                },
               ),
             ],
           }).buildAndExecute(),
-          /0x17a7/ // TooManySupplementalTickArrays
+          /0x17a7/, // TooManySupplementalTickArrays
         );
       });
 
@@ -3254,19 +3272,19 @@ describe("sparse swap tests", () => {
 
         const pool0 = await testCtx.whirlpoolClient.getPool(
           poolInit0.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const pool1 = await testCtx.whirlpoolClient.getPool(
           poolInit1.whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         // init tick arrays
         await (await pool0.initTickArrayForTicks(
-          startTickIndexes
+          startTickIndexes,
         ))!.buildAndExecute();
         await (await pool1.initTickArrayForTicks(
-          startTickIndexes
+          startTickIndexes,
         ))!.buildAndExecute();
 
         // fetch tick arrays
@@ -3277,7 +3295,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         const tickArrays1 = await SwapUtils.getTickArrays(
           pool1.getData().tickCurrentIndex,
@@ -3286,7 +3304,7 @@ describe("sparse swap tests", () => {
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const quote1 = swapQuoteWithParams(
@@ -3302,7 +3320,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         const quote0 = swapQuoteWithParams(
@@ -3318,7 +3336,7 @@ describe("sparse swap tests", () => {
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(0, 100)
+          Percentage.fromFraction(0, 100),
         );
 
         assert.ok(quote0.estimatedAmountIn.gtn(0));
@@ -3329,22 +3347,22 @@ describe("sparse swap tests", () => {
         const taStart0One = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
-          0
+          0,
         ).publicKey;
         const taStart0Two = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
-          0
+          0,
         ).publicKey;
         const taStartNeg5632One = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool1.getAddress(),
-          -5632
+          -5632,
         ).publicKey;
         const taStartNeg5632Two = PDAUtil.getTickArray(
           testCtx.whirlpoolCtx.program.programId,
           pool0.getAddress(),
-          -5632
+          -5632,
         ).publicKey;
 
         const paramsWithoutSupplemental = {
@@ -3355,11 +3373,11 @@ describe("sparse swap tests", () => {
           aToBTwo: aToB,
           oracleOne: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool1.getAddress()
+            pool1.getAddress(),
           ).publicKey,
           oracleTwo: PDAUtil.getOracle(
             testCtx.whirlpoolCtx.program.programId,
-            pool0.getAddress()
+            pool0.getAddress(),
           ).publicKey,
           sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
           sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -3389,10 +3407,10 @@ describe("sparse swap tests", () => {
 
         // it should start from TA with startTickIndex 0
         assert.ok(
-          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool1.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         assert.ok(
-          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex
+          (await pool0.refreshData()).tickCurrentIndex === initialTickIndex,
         );
         assert.ok(paramsWithoutSupplemental.tickArrayOne0.equals(taStart0One));
         assert.ok(paramsWithoutSupplemental.tickArrayTwo0.equals(taStart0Two));
@@ -3405,7 +3423,7 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         const anotherSwapQuoteTwo = await swapQuoteByInputToken(
@@ -3415,7 +3433,7 @@ describe("sparse swap tests", () => {
           Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
 
         await toTx(
@@ -3428,9 +3446,9 @@ describe("sparse swap tests", () => {
               pool1,
               aquarium.tokenAccounts[1].account,
               aquarium.tokenAccounts[2].account,
-              testCtx.provider.wallet.publicKey
-            )
-          )
+              testCtx.provider.wallet.publicKey,
+            ),
+          ),
         ).buildAndExecute();
         await toTx(
           testCtx.whirlpoolCtx,
@@ -3442,9 +3460,9 @@ describe("sparse swap tests", () => {
               pool0,
               aquarium.tokenAccounts[0].account,
               aquarium.tokenAccounts[1].account,
-              testCtx.provider.wallet.publicKey
-            )
-          )
+              testCtx.provider.wallet.publicKey,
+            ),
+          ),
         ).buildAndExecute();
 
         assert.ok((await pool1.refreshData()).tickCurrentIndex <= -128);
@@ -3452,7 +3470,7 @@ describe("sparse swap tests", () => {
 
         const preOutputBalance =
           await testCtx.whirlpoolCtx.connection.getTokenAccountBalance(
-            aquarium.tokenAccounts[0].account
+            aquarium.tokenAccounts[0].account,
           );
 
         // now tickCurrentIndex was push backed to <= -128, so TickArray with startTickIndex -5632 should be used as the first one
@@ -3461,10 +3479,10 @@ describe("sparse swap tests", () => {
             testCtx.whirlpoolCtx,
             WhirlpoolIx.twoHopSwapV2Ix(
               testCtx.whirlpoolCtx.program,
-              paramsWithoutSupplemental
-            )
+              paramsWithoutSupplemental,
+            ),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         await assert.rejects(
@@ -3473,9 +3491,9 @@ describe("sparse swap tests", () => {
             WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, {
               ...paramsWithoutSupplemental,
               supplementalTickArraysOne: [taStartNeg5632One],
-            })
+            }),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         await assert.rejects(
@@ -3484,9 +3502,9 @@ describe("sparse swap tests", () => {
             WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, {
               ...paramsWithoutSupplemental,
               supplementalTickArraysTwo: [taStartNeg5632Two],
-            })
+            }),
           ).buildAndExecute(),
-          /0x1787/ // InvalidTickArraySequence
+          /0x1787/, // InvalidTickArraySequence
         );
 
         await toTx(
@@ -3495,21 +3513,21 @@ describe("sparse swap tests", () => {
             ...paramsWithoutSupplemental,
             supplementalTickArraysOne: [taStartNeg5632One],
             supplementalTickArraysTwo: [taStartNeg5632Two],
-          })
+          }),
         )
           .addInstruction(useMaxCU())
           .buildAndExecute();
 
         const postOutputBalance =
           await testCtx.whirlpoolCtx.connection.getTokenAccountBalance(
-            aquarium.tokenAccounts[0].account
+            aquarium.tokenAccounts[0].account,
           );
 
         // output balance should be increased (actual output will be better than quote due to the push back)
         assert.ok(
           new BN(postOutputBalance.value.amount)
             .sub(new BN(preOutputBalance.value.amount))
-            .gte(quote0.estimatedAmountOut)
+            .gte(quote0.estimatedAmountOut),
         );
         assert.ok((await pool1.refreshData()).tickCurrentIndex > 0);
         assert.ok((await pool0.refreshData()).tickCurrentIndex > 0);

@@ -1,21 +1,27 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { InitPoolParams, WhirlpoolData } from "../../../src";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type {
+  InitPoolParams,
+  WhirlpoolData,
+  WhirlpoolContext,
+} from "../../../src";
+import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import { TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 import { createInOrderMints } from "../../utils/test-builders";
 
 describe("set_default_protocol_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    program = env.program;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully set_default_protocol_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(

@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { AuthorityType } from "@solana/spl-token";
 import * as assert from "assert";
 import { toTx, WhirlpoolIx } from "../../../src";
-import { WhirlpoolContext } from "../../../src/context";
+import type { WhirlpoolContext } from "../../../src/context";
 import {
   approveToken,
   createAndMintToTokenAccount,
@@ -12,7 +12,7 @@ import {
   transferToken,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initializePositionBundle,
@@ -24,12 +24,14 @@ import {
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
 
 describe("close_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+  });
 
   it("successfully closes an open position", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);

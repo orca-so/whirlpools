@@ -609,9 +609,13 @@ describe("bundled position management tests", () => {
         tokenMinB: withdrawAmounts.tokenB,
       }),
     ).buildAndExecute();
-    const postDecrease = await ctx.fetcher.getPosition(
-      bundledPositionPubkey,
-      IGNORE_CACHE,
+    const postDecrease = await pollForCondition(
+      () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+      (position) => position!.liquidity.isZero(),
+      {
+        accountToReload: bundledPositionPubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postDecrease!.liquidity.isZero());
 

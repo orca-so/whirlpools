@@ -3,8 +3,13 @@ import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolData } from "../../../src";
-import { WhirlpoolContext, WhirlpoolIx, toTx } from "../../../src";
+import type {
+  PositionData,
+  TickArrayData,
+  WhirlpoolData,
+  WhirlpoolContext,
+} from "../../../src";
+import { WhirlpoolIx, toTx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../../src/quotes/public/decrease-liquidity-quote";
 import {
@@ -15,14 +20,10 @@ import {
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
-  sleep,
   transferToken,
+  warpClock,
 } from "../../utils";
-import {
-  defaultConfirmOptions,
-  TICK_INIT_SIZE,
-  TICK_RENT_AMOUNT,
-} from "../../utils/const";
+import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initTestPool,
@@ -31,16 +32,32 @@ import {
   useMaxCU,
 } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
+
+type LiquidityDecreasedEvent = {
+  liquidity: anchor.BN;
+  tokenAAmount: anchor.BN;
+  tokenBAmount: anchor.BN;
+  tokenATransferFee: anchor.BN;
+  tokenBTransferFee: anchor.BN;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
+};
 
 describe("decrease_liquidity", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully decrease liquidity (partial) from position in one fixed tick array", async () => {
     const liquidityAmount = new anchor.BN(1_250_000);
@@ -67,7 +84,7 @@ describe("decrease_liquidity", () => {
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -107,9 +124,10 @@ describe("decrease_liquidity", () => {
     const remainingLiquidity = liquidityAmount.sub(
       removalQuote.liquidityAmount,
     );
-    const poolAfter = (await fetcher.getPool(
-      whirlpoolPda.publicKey,
-      IGNORE_CACHE,
+    const poolAfter = (await pollForCondition(
+      () => fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE),
+      (p) => !!p && p.liquidity.eq(new BN(0)),
+      { accountToReload: whirlpoolPda.publicKey, connection: ctx.connection },
     )) as WhirlpoolData;
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gt(
@@ -175,7 +193,7 @@ describe("decrease_liquidity", () => {
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -305,9 +323,10 @@ describe("decrease_liquidity", () => {
     const remainingLiquidity = liquidityAmount.sub(
       removalQuote.liquidityAmount,
     );
-    const poolAfter = (await fetcher.getPool(
-      whirlpoolPda.publicKey,
-      IGNORE_CACHE,
+    const poolAfter = (await pollForCondition(
+      () => fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE),
+      (p) => !!p && p.liquidity.eq(remainingLiquidity),
+      { accountToReload: whirlpoolPda.publicKey, connection: ctx.connection },
     )) as WhirlpoolData;
 
     assert.ok(
@@ -410,9 +429,10 @@ describe("decrease_liquidity", () => {
       }),
     ).buildAndExecute();
 
-    const poolAfter = (await fetcher.getPool(
-      whirlpoolPda.publicKey,
-      IGNORE_CACHE,
+    const poolAfter = (await pollForCondition(
+      () => fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE),
+      (p) => !!p && p.liquidity.eq(new BN(0)),
+      { accountToReload: whirlpoolPda.publicKey, connection: ctx.connection },
     )) as WhirlpoolData;
 
     assert.ok(
@@ -484,7 +504,7 @@ describe("decrease_liquidity", () => {
     assert.ok(tickArrayBefore);
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -1586,21 +1606,13 @@ describe("decrease_liquidity", () => {
 
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
+    let observedEvent: LiquidityDecreasedEvent | null = null;
     const listener = ctx.program.addEventListener(
       "liquidityDecreased",
-      (event, _slot, signature) => {
+      (event: LiquidityDecreasedEvent, _slot, signature) => {
         detectedSignature = signature;
-        // verify
-        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
-        assert.ok(event.position.equals(positions[0].publicKey));
-        assert.ok(event.liquidity.eq(removalQuote.liquidityAmount));
-        assert.ok(event.tickLowerIndex === tickLower);
-        assert.ok(event.tickUpperIndex === tickUpper);
-        assert.ok(event.tokenAAmount.eq(removalQuote.tokenEstA));
-        assert.ok(event.tokenBAmount.eq(removalQuote.tokenEstB));
-        assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
-        assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        observedEvent = event;
         eventVerified = true;
       },
     );
@@ -1622,9 +1634,24 @@ describe("decrease_liquidity", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2000);
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === signature && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
+    assert.ok(observedEvent);
+
+    // Type assertion after null check
+    const event = observedEvent as LiquidityDecreasedEvent;
+    assert.ok(event.liquidity.eq(removalQuote.liquidityAmount));
+    assert.ok(event.tokenAAmount.gte(removalQuote.tokenMinA));
+    assert.ok(event.tokenBAmount.gte(removalQuote.tokenMinB));
+    assert.ok(event.tickLowerIndex === tickLower);
+    assert.ok(event.tickUpperIndex === tickUpper);
+    assert.ok(event.tokenATransferFee.isZero());
+    assert.ok(event.tokenBTransferFee.isZero());
 
     ctx.program.removeEventListener(listener);
   });

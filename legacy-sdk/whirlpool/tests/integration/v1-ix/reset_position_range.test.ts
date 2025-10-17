@@ -1,19 +1,32 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import type { InitPoolParams, PositionData } from "../../../src";
+import type {
+  InitPoolParams,
+  PositionData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
   PoolUtil,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../../src";
-import { ONE_SOL, TickSpacing, ZERO_BN, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
+  systemTransferTx,
+  loadPreloadAccount,
+} from "../../utils";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
   initializePositionBundle,
   initTestPool,
@@ -27,14 +40,31 @@ import preloadWalletSecret from "../../preload_account/reset_position_range/owne
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 describe("reset_position_range", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+
+    // Load all preload accounts needed for this test
+    loadPreloadAccount("reset_position_range/whirlpool.json");
+    loadPreloadAccount("reset_position_range/position.json");
+    loadPreloadAccount("reset_position_range/position_mint.json");
+    loadPreloadAccount("reset_position_range/position_ata.json");
+    loadPreloadAccount("reset_position_range/token_a.json");
+    loadPreloadAccount("reset_position_range/token_b.json");
+    loadPreloadAccount("reset_position_range/token_a_ata.json");
+    loadPreloadAccount("reset_position_range/token_b_ata.json");
+    loadPreloadAccount("reset_position_range/vault_a.json");
+    loadPreloadAccount("reset_position_range/vault_b.json");
+    loadPreloadAccount("reset_position_range/fixed_tick_array_lower.json");
+    loadPreloadAccount("reset_position_range/fixed_tick_array_upper.json");
+    loadPreloadAccount("reset_position_range/owner_wallet.json");
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 32768;
@@ -131,6 +161,22 @@ describe("reset_position_range", () => {
       .addSigner(funderKeypair)
       .buildAndExecute();
 
+    await pollForCondition(
+      async () => fetcher.getPosition(positionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        Boolean(
+          p &&
+            p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+            p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+        ),
+      {
+        accountToReload: positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
+
     await validatePosition(positionPda.publicKey, positionMintAddress);
   });
 
@@ -151,6 +197,22 @@ describe("reset_position_range", () => {
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
       }),
     ).buildAndExecute();
+
+    await pollForCondition(
+      async () => fetcher.getPosition(positionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        Boolean(
+          p &&
+            p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+            p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+        ),
+      {
+        accountToReload: positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(positionPda.publicKey, positionMintAddress);
   });
@@ -190,6 +252,23 @@ describe("reset_position_range", () => {
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
+
+    await pollForCondition(
+      async () =>
+        fetcher.getPosition(params.positionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        Boolean(
+          p &&
+            p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+            p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+        ),
+      {
+        accountToReload: params.positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(params.positionPda.publicKey, params.positionMint);
   });
@@ -288,6 +367,24 @@ describe("reset_position_range", () => {
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
+
+    // Wait until position reflects the new tick indexes
+    await pollForCondition(
+      async () =>
+        fetcher.getPosition(bundledPositionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        Boolean(
+          p &&
+            p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+            p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+        ),
+      {
+        accountToReload: bundledPositionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(
       bundledPositionPda.publicKey,
@@ -426,6 +523,23 @@ describe("reset_position_range", () => {
       )
         .addSigner(funderKeypair)
         .buildAndExecute();
+
+      // Wait for position to reflect the new tick indexes before validation
+      await pollForCondition(
+        async () => fetcher.getPosition(positionKey, { maxAge: 0 }),
+        (p: PositionData | null) =>
+          Boolean(
+            p &&
+              p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+              p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+          ),
+        {
+          accountToReload: positionKey,
+          connection: provider.connection,
+          maxRetries: 200,
+          delayMs: 5,
+        },
+      );
 
       balance = await provider.connection.getBalance(funderKeypair.publicKey);
       assert.strictEqual(balance, postFunderBalance);

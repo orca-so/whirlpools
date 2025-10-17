@@ -1,19 +1,23 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { WhirlpoolContext } from "../../../src";
+import { toTx, WhirlpoolIx } from "../../../src";
 import { dropIsSignerFlag, getLocalnetAdminKeypair0 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import { IGNORE_CACHE } from "../../../dist/network/public/fetcher/fetcher-types";
 
 describe("set_config_feature_flag", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   let configAddress: anchor.web3.PublicKey;
 
@@ -60,7 +64,11 @@ describe("set_config_feature_flag", () => {
         .addSigner(admin)
         .buildAndExecute();
 
-      const postConfig = await fetcher.getConfig(configAddress, IGNORE_CACHE);
+      const postConfig = await pollForCondition(
+        () => fetcher.getConfig(configAddress, IGNORE_CACHE),
+        (c) => !!c && c.featureFlags === 1,
+        { accountToReload: configAddress, connection: ctx.connection },
+      );
       assert.ok(postConfig);
       assert.equal(postConfig.featureFlags, 1);
 
@@ -77,7 +85,11 @@ describe("set_config_feature_flag", () => {
         .addSigner(admin)
         .buildAndExecute();
 
-      const resetConfig = await fetcher.getConfig(configAddress, IGNORE_CACHE);
+      const resetConfig = await pollForCondition(
+        () => fetcher.getConfig(configAddress, IGNORE_CACHE),
+        (c) => !!c && c.featureFlags === 0,
+        { accountToReload: configAddress, connection: ctx.connection },
+      );
       assert.ok(resetConfig);
       assert.equal(resetConfig.featureFlags, 0);
     });

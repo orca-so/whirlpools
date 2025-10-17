@@ -389,7 +389,6 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
 
       // Get transaction logs and trigger any registered listeners
       const txLogs = result.logs();
-
       // Store transaction for getParsedTransaction
       _transactionHistory.set(signature, {
         signature,

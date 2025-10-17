@@ -1,13 +1,18 @@
-import { createContext, useContext, useState, useMemo } from "react";
+import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { UiWalletAccount, UiWallet } from "@wallet-standard/react";
-import { useWalletAccountTransactionSendingSigner } from "@solana/react";
-import type { TransactionSendingSigner } from "@solana/kit";
+import { useWalletAccountTransactionSigner } from "@solana/react";
+import type { Address } from "@solana/kit";
 
 interface ConnectedWallet {
   account: UiWalletAccount;
   wallet: UiWallet;
 }
+
+type WalletAdapter = {
+  address: Address;
+  transactionSigner: ReturnType<typeof useWalletAccountTransactionSigner>;
+};
 
 interface WalletContextType {
   account: UiWalletAccount | null;
@@ -15,7 +20,7 @@ interface WalletContextType {
   connectedWallet: ConnectedWallet | null;
   setConnectedWallet: (wallet: ConnectedWallet | null) => void;
   isConnected: boolean;
-  signer: TransactionSendingSigner | null;
+  signer: WalletAdapter | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -29,10 +34,15 @@ function WalletProviderInner({
   connectedWallet: ConnectedWallet;
   setConnectedWallet: (wallet: ConnectedWallet | null) => void;
 }) {
-  const signer = useWalletAccountTransactionSendingSigner(
+  const transactionSigner = useWalletAccountTransactionSigner(
     connectedWallet.account,
-    "solana:mainnet",
+    "solana:devnet",
   );
+
+  const signer: WalletAdapter = {
+    address: transactionSigner.address,
+    transactionSigner,
+  };
 
   return (
     <WalletContext.Provider

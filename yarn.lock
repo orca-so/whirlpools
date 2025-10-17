@@ -4116,6 +4116,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-example-ts-next@workspace:examples/ts-sdk/next"
   dependencies:
     "@next/bundle-analyzer": "npm:^15.2.4"
+    "@orca-so/tx-sender": "npm:*"
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^2.1.0"
     "@solana/react": "npm:2.1.0"

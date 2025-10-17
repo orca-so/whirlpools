@@ -25,6 +25,15 @@ interface LogListener {
 let _logListeners: LogListener[] = [];
 let _nextListenerId = 1;
 
+// Transaction history storage for getParsedTransaction
+interface TransactionRecord {
+  signature: string;
+  logs: string[];
+  slot: number;
+  blockTime: number;
+}
+let _transactionHistory: Map<string, TransactionRecord> = new Map();
+
 /**
  * Initialize LiteSVM with the Whirlpool program and external dependencies
  */
@@ -35,9 +44,10 @@ export async function startLiteSVM(): Promise<LiteSVM> {
 
   console.log("🚀 Starting LiteSVM...");
 
-  // Reset event listeners
+  // Reset event listeners and transaction history
   _logListeners = [];
   _nextListenerId = 1;
+  _transactionHistory.clear();
 
   // Create a new LiteSVM instance with standard functionality
   _litesvm = new LiteSVM();
@@ -283,7 +293,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       rawTransaction: Buffer | Uint8Array,
       options?: any,
     ) => {
-      const litesvm = getLiteSVM();
+      const vm = getLiteSVM();
       // Deserialize transaction to extract signature after processing
       const tx = Transaction.from(rawTransaction);
 
@@ -291,7 +301,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
       // but at runtime they're compatible
       // @ts-expect-error - Transaction types are structurally compatible
-      const result = litesvm.sendTransaction(Transaction.from(rawTransaction));
+      const result = vm.sendTransaction(Transaction.from(rawTransaction));
 
       // Check if transaction failed
       if ("err" in result) {
@@ -304,25 +314,38 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         );
       }
 
-      // Extract signature
+      // Extract signature and store transaction
+      let signature: string;
       if (
         tx.signatures &&
         tx.signatures.length > 0 &&
         tx.signatures[0].signature
       ) {
-        return bs58.encode(tx.signatures[0].signature);
+        signature = bs58.encode(tx.signatures[0].signature);
+      } else {
+        signature = "litesvm-raw-tx-sig";
       }
-      return "litesvm-raw-tx-sig";
+
+      // Store transaction for getParsedTransaction
+      const txLogs = result.logs();
+      _transactionHistory.set(signature, {
+        signature,
+        logs: txLogs,
+        slot: Number(vm.getClock().slot),
+        blockTime: Number(vm.getClock().unixTimestamp),
+      });
+
+      return signature;
     },
     sendAndConfirmTransaction: async (
       tx: Transaction | VersionedTransaction,
       signers?: any[],
       options?: any,
     ) => {
-      const litesvm = getLiteSVM();
+      const vm = getLiteSVM();
       // Set blockhash if needed
       if (tx instanceof Transaction) {
-        tx.recentBlockhash = litesvm.latestBlockhash();
+        tx.recentBlockhash = vm.latestBlockhash();
 
         // Sign with signers if provided
         if (signers && signers.length > 0) {
@@ -334,7 +357,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
 
       // @ts-expect-error - Transaction types are structurally compatible
-      const result = litesvm.sendTransaction(tx);
+      const result = vm.sendTransaction(tx);
 
       // Check if transaction failed
       if ("err" in result) {
@@ -365,13 +388,22 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
 
       // Get transaction logs and trigger any registered listeners
-      const logs = result.logs();
+      const txLogs = result.logs();
+
+      // Store transaction for getParsedTransaction
+      _transactionHistory.set(signature, {
+        signature,
+        logs: txLogs,
+        slot: Number(vm.getClock().slot),
+        blockTime: Number(vm.getClock().unixTimestamp),
+      });
+
       const logsPayload = {
         signature,
         err: null,
-        logs,
+        logs: txLogs,
       };
-      const context = { slot: Number(litesvm.getClock().slot) };
+      const context = { slot: Number(vm.getClock().slot) };
 
       for (const listener of _logListeners) {
         try {
@@ -382,7 +414,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
 
       // Expire the blockhash to get a fresh one for next transaction
-      getLiteSVM().expireBlockhash();
+      vm.expireBlockhash();
 
       return signature;
     },
@@ -391,7 +423,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       signersOrOptions?: any[] | any,
       options?: any,
     ) => {
-      const litesvm = getLiteSVM();
+      const vm = getLiteSVM();
       // Handle both (tx, options) and (tx, signers, options) signatures
       let signers: any[] = [];
       let finalOptions = options;
@@ -404,7 +436,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
 
       // Set blockhash and ensure fee payer is set
       if (tx instanceof Transaction) {
-        tx.recentBlockhash = litesvm.latestBlockhash();
+        tx.recentBlockhash = vm.latestBlockhash();
 
         // Sign with signers if provided
         if (signers.length > 0) {
@@ -432,7 +464,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
         // but at runtime they're compatible
         // @ts-expect-error - Transaction types are structurally compatible
-        const result = litesvm.sendTransaction(tx);
+        const result = vm.sendTransaction(tx);
 
         // Check if transaction failed
         if ("err" in result) {
@@ -463,15 +495,23 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         }
 
         // Get transaction logs and trigger any registered listeners
-        const logs = result.logs();
+        const txLogs = result.logs();
+
+        // Store transaction for getParsedTransaction
+        _transactionHistory.set(signature, {
+          signature,
+          logs: txLogs,
+          slot: Number(vm.getClock().slot),
+          blockTime: Number(vm.getClock().unixTimestamp),
+        });
 
         // Trigger log listeners (simulate WebSocket events)
         const logsPayload = {
           signature,
           err: null,
-          logs,
+          logs: txLogs,
         };
-        const context = { slot: Number(getLiteSVM().getClock().slot) };
+        const context = { slot: Number(vm.getClock().slot) };
 
         // Trigger all registered log listeners
         for (const listener of _logListeners) {
@@ -484,7 +524,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         }
 
         // Expire the blockhash to get a fresh one for next transaction
-        getLiteSVM().expireBlockhash();
+        vm.expireBlockhash();
 
         return signature;
       } catch (error) {
@@ -740,6 +780,70 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         },
       };
     },
+    getParsedTransaction: async (
+      signature: string,
+      options?: { maxSupportedTransactionVersion?: number },
+    ) => {
+      // Retrieve transaction from history
+      const txRecord = _transactionHistory.get(signature);
+
+      if (!txRecord) {
+        // Transaction not found - return null like real RPC would
+        return null;
+      }
+
+      // Parse logs to extract inner instructions (e.g., memo program calls)
+      const innerInstructions: any[] = [];
+      const instructions: any[] = [];
+
+      // Look for memo program logs in the format: "Program log: Memo (len X): "message""
+      const MEMO_PROGRAM_ADDRESS = new PublicKey(
+        "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+      );
+
+      for (const log of txRecord.logs) {
+        const memoMatch = log.match(/Program log: Memo \(len \d+\): "(.+)"/);
+        if (memoMatch) {
+          instructions.push({
+            programId: MEMO_PROGRAM_ADDRESS,
+            parsed: memoMatch[1],
+          });
+        }
+      }
+
+      // If we found any memo instructions, add them as inner instructions
+      if (instructions.length > 0) {
+        innerInstructions.push({
+          index: 0,
+          instructions,
+        });
+      }
+
+      return {
+        blockTime: txRecord.blockTime,
+        meta: {
+          err: null,
+          fee: 5000,
+          innerInstructions,
+          logMessages: txRecord.logs,
+          postBalances: [],
+          postTokenBalances: [],
+          preBalances: [],
+          preTokenBalances: [],
+          rewards: [],
+          status: { Ok: null },
+        },
+        slot: txRecord.slot,
+        transaction: {
+          message: {
+            accountKeys: [],
+            instructions: [],
+            recentBlockhash: "",
+          },
+          signatures: [signature],
+        },
+      };
+    },
   };
 }
 
@@ -832,6 +936,42 @@ export function warpClock(seconds: number): void {
 
   console.log(
     `⏰ Warped clock: +${seconds}s (slot: ${currentClock.slot} -> ${newSlot}, time: ${currentClock.unixTimestamp} -> ${newTimestamp})`,
+  );
+}
+
+/**
+ * Advance to the next epoch in the blockchain
+ * This is needed for tests that depend on epoch changes (e.g., transfer fee updates)
+ */
+export function advanceEpoch(): void {
+  const litesvm = getLiteSVM();
+  const currentClock = litesvm.getClock();
+
+  // Advance to next epoch
+  const newEpoch = currentClock.epoch + 1n;
+
+  // Advance slot significantly (typical epoch has ~432000 slots)
+  const slotsToAdvance = 432000n;
+  const newSlot = currentClock.slot + slotsToAdvance;
+
+  // Advance timestamp proportionally (assuming ~400ms per slot)
+  const secondsToAdvance = 432000 * 0.4; // ~172800 seconds (2 days)
+  const newTimestamp =
+    currentClock.unixTimestamp + BigInt(Math.floor(secondsToAdvance));
+
+  const newClock = new Clock(
+    newSlot,
+    newTimestamp, // new epoch start timestamp
+    newEpoch,
+    newEpoch, // leaderScheduleEpoch typically matches epoch
+    newTimestamp,
+  );
+
+  litesvm.setClock(newClock);
+  litesvm.expireBlockhash();
+
+  console.log(
+    `🔄 Advanced epoch: ${currentClock.epoch} -> ${newEpoch} (slot: ${currentClock.slot} -> ${newSlot})`,
   );
 }
 

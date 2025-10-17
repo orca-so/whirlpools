@@ -39,7 +39,12 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
-import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  advanceEpoch,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type {
   FundedPositionV2Params,
@@ -88,28 +93,23 @@ describe("TokenExtension/TransferFee (litesvm)", () => {
 
   let fetcher: any;
 
+  let client: any;
 
   beforeAll(async () => {
-
     await startLiteSVM();
-
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
-
     program = new anchor.Program(idl, programId, provider);
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  fetcher = ctx.fetcher;
 
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
   });
-  const client = buildWhirlpoolClient(ctx);
 
   const dummyTokenMintWithProgram: MintWithTokenProgram = {
     address: PublicKey.default,
@@ -156,16 +156,21 @@ describe("TokenExtension/TransferFee (litesvm)", () => {
   }
 
   async function waitEpoch(waitForEpoch: number) {
-    const startWait = Date.now();
+    const currentEpoch = await getCurrentEpoch();
+    const epochsToAdvance = waitForEpoch - currentEpoch;
 
-    while (Date.now() - startWait < WAIT_EPOCH_TIMEOUT_MS) {
-      const epoch = await getCurrentEpoch();
-      if (epoch >= waitForEpoch) return;
-      sleep(1000);
+    // In litesvm, we need to manually advance epochs
+    for (let i = 0; i < epochsToAdvance; i++) {
+      advanceEpoch();
     }
-    throw Error(
-      "waitEpoch Timeout, Please set slots_per_epoch smaller in Anchor.toml",
-    );
+
+    // Verify we've reached the target epoch
+    const newEpoch = await getCurrentEpoch();
+    if (newEpoch < waitForEpoch) {
+      throw Error(
+        `Failed to advance to epoch ${waitForEpoch}, currently at ${newEpoch}`,
+      );
+    }
   }
 
   async function fetchTransferFeeConfig(
@@ -1450,7 +1455,7 @@ describe("TokenExtension/TransferFee (litesvm)", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,

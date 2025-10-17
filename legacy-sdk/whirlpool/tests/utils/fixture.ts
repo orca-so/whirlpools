@@ -149,11 +149,14 @@ async function initTickArrays(
     );
   });
 
-  return Promise.all(
-    Array.from(startTickSet).map((startTick) =>
-      initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
-    ),
-  );
+  // Initialize tick arrays sequentially to avoid AccountBorrowFailed errors in LiteSVM
+  const results = [];
+  for (const startTick of Array.from(startTickSet)) {
+    results.push(
+      await initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
+    );
+  }
+  return results;
 }
 
 async function initDynamicTickArrays(
@@ -171,11 +174,18 @@ async function initDynamicTickArrays(
     );
   });
 
-  return Promise.all(
-    Array.from(startTickSet).map((startTick) =>
-      initDynamicTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
-    ),
-  );
+  // Initialize tick arrays sequentially to avoid AccountBorrowFailed errors in LiteSVM
+  const results = [];
+  for (const startTick of Array.from(startTickSet)) {
+    results.push(
+      await initDynamicTickArray(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        startTick,
+      ),
+    );
+  }
+  return results;
 }
 
 const defaultPoolInitInfo: InitPoolParams = {

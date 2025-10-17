@@ -26,13 +26,18 @@ import {
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  getCurrentTimestamp,
+  resetLiteSVM,
+} from "../../utils/litesvm";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
   getLocalnetAdminKeypair0,
-  sleep,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -46,6 +51,7 @@ import {
 } from "../../utils/init-utils";
 import type { WhirlpoolsError } from "../../../src/errors/errors";
 import { SwapErrorCode } from "../../../src/errors/errors";
+import whirlpoolIdl from "../../../src/artifacts/whirlpool.json";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -55,18 +61,24 @@ interface SharedTestContext {
 
 const DEBUG_OUTPUT = false;
 
-describe("adaptive fee tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
+describe("adaptive fee tests (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let testCtx: SharedTestContext;
   let admin: Keypair;
 
   beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = whirlpoolIdl as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
@@ -338,8 +350,8 @@ describe("adaptive fee tests", () => {
     console.info(oppositeTx?.meta?.logMessages);
   });
 */
-  describe("trade with AdaptiveFee", () => {
-    describe("swap", () => {
+  describe("trade with AdaptiveFee (LiteSVM)", () => {
+    describe("swap (LiteSVM)", () => {
       const versions = [1, 2];
       for (const version of versions) {
         it(`swap V${version}`, async () => {
@@ -505,7 +517,7 @@ describe("adaptive fee tests", () => {
       }
     });
 
-    describe("twoHopSwap", () => {
+    describe("twoHopSwap (LiteSVM)", () => {
       const versions = [1, 2];
       for (const version of versions) {
         it(`twoHopSwap V${version}`, async () => {
@@ -817,13 +829,13 @@ describe("adaptive fee tests", () => {
     });
   });
 
-  describe("trade enable timestamp", () => {
-    describe("swap/swapV2 should be blocked until trade enable timestamp", () => {
+  describe("trade enable timestamp (LiteSVM)", () => {
+    describe("swap/swapV2 should be blocked until trade enable timestamp (LiteSVM)", () => {
       const versions = [1, 2];
 
       for (const version of versions) {
         it(`swapV${version}`, async () => {
-          const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+          const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
           const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
           const poolInfo = await buildSwapTestPool(
@@ -914,7 +926,7 @@ describe("adaptive fee tests", () => {
             );
           }
           // wait until trade enable timestamp (margin: 5s)
-          await sleep((20 + 5) * 1000);
+          warpClock(20 + 5);
 
           // now it should be successful
           if (version == 1) {
@@ -926,7 +938,7 @@ describe("adaptive fee tests", () => {
       }
     });
 
-    describe("twoHopSwap/twoHopSwapV2", () => {
+    describe("twoHopSwap/twoHopSwapV2 (LiteSVM)", () => {
       const variants = [
         {
           oneOrTwo: "One",
@@ -955,9 +967,7 @@ describe("adaptive fee tests", () => {
         const versions = [1, 2];
         for (const version of versions) {
           it(`twoHopSwapV${version} should be blocked until trade enable timestamp of whirlpool ${oneOrTwo}`, async () => {
-            const currentTimeInSec = new anchor.BN(
-              Math.floor(Date.now() / 1000),
-            );
+            const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
             const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
             const {
@@ -1135,7 +1145,7 @@ describe("adaptive fee tests", () => {
             }
 
             // wait until trade enable timestamp (margin: 5s)
-            await sleep((20 + 5) * 1000);
+            warpClock(20 + 5);
 
             // now it should be successful
             if (version == 1) {
@@ -1152,8 +1162,8 @@ describe("adaptive fee tests", () => {
     });
   });
 
-  describe("swapV1 / twoHopSwapV1 compatibility", () => {
-    describe("works on a pool with static fee (FeeTier)", () => {
+  describe("swapV1 / twoHopSwapV1 compatibility (LiteSVM)", () => {
+    describe("works on a pool with static fee (FeeTier) (LiteSVM)", () => {
       const tickSpacing = 128;
       const aqConfig = getDefaultAquarium();
       aqConfig.initMintParams.push({});
@@ -1183,6 +1193,27 @@ describe("adaptive fee tests", () => {
       ];
       aqConfig.initPositionParams.push({ poolIndex: 0, fundParams });
       aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
+
+      // Reset LiteSVM state before each test to avoid AccountAlreadyInUse errors
+      beforeEach(async () => {
+        resetLiteSVM();
+        await startLiteSVM();
+        provider = await createLiteSVMProvider();
+        const programId = new anchor.web3.PublicKey(
+          "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+        );
+        const idl = whirlpoolIdl as anchor.Idl;
+        program = new anchor.Program(idl, programId, provider);
+        anchor.setProvider(provider);
+        const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+        const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
+        admin = await getLocalnetAdminKeypair0(whirlpoolCtx);
+        testCtx = {
+          provider,
+          whirlpoolCtx,
+          whirlpoolClient,
+        };
+      });
 
       it("swapV1", async () => {
         // build pool with FeeTier
@@ -1362,7 +1393,7 @@ describe("adaptive fee tests", () => {
       });
     });
 
-    describe("works on a pool with adaptive fee (AdaptiveFeeTier), modify isWritable hack", () => {
+    describe("works on a pool with adaptive fee (AdaptiveFeeTier), modify isWritable hack (LiteSVM)", () => {
       it("swapV1", async () => {
         const poolInfo = await buildSwapTestPool(undefined, undefined);
         const whirlpool = await testCtx.whirlpoolClient.getPool(
@@ -1674,7 +1705,7 @@ describe("adaptive fee tests", () => {
       });
     });
 
-    describe("works on a pool with adaptive fee (AdaptiveFeeTier), add writable Oracle in remaining accounts (official way)", () => {
+    describe("works on a pool with adaptive fee (AdaptiveFeeTier), add writable Oracle in remaining accounts (official way) (LiteSVM)", () => {
       it("swapV1", async () => {
         const poolInfo = await buildSwapTestPool(undefined, undefined);
         const whirlpool = await testCtx.whirlpoolClient.getPool(

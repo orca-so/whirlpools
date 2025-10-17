@@ -902,6 +902,14 @@ export function getCurrentTimestamp(): number {
 }
 
 /**
+ * Expire the current blockhash to force a fresh one for next transaction
+ * Useful when you need to rebuild a transaction after a previous attempt
+ */
+export function expireBlockhash(): void {
+  getLiteSVM().expireBlockhash();
+}
+
+/**
  * Warp the blockchain clock forward by the specified number of seconds
  * Also advances the slot and expires the blockhash to ensure fresh transactions
  *

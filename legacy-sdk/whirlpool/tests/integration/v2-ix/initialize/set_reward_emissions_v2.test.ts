@@ -1,10 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../../src";
+import { toTx, WhirlpoolIx } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import { TickSpacing, ZERO_BN } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import {
+  TickSpacing,
+  ZERO_BN,
+  initializeLiteSVMEnvironment,
+} from "../../../utils";
 import {
   initTestPoolV2,
   initializeRewardV2,
@@ -16,13 +19,16 @@ import {
 } from "../../../utils/v2/token-2022";
 
 describe("set_reward_emissions_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const emissionsPerSecondX64 = new anchor.BN(10_000)
     .shln(64)
@@ -126,10 +132,23 @@ describe("set_reward_emissions_v2", () => {
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute();
 
-          whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE,
-          )) as WhirlpoolData;
+          whirlpool = await (async () => {
+            // LiteSVM may delay state propagation; poll until emissions reach 0
+            for (let i = 0; i < 100; i++) {
+              const wp = (await fetcher.getPool(
+                poolInitInfo.whirlpoolPda.publicKey,
+                IGNORE_CACHE,
+              )) as WhirlpoolData;
+              if (wp.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN)) {
+                return wp;
+              }
+              await new Promise((r) => setTimeout(r, 10));
+            }
+            return (await fetcher.getPool(
+              poolInitInfo.whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData;
+          })();
           assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
         });
 

@@ -1013,8 +1013,8 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 4,
               }),
-          ).buildAndExecute(),
-          /ProgramFailedToComplete|SBF program panicked/, // index out of bounds
+            ).buildAndExecute(),
+            /ProgramFailedToComplete|SBF program panicked/, // index out of bounds
           );
         });
       });

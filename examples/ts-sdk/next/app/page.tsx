@@ -13,11 +13,7 @@ import {
   createNoopSigner,
   assertTransactionIsFullySigned,
 } from "@solana/kit";
-import { 
-  buildTransaction, 
-  sendTransaction, 
-  setRpc,
-} from "@orca-so/tx-sender";
+import { buildTransaction, sendTransaction, setRpc } from "@orca-so/tx-sender";
 
 const SOL_MINT: Address = address(
   "So11111111111111111111111111111111111111112",
@@ -37,7 +33,10 @@ function SwapPage({ account }: SwapPageProps) {
   const [solscanLink, setSolscanLink] = useState<string | null>(null);
 
   const rpc = useMemo(
-    () => createSolanaRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com"),
+    () =>
+      createSolanaRpc(
+        process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com",
+      ),
     [],
   );
 
@@ -50,7 +49,7 @@ function SwapPage({ account }: SwapPageProps) {
     setIsSwapping(true);
     setSolscanLink(null);
     setTransactionStatus("Creating swap transaction...");
-    
+
     // Create NoopSigner once for the wallet address
     // IMPORTANT: The SAME NoopSigner instance must be used for both:
     // 1. Building instructions (embeds the signer object in instruction accounts)
@@ -72,14 +71,15 @@ function SwapPage({ account }: SwapPageProps) {
     try {
       setTransactionStatus("Building transaction...");
       const partialTx = await buildTransaction(instructions, noopSigner);
-      
-      setTransactionStatus("Requesting wallet signature...")
-      const [signedTx] = await signer.transactionSigner.modifyAndSignTransactions([partialTx]);
+
+      setTransactionStatus("Requesting wallet signature...");
+      const [signedTx] =
+        await signer.transactionSigner.modifyAndSignTransactions([partialTx]);
       assertTransactionIsFullySigned(signedTx);
-      
+
       setTransactionStatus("Sending transaction...");
       const signature = await sendTransaction(signedTx, "confirmed");
-      
+
       setTransactionStatus("confirmed");
       setSolscanLink(`https://solscan.io/tx/${signature}?cluster=devnet`);
     } catch (error) {
@@ -226,10 +226,13 @@ function PageContent() {
 export default function Page() {
   useEffect(() => {
     setWhirlpoolsConfig("solanaDevnet");
-    setRpc(process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com", {
-      pollIntervalMs: 500,
-      resendOnPoll: false,
-    });
+    setRpc(
+      process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com",
+      {
+        pollIntervalMs: 500,
+        resendOnPoll: false,
+      },
+    );
   }, []);
 
   return (

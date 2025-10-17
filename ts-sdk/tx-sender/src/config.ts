@@ -29,7 +29,6 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   jitoBlockEngineUrl: "https://bundles.jito.wtf",
 };
 
-
 /**
  * Retrieves the current RPC configuration.
  *
@@ -50,7 +49,6 @@ const getPriorityConfig = (): TransactionConfig => {
   }
   return globalConfig.transactionConfig;
 };
-
 
 /**
  * Retrieves the current Jito fee settings.
@@ -112,7 +110,7 @@ const setGlobalConfig = (config: {
  * ```ts
  * // Premium RPC: Use defaults for maximum landing rate
  * const rpc = await setRpc("https://mainnet.helius-rpc.com/?api-key=...");
- * 
+ *
  * // Lower tier RPCs: Configure to reduce RPC usage
  * const rpc = await setRpc("https://api.devnet.solana.com", {
  *   pollIntervalMs: 1000,
@@ -135,7 +133,8 @@ export async function setRpc(
     ...globalConfig,
     rpcConfig: {
       rpcUrl: url,
-      supportsPriorityFeePercentile: options.supportsPriorityFeePercentile ?? false,
+      supportsPriorityFeePercentile:
+        options.supportsPriorityFeePercentile ?? false,
       chainId,
       pollIntervalMs: options.pollIntervalMs ?? 0,
       resendOnPoll: options.resendOnPoll ?? true,
@@ -322,25 +321,25 @@ export type ChainId =
 
 /**
  * Configuration for RPC settings and transaction sending strategy.
- * 
+ *
  * The transaction sending strategy should be configured based on your RPC tier:
  * - **Premium RPC** (e.g., Helius, Triton): Can use default aggressive settings with resend enabled
  * - **Public/Free RPC**: Should use conservative settings to avoid rate limits
- * 
+ *
  * @property {string} rpcUrl - The RPC endpoint URL
  * @property {boolean} supportsPriorityFeePercentile - Whether the RPC supports percentile-based priority fee estimation
  * @property {ChainId} chainId - The blockchain network chain ID
- * @property {number} [pollIntervalMs=0] - Milliseconds between confirmation status checks. 
+ * @property {number} [pollIntervalMs=0] - Milliseconds between confirmation status checks.
  *   Set to 0 for continuous polling (no delay).
  * @property {boolean} [resendOnPoll=true] - Whether to resend the transaction on each poll attempt.
  *   - `true` (default): Resend transaction on every poll. Higher RPC usage, best for premium RPCs.
  *   - `false`: Send once, then only poll for status. Lower RPC usage, recommended for public RPCs.
- * 
+ *
  * @example
  * ```ts
  * // Premium RPC: Use defaults for maximum landing rate
  * setRpc("https://mainnet.helius-rpc.com/?api-key=...");
- * 
+ *
  * // Public/Free RPC: Conservative settings to control RPC usage
  * setRpc("https://api.devnet.solana.com", {
  *   pollIntervalMs: 1000,

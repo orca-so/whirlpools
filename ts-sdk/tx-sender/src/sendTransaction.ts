@@ -62,7 +62,7 @@ export async function buildAndSendTransaction(
  * // With KeyPairSigner (Node.js) - already fully signed
  * const tx = await buildTransaction(instructions, keypairSigner);
  * const signature = await sendTransaction(tx, "confirmed");
- * 
+ *
  * // With wallet signature (browser)
  * const partialTx = await buildTransaction(instructions, noopSigner);
  * const [signedTx] = await wallet.modifyAndSignTransactions([partialTx]);
@@ -74,7 +74,7 @@ export async function sendTransaction(
   commitment: Commitment = "confirmed",
 ): Promise<Signature> {
   assertTransactionIsFullySigned(transaction);
-  
+
   const { rpcUrl, pollIntervalMs, resendOnPoll } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
   const txHash = getTxHash(transaction);
@@ -117,35 +117,34 @@ export async function sendTransaction(
 
   while (Date.now() < expiryTime) {
     const iterationStart = Date.now();
-    
+
     try {
       const { value } = await rpc.getSignatureStatuses([txHash]).send();
       const status = value[0];
-      
+
       if (status?.confirmationStatus === commitment) {
         if (status.err) {
           throw new Error(`Transaction failed: ${JSON.stringify(status.err)}`);
         }
-        console.log("✅ Transaction confirmed");
         return txHash;
       }
-    } catch (error) {
+    } catch {
       // Continue polling even on RPC errors
     }
-    
+
     if (resendOnPoll) {
       try {
         await sendTx();
-      } catch (error) {
+      } catch {
         // Ignore resend errors, continue polling
       }
     }
-    
+
     if (pollIntervalMs > 0) {
       const elapsed = Date.now() - iterationStart;
       const remainingDelay = pollIntervalMs - elapsed;
       if (remainingDelay > 0) {
-        await new Promise(resolve => setTimeout(resolve, remainingDelay));
+        await new Promise((resolve) => setTimeout(resolve, remainingDelay));
       }
     }
   }

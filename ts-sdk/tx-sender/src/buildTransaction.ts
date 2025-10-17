@@ -31,7 +31,7 @@ import { getRpcConfig } from "./config";
  * @param {TransactionSigner} feePayer - The signer that will pay for the transaction (must be the SAME instance used to build instructions)
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
  *
- * @returns {Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>>} 
+ * @returns {Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>>}
  *   - FullySignedTransaction if feePayer is a KeyPairSigner (has keyPair property)
  *   - Transaction (partially signed) if feePayer is NoopSigner (no keyPair property)
  *
@@ -40,7 +40,7 @@ import { getRpcConfig } from "./config";
  * const { instructions } = await swapInstructions(rpc, params, pool, 100, keypairSigner);
  * const tx = await buildTransaction(instructions, keypairSigner);
  * await sendTransaction(tx);
- * 
+ *
  * // Browser with NoopSigner - partially signed, wallet signs separately
  * const noopSigner = createNoopSigner(walletAddress);
  * const { instructions } = await swapInstructions(rpc, params, pool, 100, noopSigner);
@@ -52,8 +52,14 @@ export async function buildTransaction(
   instructions: IInstruction[],
   feePayer: TransactionSigner,
   lookupTableAddresses?: (Address | string)[],
-): Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>> {
-  return buildTransactionMessage(instructions, feePayer, normalizeAddresses(lookupTableAddresses));
+): Promise<
+  Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>
+> {
+  return buildTransactionMessage(
+    instructions,
+    feePayer,
+    normalizeAddresses(lookupTableAddresses),
+  );
 }
 
 async function buildTransactionMessage(
@@ -61,9 +67,9 @@ async function buildTransactionMessage(
   feePayer: TransactionSigner,
   lookupTableAddresses?: Address[],
 ) {
-  const hasKeyPair = 'keyPair' in feePayer;
+  const hasKeyPair = "keyPair" in feePayer;
   const usePartialSigning = !hasKeyPair;
-  
+
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
 
@@ -90,14 +96,21 @@ async function buildTransactionMessage(
     );
   }
 
-  const messageWithPriorityFees = await addPriorityInstructions(message, feePayer);
+  const messageWithPriorityFees = await addPriorityInstructions(
+    message,
+    feePayer,
+  );
 
   if (usePartialSigning) {
-    const partiallySigned = await partiallySignTransactionMessageWithSigners(messageWithPriorityFees);
+    const partiallySigned = await partiallySignTransactionMessageWithSigners(
+      messageWithPriorityFees,
+    );
     return partiallySigned;
   }
 
-  const signed = await signTransactionMessageWithSigners(messageWithPriorityFees);
+  const signed = await signTransactionMessageWithSigners(
+    messageWithPriorityFees,
+  );
   return signed;
 }
 

@@ -615,9 +615,8 @@ describe("initialize_adaptive_fee_tier", () => {
         initializePoolAuthority,
         delegatedFeeAuthority,
       ),
-      (err) => {
-        const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
-        return errMsg.includes("already in use");
+      (err: Error) => {
+        return err.message.includes("already in use");
       },
     );
   });

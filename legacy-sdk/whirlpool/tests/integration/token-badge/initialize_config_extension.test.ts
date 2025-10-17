@@ -1,22 +1,27 @@
-import * as anchor from "@coral-xyz/anchor";
+import type * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { InitConfigExtensionParams } from "../../../src/instructions";
+import type { WhirlpoolContext } from "../../../src";
+import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
+import type { InitConfigExtensionParams } from "../../../dist/instructions";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 
 describe("initialize_config_extension", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    program = env.program;
+    fetcher = ctx.fetcher;
+  });
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -217,8 +222,8 @@ describe("initialize_config_extension", () => {
         whirlpoolsConfigKeypair.publicKey,
         {},
       ),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
+      (err: Error) => {
+        return err.message.includes("already in use");
       },
     );
   });

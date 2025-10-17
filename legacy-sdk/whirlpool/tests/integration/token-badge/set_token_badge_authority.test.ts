@@ -1,28 +1,27 @@
-import * as anchor from "@coral-xyz/anchor";
+import type * as anchor from "@coral-xyz/anchor";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import {
-  IGNORE_CACHE,
-  PDAUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolIx,
-} from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { InitializeTokenBadgeParams } from "../../../src/instructions";
+import type { WhirlpoolContext } from "../../../src";
+import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
+import type { InitializeTokenBadgeParams } from "../../../dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { initializeLiteSVMEnvironment, pollForCondition } from "../../utils/litesvm";
 
 describe("set_token_badge_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    program = env.program;
+    fetcher = env.fetcher;
+  });
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -362,9 +361,16 @@ describe("set_token_badge_authority", () => {
         updatedTokenBadgeAuthorityKeypair.publicKey,
       );
 
-      const updatedExtensionData = await fetcher.getConfigExtension(
-        whirlpoolsConfigExtension,
-        IGNORE_CACHE,
+      const updatedExtensionData = await pollForCondition(
+        () => fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE),
+        (ext) =>
+          ext!.tokenBadgeAuthority.equals(
+            updatedTokenBadgeAuthorityKeypair.publicKey,
+          ),
+        {
+          accountToReload: whirlpoolsConfigExtension,
+          connection: ctx.connection,
+        },
       );
       assert.ok(
         updatedExtensionData!.tokenBadgeAuthority.equals(

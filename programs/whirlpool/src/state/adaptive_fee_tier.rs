@@ -161,7 +161,10 @@ mod discriminator_tests {
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:AdaptiveFeeTier | sha256sum | cut -c 1-16
         // 931090742f92952e
-        assert_eq!(discriminator, [147, 16, 144, 116, 47, 146, 149, 46]);
+        assert_eq!(
+            discriminator,
+            [0x93, 0x10, 0x90, 0x74, 0x2f, 0x92, 0x95, 0x2e]
+        );
     }
 }
 

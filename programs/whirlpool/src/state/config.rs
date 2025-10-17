@@ -110,8 +110,11 @@ mod discriminator_tests {
         let discriminator = WhirlpoolsConfig::discriminator();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:WhirlpoolsConfig | sha256sum | cut -c 1-16
-        // 0263d7a3f01a993a
-        assert_eq!(discriminator, [157, 20, 49, 224, 217, 87, 193, 254]);
+        // 9d1431e0d957c1fe
+        assert_eq!(
+            discriminator,
+            [0x9d, 0x14, 0x31, 0xe0, 0xd9, 0x57, 0xc1, 0xfe]
+        );
     }
 }
 

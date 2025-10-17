@@ -265,7 +265,10 @@ mod discriminator_tests {
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:TickArray | sha256sum | cut -c 1-16
         // 4561bdbe6e0742bb
-        assert_eq!(discriminator, [69, 97, 189, 190, 110, 7, 66, 187]);
+        assert_eq!(
+            discriminator,
+            [0x45, 0x61, 0xbd, 0xbe, 0x6e, 0x07, 0x42, 0xbb]
+        );
     }
 }
 

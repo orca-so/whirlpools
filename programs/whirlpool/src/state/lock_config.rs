@@ -97,7 +97,10 @@ mod discriminator_tests {
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:LockConfig | sha256sum | cut -c 1-16
         // 6a2fee9f7c0ca0c0
-        assert_eq!(discriminator, [106, 47, 238, 159, 124, 12, 160, 192]);
+        assert_eq!(
+            discriminator,
+            [0x6a, 0x2f, 0xee, 0x9f, 0x7c, 0x0c, 0xa0, 0xc0]
+        );
     }
 }
 

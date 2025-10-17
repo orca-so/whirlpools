@@ -570,7 +570,10 @@ mod discriminator_tests {
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:Whirlpool | sha256sum | cut -c 1-16
         // 3f95d10ce1806309
-        assert_eq!(discriminator, [63, 149, 209, 12, 225, 128, 99, 9]);
+        assert_eq!(
+            discriminator,
+            [0x3f, 0x95, 0xd1, 0x0c, 0xe1, 0x80, 0x63, 0x09]
+        );
     }
 }
 

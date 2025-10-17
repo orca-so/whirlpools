@@ -32,7 +32,11 @@ import {
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../utils";
-import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type { FundedPositionV2Params } from "../../utils/v2/init-utils-v2";
 import {
@@ -70,28 +74,25 @@ describe("TokenExtension/TransferHook (litesvm)", () => {
 
   let fetcher: any;
 
+  let client: any;
 
   beforeAll(async () => {
-
     await startLiteSVM();
 
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
 
     program = new anchor.Program(idl, programId, provider);
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  fetcher = ctx.fetcher;
-
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
   });
-  const client = buildWhirlpoolClient(ctx);
 
   describe("collect_fees_v2, collect_protocol_fees_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
@@ -1156,7 +1157,7 @@ describe("TokenExtension/TransferHook (litesvm)", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,
@@ -3069,7 +3070,9 @@ describe("TokenExtension/TransferHook (litesvm)", () => {
             .buildAndExecute(),
           (err) => {
             // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
-            return JSON.stringify(err).includes("AmountTooBig");
+            const errorString =
+              err instanceof Error ? err.message : String(err);
+            return errorString.includes("AmountTooBig");
           },
         );
       });
@@ -3191,7 +3194,9 @@ describe("TokenExtension/TransferHook (litesvm)", () => {
             .buildAndExecute(),
           (err) => {
             // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
-            return JSON.stringify(err).includes("AmountTooBig");
+            const errorString =
+              err instanceof Error ? err.message : String(err);
+            return errorString.includes("AmountTooBig");
           },
         );
       });

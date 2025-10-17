@@ -233,34 +233,32 @@ export async function buildTestAquariumsV2(
       ),
     );
 
-    // create TokenBadge if needed
-    await Promise.all(
-      initMintParams.map(({ tokenTrait }, i) => {
-        if (isTokenBadgeRequired(tokenTrait)) {
-          return toTx(
-            ctx,
-            WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
-              tokenMint: mintKeys[i],
-              tokenBadgeAuthority:
-                configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
-              tokenBadgePda: PDAUtil.getTokenBadge(
-                ctx.program.programId,
-                configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey,
-                mintKeys[i],
-              ),
-              whirlpoolsConfig:
-                configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey,
-              whirlpoolsConfigExtension:
-                configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
-              funder: ctx.wallet.publicKey,
-            }),
-          )
-            .addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair)
-            .buildAndExecute();
-        }
-        return Promise.resolve();
-      }),
-    );
+    // create TokenBadge if needed (sequentially to avoid AccountBorrowFailed errors in LiteSVM)
+    for (let i = 0; i < initMintParams.length; i++) {
+      const { tokenTrait } = initMintParams[i];
+      if (isTokenBadgeRequired(tokenTrait)) {
+        await toTx(
+          ctx,
+          WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+            tokenMint: mintKeys[i],
+            tokenBadgeAuthority:
+              configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+            tokenBadgePda: PDAUtil.getTokenBadge(
+              ctx.program.programId,
+              configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey,
+              mintKeys[i],
+            ),
+            whirlpoolsConfig:
+              configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey,
+            whirlpoolsConfigExtension:
+              configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+            funder: ctx.wallet.publicKey,
+          }),
+        )
+          .addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair)
+          .buildAndExecute();
+      }
+    }
 
     const tokenAccounts = await Promise.all(
       initTokenAccParams.map(async (initTokenAccParam) => {

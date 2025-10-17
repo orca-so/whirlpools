@@ -7,6 +7,8 @@ import type {
   FullySignedTransaction,
   TransactionWithLifetime,
   Transaction,
+  NoopSigner,
+  KeyPairSigner,
 } from "@solana/kit";
 import {
   compressTransactionMessageUsingAddressLookupTables,
@@ -14,10 +16,11 @@ import {
   appendTransactionMessageInstructions,
   createTransactionMessage,
   pipe,
-  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
   partiallySignTransactionMessageWithSigners,
+  setTransactionMessageFeePayerSigner,
+  isKeyPairSigner,
+  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
@@ -28,7 +31,7 @@ import { getRpcConfig } from "./config";
  * Builds and signs a transaction from the given instructions and configuration.
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
- * @param {TransactionSigner} feePayer - The signer that will pay for the transaction (must be the SAME instance used to build instructions)
+ * @param {KeyPairSigner | NoopSigner} feePayer - The signer that will pay for the transaction (must be the SAME instance used to build instructions)
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
  *
  * @returns {Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>>}
@@ -50,7 +53,7 @@ import { getRpcConfig } from "./config";
  */
 export async function buildTransaction(
   instructions: IInstruction[],
-  feePayer: TransactionSigner,
+  feePayer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: (Address | string)[],
 ): Promise<
   Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>
@@ -64,12 +67,9 @@ export async function buildTransaction(
 
 async function buildTransactionMessage(
   instructions: IInstruction[],
-  feePayer: TransactionSigner,
+  feePayer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: Address[],
 ) {
-  const hasKeyPair = "keyPair" in feePayer;
-  const usePartialSigning = !hasKeyPair;
-
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
 
@@ -101,23 +101,22 @@ async function buildTransactionMessage(
     feePayer,
   );
 
-  if (usePartialSigning) {
-    const partiallySigned = await partiallySignTransactionMessageWithSigners(
-      messageWithPriorityFees,
-    );
-    return partiallySigned;
-  }
-
-  const signed = await signTransactionMessageWithSigners(
-    messageWithPriorityFees,
-  );
-  return signed;
+  // Use different signing functions based on signer type:
+  // - KeyPairSigner: Use signTransactionMessageWithSigners (fully signs + asserts completeness)
+  // - NoopSigner: Use partiallySignTransactionMessageWithSigners (partial signature, wallet signs later)
+  // 
+  // Note: While signTransactionMessageWithSigners internally calls partiallySignTransactionMessageWithSigners,
+  // tests fail when using only partiallySignTransactionMessageWithSigners for KeyPairSigners. The root cause
+  // is unclear despite investigation, but this conditional approach works reliably.
+  return isKeyPairSigner(feePayer)
+    ? await signTransactionMessageWithSigners(messageWithPriorityFees)
+    : await partiallySignTransactionMessageWithSigners(messageWithPriorityFees);
 }
 
 async function prepareTransactionMessage(
   instructions: IInstruction[],
   rpc: Rpc<SolanaRpcApi>,
-  feePayer: TransactionSigner,
+  feePayer: KeyPairSigner | NoopSigner,
 ) {
   const { value: blockhash } = await rpc
     .getLatestBlockhash({

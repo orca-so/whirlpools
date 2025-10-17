@@ -2,12 +2,13 @@ import { getRpcConfig } from "./config";
 import type {
   Address,
   IInstruction,
-  TransactionSigner,
   FullySignedTransaction,
   Signature,
   Commitment,
   TransactionWithLifetime,
   Transaction,
+  KeyPairSigner,
+  NoopSigner,
 } from "@solana/kit";
 import {
   assertTransactionIsFullySigned,
@@ -38,10 +39,10 @@ import { buildTransaction } from "./buildTransaction";
  */
 export async function buildAndSendTransaction(
   instructions: IInstruction[],
-  payer: TransactionSigner,
+  payer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: (Address | string)[],
   commitment: Commitment = "confirmed",
-) {
+): Promise<Signature> {
   const tx = await buildTransaction(instructions, payer, lookupTableAddresses);
   return sendTransaction(tx, commitment);
 }
@@ -100,9 +101,9 @@ export async function sendTransaction(
   const sendTx = async () => {
     await rpc
       .sendTransaction(encodedTransaction, {
-        maxRetries: BigInt(0),
         skipPreflight: true,
         encoding: "base64",
+        ...(resendOnPoll && { maxRetries: BigInt(0) }),
       })
       .send();
   };

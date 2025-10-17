@@ -80,6 +80,23 @@ export async function sendTransaction(
   const txHash = getTxHash(transaction);
   const encodedTransaction = getBase64EncodedWireTransaction(transaction);
 
+  // Simulate transaction first
+  const simResult = await rpc
+    .simulateTransaction(encodedTransaction, {
+      encoding: "base64",
+    })
+    .send();
+
+  if (simResult.value.err) {
+    throw new Error(
+      `Transaction simulation failed: ${JSON.stringify(
+        simResult.value.err,
+        (key, value) => (typeof value === "bigint" ? value.toString() : value),
+      )}`,
+    );
+  }
+
+  // Send the transaction (skip preflight since we already simulated)
   const sendTx = async () => {
     await rpc
       .sendTransaction(encodedTransaction, {

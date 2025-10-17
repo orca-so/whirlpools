@@ -28,7 +28,11 @@ import {
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type { FundedPositionV2Params } from "../../utils/v2/init-utils-v2";
 import {
@@ -51,15 +55,32 @@ import {
 } from "../../utils/v2/aquarium-v2";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
-describe("TokenExtension/MemoTransfer", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+describe("TokenExtension/MemoTransfer (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: any;
+
+  let client: any;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   const MEMO_TRANSFER_COLLECT_FEES = "Orca CollectFees";
   const MEMO_TRANSFER_COLLECT_PROTOCOL_FEES = "Orca CollectProtocolFees";
@@ -67,7 +88,7 @@ describe("TokenExtension/MemoTransfer", () => {
   const MEMO_TRANSFER_DECREASE_LIQUIDITY = "Orca Withdraw";
   const MEMO_TRANSFER_SWAP = "Orca Trade";
 
-  describe("collect_fees_v2, collect_protocol_fees_v2", () => {
+  describe("collect_fees_v2, collect_protocol_fees_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let feeAccountA: PublicKey;
     let feeAccountB: PublicKey;
@@ -522,7 +543,7 @@ describe("TokenExtension/MemoTransfer", () => {
     });
   });
 
-  describe("collect_reward_v2", () => {
+  describe("collect_reward_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let rewardAccounts: PublicKey[];
 
@@ -568,7 +589,7 @@ describe("TokenExtension/MemoTransfer", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,
@@ -750,7 +771,7 @@ describe("TokenExtension/MemoTransfer", () => {
     });
   });
 
-  describe("decrease_liquidity_v2", () => {
+  describe("decrease_liquidity_v2 (litesvm)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let removalQuote: DecreaseLiquidityQuote;
     let destAccountA: PublicKey;
@@ -938,7 +959,7 @@ describe("TokenExtension/MemoTransfer", () => {
     });
   });
 
-  describe("swap_v2", () => {
+  describe("swap_v2 (litesvm)", () => {
     let poolInitInfo: InitPoolV2Params;
     let whirlpoolPda: PDA;
     let tokenAccountA: PublicKey;
@@ -1268,7 +1289,7 @@ describe("TokenExtension/MemoTransfer", () => {
     });
   });
 
-  describe("two_hop_swap", () => {
+  describe("two_hop_swap (litesvm)", () => {
     let aqConfig: InitAquariumV2Params;
     let baseIxParams: TwoHopSwapV2Params;
     let tokenAccountIn: PublicKey;

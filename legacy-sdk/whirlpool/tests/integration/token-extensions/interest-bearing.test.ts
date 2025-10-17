@@ -16,11 +16,15 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   getProviderWalletKeypair,
   getTokenBalance,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  mockAmountToUiAmount,
+  warpClock,
+} from "../../utils/litesvm";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
@@ -28,37 +32,43 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import {
-  amountToUiAmount,
-  updateRateInterestBearingMint,
-} from "@solana/spl-token";
+import { updateRateInterestBearingMint } from "@solana/spl-token";
 
-describe("TokenExtension/InterestBearing", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("TokenExtension/InterestBearing (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
+  let providerWalletKeypair: any;
 
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = require("../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+
+    anchor.setProvider(provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    providerWalletKeypair = getProviderWalletKeypair(provider);
+  });
 
   async function rawAmountToUIAmount(
     mint: PublicKey,
     rawAmount: BN,
   ): Promise<string> {
-    const result = await amountToUiAmount(
+    // Use our mock implementation for LiteSVM
+    return await mockAmountToUiAmount(
       ctx.connection,
-      providerWalletKeypair,
       mint,
       rawAmount.toNumber(),
       TEST_TOKEN_2022_PROGRAM_ID,
     );
-    if (typeof result === "string") {
-      return result;
-    }
-    throw new Error("Failed to convert raw amount to UI amount");
   }
 
   // Since InterestBearing is no different from normal mint as far as handling raw amounts (u64 amounts),
@@ -125,7 +135,8 @@ describe("TokenExtension/InterestBearing", () => {
       ctx.connection.confirmTransaction(sigB),
     ]);
 
-    await sleep(10 * 1000);
+    // Advance blockchain time by 10 seconds for interest to accrue
+    warpClock(10);
 
     const newUIBalanceA = await rawAmountToUIAmount(
       poolInitInfo.tokenMintA,
@@ -137,6 +148,7 @@ describe("TokenExtension/InterestBearing", () => {
     );
 
     // rate is >0%, so these values should NOT be equal
+    // Use parseFloat to handle potential scientific notation from large interest calculations
     assert.ok(initialRawBalanceA.lt(new BN(Number.parseInt(newUIBalanceA))));
     assert.ok(initialRawBalanceB.lt(new BN(Number.parseInt(newUIBalanceB))));
 

@@ -26,8 +26,9 @@ import {
   TickSpacing,
   transferToken,
   ZERO_BN,
+  startLiteSVM,
+  createLiteSVMProvider,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
@@ -38,16 +39,25 @@ import { createTokenAccount as createTokenAccountForPosition } from "../../../ut
 import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
-describe("collect_fees_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("collect_fees_v2 (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
 
-  describe("v1 parity", () => {
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+    const idl = require("../../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
+
+  describe("v1 parity (litesvm)", () => {
     const tokenTraitVariations: {
       tokenTraitA: TokenTrait;
       tokenTraitB: TokenTrait;
@@ -113,17 +123,17 @@ describe("collect_fees_v2", () => {
           const tickArrayPda = PDAUtil.getTickArray(
             ctx.program.programId,
             whirlpoolPda.publicKey,
-            22528,
+            22528
           );
           const positionBeforeSwap = (await fetcher.getPosition(
-            positions[0].publicKey,
+            positions[0].publicKey
           )) as PositionData;
           assert.ok(positionBeforeSwap.feeOwedA.eq(ZERO_BN));
           assert.ok(positionBeforeSwap.feeOwedB.eq(ZERO_BN));
 
           const oraclePda = PDAUtil.getOracle(
             ctx.program.programId,
-            whirlpoolPda.publicKey,
+            whirlpoolPda.publicKey
           );
 
           // Accrue fees in token A
@@ -149,7 +159,7 @@ describe("collect_fees_v2", () => {
               tickArray1: tickArrayPda.publicKey,
               tickArray2: tickArrayPda.publicKey,
               oracle: oraclePda.publicKey,
-            }),
+            })
           ).buildAndExecute();
 
           // Accrue fees in token B
@@ -175,7 +185,7 @@ describe("collect_fees_v2", () => {
               tickArray1: tickArrayPda.publicKey,
               tickArray2: tickArrayPda.publicKey,
               oracle: oraclePda.publicKey,
-            }),
+            })
           ).buildAndExecute();
 
           await toTx(
@@ -185,12 +195,12 @@ describe("collect_fees_v2", () => {
               position: positions[0].publicKey,
               tickArrayLower: tickArrayPda.publicKey,
               tickArrayUpper: tickArrayPda.publicKey,
-            }),
+            })
           ).buildAndExecute();
 
           const positionBeforeCollect = (await fetcher.getPosition(
             positions[0].publicKey,
-            IGNORE_CACHE,
+            IGNORE_CACHE
           )) as PositionData;
           assert.ok(positionBeforeCollect.feeOwedA.eq(new BN(581)));
           assert.ok(positionBeforeCollect.feeOwedB.eq(new BN(581)));
@@ -199,31 +209,31 @@ describe("collect_fees_v2", () => {
             provider,
             tokenTraits.tokenTraitA,
             tokenMintA,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
           const feeAccountB = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitB,
             tokenMintB,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
 
           // Generate collect fees expectation
           const whirlpoolData = (await fetcher.getPool(
-            whirlpoolPda.publicKey,
+            whirlpoolPda.publicKey
           )) as WhirlpoolData;
           const tickArrayData = (await fetcher.getTickArray(
-            tickArrayPda.publicKey,
+            tickArrayPda.publicKey
           )) as TickArrayData;
           const lowerTick = TickArrayUtil.getTickFromArray(
             tickArrayData,
             tickLowerIndex,
-            tickSpacing,
+            tickSpacing
           );
           const upperTick = TickArrayUtil.getTickFromArray(
             tickArrayData,
             tickUpperIndex,
-            tickSpacing,
+            tickSpacing
           );
           const expectation = collectFeesQuote({
             whirlpool: whirlpoolData,
@@ -234,7 +244,7 @@ describe("collect_fees_v2", () => {
               await TokenExtensionUtil.buildTokenExtensionContext(
                 fetcher,
                 whirlpoolData,
-                IGNORE_CACHE,
+                IGNORE_CACHE
               ),
           });
 
@@ -254,11 +264,11 @@ describe("collect_fees_v2", () => {
               tokenOwnerAccountB: feeAccountB,
               tokenVaultA: tokenVaultAKeypair.publicKey,
               tokenVaultB: tokenVaultBKeypair.publicKey,
-            }),
+            })
           ).buildAndExecute();
           const positionAfter = (await fetcher.getPosition(
             positions[0].publicKey,
-            IGNORE_CACHE,
+            IGNORE_CACHE
           )) as PositionData;
           const feeBalanceA = await getTokenBalance(provider, feeAccountA);
           const feeBalanceB = await getTokenBalance(provider, feeAccountB);
@@ -276,11 +286,11 @@ describe("collect_fees_v2", () => {
               position: positions[1].publicKey,
               tickArrayLower: positions[1].tickArrayLower,
               tickArrayUpper: positions[1].tickArrayUpper,
-            }),
+            })
           ).buildAndExecute();
           const outOfRangePosition = await fetcher.getPosition(
             positions[1].publicKey,
-            IGNORE_CACHE,
+            IGNORE_CACHE
           );
           assert.ok(outOfRangePosition?.feeOwedA.eq(ZERO_BN));
           assert.ok(outOfRangePosition?.feeOwedB.eq(ZERO_BN));
@@ -320,7 +330,7 @@ describe("collect_fees_v2", () => {
             provider,
             position.tokenAccount,
             delegate.publicKey,
-            1,
+            1
           );
 
           await toTx(
@@ -338,7 +348,7 @@ describe("collect_fees_v2", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultA: tokenVaultAKeypair.publicKey,
               tokenVaultB: tokenVaultBKeypair.publicKey,
-            }),
+            })
           )
             .addSigner(delegate)
             .buildAndExecute();
@@ -378,7 +388,7 @@ describe("collect_fees_v2", () => {
             provider,
             position.tokenAccount,
             delegate.publicKey,
-            1,
+            1
           );
 
           await toTx(
@@ -396,7 +406,7 @@ describe("collect_fees_v2", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultA: tokenVaultAKeypair.publicKey,
               tokenVaultB: tokenVaultBKeypair.publicKey,
-            }),
+            })
           ).buildAndExecute();
         });
 
@@ -434,14 +444,14 @@ describe("collect_fees_v2", () => {
             await createTokenAccountForPosition(
               provider,
               position.mintKeypair.publicKey,
-              newOwner.publicKey,
+              newOwner.publicKey
             );
 
           await transferToken(
             provider,
             position.tokenAccount,
             newOwnerPositionTokenAccount,
-            1,
+            1
           );
 
           await toTx(
@@ -459,7 +469,7 @@ describe("collect_fees_v2", () => {
               tokenOwnerAccountB: tokenAccountB,
               tokenVaultA: tokenVaultAKeypair.publicKey,
               tokenVaultB: tokenVaultBKeypair.publicKey,
-            }),
+            })
           )
             .addSigner(newOwner)
             .buildAndExecute();
@@ -517,9 +527,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7d1/, // ConstraintHasOne
+            /0x7d1/ // ConstraintHasOne
           );
         });
 
@@ -557,7 +567,7 @@ describe("collect_fees_v2", () => {
           const positionTokenAccount2 = await createTokenAccountForPosition(
             provider,
             positions[0].mintKeypair.publicKey,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
 
           await assert.rejects(
@@ -576,16 +586,16 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            /0x7d3/ // ConstraintRaw
           );
 
           await transferToken(
             provider,
             positions[0].tokenAccount,
             positionTokenAccount2,
-            1,
+            1
           );
 
           await assert.rejects(
@@ -604,9 +614,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            /0x7d3/ // ConstraintRaw
           );
         });
 
@@ -659,11 +669,11 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             )
               .addSigner(delegate)
               .buildAndExecute(),
-            /0x1783/, // MissingOrInvalidDelegate
+            /0x1783/ // MissingOrInvalidDelegate
           );
         });
 
@@ -703,7 +713,7 @@ describe("collect_fees_v2", () => {
             provider,
             positions[0].tokenAccount,
             delegate.publicKey,
-            2,
+            2
           );
 
           await assert.rejects(
@@ -722,11 +732,11 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             )
               .addSigner(delegate)
               .buildAndExecute(),
-            /0x1784/, // InvalidPositionTokenAmount
+            /0x1784/ // InvalidPositionTokenAmount
           );
         });
 
@@ -766,7 +776,7 @@ describe("collect_fees_v2", () => {
             provider,
             positions[0].tokenAccount,
             delegate.publicKey,
-            1,
+            1
           );
 
           await assert.rejects(
@@ -785,9 +795,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /.*signature verification fail.*/i,
+            /.*signature verification fail.*/i
           );
         });
 
@@ -825,7 +835,7 @@ describe("collect_fees_v2", () => {
           const fakePositionTokenAccount = await createTokenAccountForPosition(
             provider,
             NATIVE_MINT,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
 
           await assert.rejects(
@@ -844,9 +854,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            /0x7d3/ // ConstraintRaw
           );
         });
 
@@ -885,13 +895,13 @@ describe("collect_fees_v2", () => {
             provider,
             tokenTraits.tokenTraitA,
             tokenMintA,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
           const fakeVaultB = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitB,
             tokenMintB,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
 
           await assert.rejects(
@@ -910,9 +920,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: fakeVaultA,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7dc/, // ConstraintAddress
+            /0x7dc/ // ConstraintAddress
           );
 
           await assert.rejects(
@@ -931,9 +941,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: fakeVaultB,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7dc/, // ConstraintAddress
+            /0x7dc/ // ConstraintAddress
           );
         });
 
@@ -973,14 +983,14 @@ describe("collect_fees_v2", () => {
             // invalid token trait & mint
             tokenTraits.tokenTraitB,
             tokenMintB,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
           const invalidOwnerAccountB = await createTokenAccountV2(
             provider,
             // invalid token trait & mint
             tokenTraits.tokenTraitA,
             tokenMintA,
-            provider.wallet.publicKey,
+            provider.wallet.publicKey
           );
 
           await assert.rejects(
@@ -999,9 +1009,9 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            /0x7d3/ // ConstraintRaw
           );
 
           await assert.rejects(
@@ -1020,16 +1030,16 @@ describe("collect_fees_v2", () => {
                 tokenOwnerAccountB: invalidOwnerAccountB,
                 tokenVaultA: tokenVaultAKeypair.publicKey,
                 tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
+              })
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            /0x7d3/ // ConstraintRaw
           );
         });
       });
     });
   });
 
-  describe("v2 specific accounts", () => {
+  describe("v2 specific accounts (litesvm)", () => {
     it("fails when passed token_mint_a does not match whirlpool's token_mint_a", async () => {
       const tickLowerIndex = 29440;
       const tickUpperIndex = 33536;
@@ -1081,9 +1091,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1138,9 +1148,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1192,9 +1202,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1246,9 +1256,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1300,9 +1310,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
 
@@ -1354,9 +1364,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1408,9 +1418,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1462,9 +1472,9 @@ describe("collect_fees_v2", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
             tokenVaultB: tokenVaultBKeypair.publicKey,
-          }),
+          })
         ).buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
 
@@ -1524,11 +1534,11 @@ describe("collect_fees_v2", () => {
                   tokenProgramB,
                   memoProgram: invalidMemoProgram,
                 },
-              },
+              }
             ),
           ],
         }).buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        /0xbc0/ // InvalidProgramId
       );
     });
   });

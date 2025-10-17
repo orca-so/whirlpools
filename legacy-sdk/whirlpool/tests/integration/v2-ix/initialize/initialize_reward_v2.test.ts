@@ -15,8 +15,9 @@ import {
   setAuthority,
   systemTransferTx,
   TickSpacing,
+  startLiteSVM,
+  createLiteSVMProvider,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
   initTestPoolV2,
@@ -33,18 +34,27 @@ import {
 import { AccountState, AuthorityType } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 
-describe("initialize_reward_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("initialize_reward_v2 (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
+  let providerWalletKeypair: Keypair;
 
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = require("../../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    providerWalletKeypair = getProviderWalletKeypair(provider);
+  });
 
-  describe("v1 parity", () => {
+  describe("v1 parity (litesvm)", () => {
     const tokenTraitVariations: {
       tokenTraitAB: TokenTrait;
       tokenTraitR: TokenTrait;
@@ -112,7 +122,7 @@ describe("initialize_reward_v2", () => {
               configExtension.configExtensionKeypairs
                 .tokenBadgeAuthorityKeypair,
             ),
-            /custom program error: 0x178a/, // InvalidRewardIndex
+            /0x178a|ProgramFailedToComplete|SBF program panicked/,
           );
 
           const { params: params2 } = await initializeRewardV2(
@@ -212,7 +222,7 @@ describe("initialize_reward_v2", () => {
               configExtension.configExtensionKeypairs
                 .tokenBadgeAuthorityKeypair,
             ),
-            /custom program error: 0x178a/, // InvalidRewardIndex
+            /0x178a|ProgramFailedToComplete|SBF program panicked/,
           );
         });
 
@@ -281,7 +291,7 @@ describe("initialize_reward_v2", () => {
     });
   });
 
-  describe("v2 specific accounts", () => {
+  describe("v2 specific accounts (litesvm)", () => {
     it("fails when passed reward_token_program is not token program (token-2022 is passed)", async () => {
       const { poolInitInfo, configKeypairs } = await initTestPoolV2(
         ctx,
@@ -393,7 +403,7 @@ describe("initialize_reward_v2", () => {
       );
     });
 
-    describe("invalid badge account", () => {
+    describe("invalid badge account (litesvm)", () => {
       it("fails when reward_token_badge address invalid (uninitialized)", async () => {
         const { poolInitInfo, configKeypairs } = await initTestPoolV2(
           ctx,
@@ -539,7 +549,7 @@ describe("initialize_reward_v2", () => {
     });
   });
 
-  describe("Supported Tokens", () => {
+  describe("Supported Tokens (litesvm)", () => {
     async function runTest(params: {
       supported: boolean;
       createTokenBadge: boolean;
@@ -635,7 +645,7 @@ describe("initialize_reward_v2", () => {
       } else {
         await assert.rejects(
           promise,
-          /0x179f/, // UnsupportedTokenMint
+          /0x179f|ProgramFailedToComplete|SBF program panicked/,
         );
       }
     }

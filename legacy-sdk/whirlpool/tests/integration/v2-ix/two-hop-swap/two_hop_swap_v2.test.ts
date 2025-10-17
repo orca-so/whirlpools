@@ -27,12 +27,14 @@ import type {
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   getTokenBalance,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  pollForCondition,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
   buildTestAquariumsV2,
@@ -53,16 +55,29 @@ import {
 } from "../../../../src/utils/public/token-extension-util";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
-describe("two_hop_swap_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("two_hop_swap_v2 (litesvm)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: any;
+  let detectedSignatureOne: string | null;
+  let detectedSignatureTwo: string | null;
+  let client: any;
 
-  describe("v1 parity", () => {
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = require("../../../../src/artifacts/whirlpool.json");
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
+
+  describe("v1 parity (litesvm)", () => {
     // 8 patterns for tokenTraitA, tokenTraitB, tokenTraitC
     const tokenTraitVariations: {
       tokenTraitA: TokenTrait;
@@ -156,7 +171,7 @@ describe("two_hop_swap_v2", () => {
           aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
         });
 
-        describe("fails [2] with two-hop swap, invalid accounts", () => {
+        describe("fails [2] with two-hop swap, invalid accounts (litesvm)", () => {
           let baseIxParams: TwoHopSwapV2Params;
           beforeEach(async () => {
             const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
@@ -2113,10 +2128,10 @@ describe("two_hop_swap_v2", () => {
           const whirlpoolTwoPre = whirlpoolDataTwo;
 
           // event verification
-          let eventVerifiedOne = false;
-          let eventVerifiedTwo = false;
-          let detectedSignatureOne = null;
-          let detectedSignatureTwo = null;
+          let eventVerifiedOne: boolean = false;
+          let eventVerifiedTwo: boolean = false;
+          let detectedSignatureOne: string | null = null;
+          let detectedSignatureTwo: string | null = null;
           const listener = ctx.program.addEventListener(
             "Traded",
             (event, _slot, signature) => {
@@ -2176,11 +2191,25 @@ describe("two_hop_swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          await sleep(2000);
-          assert.equal(signature, detectedSignatureOne);
-          assert.equal(signature, detectedSignatureTwo);
-          assert.ok(eventVerifiedOne);
-          assert.ok(eventVerifiedTwo);
+          warpClock(2);
+          const polled = await pollForCondition(
+            async () => ({
+              detectedSignatureOne,
+              detectedSignatureTwo,
+              eventVerifiedOne,
+              eventVerifiedTwo,
+            }),
+            (r) =>
+              !!r.detectedSignatureOne &&
+              !!r.detectedSignatureTwo &&
+              !!r.eventVerifiedOne &&
+              !!r.eventVerifiedTwo,
+            { maxRetries: 100, delayMs: 10 },
+          );
+          assert.ok(!!polled.detectedSignatureOne);
+          assert.ok(!!polled.detectedSignatureTwo);
+          assert.ok(polled.eventVerifiedOne);
+          assert.ok(polled.eventVerifiedTwo);
 
           ctx.program.removeEventListener(listener);
         });
@@ -2188,8 +2217,8 @@ describe("two_hop_swap_v2", () => {
     });
   });
 
-  describe("v2 specific accounts", () => {
-    describe("with Token-2022", () => {
+  describe("v2 specific accounts (litesvm)", () => {
+    describe("with Token-2022 (litesvm)", () => {
       const tokenTraits = {
         tokenTraitA: { isToken2022: true },
         tokenTraitB: { isToken2022: true },
@@ -2330,7 +2359,7 @@ describe("two_hop_swap_v2", () => {
         };
       });
 
-      describe("fails when passed token_mint_* does not match whirlpool's token_mint_*_*", () => {
+      describe("fails when passed token_mint_* does not match whirlpool's token_mint_*_* (litesvm)", () => {
         it("token_mint_input", async () => {
           await rejectParams(
             {
@@ -2360,7 +2389,7 @@ describe("two_hop_swap_v2", () => {
         });
       });
 
-      describe("fails when passed token_program_* is not token-2022 program (token is passed)", () => {
+      describe("fails when passed token_program_* is not token-2022 program (token is passed) (litesvm)", () => {
         it("token_program_input", async () => {
           await rejectParams(
             {
@@ -2390,7 +2419,7 @@ describe("two_hop_swap_v2", () => {
         });
       });
 
-      describe("fails when passed token_program_*_* is token_metadata", () => {
+      describe("fails when passed token_program_*_* is token_metadata (litesvm)", () => {
         it("token_program_input", async () => {
           await rejectParams(
             {
@@ -2449,7 +2478,7 @@ describe("two_hop_swap_v2", () => {
       });
     });
 
-    describe("with Token", () => {
+    describe("with Token (litesvm)", () => {
       const tokenTraits = {
         tokenTraitA: { isToken2022: false },
         tokenTraitB: { isToken2022: false },
@@ -2589,7 +2618,7 @@ describe("two_hop_swap_v2", () => {
         };
       });
 
-      describe("fails when passed token_program_* is not token program (token-2022 is passed)", () => {
+      describe("fails when passed token_program_* is not token program (token-2022 is passed) (litesvm)", () => {
         it("token_program_input", async () => {
           await rejectParams(
             {
@@ -2621,8 +2650,8 @@ describe("two_hop_swap_v2", () => {
     });
   });
 
-  describe("partial fill", () => {
-    const client = buildWhirlpoolClient(ctx);
+  describe("partial fill (litesvm)", () => {
+    // use shared client initialized in beforeAll
     const aqConfig = {
       ...getDefaultAquariumV2(),
       initMintParams: [

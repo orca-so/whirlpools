@@ -5,11 +5,7 @@ import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type {
-  PositionBundleData,
-  Whirlpool,
-  WhirlpoolClient,
-} from "../../../src";
+import type { PositionBundleData, WhirlpoolClient } from "../../../src";
 import {
   NUM_REWARDS,
   PDAUtil,
@@ -24,7 +20,11 @@ import {
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  warpClock,
+  pollForCondition,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initializePositionBundle,
@@ -34,29 +34,27 @@ import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-ut
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
-  program: Whirlpool;
+  program: anchor.Program;
   whirlpoolCtx: WhirlpoolContext;
   whirlpoolClient: WhirlpoolClient;
 }
 
 describe("bundled position management tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let testCtx: SharedTestContext;
   const tickLowerIndex = 29440;
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
   const vaultStartBalance = 1_000_000;
   const liquidityAmount = new BN(10_000_000);
-  const sleep = (second: number) =>
-    new Promise((resolve) => setTimeout(resolve, second * 1000));
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
@@ -354,14 +352,34 @@ describe("bundled position management tests", () => {
         receiver: ctx.wallet.publicKey,
       }),
     ).buildAndExecute();
-    const positionBundleAccount = await ctx.fetcher.getPositionBundle(
-      positionBundlePubkey,
-      IGNORE_CACHE,
+
+    // Poll for the account to be closed (litesvm has delayed state updates)
+    const positionBundleAccount = await pollForCondition(
+      () => ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE),
+      (account) => account === null,
+      {
+        accountToReload: positionBundlePubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(positionBundleAccount === null);
   });
 
   it("successfully increase/decrease liquidity and harvest on bundled position", async () => {
+    // Reset LiteSVM state before this test to avoid state contamination from bulk position operations
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    anchor.setProvider(provider);
+    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+    const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
+    testCtx = {
+      provider,
+      program,
+      whirlpoolCtx,
+      whirlpoolClient,
+    };
+
     // create test pool
     const ctx = testCtx.whirlpoolCtx;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
@@ -463,13 +481,17 @@ describe("bundled position management tests", () => {
         tokenMaxB: depositAmounts.tokenB,
       }),
     ).buildAndExecute();
-    const postIncrease = await ctx.fetcher.getPosition(
-      bundledPositionPubkey,
-      IGNORE_CACHE,
+    const postIncrease = await pollForCondition(
+      () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+      (position) => position!.liquidity.eq(liquidityAmount),
+      {
+        accountToReload: bundledPositionPubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
-    await sleep(2); // accrueRewards
+    warpClock(2); // accrueRewards
     await accrueFees(fixture);
     await stopRewardsEmission(fixture);
 
@@ -490,9 +512,16 @@ describe("bundled position management tests", () => {
         whirlpool: whirlpoolPubkey,
       }),
     ).buildAndExecute();
-    const postUpdate = await ctx.fetcher.getPosition(
-      bundledPositionPubkey,
-      IGNORE_CACHE,
+    const postUpdate = await pollForCondition(
+      () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+      (position) =>
+        position!.feeOwedA.gtn(0) &&
+        position!.feeOwedB.gtn(0) &&
+        position!.rewardInfos.every((r) => r.amountOwed.gtn(0)),
+      {
+        accountToReload: bundledPositionPubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postUpdate!.feeOwedA.gtn(0));
     assert.ok(postUpdate!.feeOwedB.gtn(0));
@@ -512,9 +541,13 @@ describe("bundled position management tests", () => {
         whirlpool: whirlpoolPubkey,
       }),
     ).buildAndExecute();
-    const postCollectFees = await ctx.fetcher.getPosition(
-      bundledPositionPubkey,
-      IGNORE_CACHE,
+    const postCollectFees = await pollForCondition(
+      () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+      (position) => position!.feeOwedA.isZero() && position!.feeOwedB.isZero(),
+      {
+        accountToReload: bundledPositionPubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postCollectFees!.feeOwedA.isZero());
     assert.ok(postCollectFees!.feeOwedB.isZero());
@@ -544,9 +577,13 @@ describe("bundled position management tests", () => {
           whirlpool: whirlpoolPubkey,
         }),
       ).buildAndExecute();
-      const postCollectReward = await ctx.fetcher.getPosition(
-        bundledPositionPubkey,
-        IGNORE_CACHE,
+      const postCollectReward = await pollForCondition(
+        () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+        (position) => position!.rewardInfos[i].amountOwed.isZero(),
+        {
+          accountToReload: bundledPositionPubkey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
     }
@@ -591,14 +628,32 @@ describe("bundled position management tests", () => {
         receiver: ctx.wallet.publicKey,
       }),
     ).buildAndExecute();
-    const postClose = await ctx.fetcher.getPosition(
-      bundledPositionPubkey,
-      IGNORE_CACHE,
+    const postClose = await pollForCondition(
+      () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+      (position) => position === null,
+      {
+        accountToReload: bundledPositionPubkey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postClose === null);
   });
 
   it("successfully repeatedly open bundled position & close bundled position", async () => {
+    // Reset LiteSVM state before this test to avoid state contamination from bulk position operations
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    anchor.setProvider(provider);
+    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+    const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
+    testCtx = {
+      provider,
+      program,
+      whirlpoolCtx,
+      whirlpoolClient,
+    };
+
     const openCloseIterationNum = 5;
 
     // create test pool
@@ -629,7 +684,7 @@ describe("bundled position management tests", () => {
     await accrueFees(fixture);
 
     // increase rewardGrowth
-    await sleep(2);
+    warpClock(2);
 
     // initialize position bundle
     const positionBundleInfo = await initializePositionBundle(
@@ -719,9 +774,13 @@ describe("bundled position management tests", () => {
           tokenMaxB: depositAmounts.tokenB,
         }),
       ).buildAndExecute();
-      const postIncrease = await ctx.fetcher.getPosition(
-        bundledPositionPubkey,
-        IGNORE_CACHE,
+      const postIncrease = await pollForCondition(
+        () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+        (position) => position!.liquidity.eq(liquidityAmount),
+        {
+          accountToReload: bundledPositionPubkey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
@@ -732,7 +791,7 @@ describe("bundled position management tests", () => {
         postIncrease!.rewardInfos.every((r) => r.growthInsideCheckpoint.gtn(0)),
       );
 
-      await sleep(2); // accrueRewards
+      warpClock(2); // accrueRewards
       await accrueFees(fixture);
       // decreaseLiquidity
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
@@ -756,9 +815,13 @@ describe("bundled position management tests", () => {
           tokenMinB: withdrawAmounts.tokenB,
         }),
       ).buildAndExecute();
-      const postDecrease = await ctx.fetcher.getPosition(
-        bundledPositionPubkey,
-        IGNORE_CACHE,
+      const postDecrease = await pollForCondition(
+        () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+        (position) => position!.liquidity.isZero(),
+        {
+          accountToReload: bundledPositionPubkey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postDecrease!.liquidity.isZero());
 
@@ -776,9 +839,14 @@ describe("bundled position management tests", () => {
           whirlpool: whirlpoolPubkey,
         }),
       ).buildAndExecute();
-      const postCollectFees = await ctx.fetcher.getPosition(
-        bundledPositionPubkey,
-        IGNORE_CACHE,
+      const postCollectFees = await pollForCondition(
+        () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+        (position) =>
+          position!.feeOwedA.isZero() && position!.feeOwedB.isZero(),
+        {
+          accountToReload: bundledPositionPubkey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postCollectFees!.feeOwedA.isZero());
       assert.ok(postCollectFees!.feeOwedB.isZero());
@@ -808,9 +876,14 @@ describe("bundled position management tests", () => {
             whirlpool: whirlpoolPubkey,
           }),
         ).buildAndExecute();
-        const postCollectReward = await ctx.fetcher.getPosition(
-          bundledPositionPubkey,
-          IGNORE_CACHE,
+
+        const postCollectReward = await pollForCondition(
+          () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+          (position) => position!.rewardInfos[i].amountOwed.isZero(),
+          {
+            accountToReload: bundledPositionPubkey,
+            connection: ctx.connection,
+          },
         );
         assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
       }
@@ -828,9 +901,13 @@ describe("bundled position management tests", () => {
           receiver: ctx.wallet.publicKey,
         }),
       ).buildAndExecute();
-      const postClose = await ctx.fetcher.getPosition(
-        bundledPositionPubkey,
-        IGNORE_CACHE,
+      const postClose = await pollForCondition(
+        () => ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE),
+        (position) => position === null,
+        {
+          accountToReload: bundledPositionPubkey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postClose === null);
     }
@@ -1482,9 +1559,20 @@ describe("bundled position management tests", () => {
 
       // Account closing reassigns to system program and reallocates
       // https://github.com/coral-xyz/anchor/pull/2169
-      const postClose = await ctx.connection.getAccountInfo(
-        positionBundleInfo.positionBundlePda.publicKey,
-        "confirmed",
+      const postClose = await pollForCondition(
+        () =>
+          ctx.connection.getAccountInfo(
+            positionBundleInfo.positionBundlePda.publicKey,
+            "confirmed",
+          ),
+        (accountInfo) =>
+          accountInfo !== null &&
+          accountInfo.owner.equals(SystemProgram.programId) &&
+          accountInfo.data.length === 0,
+        {
+          accountToReload: positionBundleInfo.positionBundlePda.publicKey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postClose !== null);
       assert.ok(postClose.owner.equals(SystemProgram.programId));
@@ -1575,9 +1663,16 @@ describe("bundled position management tests", () => {
 
       // Account closing reassigns to system program and reallocates
       // https://github.com/coral-xyz/anchor/pull/2169
-      const postClose = await ctx.connection.getAccountInfo(
-        bundledPositionPubkey,
-        "confirmed",
+      const postClose = await pollForCondition(
+        () => ctx.connection.getAccountInfo(bundledPositionPubkey, "confirmed"),
+        (accountInfo) =>
+          accountInfo !== null &&
+          accountInfo.owner.equals(SystemProgram.programId) &&
+          accountInfo.data.length === 0,
+        {
+          accountToReload: bundledPositionPubkey,
+          connection: ctx.connection,
+        },
       );
       assert.ok(postClose !== null);
       assert.ok(postClose.owner.equals(SystemProgram.programId));

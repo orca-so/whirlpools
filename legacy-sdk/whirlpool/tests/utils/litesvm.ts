@@ -42,6 +42,7 @@ interface TransactionRecord {
   logs: string[];
   slot: number;
   blockTime: number;
+  computeUnitsConsumed: number;
 }
 let _transactionHistory: Map<string, TransactionRecord> = new Map();
 
@@ -500,6 +501,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         logs: txLogs,
         slot: Number(vm.getClock().slot),
         blockTime: Number(vm.getClock().unixTimestamp),
+        computeUnitsConsumed: Number(result.computeUnitsConsumed()),
       });
       return signature;
     },
@@ -553,6 +555,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         logs: txLogs,
         slot: Number(vm.getClock().slot),
         blockTime: Number(vm.getClock().unixTimestamp),
+        computeUnitsConsumed: Number(result.computeUnitsConsumed()),
       });
       const logsPayload = {
         signature,
@@ -651,6 +654,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           logs: txLogs,
           slot: Number(vm.getClock().slot),
           blockTime: Number(vm.getClock().unixTimestamp),
+          computeUnitsConsumed: Number(result.computeUnitsConsumed()),
         });
         // Trigger log listeners (simulate WebSocket events)
         const logsPayload = {
@@ -1012,6 +1016,43 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         },
       };
     },
+    getTransaction: async (
+      signature: string,
+      options?: { maxSupportedTransactionVersion?: number },
+    ) => {
+      // Retrieve transaction from history
+      const txRecord = _transactionHistory.get(signature);
+      if (!txRecord) {
+        // Transaction not found - return null like real RPC would
+        return null;
+      }
+      return {
+        blockTime: txRecord.blockTime,
+        meta: {
+          err: null,
+          fee: 5000,
+          innerInstructions: [],
+          logMessages: txRecord.logs,
+          computeUnitsConsumed: txRecord.computeUnitsConsumed,
+          postBalances: [],
+          postTokenBalances: [],
+          preBalances: [],
+          preTokenBalances: [],
+          rewards: [],
+          loadedAddresses: { writable: [], readonly: [] },
+        },
+        slot: txRecord.slot,
+        transaction: {
+          message: {
+            accountKeys: [],
+            instructions: [],
+            recentBlockhash: "",
+          },
+          signatures: [signature],
+        },
+        version: options?.maxSupportedTransactionVersion,
+      };
+    },
   };
 }
 
@@ -1308,4 +1349,9 @@ export async function initializeLiteSVMEnvironment() {
     ctx,
     fetcher,
   };
+}
+
+export async function resetAndInitializeLiteSVMEnvironment() {
+  await resetLiteSVM();
+  return await initializeLiteSVMEnvironment();
 }

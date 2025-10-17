@@ -24,7 +24,11 @@ import {
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  resetLiteSVM,
+  getLiteSVM,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import { initTestPoolWithTokens } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import { MAX_U64, getTokenBalance } from "../../utils";
@@ -38,16 +42,16 @@ interface SharedTestContext {
 const DEBUG_OUTPUT = false;
 
 describe("splash pool tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let testCtx: SharedTestContext;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
@@ -59,6 +63,11 @@ describe("splash pool tests", () => {
   });
 
   describe("trades on splash pool", () => {
+    beforeEach(async () => {
+      await resetLiteSVM();
+      getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+    });
+
     type TestVariation = {
       figure: string;
       poolTickSpacing: number;
@@ -481,6 +490,11 @@ describe("splash pool tests", () => {
   }
 
   describe("ExactOut overflow (required input token is over u64 max)", () => {
+    beforeEach(async () => {
+      await resetLiteSVM();
+      getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+    });
+
     // Since trade mode is ExactOut, the outputt amount must be within u64 max, but the input token may over u64 max.
     // It is okay to fail with overflow error because the trade is impossible.
 
@@ -725,139 +739,151 @@ describe("splash pool tests", () => {
     });
   });
 
-  it("ExactOut Sandwitch attack senario", async () => {
-    const tickSpacingSplash128 = 32768 + 128;
+  describe("Sandwitch attack scenario", () => {
+    beforeEach(async () => {
+      await resetLiteSVM();
+      getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+    });
 
-    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(
-        testCtx.whirlpoolCtx,
-        tickSpacingSplash128,
-        PriceMath.tickIndexToSqrtPriceX64(0), // 1 B/A
-        new BN(2_000_000_000),
+    it("ExactOut Sandwitch attack senario", async () => {
+      const tickSpacingSplash128 = 32768 + 128;
+
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokens(
+          testCtx.whirlpoolCtx,
+          tickSpacingSplash128,
+          PriceMath.tickIndexToSqrtPriceX64(0), // 1 B/A
+          new BN(2_000_000_000),
+        );
+
+      const pool = await testCtx.whirlpoolClient.getPool(
+        whirlpoolPda.publicKey,
       );
 
-    const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
+      // [-2,894,848   ][0            ][
+      await (await pool.initTickArrayForTicks([
+        // SplashPool has only 2 TickArrays for negative and positive ticks
+        -1, +1,
+      ]))!.buildAndExecute();
 
-    // [-2,894,848   ][0            ][
-    await (await pool.initTickArrayForTicks([
-      // SplashPool has only 2 TickArrays for negative and positive ticks
-      -1, +1,
-    ]))!.buildAndExecute();
+      const fullRange = TickUtil.getFullRangeTickIndex(
+        pool.getData().tickSpacing,
+      );
 
-    const fullRange = TickUtil.getFullRangeTickIndex(
-      pool.getData().tickSpacing,
-    );
+      // create 2 position (small & large)
+      const depositQuoteSmall = increaseLiquidityQuoteByInputToken(
+        poolInitInfo.tokenMintB,
+        DecimalUtil.fromBN(new BN(1), 0), // very thin liquidity
+        fullRange[0],
+        fullRange[1],
+        Percentage.fromFraction(0, 100),
+        pool,
+        NO_TOKEN_EXTENSION_CONTEXT,
+      );
+      const small = await pool.openPosition(
+        fullRange[0],
+        fullRange[1],
+        depositQuoteSmall,
+      );
+      await small.tx.buildAndExecute();
 
-    // create 2 position (small & large)
-    const depositQuoteSmall = increaseLiquidityQuoteByInputToken(
-      poolInitInfo.tokenMintB,
-      DecimalUtil.fromBN(new BN(1), 0), // very thin liquidity
-      fullRange[0],
-      fullRange[1],
-      Percentage.fromFraction(0, 100),
-      pool,
-      NO_TOKEN_EXTENSION_CONTEXT,
-    );
-    const small = await pool.openPosition(
-      fullRange[0],
-      fullRange[1],
-      depositQuoteSmall,
-    );
-    await small.tx.buildAndExecute();
+      const depositQuoteLarge = increaseLiquidityQuoteByInputToken(
+        poolInitInfo.tokenMintB,
+        DecimalUtil.fromBN(new BN(1_000_000_000), 0), // extremely larger than small position
+        fullRange[0],
+        fullRange[1],
+        Percentage.fromFraction(0, 100),
+        pool,
+        NO_TOKEN_EXTENSION_CONTEXT,
+      );
+      const large = await pool.openPosition(
+        fullRange[0],
+        fullRange[1],
+        depositQuoteLarge,
+      );
+      await large.tx.buildAndExecute();
 
-    const depositQuoteLarge = increaseLiquidityQuoteByInputToken(
-      poolInitInfo.tokenMintB,
-      DecimalUtil.fromBN(new BN(1_000_000_000), 0), // extremely larger than small position
-      fullRange[0],
-      fullRange[1],
-      Percentage.fromFraction(0, 100),
-      pool,
-      NO_TOKEN_EXTENSION_CONTEXT,
-    );
-    const large = await pool.openPosition(
-      fullRange[0],
-      fullRange[1],
-      depositQuoteLarge,
-    );
-    await large.tx.buildAndExecute();
+      await pool.refreshData();
 
-    await pool.refreshData();
+      const preLiquidity = pool.getData().liquidity;
 
-    const preLiquidity = pool.getData().liquidity;
+      // get quote with small and large position liquidity
+      const swapQuote = await swapQuoteByOutputToken(
+        pool,
+        poolInitInfo.tokenMintB,
+        new BN(800_000_000),
+        Percentage.fromFraction(0, 100),
+        testCtx.whirlpoolCtx.program.programId,
+        testCtx.whirlpoolCtx.fetcher,
+        IGNORE_CACHE,
+      );
 
-    // get quote with small and large position liquidity
-    const swapQuote = await swapQuoteByOutputToken(
-      pool,
-      poolInitInfo.tokenMintB,
-      new BN(800_000_000),
-      Percentage.fromFraction(0, 100),
-      testCtx.whirlpoolCtx.program.programId,
-      testCtx.whirlpoolCtx.fetcher,
-      IGNORE_CACHE,
-    );
+      const params = SwapUtils.getSwapParamsFromQuote(
+        swapQuote,
+        testCtx.whirlpoolCtx,
+        pool,
+        tokenAccountA,
+        tokenAccountB,
+        testCtx.provider.wallet.publicKey,
+      );
 
-    const params = SwapUtils.getSwapParamsFromQuote(
-      swapQuote,
-      testCtx.whirlpoolCtx,
-      pool,
-      tokenAccountA,
-      tokenAccountB,
-      testCtx.provider.wallet.publicKey,
-    );
+      // close large position
+      const largePosition = PDAUtil.getPosition(
+        testCtx.whirlpoolCtx.program.programId,
+        large.positionMint,
+      ).publicKey;
 
-    // close large position
-    const largePosition = PDAUtil.getPosition(
-      testCtx.whirlpoolCtx.program.programId,
-      large.positionMint,
-    ).publicKey;
+      const closeTx = await pool.closePosition(
+        largePosition,
+        Percentage.fromFraction(0, 100),
+      );
+      for (const tx of closeTx) {
+        await tx.buildAndExecute();
+      }
 
-    const closeTx = await pool.closePosition(
-      largePosition,
-      Percentage.fromFraction(0, 100),
-    );
-    for (const tx of closeTx) {
-      await tx.buildAndExecute();
-    }
+      // liquidity should be decreased
+      await pool.refreshData();
+      const postLiquidity = pool.getData().liquidity;
+      assert.ok(preLiquidity.gt(postLiquidity));
 
-    // liquidity should be decreased
-    await pool.refreshData();
-    const postLiquidity = pool.getData().liquidity;
-    assert.ok(preLiquidity.gt(postLiquidity));
+      const [preA, preB] = await getTokenBalances(tokenAccountA, tokenAccountB);
 
-    const [preA, preB] = await getTokenBalances(tokenAccountA, tokenAccountB);
+      // with sqrtPriceLimit = 0, partial fill will be rejected
+      // so trade will be protected from sandwich attack if sqrtPriceLimit = 0 is used.
+      await assert.rejects(
+        toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+            ...params,
+            sqrtPriceLimit: new BN(0),
+          }),
+        ).buildAndExecute(),
+        /0x17a9/, // PartialFillError
+      );
 
-    // with sqrtPriceLimit = 0, partial fill will be rejected
-    // so trade will be protected from sandwich attack if sqrtPriceLimit = 0 is used.
-    await assert.rejects(
-      toTx(
+      // with sqrtPriceLimit != 0, partial fill will be allowed
+      await toTx(
         testCtx.whirlpoolCtx,
         WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
           ...params,
-          sqrtPriceLimit: new BN(0),
+          sqrtPriceLimit: MIN_SQRT_PRICE_BN,
         }),
-      ).buildAndExecute(),
-      /0x17a9/, // PartialFillError
-    );
+      ).buildAndExecute();
 
-    // with sqrtPriceLimit != 0, partial fill will be allowed
-    await toTx(
-      testCtx.whirlpoolCtx,
-      WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
-        ...params,
-        sqrtPriceLimit: MIN_SQRT_PRICE_BN,
-      }),
-    ).buildAndExecute();
+      const [postA, postB] = await getTokenBalances(
+        tokenAccountA,
+        tokenAccountB,
+      );
 
-    const [postA, postB] = await getTokenBalances(tokenAccountA, tokenAccountB);
+      await pool.refreshData();
 
-    await pool.refreshData();
-
-    // input (partial)
-    assert.ok(preA.sub(postA).lt(swapQuote.estimatedAmountIn));
-    // output (partial)
-    assert.ok(postB.sub(preB).lt(swapQuote.estimatedAmountOut));
-    // hit min
-    assert.ok(pool.getData().sqrtPrice.eq(MIN_SQRT_PRICE_BN));
+      // input (partial)
+      assert.ok(preA.sub(postA).lt(swapQuote.estimatedAmountIn));
+      // output (partial)
+      assert.ok(postB.sub(preB).lt(swapQuote.estimatedAmountOut));
+      // hit min
+      assert.ok(pool.getData().sqrtPrice.eq(MIN_SQRT_PRICE_BN));
+    });
   });
 });
 

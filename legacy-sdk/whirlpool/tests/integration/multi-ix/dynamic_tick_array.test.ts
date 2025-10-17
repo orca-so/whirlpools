@@ -10,7 +10,10 @@ import { PDAUtil, TICK_ARRAY_SIZE, WhirlpoolIx, toTx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  resetAndInitializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initializePositionBundle } from "../../utils/init-utils";
 
@@ -19,16 +22,16 @@ type PositionBundleFixture = Awaited<
 >;
 
 describe("dynamic tick array multi ix tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let ctx: WhirlpoolContext;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
   });
 
@@ -559,6 +562,13 @@ describe("dynamic tick array multi ix tests", () => {
     });
 
     it("initialize all ticks then uninitialize them (one DynamicTickArray)", async () => {
+      // Reset LiteSVM to avoid SOL depletion from previous heavy tests
+      const env = await resetAndInitializeLiteSVMEnvironment();
+      provider = env.provider;
+      program = env.program;
+      anchor.setProvider(provider);
+      ctx = WhirlpoolContext.fromWorkspace(provider, program);
+
       const tickSpacing = 64;
 
       const { positionBundle, whirlpool, tickArrayPos, startTickPos } =
@@ -692,6 +702,13 @@ describe("dynamic tick array multi ix tests", () => {
     });
 
     it("open multiple positions on the same ticks", async () => {
+      // Reset LiteSVM to avoid SOL depletion from previous heavy tests
+      const env = await resetAndInitializeLiteSVMEnvironment();
+      provider = env.provider;
+      program = env.program;
+      anchor.setProvider(provider);
+      ctx = WhirlpoolContext.fromWorkspace(provider, program);
+
       const tickSpacing = 64;
 
       const { positionBundle, whirlpool, tickArrayPos, startTickPos } =
@@ -825,6 +842,15 @@ describe("dynamic tick array multi ix tests", () => {
   });
 
   describe("single transaction (atomic execution)", () => {
+    beforeEach(async () => {
+      // Reset LiteSVM before each test to avoid SOL depletion
+      const env = await resetAndInitializeLiteSVMEnvironment();
+      provider = env.provider;
+      program = env.program;
+      anchor.setProvider(provider);
+      ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    });
+
     it("1st tx: open 6 positions, 2nd tx: close 6 positions (different ticks)", async () => {
       const tickSpacing = 64;
       const numPosition = 6;

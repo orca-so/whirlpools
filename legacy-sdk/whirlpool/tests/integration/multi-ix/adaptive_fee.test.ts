@@ -27,13 +27,17 @@ import {
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../utils/const";
-import { pollForCondition } from "../../utils/litesvm";
+import {
+  warpClock,
+  getCurrentTimestamp,
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
   getLocalnetAdminKeypair0,
-  sleep,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -57,17 +61,16 @@ interface SharedTestContext {
 const DEBUG_OUTPUT = false;
 
 describe("adaptive fee tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions
-  );
-
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let testCtx: SharedTestContext;
   let admin: Keypair;
 
   beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
@@ -854,7 +857,7 @@ describe("adaptive fee tests", () => {
 
       for (const version of versions) {
         it(`swapV${version}`, async () => {
-          const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+          const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
           const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
           const poolInfo = await buildSwapTestPool(
@@ -945,7 +948,7 @@ describe("adaptive fee tests", () => {
             );
           }
           // wait until trade enable timestamp (margin: 5s)
-          await sleep((20 + 5) * 1000);
+          warpClock(20 + 5);
 
           // now it should be successful
           if (version == 1) {
@@ -986,9 +989,7 @@ describe("adaptive fee tests", () => {
         const versions = [1, 2];
         for (const version of versions) {
           it(`twoHopSwapV${version} should be blocked until trade enable timestamp of whirlpool ${oneOrTwo}`, async () => {
-            const currentTimeInSec = new anchor.BN(
-              Math.floor(Date.now() / 1000)
-            );
+            const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
             const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
             const {
@@ -1166,7 +1167,7 @@ describe("adaptive fee tests", () => {
             }
 
             // wait until trade enable timestamp (margin: 5s)
-            await sleep((20 + 5) * 1000);
+            warpClock(20 + 5);
 
             // now it should be successful
             if (version == 1) {
@@ -1214,6 +1215,22 @@ describe("adaptive fee tests", () => {
       ];
       aqConfig.initPositionParams.push({ poolIndex: 0, fundParams });
       aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
+
+      // Reset LiteSVM state before each test to avoid AccountAlreadyInUse errors
+      beforeEach(async () => {
+        const env = await initializeLiteSVMEnvironment();
+        provider = env.provider;
+        program = env.program;
+        anchor.setProvider(provider);
+        const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+        const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
+        admin = await getLocalnetAdminKeypair0(whirlpoolCtx);
+        testCtx = {
+          provider,
+          whirlpoolCtx,
+          whirlpoolClient,
+        };
+      });
 
       it("swapV1", async () => {
         // build pool with FeeTier

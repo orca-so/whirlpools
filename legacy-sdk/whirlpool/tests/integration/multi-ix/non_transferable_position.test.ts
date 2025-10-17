@@ -19,7 +19,10 @@ import {
   TickSpacing,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  pollForCondition,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import type { TestConfigExtensionParams } from "../../utils/v2/init-utils-v2";
 import {
   buildTestPoolV2Params,
@@ -44,13 +47,19 @@ import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders"
 import { PublicKey } from "@solana/web3.js";
 
 describe("non transferable position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    anchor.setProvider(provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   async function buildTestPool(
     tokenARequiresNonTransferablePosition: boolean,
@@ -238,10 +247,12 @@ describe("non transferable position", () => {
             IGNORE_CACHE,
           );
           assert.ok(whirlpool);
-          assert.ok(whirlpool.rewardInfos[2].extension.every((b) => b === 0));
+          assert.ok(
+            whirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+          );
           assert.ok(
             whirlpool.rewardInfos[1].extension.every(
-              (b, i) => i === 0 || b === 0,
+              (b: number, i: number) => i === 0 || b === 0,
             ),
           );
           assert.ok(
@@ -553,9 +564,13 @@ describe("non transferable position", () => {
     await toTx(ctx, closePositionWithTokenExtensions).buildAndExecute();
 
     // position should be closed
-    const closedPosition = await fetcher.getPosition(
-      positionPda.publicKey,
-      IGNORE_CACHE,
+    const closedPosition = await pollForCondition(
+      () => fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE),
+      (account) => account === null,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(!closedPosition);
   });

@@ -11,22 +11,27 @@ import {
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPoolWithTokens, useMaxCU } from "../../utils/init-utils";
-import { AnchorProvider, setProvider } from "@coral-xyz/anchor";
+import {
+  resetLiteSVM,
+  getLiteSVM,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 
 const TICK_SPACING = 1;
 
 describe("Swap CUs", () => {
-  const provider = AnchorProvider.local(undefined, defaultConfirmOptions);
-
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let client: WhirlpoolClient;
   let whirlpool: PublicKey;
 
-  beforeAll(() => {
-    setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    anchor.setProvider(provider);
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
     client = buildWhirlpoolClient(ctx);
   });
@@ -149,6 +154,11 @@ describe("Swap CUs", () => {
   };
 
   describe("Fixed TA", () => {
+    beforeEach(async () => {
+      await resetLiteSVM();
+      getLiteSVM().airdrop(provider.wallet.publicKey, BigInt(100e9));
+    });
+
     it("No ticks initialized", async () => {
       await initFixture("fixed");
       await executeSwap(13276005);
@@ -163,6 +173,11 @@ describe("Swap CUs", () => {
   });
 
   describe("Dynamic TA", () => {
+    beforeEach(async () => {
+      await resetLiteSVM();
+      getLiteSVM().airdrop(provider.wallet.publicKey, BigInt(100e9));
+    });
+
     it("No ticks initialized", async () => {
       await initFixture("dynamic");
       await executeSwap(13276005);

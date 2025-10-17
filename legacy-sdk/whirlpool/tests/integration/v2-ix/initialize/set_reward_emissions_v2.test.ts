@@ -3,8 +3,12 @@ import * as assert from "assert";
 import type { WhirlpoolData } from "../../../../src";
 import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import { TickSpacing, ZERO_BN } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import {
+  TickSpacing,
+  ZERO_BN,
+  startLiteSVM,
+  createLiteSVMProvider,
+} from "../../../utils";
 import {
   initTestPoolV2,
   initializeRewardV2,
@@ -15,20 +19,30 @@ import {
   mintToDestinationV2,
 } from "../../../utils/v2/token-2022";
 
-describe("set_reward_emissions_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("set_reward_emissions_v2 (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const emissionsPerSecondX64 = new anchor.BN(10_000)
     .shln(64)
     .div(new anchor.BN(60 * 60 * 24));
 
-  describe("v1 parity", () => {
+  describe("v1 parity (LiteSVM)", () => {
     const tokenTraitVariations: {
       tokenTraitAB: TokenTrait;
       tokenTraitR: TokenTrait;
@@ -126,10 +140,23 @@ describe("set_reward_emissions_v2", () => {
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute();
 
-          whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE,
-          )) as WhirlpoolData;
+          whirlpool = await (async () => {
+            // LiteSVM may delay state propagation; poll until emissions reach 0
+            for (let i = 0; i < 100; i++) {
+              const wp = (await fetcher.getPool(
+                poolInitInfo.whirlpoolPda.publicKey,
+                IGNORE_CACHE,
+              )) as WhirlpoolData;
+              if (wp.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN)) {
+                return wp;
+              }
+              await new Promise((r) => setTimeout(r, 10));
+            }
+            return (await fetcher.getPool(
+              poolInitInfo.whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData;
+          })();
           assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
         });
 

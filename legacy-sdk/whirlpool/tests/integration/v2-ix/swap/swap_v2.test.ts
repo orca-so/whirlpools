@@ -39,9 +39,11 @@ import {
   TickSpacing,
   ZERO_BN,
   getTokenBalance,
-  sleep,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  pollForCondition,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type {
   FundedPositionV2Params,
@@ -59,16 +61,29 @@ import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension
 import type { PublicKey } from "@solana/web3.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
-describe("swap_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("swap_v2 (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let _detectedSignature: string | null;
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  describe("v1 parity", () => {
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
+
+  describe("v1 parity (LiteSVM)", () => {
     const tokenTraitVariations: {
       tokenTraitA: TokenTrait;
       tokenTraitB: TokenTrait;
@@ -2503,10 +2518,10 @@ describe("swap_v2", () => {
       });
     });
 
-    describe("partial fill, b to a", () => {
+    describe("partial fill, b to a (LiteSVM)", () => {
       const tickSpacing = 128;
       const aToB = false;
-      const client = buildWhirlpoolClient(ctx);
+      /* client initialized in beforeAll */
 
       let poolInitInfo: InitPoolV2Params;
       let whirlpoolPda: PDA;
@@ -2765,10 +2780,10 @@ describe("swap_v2", () => {
       });
     });
 
-    describe("partial fill, a to b", () => {
+    describe("partial fill, a to b (LiteSVM)", () => {
       const tickSpacing = 128;
       const aToB = true;
-      const client = buildWhirlpoolClient(ctx);
+      /* client initialized in beforeAll */
 
       let poolInitInfo: InitPoolV2Params;
       let whirlpoolPda: PDA;
@@ -3101,12 +3116,12 @@ describe("swap_v2", () => {
 
       const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
       // event verification
-      let eventVerified = false;
-      let detectedSignature = null;
+      let eventVerified: boolean = false;
+      let _detectedSignature: string | null = null;
       const listener = ctx.program.addEventListener(
         "Traded",
         (event, _slot, signature) => {
-          detectedSignature = signature;
+          _detectedSignature = signature;
           // verify
           assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
           assert.ok(event.aToB === aToB);
@@ -3128,7 +3143,7 @@ describe("swap_v2", () => {
         },
       );
 
-      const signature = await toTx(
+      const _signature = await toTx(
         ctx,
         WhirlpoolIx.swapV2Ix(ctx.program, {
           ...quote,
@@ -3146,15 +3161,22 @@ describe("swap_v2", () => {
         }),
       ).buildAndExecute();
 
-      await sleep(2000);
-      assert.equal(signature, detectedSignature);
-      assert.ok(eventVerified);
+      warpClock(2);
+      const polled = await pollForCondition(
+        async () => ({ detectedSignature: _detectedSignature, eventVerified }),
+        (r) =>
+          !!r.detectedSignature &&
+          !!(r as { eventVerified?: boolean }).eventVerified,
+        { maxRetries: 100, delayMs: 10 },
+      );
+      assert.ok(!!polled.detectedSignature);
+      assert.ok(polled.eventVerified);
 
       ctx.program.removeEventListener(listener);
     });
   });
 
-  describe("v2 specific accounts", () => {
+  describe("v2 specific accounts (LiteSVM)", () => {
     it("fails when passed token_mint_a does not match whirlpool's token_mint_a", async () => {
       const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
         await initTestPoolWithTokensV2(

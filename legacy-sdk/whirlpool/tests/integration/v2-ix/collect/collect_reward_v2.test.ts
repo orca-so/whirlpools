@@ -17,14 +17,15 @@ import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   approveToken,
   getTokenBalance,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   transferToken,
   ZERO_BN,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
@@ -35,17 +36,28 @@ import { createTokenAccount as createTokenAccountForPosition } from "../../../ut
 import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
-describe("collect_reward_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+describe("collect_reward_v2 (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  describe("v1 parity", () => {
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
+
+  describe("v1 parity (LiteSVM)", () => {
     const tokenTraitVariations: {
       tokenTraitAB: TokenTrait;
       tokenTraitR: TokenTrait;
@@ -112,8 +124,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           await toTx(
             ctx,
@@ -231,8 +242,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -305,8 +315,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -384,8 +393,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -447,8 +455,7 @@ describe("collect_reward_v2", () => {
             positions,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const fakeRewardMint = await createMintV2(
             provider,
@@ -505,8 +512,7 @@ describe("collect_reward_v2", () => {
           });
           const { positions, rewards } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const anotherFixture = await new WhirlpoolTestFixtureV2(ctx).init({
             tokenTraitA: tokenTraits.tokenTraitAB,
@@ -567,8 +573,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -633,8 +638,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -695,8 +699,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -753,8 +756,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -817,8 +819,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -879,8 +880,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -934,8 +934,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const fakeMint = await createMintV2(
             provider,
@@ -993,8 +992,7 @@ describe("collect_reward_v2", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
@@ -1017,14 +1015,14 @@ describe("collect_reward_v2", () => {
                 rewardIndex: 4,
               }),
             ).buildAndExecute(),
-            /Program failed to complete/, // index out of bounds
+            /ProgramFailedToComplete|SBF program panicked/, // index out of bounds
           );
         });
       });
     });
   });
 
-  describe("v2 specific accounts", () => {
+  describe("v2 specific accounts (LiteSVM)", () => {
     it("fails when passed reward_mint does not match whirlpool's reward_infos", async () => {
       const tokenTraits: TokenTrait[] = [
         { isToken2022: true },

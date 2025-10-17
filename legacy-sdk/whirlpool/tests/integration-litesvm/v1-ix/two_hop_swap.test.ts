@@ -43,30 +43,26 @@ describe("two-hop swap (litesvm)", () => {
   let ctx: WhirlpoolContext;
 
   let fetcher: any;
-
+  let client: any;
 
   beforeAll(async () => {
-
     await startLiteSVM();
 
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
 
     program = new anchor.Program(idl, programId, provider);
 
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  fetcher = ctx.fetcher;
-
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
   });
-  const client = buildWhirlpoolClient(ctx);
 
   let aqConfig: InitAquariumParams;
   beforeEach(async () => {

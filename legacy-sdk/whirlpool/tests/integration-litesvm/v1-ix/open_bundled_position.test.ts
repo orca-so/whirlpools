@@ -33,6 +33,7 @@ import {
   ZERO_BN,
   startLiteSVM,
   createLiteSVMProvider,
+  expireBlockhash,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
@@ -56,7 +57,7 @@ describe("open_bundled_position (litesvm)", () => {
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
@@ -88,7 +89,7 @@ describe("open_bundled_position (litesvm)", () => {
     await systemTransferTx(
       provider,
       funderKeypair.publicKey,
-      ONE_SOL
+      ONE_SOL,
     ).buildAndExecute();
   });
 
@@ -96,20 +97,20 @@ describe("open_bundled_position (litesvm)", () => {
     ctx: WhirlpoolContext,
     positionBundleMint: PublicKey,
     bundleIndex: number,
-    overwrite: object
+    overwrite: object,
   ) {
     const bundledPositionPda = PDAUtil.getBundledPosition(
       ctx.program.programId,
       positionBundleMint,
-      bundleIndex
+      bundleIndex,
     );
     const positionBundle = PDAUtil.getPositionBundle(
       ctx.program.programId,
-      positionBundleMint
+      positionBundleMint,
     ).publicKey;
     const positionBundleTokenAccount = getAssociatedTokenAddressSync(
       positionBundleMint,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
     const defaultAccounts = {
       bundledPosition: bundledPositionPda.publicKey,
@@ -131,7 +132,7 @@ describe("open_bundled_position (litesvm)", () => {
           ...defaultAccounts,
           ...overwrite,
         },
-      }
+      },
     );
 
     return toTx(ctx, {
@@ -146,7 +147,7 @@ describe("open_bundled_position (litesvm)", () => {
     mint: PublicKey,
     whirlpool: PublicKey = poolInitInfo.whirlpoolPda.publicKey,
     lowerTick: number = tickLowerIndex,
-    upperTick: number = tickUpperIndex
+    upperTick: number = tickUpperIndex,
   ) {
     assert.strictEqual(position.tickLowerIndex, lowerTick);
     assert.strictEqual(position.tickUpperIndex, upperTick);
@@ -167,7 +168,7 @@ describe("open_bundled_position (litesvm)", () => {
 
   function checkBitmapIsOpened(
     account: PositionBundleData,
-    bundleIndex: number
+    bundleIndex: number,
   ): boolean {
     if (bundleIndex < 0 || bundleIndex >= POSITION_BUNDLE_SIZE)
       throw Error("bundleIndex is out of bounds");
@@ -179,7 +180,7 @@ describe("open_bundled_position (litesvm)", () => {
 
   function checkBitmapIsClosed(
     account: PositionBundleData,
-    bundleIndex: number
+    bundleIndex: number,
   ): boolean {
     if (bundleIndex < 0 || bundleIndex >= POSITION_BUNDLE_SIZE)
       throw Error("bundleIndex is out of bounds");
@@ -191,7 +192,7 @@ describe("open_bundled_position (litesvm)", () => {
 
   function checkBitmap(
     account: PositionBundleData,
-    openedBundleIndexes: number[]
+    openedBundleIndexes: number[],
   ) {
     for (let i = 0; i < POSITION_BUNDLE_SIZE; i++) {
       if (openedBundleIndexes.includes(i)) {
@@ -205,7 +206,7 @@ describe("open_bundled_position (litesvm)", () => {
   it("successfully opens bundled position and verify position address contents", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const bundleIndex = 0;
@@ -215,21 +216,21 @@ describe("open_bundled_position (litesvm)", () => {
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       bundleIndex,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
     const position = (await fetcher.getPosition(
-      bundledPositionPda.publicKey
+      bundledPositionPda.publicKey,
     )) as PositionData;
     checkPositionAccountContents(
       position,
-      positionBundleInfo.positionBundleMintKeypair.publicKey
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
     );
 
     const positionBundle = (await fetcher.getPositionBundle(
       positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
@@ -237,7 +238,7 @@ describe("open_bundled_position (litesvm)", () => {
   it("successfully opens bundled position when funder is different than account paying for transaction fee", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const preBalance = await ctx.connection.getBalance(ctx.wallet.publicKey);
@@ -251,7 +252,7 @@ describe("open_bundled_position (litesvm)", () => {
       tickLowerIndex,
       tickUpperIndex,
       ctx.wallet.publicKey,
-      funderKeypair
+      funderKeypair,
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
@@ -261,16 +262,16 @@ describe("open_bundled_position (litesvm)", () => {
     assert.ok(diffBalance < minRent); // ctx.wallet didn't any rent
 
     const position = (await fetcher.getPosition(
-      bundledPositionPda.publicKey
+      bundledPositionPda.publicKey,
     )) as PositionData;
     checkPositionAccountContents(
       position,
-      positionBundleInfo.positionBundleMintKeypair.publicKey
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
     );
 
     const positionBundle = (await fetcher.getPositionBundle(
       positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
@@ -278,7 +279,7 @@ describe("open_bundled_position (litesvm)", () => {
   it("should reserve some rent for tick initialization", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const positionInitInfo = await openBundledPosition(
@@ -289,14 +290,14 @@ describe("open_bundled_position (litesvm)", () => {
       tickLowerIndex,
       tickUpperIndex,
       ctx.wallet.publicKey,
-      funderKeypair
+      funderKeypair,
     );
 
     const positionPda = positionInitInfo.params.bundledPositionPda.publicKey;
     const position = await ctx.connection.getAccountInfo(positionPda);
     assert.ok(position);
     const minRent = await ctx.connection.getMinimumBalanceForRentExemption(
-      position.data.length
+      position.data.length,
     );
     assert.equal(position.lamports, minRent + TICK_RENT_AMOUNT * 2);
   });
@@ -304,7 +305,7 @@ describe("open_bundled_position (litesvm)", () => {
   it("successfully opens multiple bundled position and verify bitmap", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const bundleIndexes = [1, 7, 8, 64, 127, 128, 254, 255];
@@ -315,22 +316,22 @@ describe("open_bundled_position (litesvm)", () => {
         positionBundleInfo.positionBundleMintKeypair.publicKey,
         bundleIndex,
         tickLowerIndex,
-        tickUpperIndex
+        tickUpperIndex,
       );
       const { bundledPositionPda } = positionInitInfo.params;
 
       const position = (await fetcher.getPosition(
-        bundledPositionPda.publicKey
+        bundledPositionPda.publicKey,
       )) as PositionData;
       checkPositionAccountContents(
         position,
-        positionBundleInfo.positionBundleMintKeypair.publicKey
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
       );
     }
 
     const positionBundle = (await fetcher.getPositionBundle(
       positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionBundleData;
     checkBitmap(positionBundle, bundleIndexes);
   });
@@ -338,11 +339,11 @@ describe("open_bundled_position (litesvm)", () => {
   it("successfully opens bundled position for full-range only pool", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(
-      TickSpacing.FullRangeOnly
+      TickSpacing.FullRangeOnly,
     );
 
     const bundleIndex = 0;
@@ -352,24 +353,24 @@ describe("open_bundled_position (litesvm)", () => {
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       bundleIndex,
       lowerTickIndex,
-      upperTickIndex
+      upperTickIndex,
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
     const position = (await fetcher.getPosition(
-      bundledPositionPda.publicKey
+      bundledPositionPda.publicKey,
     )) as PositionData;
     checkPositionAccountContents(
       position,
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       fullRangeOnlyWhirlpoolPda.publicKey,
       lowerTickIndex,
-      upperTickIndex
+      upperTickIndex,
     );
 
     const positionBundle = (await fetcher.getPositionBundle(
       positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
@@ -378,7 +379,7 @@ describe("open_bundled_position (litesvm)", () => {
     it("should be failed: invalid bundle index (< 0)", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const bundleIndex = -1;
@@ -389,16 +390,16 @@ describe("open_bundled_position (litesvm)", () => {
           positionBundleInfo.positionBundleMintKeypair.publicKey,
           bundleIndex,
           tickLowerIndex,
-          tickUpperIndex
+          tickUpperIndex,
         ),
-        /It must be >= 0 and <= 65535/ // rejected by client
+        /It must be >= 0 and <= 65535/, // rejected by client
       );
     });
 
     it("should be failed: invalid bundle index (POSITION_BUNDLE_SIZE)", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const bundleIndex = POSITION_BUNDLE_SIZE;
@@ -409,16 +410,16 @@ describe("open_bundled_position (litesvm)", () => {
           positionBundleInfo.positionBundleMintKeypair.publicKey,
           bundleIndex,
           tickLowerIndex,
-          tickUpperIndex
+          tickUpperIndex,
         ),
-        /0x179b/ // InvalidBundleIndex
+        /0x179b/, // InvalidBundleIndex
       );
     });
 
     it("should be failed: invalid bundle index (u16 max)", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const bundleIndex = 2 ** 16 - 1;
@@ -429,9 +430,9 @@ describe("open_bundled_position (litesvm)", () => {
           positionBundleInfo.positionBundleMintKeypair.publicKey,
           bundleIndex,
           tickLowerIndex,
-          tickUpperIndex
+          tickUpperIndex,
         ),
-        /0x179b/ // InvalidBundleIndex
+        /0x179b/, // InvalidBundleIndex
       );
     });
   });
@@ -440,7 +441,7 @@ describe("open_bundled_position (litesvm)", () => {
     async function assertTicksFail(lowerTick: number, upperTick: number) {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
       const bundleIndex = 0;
       await assert.rejects(
@@ -452,9 +453,9 @@ describe("open_bundled_position (litesvm)", () => {
           lowerTick,
           upperTick,
           provider.wallet.publicKey,
-          funderKeypair
+          funderKeypair,
         ),
-        /0x177a/ // InvalidTickIndex
+        /0x177a/, // InvalidTickIndex
       );
     }
 
@@ -486,7 +487,7 @@ describe("open_bundled_position (litesvm)", () => {
   it("should be fail: user opens bundled position with bundle index whose state is opened", async () => {
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const bundleIndex = 0;
@@ -496,12 +497,12 @@ describe("open_bundled_position (litesvm)", () => {
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       bundleIndex,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
 
     const positionBundle = (await fetcher.getPositionBundle(
       positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionBundleData;
     assert.ok(checkBitmapIsOpened(positionBundle, bundleIndex));
 
@@ -512,11 +513,12 @@ describe("open_bundled_position (litesvm)", () => {
         positionBundleInfo.positionBundleMintKeypair.publicKey,
         bundleIndex,
         tickLowerIndex,
-        tickUpperIndex
+        tickUpperIndex,
       ),
       (err) => {
-        return JSON.stringify(err).includes("already in use");
-      }
+        const errorString = err instanceof Error ? err.message : String(err);
+        return errorString.includes("already in use");
+      },
     );
   });
 
@@ -524,7 +526,7 @@ describe("open_bundled_position (litesvm)", () => {
     it("should be failed: invalid bundled position", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -536,25 +538,25 @@ describe("open_bundled_position (litesvm)", () => {
           bundledPosition: PDAUtil.getBundledPosition(
             ctx.program.programId,
             positionBundleInfo.positionBundleMintKeypair.publicKey,
-            1 // another bundle index
+            1, // another bundle index
           ).publicKey,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x7d6/ // ConstraintSeeds
+        /0x7d6/, // ConstraintSeeds
       );
     });
 
     it("should be failed: invalid position bundle", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
       const otherPositionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -564,12 +566,12 @@ describe("open_bundled_position (litesvm)", () => {
         {
           // invalid parameter
           positionBundle: otherPositionBundleInfo.positionBundlePda.publicKey,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x7d6/ // ConstraintSeeds
+        /0x7d6/, // ConstraintSeeds
       );
     });
 
@@ -577,14 +579,14 @@ describe("open_bundled_position (litesvm)", () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
         funderKeypair.publicKey,
-        funderKeypair
+        funderKeypair,
       );
 
       const ata = await createAssociatedTokenAccount(
         provider,
         positionBundleInfo.positionBundleMintKeypair.publicKey,
         ctx.wallet.publicKey,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -594,12 +596,12 @@ describe("open_bundled_position (litesvm)", () => {
         {
           // invalid parameter
           positionBundleTokenAccount: ata,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x7d3/ // ConstraintRaw (amount == 1)
+        /0x7d3/, // ConstraintRaw (amount == 1)
       );
     });
 
@@ -607,11 +609,11 @@ describe("open_bundled_position (litesvm)", () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
         funderKeypair.publicKey,
-        funderKeypair
+        funderKeypair,
       );
       const otherPositionBundleInfo = await initializePositionBundle(
         ctx,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -622,12 +624,12 @@ describe("open_bundled_position (litesvm)", () => {
           // invalid parameter
           positionBundleTokenAccount:
             otherPositionBundleInfo.positionBundleTokenAccount,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x7d3/ // ConstraintRaw (mint == position_bundle.position_bundle_mint)
+        /0x7d3/, // ConstraintRaw (mint == position_bundle.position_bundle_mint)
       );
     });
 
@@ -635,7 +637,7 @@ describe("open_bundled_position (litesvm)", () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
         funderKeypair.publicKey,
-        funderKeypair
+        funderKeypair,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -647,12 +649,12 @@ describe("open_bundled_position (litesvm)", () => {
             positionBundleInfo.positionBundleTokenAccount,
           // invalid parameter
           positionBundleAuthority: ctx.wallet.publicKey,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x1783/ // MissingOrInvalidDelegate
+        /0x1783/, // MissingOrInvalidDelegate
       );
     });
 
@@ -666,12 +668,12 @@ describe("open_bundled_position (litesvm)", () => {
         {
           // invalid parameter
           whirlpool: positionBundleInfo.positionBundlePda.publicKey,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbba/ // AccountDiscriminatorMismatch
+        /0xbba/, // AccountDiscriminatorMismatch
       );
     });
 
@@ -685,12 +687,12 @@ describe("open_bundled_position (litesvm)", () => {
         {
           // invalid parameter
           systemProgram: TOKEN_PROGRAM_ID,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -704,12 +706,12 @@ describe("open_bundled_position (litesvm)", () => {
         {
           // invalid parameter
           rent: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc7/ // AccountSysvarMismatch
+        /0xbc7/, // AccountSysvarMismatch
       );
     });
   });
@@ -719,7 +721,7 @@ describe("open_bundled_position (litesvm)", () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
         funderKeypair.publicKey,
-        funderKeypair
+        funderKeypair,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -730,12 +732,12 @@ describe("open_bundled_position (litesvm)", () => {
           positionBundleTokenAccount:
             positionBundleInfo.positionBundleTokenAccount,
           positionBundleAuthority: ctx.wallet.publicKey,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x1783/ // MissingOrInvalidDelegate
+        /0x1783/, // MissingOrInvalidDelegate
       );
 
       // delegate 1 token from funder to ctx.wallet
@@ -744,12 +746,26 @@ describe("open_bundled_position (litesvm)", () => {
         positionBundleInfo.positionBundleTokenAccount,
         ctx.wallet.publicKey,
         1,
-        funderKeypair
+        funderKeypair,
       );
-      await tx.buildAndExecute();
+
+      // Expire blockhash and rebuild transaction (litesvm requires fresh tx)
+      expireBlockhash();
+      const tx2 = await createOpenBundledPositionTx(
+        ctx,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        0,
+        {
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          positionBundleAuthority: ctx.wallet.publicKey,
+        },
+      );
+
+      await tx2.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       checkBitmapIsOpened(positionBundle!, 0);
     });
@@ -765,7 +781,7 @@ describe("open_bundled_position (litesvm)", () => {
           positionBundleTokenAccount:
             positionBundleInfo.positionBundleTokenAccount,
           positionBundleAuthority: ctx.wallet.publicKey,
-        }
+        },
       );
 
       // delegate 1 token from ctx.wallet to funder
@@ -773,13 +789,13 @@ describe("open_bundled_position (litesvm)", () => {
         provider,
         positionBundleInfo.positionBundleTokenAccount,
         funderKeypair.publicKey,
-        1
+        1,
       );
       // owner can open even if delegation exists
       await tx.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       checkBitmapIsOpened(positionBundle!, 0);
     });
@@ -788,7 +804,7 @@ describe("open_bundled_position (litesvm)", () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
         funderKeypair.publicKey,
-        funderKeypair
+        funderKeypair,
       );
 
       const tx = await createOpenBundledPositionTx(
@@ -799,12 +815,12 @@ describe("open_bundled_position (litesvm)", () => {
           positionBundleTokenAccount:
             positionBundleInfo.positionBundleTokenAccount,
           positionBundleAuthority: ctx.wallet.publicKey,
-        }
+        },
       );
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x1783/ // MissingOrInvalidDelegate
+        /0x1783/, // MissingOrInvalidDelegate
       );
 
       // delegate ZERO token from funder to ctx.wallet
@@ -813,12 +829,25 @@ describe("open_bundled_position (litesvm)", () => {
         positionBundleInfo.positionBundleTokenAccount,
         ctx.wallet.publicKey,
         0,
-        funderKeypair
+        funderKeypair,
+      );
+
+      // Expire blockhash and rebuild transaction (litesvm requires fresh tx)
+      expireBlockhash();
+      const tx2 = await createOpenBundledPositionTx(
+        ctx,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        0,
+        {
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          positionBundleAuthority: ctx.wallet.publicKey,
+        },
       );
 
       await assert.rejects(
-        tx.buildAndExecute(),
-        /0x1784/ // InvalidPositionTokenAmount
+        tx2.buildAndExecute(),
+        /0x1784/, // InvalidPositionTokenAmount
       );
     });
   });
@@ -831,14 +860,14 @@ describe("open_bundled_position (litesvm)", () => {
         provider,
         positionBundleInfo.positionBundleMintKeypair.publicKey,
         funderKeypair.publicKey,
-        ctx.wallet.publicKey
+        ctx.wallet.publicKey,
       );
 
       await transferToken(
         provider,
         positionBundleInfo.positionBundleTokenAccount,
         funderATA,
-        1
+        1,
       );
 
       const tokenInfo = await fetcher.getTokenInfo(funderATA, IGNORE_CACHE);
@@ -850,7 +879,7 @@ describe("open_bundled_position (litesvm)", () => {
           bundledPositionPda: PDAUtil.getBundledPosition(
             ctx.program.programId,
             positionBundleInfo.positionBundleMintKeypair.publicKey,
-            0
+            0,
           ),
           bundleIndex: 0,
           funder: funderKeypair.publicKey,
@@ -860,14 +889,14 @@ describe("open_bundled_position (litesvm)", () => {
           tickLowerIndex,
           tickUpperIndex,
           whirlpool: whirlpoolPda.publicKey,
-        })
+        }),
       );
       tx.addSigner(funderKeypair);
 
       await tx.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       checkBitmapIsOpened(positionBundle!, 0);
     });
@@ -882,7 +911,7 @@ describe("open_bundled_position (litesvm)", () => {
 
     const positionBundleInfo = await initializePositionBundle(
       ctx,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
     const bundleIndex = 0;
     await assert.rejects(
@@ -892,9 +921,9 @@ describe("open_bundled_position (litesvm)", () => {
         positionBundleInfo.positionBundleMintKeypair.publicKey,
         bundleIndex,
         tickLowerIndex,
-        tickUpperIndex
+        tickUpperIndex,
       ),
-      /0x17a6/ // FullRangeOnlyPool
+      /0x17a6/, // FullRangeOnlyPool
     );
   });
 });

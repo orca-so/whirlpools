@@ -21,6 +21,7 @@ import {
   createLiteSVMProvider,
   loadPreloadAccount,
 } from "../../utils";
+import { pollForCondition } from "../../utils/litesvm";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
   initializePositionBundle,
@@ -171,6 +172,20 @@ describe("reset_position_range (litesvm)", () => {
       .addSigner(funderKeypair)
       .buildAndExecute();
 
+    await pollForCondition(
+      async () => fetcher.getPosition(positionPda.publicKey, { maxAge: 0 }),
+      (p: any) =>
+        p &&
+        p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+        p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
+
     await validatePosition(positionPda.publicKey, positionMintAddress);
   });
 
@@ -191,6 +206,20 @@ describe("reset_position_range (litesvm)", () => {
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
       }),
     ).buildAndExecute();
+
+    await pollForCondition(
+      async () => fetcher.getPosition(positionPda.publicKey, { maxAge: 0 }),
+      (p: any) =>
+        p &&
+        p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+        p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(positionPda.publicKey, positionMintAddress);
   });
@@ -230,6 +259,21 @@ describe("reset_position_range (litesvm)", () => {
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
+
+    await pollForCondition(
+      async () =>
+        fetcher.getPosition(params.positionPda.publicKey, { maxAge: 0 }),
+      (p: any) =>
+        p &&
+        p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+        p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+      {
+        accountToReload: params.positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(params.positionPda.publicKey, params.positionMint);
   });

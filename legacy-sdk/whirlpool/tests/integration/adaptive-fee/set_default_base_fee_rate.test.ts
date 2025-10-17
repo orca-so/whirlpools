@@ -1,16 +1,21 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { InitPoolWithAdaptiveFeeParams } from "../../../src";
+import type {
+  InitPoolWithAdaptiveFeeParams,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   IGNORE_CACHE,
   PDAUtil,
   PriceMath,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initializeConfigWithDefaultConfigParams,
@@ -23,14 +28,14 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 
 describe("set_default_base_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const tickSpacing = 64;
   const feeTierIndex = 1024 + tickSpacing;
@@ -49,18 +54,17 @@ describe("set_default_base_fee_rate", () => {
       feeTierIndex,
       tickSpacing,
       initialDefaultBaseFeeRate,
-      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing)
     );
     const adaptiveFeeTierPda = params.feeTierPda;
 
     const preAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(preAdaptiveFeeTierAccount);
     assert.ok(
-      preAdaptiveFeeTierAccount.defaultBaseFeeRate ===
-        initialDefaultBaseFeeRate,
+      preAdaptiveFeeTierAccount.defaultBaseFeeRate === initialDefaultBaseFeeRate
     );
 
     await toTx(
@@ -70,18 +74,28 @@ describe("set_default_base_fee_rate", () => {
         adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
         feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
         defaultBaseFeeRate: newDefaultBaseFeeRate,
-      }),
+      })
     )
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
 
-    const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
-      adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+    const postAdaptiveFeeTierAccount = await pollForCondition(
+      async () =>
+        (await fetcher.getAdaptiveFeeTier(
+          adaptiveFeeTierPda.publicKey,
+          IGNORE_CACHE
+        ))!,
+      (aft) => aft.defaultBaseFeeRate === newDefaultBaseFeeRate,
+      {
+        maxRetries: 250,
+        delayMs: 20,
+        accountToReload: adaptiveFeeTierPda.publicKey,
+        connection: ctx.connection,
+      }
     );
     assert.ok(postAdaptiveFeeTierAccount);
     assert.ok(
-      postAdaptiveFeeTierAccount.defaultBaseFeeRate === newDefaultBaseFeeRate,
+      postAdaptiveFeeTierAccount.defaultBaseFeeRate === newDefaultBaseFeeRate
     );
 
     // Newly initialized whirlpools have new default base fee rate
@@ -91,7 +105,7 @@ describe("set_default_base_fee_rate", () => {
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
       tokenMintA,
       tokenMintB,
-      feeTierIndex,
+      feeTierIndex
     );
     const tokenVaultAKeypair = anchor.web3.Keypair.generate();
     const tokenVaultBKeypair = anchor.web3.Keypair.generate();
@@ -106,17 +120,17 @@ describe("set_default_base_fee_rate", () => {
       tokenBadgeA: PDAUtil.getTokenBadge(
         ctx.program.programId,
         configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        tokenMintA,
+        tokenMintA
       ).publicKey,
       tokenBadgeB: PDAUtil.getTokenBadge(
         ctx.program.programId,
         configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        tokenMintB,
+        tokenMintB
       ).publicKey,
       whirlpoolPda,
       oraclePda: PDAUtil.getOracle(
         ctx.program.programId,
-        whirlpoolPda.publicKey,
+        whirlpoolPda.publicKey
       ),
       tokenVaultAKeypair,
       tokenVaultBKeypair,
@@ -126,12 +140,12 @@ describe("set_default_base_fee_rate", () => {
     };
     await toTx(
       ctx,
-      WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, newPoolInitInfo),
+      WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, newPoolInitInfo)
     ).buildAndExecute();
 
     const whirlpool = await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(whirlpool);
     assert.ok(whirlpool.feeRate === newDefaultBaseFeeRate);
@@ -151,18 +165,17 @@ describe("set_default_base_fee_rate", () => {
       feeTierIndex,
       tickSpacing,
       initialDefaultBaseFeeRate,
-      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing)
     );
     const adaptiveFeeTierPda = params.feeTierPda;
 
     const preAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(preAdaptiveFeeTierAccount);
     assert.ok(
-      preAdaptiveFeeTierAccount.defaultBaseFeeRate ===
-        initialDefaultBaseFeeRate,
+      preAdaptiveFeeTierAccount.defaultBaseFeeRate === initialDefaultBaseFeeRate
     );
 
     await toTx(
@@ -172,18 +185,28 @@ describe("set_default_base_fee_rate", () => {
         adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
         feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
         defaultBaseFeeRate: newDefaultBaseFeeRate,
-      }),
+      })
     )
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
 
-    const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
-      adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+    const postAdaptiveFeeTierAccount = await pollForCondition(
+      async () =>
+        (await fetcher.getAdaptiveFeeTier(
+          adaptiveFeeTierPda.publicKey,
+          IGNORE_CACHE
+        ))!,
+      (aft) => aft.defaultBaseFeeRate === newDefaultBaseFeeRate,
+      {
+        maxRetries: 250,
+        delayMs: 20,
+        accountToReload: adaptiveFeeTierPda.publicKey,
+        connection: ctx.connection,
+      }
     );
     assert.ok(postAdaptiveFeeTierAccount);
     assert.ok(
-      postAdaptiveFeeTierAccount.defaultBaseFeeRate === newDefaultBaseFeeRate,
+      postAdaptiveFeeTierAccount.defaultBaseFeeRate === newDefaultBaseFeeRate
     );
   });
 
@@ -201,7 +224,7 @@ describe("set_default_base_fee_rate", () => {
       feeTierIndex,
       tickSpacing,
       initialDefaultBaseFeeRate,
-      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing)
     );
     const adaptiveFeeTierPda = params.feeTierPda;
 
@@ -213,11 +236,11 @@ describe("set_default_base_fee_rate", () => {
           adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
           feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
           defaultBaseFeeRate: newDefaultBaseFeeRate,
-        }),
+        })
       )
         .addSigner(configKeypairs.feeAuthorityKeypair)
         .buildAndExecute(),
-      /0x178c/, // FeeRateMaxExceeded
+      /0x178c/ // FeeRateMaxExceeded
     );
   });
 
@@ -228,7 +251,7 @@ describe("set_default_base_fee_rate", () => {
     const adaptiveFeeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
-      feeTierIndex,
+      feeTierIndex
     );
 
     await assert.rejects(
@@ -239,11 +262,11 @@ describe("set_default_base_fee_rate", () => {
           adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
           feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
           defaultBaseFeeRate: 500,
-        }),
+        })
       )
         .addSigner(configKeypairs.feeAuthorityKeypair)
         .buildAndExecute(),
-      /0xbc4/, // AccountNotInitialized
+      /0xbc4/ // AccountNotInitialized
     );
   });
 
@@ -261,7 +284,7 @@ describe("set_default_base_fee_rate", () => {
       feeTierIndex,
       tickSpacing,
       initialDefaultBaseFeeRate,
-      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing)
     );
     const adaptiveFeeTierPda = params.feeTierPda;
 
@@ -273,7 +296,7 @@ describe("set_default_base_fee_rate", () => {
     });
     const ixWithoutSigner = dropIsSignerFlag(
       ix.instructions[0],
-      configKeypairs.feeAuthorityKeypair.publicKey,
+      configKeypairs.feeAuthorityKeypair.publicKey
     );
 
     await assert.rejects(
@@ -284,7 +307,7 @@ describe("set_default_base_fee_rate", () => {
       })
         // no fee authority sign
         .buildAndExecute(),
-      /0xbc2/, // AccountNotSigner
+      /0xbc2/ // AccountNotSigner
     );
   });
 
@@ -302,7 +325,7 @@ describe("set_default_base_fee_rate", () => {
       feeTierIndex,
       tickSpacing,
       initialDefaultBaseFeeRate,
-      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing)
     );
     const adaptiveFeeTierPda = params.feeTierPda;
 
@@ -315,11 +338,11 @@ describe("set_default_base_fee_rate", () => {
           adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
           feeAuthority: fakeFeeAuthorityKeypair.publicKey,
           defaultBaseFeeRate: newDefaultBaseFeeRate,
-        }),
+        })
       )
         .addSigner(fakeFeeAuthorityKeypair)
         .buildAndExecute(),
-      /0x7dc/, // ConstraintAddress
+      /0x7dc/ // ConstraintAddress
     );
   });
 });

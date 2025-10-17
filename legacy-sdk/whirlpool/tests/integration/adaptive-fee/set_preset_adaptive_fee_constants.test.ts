@@ -3,6 +3,7 @@ import * as assert from "assert";
 import type {
   AdaptiveFeeConstantsData,
   InitPoolWithAdaptiveFeeParams,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   IGNORE_CACHE,
@@ -10,11 +11,10 @@ import {
   PriceMath,
   TICK_ARRAY_SIZE,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment, pollForCondition } from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initializeConfigWithDefaultConfigParams,
@@ -28,14 +28,14 @@ import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 
 describe("set_preset_adaptive_fee_constants", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const tickSpacing = 64;
   const feeTierIndex = 1024 + tickSpacing;
@@ -129,9 +129,29 @@ describe("set_preset_adaptive_fee_constants", () => {
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
 
-    const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
-      adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+    const postAdaptiveFeeTierAccount = await pollForCondition(
+      async () =>
+        (await fetcher.getAdaptiveFeeTier(
+          adaptiveFeeTierPda.publicKey,
+          IGNORE_CACHE,
+        ))!,
+      (aft) =>
+        aft.filterPeriod === newPresetAdaptiveFeeConstants.filterPeriod &&
+        aft.decayPeriod === newPresetAdaptiveFeeConstants.decayPeriod &&
+        aft.reductionFactor === newPresetAdaptiveFeeConstants.reductionFactor &&
+        aft.adaptiveFeeControlFactor ===
+          newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor &&
+        aft.maxVolatilityAccumulator ===
+          newPresetAdaptiveFeeConstants.maxVolatilityAccumulator &&
+        aft.tickGroupSize === newPresetAdaptiveFeeConstants.tickGroupSize &&
+        aft.majorSwapThresholdTicks ===
+          newPresetAdaptiveFeeConstants.majorSwapThresholdTicks,
+      {
+        maxRetries: 250,
+        delayMs: 20,
+        accountToReload: adaptiveFeeTierPda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postAdaptiveFeeTierAccount);
     assert.ok(

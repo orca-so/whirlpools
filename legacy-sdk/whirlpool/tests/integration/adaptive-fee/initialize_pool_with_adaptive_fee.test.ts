@@ -6,6 +6,7 @@ import type {
   InitializeAdaptiveFeeTierParams,
   InitPoolWithAdaptiveFeeParams,
   WhirlpoolData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   IGNORE_CACHE,
@@ -15,7 +16,6 @@ import {
   PDAUtil,
   PoolUtil,
   PriceMath,
-  WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../../src";
@@ -32,7 +32,7 @@ import {
   sleep,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import {
   buildTestPoolWithAdaptiveFeeParams,
@@ -45,6 +45,7 @@ import {
   createMintV2,
   initializeNativeMint2022Idempotent,
 } from "../../utils/v2/token-2022";
+import { initializeNativeMintIdempotent } from "../../utils/litesvm";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import {
@@ -64,15 +65,20 @@ import {
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 
 describe("initialize_pool_with_adaptive_fee", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let providerWalletKeypair: Keypair;
 
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    providerWalletKeypair = getProviderWalletKeypair(provider);
+  });
 
   describe("v2 parity", () => {
     describe("v1 parity", () => {
@@ -1497,8 +1503,12 @@ describe("initialize_pool_with_adaptive_fee", () => {
         createTokenBadge: boolean;
         isToken2022NativeMint: boolean;
       }) {
-        // We need to call this to use NATIVE_MINT_2022
-        await initializeNativeMint2022Idempotent(provider);
+        // Initialize the appropriate native mint for LiteSVM
+        if (params.isToken2022NativeMint) {
+          await initializeNativeMint2022Idempotent(provider);
+        } else {
+          await initializeNativeMintIdempotent(provider);
+        }
 
         // create tokens
         const nativeMint = params.isToken2022NativeMint

@@ -17,6 +17,8 @@ import {
   createAmountToUiAmountInstruction,
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
+import whirlpoolIdl from "../../src/artifacts/whirlpool.json";
+import { WhirlpoolContext } from "../../src";
 
 let _litesvm: LiteSVM | null = null;
 
@@ -1291,4 +1293,19 @@ export async function initializeNativeMintIdempotent(provider: AnchorProvider) {
     executable: false,
     rentEpoch: 0,
   });
+}
+
+export async function initializeLiteSVMEnvironment() {
+  await startLiteSVM();
+  const provider = await createLiteSVMProvider();
+  const idl = whirlpoolIdl as anchor.Idl;
+  const program = new anchor.Program(idl, provider);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  const fetcher = ctx.fetcher;
+  return {
+    provider,
+    program,
+    ctx,
+    fetcher,
+  };
 }

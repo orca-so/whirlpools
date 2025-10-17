@@ -42,6 +42,7 @@ import {
   startLiteSVM,
   createLiteSVMProvider,
   warpClock,
+  pollForCondition,
 } from "../../../utils";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type {
@@ -65,6 +66,7 @@ describe("swap_v2 (litesvm)", () => {
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
+  let detectedSignature: string | null;
   let client: any;
 
   beforeAll(async () => {
@@ -3113,8 +3115,8 @@ describe("swap_v2 (litesvm)", () => {
 
       const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
       // event verification
-      let eventVerified = false;
-      let detectedSignature = null;
+      let eventVerified: boolean = false;
+      let detectedSignature: string | null = null;
       const listener = ctx.program.addEventListener(
         "Traded",
         (event, _slot, signature) => {
@@ -3159,6 +3161,13 @@ describe("swap_v2 (litesvm)", () => {
       ).buildAndExecute();
 
       warpClock(2);
+      const polled = await pollForCondition(
+        async () => ({ detectedSignature, eventVerified }),
+        (r) => !!r.detectedSignature && !!r.eventVerified,
+        { maxRetries: 100, delayMs: 10 },
+      );
+      assert.ok(!!polled.detectedSignature);
+      assert.ok(polled.eventVerified);
 
       ctx.program.removeEventListener(listener);
     });

@@ -27,12 +27,13 @@ import type {
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   getTokenBalance,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   startLiteSVM,
   createLiteSVMProvider,
+  warpClock,
+  pollForCondition,
 } from "../../../utils";
 import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
@@ -59,17 +60,21 @@ describe("two_hop_swap_v2 (litesvm)", () => {
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
+  let detectedSignatureOne: string | null;
+  let detectedSignatureTwo: string | null;
+  let client: any;
 
   beforeAll(async () => {
     await startLiteSVM();
     provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
     const idl = require("../../../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
     fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
   });
 
   describe("v1 parity (litesvm)", () => {
@@ -177,21 +182,21 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               mintKeys[0],
               tokenTraits.tokenTraitA.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID
+                : TEST_TOKEN_PROGRAM_ID,
             );
             await asyncAssertOwnerProgram(
               ctx.provider,
               mintKeys[1],
               tokenTraits.tokenTraitB.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID
+                : TEST_TOKEN_PROGRAM_ID,
             );
             await asyncAssertOwnerProgram(
               ctx.provider,
               mintKeys[2],
               tokenTraits.tokenTraitC.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID
+                : TEST_TOKEN_PROGRAM_ID,
             );
 
             const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
@@ -200,11 +205,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
             const whirlpoolDataOne = (await fetcher.getPool(
               whirlpoolOneKey,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as WhirlpoolData;
             const whirlpoolDataTwo = (await fetcher.getPool(
               whirlpoolTwoKey,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as WhirlpoolData;
 
             const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -248,17 +253,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                   ctx.program.programId,
                   whirlpoolOneKey,
                   fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
                 tokenExtensionCtx:
                   await TokenExtensionUtil.buildTokenExtensionContext(
                     fetcher,
                     whirlpoolDataOne,
-                    IGNORE_CACHE
+                    IGNORE_CACHE,
                   ),
                 oracleData: NO_ORACLE_DATA,
               },
-              Percentage.fromFraction(1, 100)
+              Percentage.fromFraction(1, 100),
             );
 
             const aToBTwo =
@@ -279,17 +284,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                   ctx.program.programId,
                   whirlpoolTwoKey,
                   fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
                 tokenExtensionCtx:
                   await TokenExtensionUtil.buildTokenExtensionContext(
                     fetcher,
                     whirlpoolDataTwo,
-                    IGNORE_CACHE
+                    IGNORE_CACHE,
                   ),
                 oracleData: NO_ORACLE_DATA,
               },
-              Percentage.fromFraction(1, 100)
+              Percentage.fromFraction(1, 100),
             );
 
             const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -298,7 +303,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
             };
@@ -312,7 +317,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               },
               ///0x7d3/ // ConstraintRaw
               // V2 has token_mint_one_a and it has address constraint
-              /0x7dc/ // ConstraintAddress
+              /0x7dc/, // ConstraintAddress
             );
           });
 
@@ -322,14 +327,14 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...baseIxParams,
                 tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
           });
 
@@ -339,28 +344,28 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...baseIxParams,
                 tokenVaultOneInput: baseIxParams.tokenVaultOneIntermediate,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7dc/, // ConstraintAddress
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultOneIntermediate: baseIxParams.tokenVaultOneInput,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7dc/, // ConstraintAddress
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultTwoIntermediate: baseIxParams.tokenVaultTwoOutput,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7dc/, // ConstraintAddress
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultTwoOutput: baseIxParams.tokenVaultTwoIntermediate,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7dc/, // ConstraintAddress
             );
           });
 
@@ -370,7 +375,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...baseIxParams,
                 oracleOne: PublicKey.unique(),
               },
-              /0x7d6/ // Constraint Seeds
+              /0x7d6/, // Constraint Seeds
             );
           });
 
@@ -380,7 +385,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...baseIxParams,
                 oracleTwo: PublicKey.unique(),
               },
-              /0x7d6/ // Constraint Seeds
+              /0x7d6/, // Constraint Seeds
             );
           });
 
@@ -392,21 +397,21 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 // so now we use token account as clearly invalid account.
                 tickArrayOne0: baseIxParams.tokenVaultOneInput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayOne1: baseIxParams.tokenVaultOneInput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayOne2: baseIxParams.tokenVaultOneInput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
           });
 
@@ -418,21 +423,21 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 // so now we use token account as clearly invalid account.
                 tickArrayTwo0: baseIxParams.tokenVaultTwoOutput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayTwo1: baseIxParams.tokenVaultTwoOutput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayTwo2: baseIxParams.tokenVaultTwoOutput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
           });
         });
@@ -442,7 +447,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
           let tokenBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
 
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
@@ -453,11 +458,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -501,17 +506,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -531,17 +536,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -553,10 +558,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -568,7 +573,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
 
           const prevTbs = [...tokenBalances];
           tokenBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
 
           assert.deepEqual(tokenBalances, [
@@ -599,7 +604,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
           let tokenBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
 
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
@@ -610,11 +615,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -658,17 +663,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -688,17 +693,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -710,10 +715,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -725,7 +730,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
 
           const prevTbs = [...tokenBalances];
           tokenBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
 
           assert.deepEqual(tokenBalances, [
@@ -765,7 +770,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
           let tokenBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
 
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
@@ -776,11 +781,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [tokenA, tokenB, _outputToken] = mintKeys;
@@ -824,17 +829,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(tokenB);
@@ -854,17 +859,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -876,10 +881,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -891,7 +896,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
 
           const prevTbs = [...tokenBalances];
           tokenBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
 
           assert.deepEqual(tokenBalances, [
@@ -915,11 +920,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -963,17 +968,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -993,17 +998,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1016,13 +1021,13 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 otherAmountThreshold: new BN(613309),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1794/ // Above Out Below Minimum
+            /0x1794/, // Above Out Below Minimum
           );
         });
 
@@ -1031,7 +1036,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
           const preSwapBalances = await getTokenBalances(
-            tokenAccounts.map((acc) => acc.account)
+            tokenAccounts.map((acc) => acc.account),
           );
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
@@ -1041,11 +1046,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -1089,17 +1094,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -1119,17 +1124,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1141,10 +1146,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -1160,7 +1165,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               preSwapBalances[0].sub(quote.estimatedAmountIn),
               preSwapBalances[1],
               preSwapBalances[2].add(quote2.estimatedAmountOut),
-            ]
+            ],
           );
         });
 
@@ -1174,11 +1179,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -1222,17 +1227,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -1252,17 +1257,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1275,13 +1280,13 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 otherAmountThreshold: new BN(2),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1795/ // Above In Above Maximum
+            /0x1795/, // Above In Above Maximum
           );
         });
 
@@ -1299,11 +1304,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -1347,17 +1352,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -1377,17 +1382,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1400,12 +1405,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1799/ // Invalid intermediary mint
+            /0x1799/, // Invalid intermediary mint
           );
         });
 
@@ -1419,11 +1424,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1467,17 +1472,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1497,17 +1502,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
@@ -1516,7 +1521,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             whirlpoolDataOne.sqrtPrice
               .sub(quote.estimatedEndSqrtPrice)
               .mul(new anchor.BN("5"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1528,21 +1533,21 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           const postWhirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           //const postWhirlpoolDataTwo = await fetcher.getPool(whirlpoolTwoKey, IGNORE_CACHE) as WhirlpoolData;
 
           assert.equal(
             postWhirlpoolDataOne.sqrtPrice.eq(quote.sqrtPriceLimit),
-            true
+            true,
           );
         });
 
@@ -1560,11 +1565,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1608,17 +1613,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1638,17 +1643,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
@@ -1657,7 +1662,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             whirlpoolDataTwo.sqrtPrice
               .sub(quote2.estimatedEndSqrtPrice)
               .mul(new anchor.BN("5"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1670,12 +1675,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x17a3/ // IntermediateTokenAmountMismatch
+            /0x17a3/, // IntermediateTokenAmountMismatch
           );
         });
 
@@ -1691,11 +1696,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -1717,17 +1722,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -1747,17 +1752,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // add sqrtPriceLimit on quote
@@ -1775,12 +1780,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x17a3/ // IntermediateTokenAmountMismatch
+            /0x17a3/, // IntermediateTokenAmountMismatch
           );
         });
 
@@ -1794,11 +1799,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1842,17 +1847,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1872,17 +1877,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
@@ -1891,7 +1896,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             whirlpoolDataOne.sqrtPrice
               .sub(quote.estimatedEndSqrtPrice)
               .mul(new anchor.BN("15"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1904,11 +1909,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
-            ).buildAndExecute()
+              }),
+            ).buildAndExecute(),
           );
         });
 
@@ -1922,11 +1927,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1970,17 +1975,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -2000,17 +2005,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is greater than the 1% slippage threshold,
@@ -2019,7 +2024,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             whirlpoolDataTwo.sqrtPrice
               .sub(quote2.estimatedEndSqrtPrice)
               .mul(new anchor.BN("15"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -2032,11 +2037,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ...getParamsFromPools(
                   [pools[0], pools[1]],
                   [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                  tokenAccounts
+                  tokenAccounts,
                 ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
-            ).buildAndExecute()
+              }),
+            ).buildAndExecute(),
           );
         });
 
@@ -2048,11 +2053,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -2074,17 +2079,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataOne,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -2104,17 +2109,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
               tokenExtensionCtx:
                 await TokenExtensionUtil.buildTokenExtensionContext(
                   fetcher,
                   whirlpoolDataTwo,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
               oracleData: NO_ORACLE_DATA,
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -2123,10 +2128,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           const whirlpoolTwoPre = whirlpoolDataTwo;
 
           // event verification
-          let eventVerifiedOne = false;
-          let eventVerifiedTwo = false;
-          let detectedSignatureOne = null;
-          let detectedSignatureTwo = null;
+          let eventVerifiedOne: boolean = false;
+          let eventVerifiedTwo: boolean = false;
+          let detectedSignatureOne: string | null = null;
+          let detectedSignatureTwo: string | null = null;
           const listener = ctx.program.addEventListener(
             "Traded",
             (event, _slot, signature) => {
@@ -2170,7 +2175,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
 
                 eventVerifiedTwo = true;
               }
-            }
+            },
           );
 
           const signature = await toTx(
@@ -2180,17 +2185,31 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...getParamsFromPools(
                 [pools[0], pools[1]],
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-                tokenAccounts
+                tokenAccounts,
               ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
-          await sleep(2000);
-          assert.equal(signature, detectedSignatureOne);
-          assert.equal(signature, detectedSignatureTwo);
-          assert.ok(eventVerifiedOne);
-          assert.ok(eventVerifiedTwo);
+          warpClock(2);
+          const polled = await pollForCondition(
+            async () => ({
+              detectedSignatureOne,
+              detectedSignatureTwo,
+              eventVerifiedOne,
+              eventVerifiedTwo,
+            }),
+            (r) =>
+              !!r.detectedSignatureOne &&
+              !!r.detectedSignatureTwo &&
+              !!r.eventVerifiedOne &&
+              !!r.eventVerifiedTwo,
+            { maxRetries: 100, delayMs: 10 },
+          );
+          assert.ok(!!polled.detectedSignatureOne);
+          assert.ok(!!polled.detectedSignatureTwo);
+          assert.ok(polled.eventVerifiedOne);
+          assert.ok(polled.eventVerifiedTwo);
 
           ctx.program.removeEventListener(listener);
         });
@@ -2259,11 +2278,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
         const whirlpoolDataOne = (await fetcher.getPool(
           whirlpoolOneKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
         const whirlpoolDataTwo = (await fetcher.getPool(
           whirlpoolTwoKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
 
         const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -2285,17 +2304,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ctx.program.programId,
               whirlpoolOneKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenExtensionCtx:
               await TokenExtensionUtil.buildTokenExtensionContext(
                 fetcher,
                 whirlpoolDataOne,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -2315,17 +2334,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ctx.program.programId,
               whirlpoolTwoKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenExtensionCtx:
               await TokenExtensionUtil.buildTokenExtensionContext(
                 fetcher,
                 whirlpoolDataTwo,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -2334,7 +2353,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...getParamsFromPools(
             [pools[0], pools[1]],
             [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-            tokenAccounts
+            tokenAccounts,
           ),
           tokenAuthority: ctx.wallet.publicKey,
         };
@@ -2347,7 +2366,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenMintInput: otherTokenPublicKey,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
         it("token_mint_intermediate", async () => {
@@ -2356,7 +2375,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenMintIntermediate: otherTokenPublicKey,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
         it("token_mint_output", async () => {
@@ -2365,7 +2384,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenMintOutput: otherTokenPublicKey,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
       });
@@ -2377,7 +2396,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramInput: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
         it("token_program_intermediate", async () => {
@@ -2386,7 +2405,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramIntermediate: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
         it("token_program_output", async () => {
@@ -2395,7 +2414,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramOutput: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
       });
@@ -2407,7 +2426,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramInput: METADATA_PROGRAM_ADDRESS,
             },
-            /0xbc0/ // InvalidProgramId
+            /0xbc0/, // InvalidProgramId
           );
         });
         it("token_program_intermediate", async () => {
@@ -2416,7 +2435,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramIntermediate: METADATA_PROGRAM_ADDRESS,
             },
-            /0xbc0/ // InvalidProgramId
+            /0xbc0/, // InvalidProgramId
           );
         });
         it("token_program_output", async () => {
@@ -2425,7 +2444,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramOutput: METADATA_PROGRAM_ADDRESS,
             },
-            /0xbc0/ // InvalidProgramId
+            /0xbc0/, // InvalidProgramId
           );
         });
       });
@@ -2450,11 +2469,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
                     ...baseIxParams,
                     memoProgram: METADATA_PROGRAM_ADDRESS,
                   },
-                }
+                },
               ),
             ],
           }).buildAndExecute(),
-          /0xbc0/ // InvalidProgramId
+          /0xbc0/, // InvalidProgramId
         );
       });
     });
@@ -2518,11 +2537,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
         const whirlpoolDataOne = (await fetcher.getPool(
           whirlpoolOneKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
         const whirlpoolDataTwo = (await fetcher.getPool(
           whirlpoolTwoKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
 
         const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -2544,17 +2563,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ctx.program.programId,
               whirlpoolOneKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenExtensionCtx:
               await TokenExtensionUtil.buildTokenExtensionContext(
                 fetcher,
                 whirlpoolDataOne,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -2574,17 +2593,17 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ctx.program.programId,
               whirlpoolTwoKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
             tokenExtensionCtx:
               await TokenExtensionUtil.buildTokenExtensionContext(
                 fetcher,
                 whirlpoolDataTwo,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
             oracleData: NO_ORACLE_DATA,
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -2593,7 +2612,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...getParamsFromPools(
             [pools[0], pools[1]],
             [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
-            tokenAccounts
+            tokenAccounts,
           ),
           tokenAuthority: ctx.wallet.publicKey,
         };
@@ -2606,7 +2625,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramInput: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
         it("token_program_intermediate", async () => {
@@ -2615,7 +2634,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramIntermediate: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
         it("token_program_output", async () => {
@@ -2624,7 +2643,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
               ...baseIxParams,
               tokenProgramOutput: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
       });
@@ -2632,7 +2651,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
   });
 
   describe("partial fill (litesvm)", () => {
-    const client = buildWhirlpoolClient(ctx);
+    // use shared client initialized in beforeAll
     const aqConfig = {
       ...getDefaultAquariumV2(),
       initMintParams: [
@@ -2736,7 +2755,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ctx.program.programId,
           whirlpoolTwoKey,
           ctx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
         oracleData: NO_ORACLE_DATA,
@@ -2750,7 +2769,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...quoteParams,
           sqrtPriceLimit: MIN_SQRT_PRICE_BN,
         },
-        Percentage.fromFraction(0, 100)
+        Percentage.fromFraction(0, 100),
       );
       assert.ok(quoteSecondWithoutLimit.estimatedEndTickIndex < 1008);
 
@@ -2760,18 +2779,18 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...quoteParams,
           sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(1008),
         },
-        Percentage.fromFraction(0, 100)
+        Percentage.fromFraction(0, 100),
       );
       assert.ok(quoteSecondWithLimit.estimatedEndTickIndex == 1008);
       assert.ok(
         quoteSecondWithLimit.estimatedAmountOut.lt(
-          quoteSecondWithoutLimit.estimatedAmountOut
-        )
+          quoteSecondWithoutLimit.estimatedAmountOut,
+        ),
       );
       assert.ok(
         quoteSecondWithLimit.estimatedAmountIn.lt(
-          quoteSecondWithoutLimit.estimatedAmountIn
-        )
+          quoteSecondWithoutLimit.estimatedAmountIn,
+        ),
       );
 
       // 821218 --> 906251
@@ -2782,7 +2801,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // 690975 --> 762627
@@ -2793,13 +2812,13 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // build without limit
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
         quoteFirstWithoutLimit,
-        quoteSecondWithoutLimit
+        quoteSecondWithoutLimit,
       );
 
       await assert.rejects(
@@ -2815,12 +2834,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             ...getParamsFromPools(
               [pools[0], pools[1]],
               [true, true],
-              tokenAccounts
+              tokenAccounts,
             ),
             tokenAuthority: ctx.wallet.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x1795/ // AmountInAboveMaximum.
+        /0x1795/, // AmountInAboveMaximum.
       );
 
       assert.ok(quoteSecondWithoutLimit.estimatedEndTickIndex > 999);
@@ -2835,10 +2854,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...getParamsFromPools(
             [pools[0], pools[1]],
             [true, true],
-            tokenAccounts
+            tokenAccounts,
           ),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute();
     });
 
@@ -2923,7 +2942,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const quoteFirst = await swapQuoteByOutputToken(
@@ -2933,12 +2952,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
         quoteFirst,
-        quoteSecond
+        quoteSecond,
       );
 
       await assert.rejects(
@@ -2951,12 +2970,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             ...getParamsFromPools(
               [pools[0], pools[1]],
               [true, true],
-              tokenAccounts
+              tokenAccounts,
             ),
             tokenAuthority: ctx.wallet.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x17a9/ // PartialFillError
+        /0x17a9/, // PartialFillError
       );
 
       await toTx(
@@ -2968,10 +2987,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...getParamsFromPools(
             [pools[0], pools[1]],
             [true, true],
-            tokenAccounts
+            tokenAccounts,
           ),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute();
     });
 
@@ -3057,7 +3076,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // 22337909818 --> 0 (not round up)
@@ -3068,12 +3087,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
         quoteFirst,
-        quoteSecond
+        quoteSecond,
       );
 
       await assert.rejects(
@@ -3086,12 +3105,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             ...getParamsFromPools(
               [pools[0], pools[1]],
               [true, true],
-              tokenAccounts
+              tokenAccounts,
             ),
             tokenAuthority: ctx.wallet.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x17a9/ // PartialFillError
+        /0x17a9/, // PartialFillError
       );
     });
 
@@ -3178,7 +3197,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // 22337909818 --> 0 (not round up)
@@ -3189,12 +3208,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
         quoteFirst,
-        quoteSecond
+        quoteSecond,
       );
 
       await assert.rejects(
@@ -3207,12 +3226,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             ...getParamsFromPools(
               [pools[0], pools[1]],
               [true, true],
-              tokenAccounts
+              tokenAccounts,
             ),
             tokenAuthority: ctx.wallet.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x17a3/ // IntermediateTokenAmountMismatch
+        /0x17a3/, // IntermediateTokenAmountMismatch
       );
     });
 
@@ -3301,7 +3320,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ctx.program.programId,
           whirlpoolOneKey,
           ctx.fetcher,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
         oracleData: NO_ORACLE_DATA,
@@ -3315,7 +3334,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...quoteParams,
           sqrtPriceLimit: MIN_SQRT_PRICE_BN,
         },
-        Percentage.fromFraction(0, 100)
+        Percentage.fromFraction(0, 100),
       );
       assert.ok(quoteFirstWithoutLimit.estimatedEndTickIndex < 1010);
 
@@ -3325,18 +3344,18 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...quoteParams,
           sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(1010),
         },
-        Percentage.fromFraction(0, 100)
+        Percentage.fromFraction(0, 100),
       );
       assert.ok(quoteFirstWithLimit.estimatedEndTickIndex == 1010);
       assert.ok(
         quoteFirstWithLimit.estimatedAmountIn.lt(
-          quoteFirstWithoutLimit.estimatedAmountIn
-        )
+          quoteFirstWithoutLimit.estimatedAmountIn,
+        ),
       );
       assert.ok(
         quoteFirstWithLimit.estimatedAmountOut.lt(
-          quoteFirstWithoutLimit.estimatedAmountOut
-        )
+          quoteFirstWithoutLimit.estimatedAmountOut,
+        ),
       );
 
       // 1103339 --> 1217224
@@ -3347,7 +3366,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // 736476 --> 812807
@@ -3358,13 +3377,13 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // build without limit
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
         quoteFirstWithoutLimit,
-        quoteSecondWithoutLimit
+        quoteSecondWithoutLimit,
       );
 
       await assert.rejects(
@@ -3381,12 +3400,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             ...getParamsFromPools(
               [pools[0], pools[1]],
               [true, true],
-              tokenAccounts
+              tokenAccounts,
             ),
             tokenAuthority: ctx.wallet.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x1794/ // AmountOutBelowMinimum
+        /0x1794/, // AmountOutBelowMinimum
       );
 
       assert.ok(quoteSecondWithoutLimit.estimatedEndTickIndex > 999);
@@ -3401,10 +3420,10 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...getParamsFromPools(
             [pools[0], pools[1]],
             [true, true],
-            tokenAccounts
+            tokenAccounts,
           ),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute();
     });
 
@@ -3491,7 +3510,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       // 1103339 1217224
@@ -3502,12 +3521,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
         Percentage.fromFraction(0, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
         quoteFirst,
-        quoteSecond
+        quoteSecond,
       );
 
       assert.ok(quoteSecond.estimatedEndTickIndex < 1002);
@@ -3521,12 +3540,12 @@ describe("two_hop_swap_v2 (litesvm)", () => {
             ...getParamsFromPools(
               [pools[0], pools[1]],
               [true, true],
-              tokenAccounts
+              tokenAccounts,
             ),
             tokenAuthority: ctx.wallet.publicKey,
-          })
+          }),
         ).buildAndExecute(),
-        /0x17a3/ // IntermediateTokenAmountMismatch
+        /0x17a3/, // IntermediateTokenAmountMismatch
       );
 
       assert.ok(quoteSecond.estimatedEndTickIndex > 999);
@@ -3538,24 +3557,24 @@ describe("two_hop_swap_v2 (litesvm)", () => {
           ...getParamsFromPools(
             [pools[0], pools[1]],
             [true, true],
-            tokenAccounts
+            tokenAccounts,
           ),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute();
     });
   });
 
   async function rejectParams(
     params: TwoHopSwapV2Params,
-    error: assert.AssertPredicate
+    error: assert.AssertPredicate,
   ) {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, params)
+        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, params),
       ).buildAndExecute(),
-      error
+      error,
     );
   }
 
@@ -3566,7 +3585,7 @@ describe("two_hop_swap_v2 (litesvm)", () => {
       mint: PublicKey;
       account: PublicKey;
       tokenTrait: TokenTrait;
-    }[]
+    }[],
   ) {
     const [aToBOne, aToBTwo] = aToBs;
     const tokenAccKeys = getTokenAccsForPoolsV2(pools, tokenAccounts);
@@ -3583,11 +3602,11 @@ describe("two_hop_swap_v2 (litesvm)", () => {
     const tokenProgramTwoB = pools[1].tokenProgramB;
     const oracleOne = PDAUtil.getOracle(
       ctx.program.programId,
-      whirlpoolOne
+      whirlpoolOne,
     ).publicKey;
     const oracleTwo = PDAUtil.getOracle(
       ctx.program.programId,
-      whirlpoolTwo
+      whirlpoolTwo,
     ).publicKey;
     return {
       whirlpoolOne: pools[0].whirlpoolPda.publicKey,
@@ -3632,8 +3651,8 @@ describe("two_hop_swap_v2 (litesvm)", () => {
   async function getTokenBalances(keys: PublicKey[]) {
     return Promise.all(
       keys.map(
-        async (key) => new anchor.BN(await getTokenBalance(provider, key))
-      )
+        async (key) => new anchor.BN(await getTokenBalance(provider, key)),
+      ),
     );
   }
 });

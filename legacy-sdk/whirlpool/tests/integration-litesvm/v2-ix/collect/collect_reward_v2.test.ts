@@ -17,7 +17,6 @@ import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   approveToken,
   getTokenBalance,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
@@ -25,6 +24,7 @@ import {
   ZERO_BN,
   startLiteSVM,
   createLiteSVMProvider,
+  warpClock,
 } from "../../../utils";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
@@ -41,19 +41,20 @@ describe("collect_reward_v2 (litesvm)", () => {
   let program: anchor.Program;
   let ctx: WhirlpoolContext;
   let fetcher: any;
+  let client: any;
 
   beforeAll(async () => {
     await startLiteSVM();
     provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
     const idl = require("../../../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
     ctx = WhirlpoolContext.fromWorkspace(provider, program);
     fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
   });
-  const client = buildWhirlpoolClient(ctx);
 
   describe("v1 parity (litesvm)", () => {
     const tokenTraitVariations: {
@@ -122,8 +123,7 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           await toTx(
             ctx,
@@ -132,16 +132,16 @@ describe("collect_reward_v2 (litesvm)", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           // Generate collect reward expectation
           const whirlpoolData = (await fetcher.getPool(
-            whirlpoolPda.publicKey
+            whirlpoolPda.publicKey,
           )) as WhirlpoolData;
           const positionPreCollect = await client.getPosition(
             positions[0].publicKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           );
 
           // Lock the collectRewards quote to the last time we called updateFeesAndRewards
@@ -155,7 +155,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               await TokenExtensionUtil.buildTokenExtensionContext(
                 fetcher,
                 whirlpoolData,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
           });
 
@@ -170,7 +170,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               provider,
               tokenTraits.tokenTraitR,
               rewards[i].rewardMint,
-              provider.wallet.publicKey
+              provider.wallet.publicKey,
             );
 
             await toTx(
@@ -185,30 +185,30 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount: rewardOwnerAccount,
                 rewardVault: rewards[i].rewardVaultKeypair.publicKey,
                 rewardIndex: i,
-              })
+              }),
             ).buildAndExecute();
 
             const collectedBalance = parseInt(
-              await getTokenBalance(provider, rewardOwnerAccount)
+              await getTokenBalance(provider, rewardOwnerAccount),
             );
             assert.equal(
               collectedBalance,
-              expectation.rewardOwed[i]?.toNumber()
+              expectation.rewardOwed[i]?.toNumber(),
             );
             const vaultBalance = parseInt(
               await getTokenBalance(
                 provider,
-                rewards[i].rewardVaultKeypair.publicKey
-              )
+                rewards[i].rewardVaultKeypair.publicKey,
+              ),
             );
             assert.equal(vaultStartBalance - collectedBalance, vaultBalance);
             const position = await fetcher.getPosition(
               positions[0].publicKey,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             );
             assert.equal(position?.rewardInfos[i].amountOwed, 0);
             assert.ok(
-              position?.rewardInfos[i].growthInsideCheckpoint.gte(ZERO_BN)
+              position?.rewardInfos[i].growthInsideCheckpoint.gte(ZERO_BN),
             );
           }
         });
@@ -241,14 +241,13 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await toTx(
@@ -258,7 +257,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           const delegate = anchor.web3.Keypair.generate();
@@ -266,7 +265,7 @@ describe("collect_reward_v2 (litesvm)", () => {
             provider,
             positions[0].tokenAccount,
             delegate.publicKey,
-            1
+            1,
           );
 
           await toTx(
@@ -281,7 +280,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(delegate)
             .buildAndExecute();
@@ -315,27 +314,26 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           const delegate = anchor.web3.Keypair.generate();
           const delegatePositionAccount = await createTokenAccountForPosition(
             provider,
             positions[0].mintKeypair.publicKey,
-            delegate.publicKey
+            delegate.publicKey,
           );
           await transferToken(
             provider,
             positions[0].tokenAccount,
             delegatePositionAccount,
-            1
+            1,
           );
 
           await toTx(
@@ -345,7 +343,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           await toTx(
@@ -360,7 +358,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(delegate)
             .buildAndExecute();
@@ -394,14 +392,13 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await toTx(
@@ -411,7 +408,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           const delegate = anchor.web3.Keypair.generate();
@@ -419,7 +416,7 @@ describe("collect_reward_v2 (litesvm)", () => {
             provider,
             positions[0].tokenAccount,
             delegate.publicKey,
-            1
+            1,
           );
 
           await toTx(
@@ -434,7 +431,7 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
-            })
+            }),
           ).buildAndExecute();
         });
 
@@ -457,18 +454,17 @@ describe("collect_reward_v2 (litesvm)", () => {
             positions,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const fakeRewardMint = await createMintV2(
             provider,
-            tokenTraits.tokenTraitR
+            tokenTraits.tokenTraitR,
           );
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             fakeRewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await assert.rejects(
@@ -486,9 +482,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: anchor.web3.PublicKey.default,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0xbbf/ // AccountNotInitialized
+            /0xbbf/, // AccountNotInitialized
           );
         });
 
@@ -515,8 +511,7 @@ describe("collect_reward_v2 (litesvm)", () => {
           });
           const { positions, rewards } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const anotherFixture = await new WhirlpoolTestFixtureV2(ctx).init({
             tokenTraitA: tokenTraits.tokenTraitAB,
@@ -528,7 +523,7 @@ describe("collect_reward_v2 (litesvm)", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -544,9 +539,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d1/ // ConstraintHasOne
+            /0x7d1/, // ConstraintHasOne
           );
         });
 
@@ -577,25 +572,24 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const otherPositionAcount = await createTokenAccountForPosition(
             provider,
             positions[0].mintKeypair.publicKey,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await transferToken(
             provider,
             positions[0].tokenAccount,
             otherPositionAcount,
-            1
+            1,
           );
           await assert.rejects(
             toTx(
@@ -610,9 +604,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -643,20 +637,19 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           const fakePositionTokenAccount = await createTokenAccountForPosition(
             provider,
             NATIVE_MINT,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await assert.rejects(
@@ -672,9 +665,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -705,14 +698,13 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const delegate = anchor.web3.Keypair.generate();
           await assert.rejects(
@@ -728,11 +720,11 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             )
               .addSigner(delegate)
               .buildAndExecute(),
-            /0x1783/ // MissingOrInvalidDelegate
+            /0x1783/, // MissingOrInvalidDelegate
           );
         });
 
@@ -763,21 +755,20 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const delegate = anchor.web3.Keypair.generate();
           await approveToken(
             provider,
             positions[0].tokenAccount,
             delegate.publicKey,
-            2
+            2,
           );
           await assert.rejects(
             toTx(
@@ -792,11 +783,11 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             )
               .addSigner(delegate)
               .buildAndExecute(),
-            /0x1784/ // InvalidPositionTokenAmount
+            /0x1784/, // InvalidPositionTokenAmount
           );
         });
 
@@ -827,21 +818,20 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const delegate = anchor.web3.Keypair.generate();
           await approveToken(
             provider,
             positions[0].tokenAccount,
             delegate.publicKey,
-            1
+            1,
           );
           await assert.rejects(
             toTx(
@@ -856,9 +846,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i
+            /.*signature verification fail.*/i,
           );
         });
 
@@ -889,14 +879,13 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -911,9 +900,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewardOwnerAccount,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
 
@@ -944,18 +933,17 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const fakeMint = await createMintV2(
             provider,
-            tokenTraits.tokenTraitR
+            tokenTraits.tokenTraitR,
           );
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             fakeMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -970,9 +958,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -1003,14 +991,13 @@ describe("collect_reward_v2 (litesvm)", () => {
             rewards,
           } = fixture.getInfos();
 
-          // accrue rewards
-          await sleep(1200);
+          warpClock(1.2);
 
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -1025,9 +1012,9 @@ describe("collect_reward_v2 (litesvm)", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 4,
-              })
-            ).buildAndExecute(),
-            /Program failed to complete/ // index out of bounds
+              }),
+          ).buildAndExecute(),
+          /ProgramFailedToComplete|SBF program panicked/, // index out of bounds
           );
         });
       });
@@ -1091,7 +1078,7 @@ describe("collect_reward_v2 (litesvm)", () => {
           provider,
           tokenTraits[i],
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         await assert.rejects(
@@ -1107,9 +1094,9 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1160,7 +1147,7 @@ describe("collect_reward_v2 (litesvm)", () => {
           provider,
           { isToken2022: false },
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_PROGRAM_ID));
@@ -1177,9 +1164,9 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1230,7 +1217,7 @@ describe("collect_reward_v2 (litesvm)", () => {
           provider,
           { isToken2022: true },
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -1247,9 +1234,9 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1300,7 +1287,7 @@ describe("collect_reward_v2 (litesvm)", () => {
           provider,
           { isToken2022: true },
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -1317,9 +1304,9 @@ describe("collect_reward_v2 (litesvm)", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0xbc0/ // InvalidProgramId
+          /0xbc0/, // InvalidProgramId
         );
       }
     });

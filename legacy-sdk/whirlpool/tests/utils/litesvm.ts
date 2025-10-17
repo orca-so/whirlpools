@@ -930,7 +930,9 @@ export function warpClock(seconds: number): void {
   const currentClock = litesvm.getClock();
 
   // Advance time
-  const newTimestamp = currentClock.unixTimestamp + BigInt(seconds);
+  // Accept fractional seconds by rounding up to the next whole second
+  const secondsRoundedUp = Math.ceil(seconds);
+  const newTimestamp = currentClock.unixTimestamp + BigInt(secondsRoundedUp);
 
   // Advance slot significantly to force new blockhash generation
   // Solana generates new blockhashes every ~150 slots, so we advance by at least 300

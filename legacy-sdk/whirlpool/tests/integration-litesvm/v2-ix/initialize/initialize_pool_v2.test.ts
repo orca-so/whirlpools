@@ -25,10 +25,10 @@ import {
   getLocalnetAdminKeypair0,
   getProviderWalletKeypair,
   setAuthority,
-  sleep,
   systemTransferTx,
   startLiteSVM,
   createLiteSVMProvider,
+  warpClock,
 } from "../../../utils";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
@@ -62,7 +62,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
     await startLiteSVM();
     provider = await createLiteSVMProvider();
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
     const idl = require("../../../../src/artifacts/whirlpool.json");
     program = new anchor.Program(idl, programId, provider);
@@ -106,10 +106,10 @@ describe("initialize_pool_v2 (litesvm)", () => {
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
               TickSpacing.Standard,
-              price
+              price,
             );
           const whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey
+            poolInitInfo.whirlpoolPda.publicKey,
           )) as WhirlpoolData;
 
           const expectedWhirlpoolPda = PDAUtil.getWhirlpool(
@@ -117,64 +117,64 @@ describe("initialize_pool_v2 (litesvm)", () => {
             configInitInfo.whirlpoolsConfigKeypair.publicKey,
             poolInitInfo.tokenMintA,
             poolInitInfo.tokenMintB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           assert.ok(
             poolInitInfo.whirlpoolPda.publicKey.equals(
-              expectedWhirlpoolPda.publicKey
-            )
+              expectedWhirlpoolPda.publicKey,
+            ),
           );
           assert.equal(expectedWhirlpoolPda.bump, whirlpool.whirlpoolBump[0]);
 
           assert.ok(
-            whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig)
+            whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig),
           );
 
           assert.ok(whirlpool.tokenMintA.equals(poolInitInfo.tokenMintA));
           assert.ok(
             whirlpool.tokenVaultA.equals(
-              poolInitInfo.tokenVaultAKeypair.publicKey
-            )
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
           );
           await asyncAssertOwnerProgram(
             provider,
             whirlpool.tokenMintA,
             tokenTraits.tokenTraitA.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
 
           assert.ok(whirlpool.tokenMintB.equals(poolInitInfo.tokenMintB));
           assert.ok(
             whirlpool.tokenVaultB.equals(
-              poolInitInfo.tokenVaultBKeypair.publicKey
-            )
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
           );
           await asyncAssertOwnerProgram(
             provider,
             whirlpool.tokenMintB,
             tokenTraits.tokenTraitB.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
 
           assert.equal(whirlpool.feeRate, feeTierParams.defaultFeeRate);
           assert.equal(
             whirlpool.protocolFeeRate,
-            configInitInfo.defaultProtocolFeeRate
+            configInitInfo.defaultProtocolFeeRate,
           );
 
           assert.ok(
             whirlpool.sqrtPrice.eq(
-              new anchor.BN(poolInitInfo.initSqrtPrice.toString())
-            )
+              new anchor.BN(poolInitInfo.initSqrtPrice.toString()),
+            ),
           );
           assert.ok(whirlpool.liquidity.eq(ZERO_BN));
 
           assert.equal(
             whirlpool.tickCurrentIndex,
-            PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice)
+            PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
           );
 
           assert.ok(whirlpool.protocolFeeOwedA.eq(ZERO_BN));
@@ -191,7 +191,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             poolInitInfo.whirlpoolPda.publicKey,
             tokenTraits.tokenTraitA.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
           await asyncAssertTokenVaultV2(
             provider,
@@ -200,7 +200,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             poolInitInfo.whirlpoolPda.publicKey,
             tokenTraits.tokenTraitB.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
 
           whirlpool.rewardInfos.forEach((rewardInfo) => {
@@ -212,8 +212,8 @@ describe("initialize_pool_v2 (litesvm)", () => {
 
           assert.ok(
             PoolUtil.getRewardAuthority(whirlpool).equals(
-              configInitInfo.rewardEmissionsSuperAuthority
-            )
+              configInitInfo.rewardEmissionsSuperAuthority,
+            ),
           );
           assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
           assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
@@ -227,60 +227,60 @@ describe("initialize_pool_v2 (litesvm)", () => {
               tokenTraits.tokenTraitA,
               tokenTraits.tokenTraitB,
               TickSpacing.Stable,
-              price
+              price,
             );
           const whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey
+            poolInitInfo.whirlpoolPda.publicKey,
           )) as WhirlpoolData;
 
           assert.ok(
-            whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig)
+            whirlpool.whirlpoolsConfig.equals(poolInitInfo.whirlpoolsConfig),
           );
 
           assert.ok(whirlpool.tokenMintA.equals(poolInitInfo.tokenMintA));
           assert.ok(
             whirlpool.tokenVaultA.equals(
-              poolInitInfo.tokenVaultAKeypair.publicKey
-            )
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            ),
           );
           await asyncAssertOwnerProgram(
             provider,
             whirlpool.tokenMintA,
             tokenTraits.tokenTraitA.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
 
           assert.ok(whirlpool.tokenMintB.equals(poolInitInfo.tokenMintB));
           assert.ok(
             whirlpool.tokenVaultB.equals(
-              poolInitInfo.tokenVaultBKeypair.publicKey
-            )
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            ),
           );
           await asyncAssertOwnerProgram(
             provider,
             whirlpool.tokenMintB,
             tokenTraits.tokenTraitB.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
 
           assert.equal(whirlpool.feeRate, feeTierParams.defaultFeeRate);
           assert.equal(
             whirlpool.protocolFeeRate,
-            configInitInfo.defaultProtocolFeeRate
+            configInitInfo.defaultProtocolFeeRate,
           );
 
           assert.ok(
             whirlpool.sqrtPrice.eq(
-              new anchor.BN(poolInitInfo.initSqrtPrice.toString())
-            )
+              new anchor.BN(poolInitInfo.initSqrtPrice.toString()),
+            ),
           );
           assert.ok(whirlpool.liquidity.eq(ZERO_BN));
 
           assert.equal(
             whirlpool.tickCurrentIndex,
-            PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice)
+            PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
           );
 
           assert.ok(whirlpool.protocolFeeOwedA.eq(ZERO_BN));
@@ -297,7 +297,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             poolInitInfo.whirlpoolPda.publicKey,
             tokenTraits.tokenTraitA.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
           await asyncAssertTokenVaultV2(
             provider,
@@ -306,7 +306,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             poolInitInfo.whirlpoolPda.publicKey,
             tokenTraits.tokenTraitB.isToken2022
               ? TEST_TOKEN_2022_PROGRAM_ID
-              : TEST_TOKEN_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
           );
 
           whirlpool.rewardInfos.forEach((rewardInfo) => {
@@ -318,8 +318,8 @@ describe("initialize_pool_v2 (litesvm)", () => {
 
           assert.ok(
             PoolUtil.getRewardAuthority(whirlpool).equals(
-              configInitInfo.rewardEmissionsSuperAuthority
-            )
+              configInitInfo.rewardEmissionsSuperAuthority,
+            ),
           );
           assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
           assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
@@ -330,7 +330,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await systemTransferTx(
             provider,
             funderKeypair.publicKey,
-            ONE_SOL
+            ONE_SOL,
           ).buildAndExecute();
           await initTestPoolV2(
             ctx,
@@ -338,7 +338,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             tokenTraits.tokenTraitB,
             TickSpacing.Standard,
             MathUtil.toX64(new Decimal(5)),
-            funderKeypair
+            funderKeypair,
           );
         });
 
@@ -347,45 +347,45 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const preLamports = 1_000_000;
           await systemTransferTx(
             provider,
             poolInitInfo.tokenVaultAKeypair.publicKey,
-            preLamports
+            preLamports,
           ).buildAndExecute();
           await systemTransferTx(
             provider,
             poolInitInfo.tokenVaultBKeypair.publicKey,
-            preLamports
+            preLamports,
           ).buildAndExecute();
 
           await toTx(
             ctx,
-            WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo)
+            WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
           ).buildAndExecute();
           await asyncAssertTokenVaultV2(
             provider,
             poolInitInfo.tokenVaultAKeypair.publicKey,
             poolInitInfo.tokenMintA,
             poolInitInfo.whirlpoolPda.publicKey,
-            poolInitInfo.tokenProgramA
+            poolInitInfo.tokenProgramA,
           );
           await asyncAssertTokenVaultV2(
             provider,
             poolInitInfo.tokenVaultBKeypair.publicKey,
             poolInitInfo.tokenMintB,
             poolInitInfo.whirlpoolPda.publicKey,
-            poolInitInfo.tokenProgramB
+            poolInitInfo.tokenProgramB,
           );
 
           const vaultA = await provider.connection.getAccountInfo(
-            poolInitInfo.tokenVaultAKeypair.publicKey
+            poolInitInfo.tokenVaultAKeypair.publicKey,
           );
           const vaultB = await provider.connection.getAccountInfo(
-            poolInitInfo.tokenVaultBKeypair.publicKey
+            poolInitInfo.tokenVaultBKeypair.publicKey,
           );
           assert.ok(vaultA!.lamports > preLamports);
           assert.ok(vaultB!.lamports > preLamports);
@@ -396,45 +396,45 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const preLamports = 1_000_000_000;
           await systemTransferTx(
             provider,
             poolInitInfo.tokenVaultAKeypair.publicKey,
-            preLamports
+            preLamports,
           ).buildAndExecute();
           await systemTransferTx(
             provider,
             poolInitInfo.tokenVaultBKeypair.publicKey,
-            preLamports
+            preLamports,
           ).buildAndExecute();
 
           await toTx(
             ctx,
-            WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo)
+            WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
           ).buildAndExecute();
           await asyncAssertTokenVaultV2(
             provider,
             poolInitInfo.tokenVaultAKeypair.publicKey,
             poolInitInfo.tokenMintA,
             poolInitInfo.whirlpoolPda.publicKey,
-            poolInitInfo.tokenProgramA
+            poolInitInfo.tokenProgramA,
           );
           await asyncAssertTokenVaultV2(
             provider,
             poolInitInfo.tokenVaultBKeypair.publicKey,
             poolInitInfo.tokenMintB,
             poolInitInfo.whirlpoolPda.publicKey,
-            poolInitInfo.tokenProgramB
+            poolInitInfo.tokenProgramB,
           );
 
           const vaultA = await provider.connection.getAccountInfo(
-            poolInitInfo.tokenVaultAKeypair.publicKey
+            poolInitInfo.tokenVaultAKeypair.publicKey,
           );
           const vaultB = await provider.connection.getAccountInfo(
-            poolInitInfo.tokenVaultBKeypair.publicKey
+            poolInitInfo.tokenVaultBKeypair.publicKey,
           );
           assert.ok(vaultA!.lamports === preLamports);
           assert.ok(vaultB!.lamports === preLamports);
@@ -445,11 +445,11 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
           const otherTokenPublicKey = await createMintV2(
             provider,
-            tokenTraits.tokenTraitA
+            tokenTraits.tokenTraitA,
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
@@ -460,9 +460,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
             ).buildAndExecute(),
-            /custom program error: 0x7d6/ // ConstraintSeeds
+            /custom program error: 0x7d6/, // ConstraintSeeds
           );
         });
 
@@ -471,11 +471,11 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
           const otherTokenPublicKey = await createMintV2(
             provider,
-            tokenTraits.tokenTraitB
+            tokenTraits.tokenTraitB,
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
@@ -486,9 +486,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
             ).buildAndExecute(),
-            /custom program error: 0x7d6/ // ConstraintSeeds
+            /custom program error: 0x7d6/, // ConstraintSeeds
           );
         });
 
@@ -497,7 +497,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -505,7 +505,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             configInitInfo.whirlpoolsConfigKeypair.publicKey,
             poolInitInfo.tokenMintB,
             poolInitInfo.tokenMintA,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
@@ -527,9 +527,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
             ).buildAndExecute(),
-            /custom program error: 0x1788/ // InvalidTokenMintOrder
+            /custom program error: 0x1788/, // InvalidTokenMintOrder
           );
         });
 
@@ -538,7 +538,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -546,7 +546,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             configInitInfo.whirlpoolsConfigKeypair.publicKey,
             poolInitInfo.tokenMintA,
             poolInitInfo.tokenMintA,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
@@ -563,9 +563,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
             ).buildAndExecute(),
-            /custom program error: 0x1788/ // InvalidTokenMintOrder
+            /custom program error: 0x1788/, // InvalidTokenMintOrder
           );
         });
 
@@ -574,7 +574,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
@@ -585,9 +585,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
             ).buildAndExecute(),
-            /custom program error: 0x177b/ // SqrtPriceOutOfBounds
+            /custom program error: 0x177b/, // SqrtPriceOutOfBounds
           );
         });
 
@@ -596,7 +596,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
@@ -607,9 +607,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+              WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
             ).buildAndExecute(),
-            /custom program error: 0x177b/ // SqrtPriceOutOfBounds
+            /custom program error: 0x177b/, // SqrtPriceOutOfBounds
           );
         });
 
@@ -618,7 +618,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             ctx,
             tokenTraits.tokenTraitA,
             tokenTraits.tokenTraitB,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const whirlpoolPda = poolInitInfo.whirlpoolPda;
@@ -636,12 +636,12 @@ describe("initialize_pool_v2 (litesvm)", () => {
 
           await toTx(
             ctx,
-            WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+            WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
           ).buildAndExecute();
 
           // check if passed invalid bump was ignored
           const whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey
+            poolInitInfo.whirlpoolPda.publicKey,
           )) as WhirlpoolData;
           assert.equal(whirlpool.whirlpoolBump, validBump);
           assert.notEqual(whirlpool.whirlpoolBump, invalidBump);
@@ -650,7 +650,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         it("emit PoolInitialized event", async () => {
           const { poolInitInfo } = await buildTestPoolParams(
             ctx,
-            TickSpacing.Standard
+            TickSpacing.Standard,
           );
 
           const whirlpoolsConfig = poolInitInfo.whirlpoolsConfig;
@@ -662,7 +662,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           const [tokenAKeypair, tokenBKeypair] =
             PoolUtil.compareMints(
               tokenXKeypair.publicKey,
-              tokenYKeypair.publicKey
+              tokenYKeypair.publicKey,
             ) < 0
               ? [tokenXKeypair, tokenYKeypair]
               : [tokenYKeypair, tokenXKeypair];
@@ -682,7 +682,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
                 space: 82,
                 lamports:
                   await ctx.provider.connection.getMinimumBalanceForRentExemption(
-                    82
+                    82,
                   ),
                 programId: tokenProgramA,
               }),
@@ -691,7 +691,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
                 decimalsA,
                 ctx.wallet.publicKey,
                 null,
-                tokenProgramA
+                tokenProgramA,
               ),
               SystemProgram.createAccount({
                 fromPubkey: ctx.wallet.publicKey,
@@ -699,7 +699,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
                 space: 82,
                 lamports:
                   await ctx.provider.connection.getMinimumBalanceForRentExemption(
-                    82
+                    82,
                   ),
                 programId: tokenProgramB,
               }),
@@ -708,7 +708,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
                 decimalsB,
                 ctx.wallet.publicKey,
                 null,
-                tokenProgramB
+                tokenProgramB,
               ),
             ],
             cleanupInstructions: [],
@@ -723,17 +723,17 @@ describe("initialize_pool_v2 (litesvm)", () => {
             whirlpoolsConfig,
             tokenAKeypair.publicKey,
             tokenBKeypair.publicKey,
-            tickSpacing
+            tickSpacing,
           );
           const tokenBadgeA = PDAUtil.getTokenBadge(
             ctx.program.programId,
             whirlpoolsConfig,
-            tokenAKeypair.publicKey
+            tokenAKeypair.publicKey,
           ).publicKey;
           const tokenBadgeB = PDAUtil.getTokenBadge(
             ctx.program.programId,
             whirlpoolsConfig,
-            tokenBKeypair.publicKey
+            tokenBKeypair.publicKey,
           ).publicKey;
 
           // event verification
@@ -755,7 +755,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
               assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
               assert.ok(event.whirlpoolsConfig.equals(whirlpoolsConfig));
               eventVerified = true;
-            }
+            },
           );
 
           const signature = await toTx(
@@ -775,13 +775,13 @@ describe("initialize_pool_v2 (litesvm)", () => {
               tokenBadgeA,
               tokenBadgeB,
               whirlpoolPda,
-            })
+            }),
           )
             .addSigner(tokenVaultAKeypair)
             .addSigner(tokenVaultBKeypair)
             .buildAndExecute();
 
-          await sleep(2000);
+          warpClock(2);
           assert.equal(signature, detectedSignature);
           assert.ok(eventVerified);
 
@@ -797,7 +797,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
     // now FeeTier for TickSpacing.Standard is initialized, but not for TickSpacing.Stable
@@ -805,21 +805,21 @@ describe("initialize_pool_v2 (litesvm)", () => {
     const feeTierStandardPda = PDAUtil.getFeeTier(
       ctx.program.programId,
       config,
-      TickSpacing.Standard
+      TickSpacing.Standard,
     );
     const feeTierStablePda = PDAUtil.getFeeTier(
       ctx.program.programId,
       config,
-      TickSpacing.Stable
+      TickSpacing.Stable,
     );
 
     const feeTierStandard = await fetcher.getFeeTier(
       feeTierStandardPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     const feeTierStable = await fetcher.getFeeTier(
       feeTierStablePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(feeTierStandard !== null); // should be initialized
     assert.ok(feeTierStable === null); // shoud be NOT initialized
@@ -829,7 +829,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
       config,
       poolInitInfo.tokenMintA,
       poolInitInfo.tokenMintB,
-      TickSpacing.Stable
+      TickSpacing.Stable,
     );
 
     await assert.rejects(
@@ -840,9 +840,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           whirlpoolPda: whirlpoolWithStableTickSpacing,
           tickSpacing: TickSpacing.Stable,
           feeTierKey: feeTierStandardPda.publicKey, // tickSpacing is Stable, but FeeTier is standard
-        })
+        }),
       ).buildAndExecute(),
-      /custom program error: 0x7d3/ // ConstraintRaw
+      /custom program error: 0x7d3/, // ConstraintRaw
     );
 
     await assert.rejects(
@@ -853,9 +853,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
           whirlpoolPda: whirlpoolWithStableTickSpacing,
           tickSpacing: TickSpacing.Stable,
           feeTierKey: feeTierStablePda.publicKey, // FeeTier is stable, but not initialized
-        })
+        }),
       ).buildAndExecute(),
-      /custom program error: 0xbc4/ // AccountNotInitialized
+      /custom program error: 0xbc4/, // AccountNotInitialized
     );
 
     await initFeeTier(
@@ -863,11 +863,11 @@ describe("initialize_pool_v2 (litesvm)", () => {
       configInitInfo,
       configKeypairs.feeAuthorityKeypair,
       TickSpacing.Stable,
-      3000
+      3000,
     );
     const feeTierStableAfterInit = await fetcher.getFeeTier(
       feeTierStablePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(feeTierStableAfterInit !== null);
 
@@ -879,7 +879,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         whirlpoolPda: whirlpoolWithStableTickSpacing,
         tickSpacing: TickSpacing.Stable,
         feeTierKey: feeTierStablePda.publicKey,
-      })
+      }),
     ).buildAndExecute();
   });
 
@@ -889,7 +889,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: false },
         { isToken2022: false },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_PROGRAM_ID));
@@ -901,9 +901,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -912,7 +912,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -924,9 +924,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -935,7 +935,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -947,9 +947,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
         ).buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -958,7 +958,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: false },
         { isToken2022: false },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_PROGRAM_ID));
@@ -970,9 +970,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -981,7 +981,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -993,9 +993,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -1004,7 +1004,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
 
       assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -1016,9 +1016,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo),
         ).buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -1035,13 +1035,13 @@ describe("initialize_pool_v2 (litesvm)", () => {
           provider,
           { isToken2022: true, hasPermanentDelegate: true },
           undefined,
-          tokenAKeypair
+          tokenAKeypair,
         );
         await createMintV2(
           provider,
           { isToken2022: true, hasPermanentDelegate: true },
           undefined,
-          tokenBKeypair
+          tokenBKeypair,
         );
 
         // create config and feetier
@@ -1056,7 +1056,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             defaultProtocolFeeRate: 300,
             funder: admin.publicKey,
             whirlpoolsConfigKeypair: configKeypair,
-          })
+          }),
         );
         initConfigTx.addInstruction(
           WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -1065,7 +1065,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             featureFlag: {
               tokenBadge: [true],
             },
-          })
+          }),
         );
         await initConfigTx
           .addSigner(admin)
@@ -1076,7 +1076,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
         const feeTierPda = PDAUtil.getFeeTier(
           ctx.program.programId,
           configKeypair.publicKey,
-          tickSpacing
+          tickSpacing,
         );
         await toTx(
           ctx,
@@ -1087,13 +1087,13 @@ describe("initialize_pool_v2 (litesvm)", () => {
             tickSpacing,
             whirlpoolsConfig: configKeypair.publicKey,
             feeTierPda: feeTierPda,
-          })
+          }),
         ).buildAndExecute();
 
         // create config extension
         const configExtensionPda = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          configKeypair.publicKey
+          configKeypair.publicKey,
         );
         await toTx(
           ctx,
@@ -1102,7 +1102,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             funder: provider.wallet.publicKey,
             whirlpoolsConfig: configKeypair.publicKey,
             whirlpoolsConfigExtensionPda: configExtensionPda,
-          })
+          }),
         ).buildAndExecute();
 
         const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -1110,7 +1110,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           configKeypair.publicKey,
           tokenAKeypair.publicKey,
           tokenBKeypair.publicKey,
-          tickSpacing
+          tickSpacing,
         );
         baseIxParams = {
           tokenVaultAKeypair: Keypair.generate(),
@@ -1125,12 +1125,12 @@ describe("initialize_pool_v2 (litesvm)", () => {
           tokenBadgeA: PDAUtil.getTokenBadge(
             ctx.program.programId,
             configKeypair.publicKey,
-            tokenAKeypair.publicKey
+            tokenAKeypair.publicKey,
           ).publicKey,
           tokenBadgeB: PDAUtil.getTokenBadge(
             ctx.program.programId,
             configKeypair.publicKey,
-            tokenBKeypair.publicKey
+            tokenBKeypair.publicKey,
           ).publicKey,
           tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
           tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
@@ -1146,9 +1146,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
               ...baseIxParams,
               tokenBadgeA: fakeAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
 
         await assert.rejects(
@@ -1157,9 +1157,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
               ...baseIxParams,
               tokenBadgeB: fakeAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
       });
 
@@ -1171,18 +1171,18 @@ describe("initialize_pool_v2 (litesvm)", () => {
           provider,
           { isToken2022: true },
           undefined,
-          anotherTokenKeypair
+          anotherTokenKeypair,
         );
 
         // initialize another badge
         const configExtension = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          config
+          config,
         ).publicKey;
         const tokenBadgePda = PDAUtil.getTokenBadge(
           ctx.program.programId,
           config,
-          anotherTokenKeypair.publicKey
+          anotherTokenKeypair.publicKey,
         );
         await toTx(
           ctx,
@@ -1193,11 +1193,11 @@ describe("initialize_pool_v2 (litesvm)", () => {
             tokenBadgeAuthority: provider.wallet.publicKey,
             tokenBadgePda,
             tokenMint: anotherTokenKeypair.publicKey,
-          })
+          }),
         ).buildAndExecute();
         const badge = fetcher.getTokenBadge(
           tokenBadgePda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(badge !== null);
 
@@ -1209,9 +1209,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
               ...baseIxParams,
               tokenBadgeA: fakeAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
 
         await assert.rejects(
@@ -1220,9 +1220,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
               ...baseIxParams,
               tokenBadgeB: fakeAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
       });
 
@@ -1232,7 +1232,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           ctx,
           { isToken2022: true },
           { isToken2022: true },
-          TickSpacing.Standard
+          TickSpacing.Standard,
         );
 
         const fakeAddress = poolInitInfo.whirlpoolPda.publicKey;
@@ -1245,9 +1245,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
               ...baseIxParams,
               tokenBadgeA: fakeAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
 
         await assert.rejects(
@@ -1256,9 +1256,9 @@ describe("initialize_pool_v2 (litesvm)", () => {
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
               ...baseIxParams,
               tokenBadgeB: fakeAddress,
-            })
+            }),
           ).buildAndExecute(),
-          /custom program error: 0x7d6/ // ConstraintSeeds
+          /custom program error: 0x7d6/, // ConstraintSeeds
         );
       });
     });
@@ -1279,7 +1279,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
       whirlpoolsConfig: PublicKey,
       tokenMintA: PublicKey,
       tokenMintB: PublicKey,
-      tickSpacing: number
+      tickSpacing: number,
     ) {
       const tokenVaultAKeypair = Keypair.generate();
       const tokenVaultBKeypair = Keypair.generate();
@@ -1289,29 +1289,29 @@ describe("initialize_pool_v2 (litesvm)", () => {
         whirlpoolsConfig,
         tokenMintA,
         tokenMintB,
-        tickSpacing
+        tickSpacing,
       );
       const feeTierKey = PDAUtil.getFeeTier(
         ctx.program.programId,
         whirlpoolsConfig,
-        tickSpacing
+        tickSpacing,
       ).publicKey;
       const tokenBadgeA = PDAUtil.getTokenBadge(
         ctx.program.programId,
         whirlpoolsConfig,
-        tokenMintA
+        tokenMintA,
       ).publicKey;
       const tokenBadgeB = PDAUtil.getTokenBadge(
         ctx.program.programId,
         whirlpoolsConfig,
-        tokenMintB
+        tokenMintB,
       ).publicKey;
 
       const tokenProgramA = (await provider.connection.getAccountInfo(
-        tokenMintA
+        tokenMintA,
       ))!.owner;
       const tokenProgramB = (await provider.connection.getAccountInfo(
-        tokenMintB
+        tokenMintB,
       ))!.owner;
 
       const promise = toTx(
@@ -1331,21 +1331,21 @@ describe("initialize_pool_v2 (litesvm)", () => {
           tokenProgramA,
           tokenProgramB,
           whirlpoolPda,
-        })
+        }),
       ).buildAndExecute();
 
       if (supported) {
         await promise;
         const whirlpoolData = await fetcher.getPool(
           whirlpoolPda.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(whirlpoolData!.tokenMintA.equals(tokenMintA));
         assert.ok(whirlpoolData!.tokenMintB.equals(tokenMintB));
       } else {
         await assert.rejects(
           promise,
-          /0x179f/ // UnsupportedTokenMint
+          /0x179f/, // UnsupportedTokenMint
         );
       }
     }
@@ -1371,12 +1371,12 @@ describe("initialize_pool_v2 (litesvm)", () => {
           providerWalletKeypair,
           params.tokenTrait.isToken2022
             ? TEST_TOKEN_2022_PROGRAM_ID
-            : TEST_TOKEN_PROGRAM_ID
+            : TEST_TOKEN_PROGRAM_ID,
         );
 
         const afterSetAuthorityMint = await fetcher.getMintInfo(
           tokenTarget.publicKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         );
         assert.ok(afterSetAuthorityMint?.freezeAuthority === null);
       }
@@ -1393,7 +1393,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           defaultProtocolFeeRate: 300,
           funder: admin.publicKey,
           whirlpoolsConfigKeypair: configKeypair,
-        })
+        }),
       );
       initConfigTx.addInstruction(
         WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -1402,7 +1402,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           featureFlag: {
             tokenBadge: [true],
           },
-        })
+        }),
       );
       await initConfigTx
         .addSigner(admin)
@@ -1421,16 +1421,16 @@ describe("initialize_pool_v2 (litesvm)", () => {
           feeTierPda: PDAUtil.getFeeTier(
             ctx.program.programId,
             configKeypair.publicKey,
-            tickSpacing
+            tickSpacing,
           ),
-        })
+        }),
       ).buildAndExecute();
 
       // create token badge if wanted
       if (params.createTokenBadge) {
         const pda = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          configKeypair.publicKey
+          configKeypair.publicKey,
         );
         await toTx(
           ctx,
@@ -1439,17 +1439,17 @@ describe("initialize_pool_v2 (litesvm)", () => {
             funder: provider.wallet.publicKey,
             whirlpoolsConfig: configKeypair.publicKey,
             whirlpoolsConfigExtensionPda: pda,
-          })
+          }),
         ).buildAndExecute();
 
         const configExtension = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          configKeypair.publicKey
+          configKeypair.publicKey,
         ).publicKey;
         const tokenBadgePda = PDAUtil.getTokenBadge(
           ctx.program.programId,
           configKeypair.publicKey,
-          tokenTarget.publicKey
+          tokenTarget.publicKey,
         );
         await toTx(
           ctx,
@@ -1460,14 +1460,14 @@ describe("initialize_pool_v2 (litesvm)", () => {
             tokenBadgeAuthority: provider.wallet.publicKey,
             tokenBadgePda,
             tokenMint: tokenTarget.publicKey,
-          })
+          }),
         ).buildAndExecute();
       }
 
       const isSupportedToken = await PoolUtil.isSupportedToken(
         ctx,
         configKeypair.publicKey,
-        tokenTarget.publicKey
+        tokenTarget.publicKey,
       );
       assert.equal(isSupportedToken, params.supported);
 
@@ -1477,14 +1477,14 @@ describe("initialize_pool_v2 (litesvm)", () => {
         configKeypair.publicKey,
         tokenA.publicKey,
         tokenTarget.publicKey,
-        tickSpacing
+        tickSpacing,
       ); // as TokenB
       await checkSupported(
         params.supported,
         configKeypair.publicKey,
         tokenTarget.publicKey,
         tokenB.publicKey,
-        tickSpacing
+        tickSpacing,
       ); // as TokenA
     }
 
@@ -1510,11 +1510,11 @@ describe("initialize_pool_v2 (litesvm)", () => {
 
       assert.ok(
         PoolUtil.orderMints(tokenA.publicKey, nativeMint)[1].toString() ===
-          nativeMint.toString()
+          nativeMint.toString(),
       );
       assert.ok(
         PoolUtil.orderMints(nativeMint, tokenB.publicKey)[0].toString() ===
-          nativeMint.toString()
+          nativeMint.toString(),
       );
 
       await createMintV2(provider, { isToken2022: false }, undefined, tokenA);
@@ -1532,7 +1532,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           defaultProtocolFeeRate: 300,
           funder: admin.publicKey,
           whirlpoolsConfigKeypair: configKeypair,
-        })
+        }),
       );
       initConfigTx.addInstruction(
         WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
@@ -1541,7 +1541,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
           featureFlag: {
             tokenBadge: [true],
           },
-        })
+        }),
       );
       await initConfigTx
         .addSigner(admin)
@@ -1560,16 +1560,16 @@ describe("initialize_pool_v2 (litesvm)", () => {
           feeTierPda: PDAUtil.getFeeTier(
             ctx.program.programId,
             configKeypair.publicKey,
-            tickSpacing
+            tickSpacing,
           ),
-        })
+        }),
       ).buildAndExecute();
 
       // create token badge if wanted
       if (params.createTokenBadge) {
         const pda = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          configKeypair.publicKey
+          configKeypair.publicKey,
         );
         await toTx(
           ctx,
@@ -1578,17 +1578,17 @@ describe("initialize_pool_v2 (litesvm)", () => {
             funder: provider.wallet.publicKey,
             whirlpoolsConfig: configKeypair.publicKey,
             whirlpoolsConfigExtensionPda: pda,
-          })
+          }),
         ).buildAndExecute();
 
         const configExtension = PDAUtil.getConfigExtension(
           ctx.program.programId,
-          configKeypair.publicKey
+          configKeypair.publicKey,
         ).publicKey;
         const tokenBadgePda = PDAUtil.getTokenBadge(
           ctx.program.programId,
           configKeypair.publicKey,
-          nativeMint
+          nativeMint,
         );
         await toTx(
           ctx,
@@ -1599,7 +1599,7 @@ describe("initialize_pool_v2 (litesvm)", () => {
             tokenBadgeAuthority: provider.wallet.publicKey,
             tokenBadgePda,
             tokenMint: nativeMint,
-          })
+          }),
         ).buildAndExecute();
       }
 
@@ -1609,14 +1609,14 @@ describe("initialize_pool_v2 (litesvm)", () => {
         configKeypair.publicKey,
         tokenA.publicKey,
         nativeMint,
-        tickSpacing
+        tickSpacing,
       ); // as TokenB
       await checkSupported(
         params.supported,
         configKeypair.publicKey,
         nativeMint,
         tokenB.publicKey,
-        tickSpacing
+        tickSpacing,
       ); // as TokenA
     }
 

@@ -2,7 +2,12 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import type {
+  PublicKey,
+  TransactionInstruction,
+  Connection,
+  Commitment,
+} from "@solana/web3.js";
 
 export function systemTransferTx(
   provider: AnchorProvider,
@@ -97,4 +102,24 @@ export function getProviderWalletKeypair(
 ): web3.Keypair {
   const payer = (provider.wallet as NodeWallet).payer;
   return payer;
+}
+
+export async function requestAirdropIfBalanceLow(
+  connection: Connection,
+  wallet: PublicKey,
+  amount: number = 50_000_000_000, // 50 SOL
+  minBalance: number = 10_000_000_000, // 10 SOL
+  commitment: Commitment = "confirmed",
+) {
+  const balance = await connection.getBalance(wallet);
+  if (balance < minBalance) {
+    const airdropTx = await connection.requestAirdrop(wallet, amount);
+    await connection.confirmTransaction(
+      {
+        signature: airdropTx,
+        ...(await connection.getLatestBlockhash(commitment)),
+      },
+      commitment,
+    );
+  }
 }

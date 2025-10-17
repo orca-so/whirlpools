@@ -3,6 +3,7 @@ export * from "./test-consts";
 export * from "./token";
 export * from "./utils";
 export * from "./assert";
+export * from "./litesvm";
 
 export enum TickSpacing {
   One = 1,

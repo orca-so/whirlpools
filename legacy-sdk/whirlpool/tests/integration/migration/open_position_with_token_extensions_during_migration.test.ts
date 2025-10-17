@@ -1,9 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { WhirlpoolContext } from "../../../src";
+import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  loadPreloadAccount,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import {
   getAssociatedTokenAddressSync,
   getMint,
@@ -11,13 +15,20 @@ import {
 } from "@solana/spl-token";
 
 describe("open_position_with_token_extensions (during migration)", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+
+    // Load preload accounts for migration testing
+    loadPreloadAccount("open_position_with_token_extensions/whirlpool.json");
+  });
 
   // preload whirlpool
   const tickLowerIndex = 29440;
@@ -34,7 +45,9 @@ describe("open_position_with_token_extensions (during migration)", () => {
 
     assert.ok(whirlpool);
     // not migrated
-    assert.ok(!whirlpool.rewardInfos[2].extension.every((b) => b === 0));
+    assert.ok(
+      !whirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+    );
     // REQUIRE_NON_TRANSFERABLE_POSITION bit is 1 (if it is treated as controll_flags)
     assert.ok((whirlpool.rewardInfos[1].extension[0] & 0x01) === 0x01);
 
@@ -91,7 +104,9 @@ describe("open_position_with_token_extensions (during migration)", () => {
 
     assert.ok(whirlpool);
     // not migrated
-    assert.ok(!whirlpool.rewardInfos[2].extension.every((b) => b === 0));
+    assert.ok(
+      !whirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+    );
     // REQUIRE_NON_TRANSFERABLE_POSITION bit is 1 (if it is treated as controll_flags)
     assert.ok((whirlpool.rewardInfos[1].extension[0] & 0x01) === 0x01);
 

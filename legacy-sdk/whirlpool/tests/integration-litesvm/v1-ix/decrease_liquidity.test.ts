@@ -19,6 +19,7 @@ import {
   transferToken,
   startLiteSVM,
   createLiteSVMProvider,
+  warpClock,
 } from "../../utils";
 import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -45,7 +46,7 @@ describe("decrease_liquidity (litesvm)", () => {
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
@@ -78,11 +79,11 @@ describe("decrease_liquidity (litesvm)", () => {
       poolInitInfo;
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -94,12 +95,12 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
     const positionInfoBefore = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoBefore);
     await toTx(
@@ -116,48 +117,48 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: positions[0].tickArrayLower,
         tickArrayUpper: positions[0].tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     const remainingLiquidity = liquidityAmount.sub(
-      removalQuote.liquidityAmount
+      removalQuote.liquidityAmount,
     );
     const poolAfter = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gt(
-        poolBefore.rewardLastUpdatedTimestamp
-      )
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.ok(poolAfter.liquidity.eq(remainingLiquidity));
 
     const position = await fetcher.getPosition(
       positions[0].publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(position?.liquidity.eq(remainingLiquidity));
 
     const tickArray = (await fetcher.getTickArray(
       positions[0].tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(
       tickArray.ticks[56],
       true,
       remainingLiquidity,
-      remainingLiquidity
+      remainingLiquidity,
     );
     assertTick(
       tickArray.ticks[70],
       true,
       remainingLiquidity,
-      remainingLiquidity.neg()
+      remainingLiquidity.neg(),
     );
 
     const positionInfoAfter = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoAfter);
 
@@ -186,11 +187,11 @@ describe("decrease_liquidity (litesvm)", () => {
       poolInitInfo;
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -202,12 +203,12 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
     const positionInfoBefore = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoBefore);
     await toTx(
@@ -224,35 +225,35 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: positions[0].tickArrayLower,
         tickArrayUpper: positions[0].tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     const poolAfter = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gt(
-        poolBefore.rewardLastUpdatedTimestamp
-      )
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.ok(poolAfter.liquidity.eq(new BN(0)));
 
     const position = await fetcher.getPosition(
       positions[0].publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(position?.liquidity.eq(new BN(0)));
 
     const tickArray = (await fetcher.getTickArray(
       positions[0].tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(tickArray.ticks[56], false, new BN(0), new BN(0));
     assertTick(tickArray.ticks[70], false, new BN(0), new BN(0));
 
     const positionInfoAfter = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoAfter);
 
@@ -278,7 +279,7 @@ describe("decrease_liquidity (litesvm)", () => {
     const position = positions[0];
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -291,12 +292,12 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
     const positionInfoBefore = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoBefore);
 
@@ -314,53 +315,53 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: position.tickArrayLower,
         tickArrayUpper: position.tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     const remainingLiquidity = liquidityAmount.sub(
-      removalQuote.liquidityAmount
+      removalQuote.liquidityAmount,
     );
     const poolAfter = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gte(
-        poolBefore.rewardLastUpdatedTimestamp
-      )
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.ok(poolAfter.liquidity.eq(remainingLiquidity));
 
     const positionAfter = (await fetcher.getPosition(
       position.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionData;
     assert.ok(positionAfter.liquidity.eq(remainingLiquidity));
 
     const tickArrayLower = (await fetcher.getTickArray(
       position.tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(
       tickArrayLower.ticks[78],
       true,
       remainingLiquidity,
-      remainingLiquidity
+      remainingLiquidity,
     );
     const tickArrayUpper = (await fetcher.getTickArray(
       position.tickArrayUpper,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(
       tickArrayUpper.ticks[10],
       true,
       remainingLiquidity,
-      remainingLiquidity.neg()
+      remainingLiquidity.neg(),
     );
 
     const positionInfoAfter = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoAfter);
 
@@ -386,7 +387,7 @@ describe("decrease_liquidity (litesvm)", () => {
     const position = positions[0];
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -399,12 +400,12 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
     const positionInfoBefore = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoBefore);
 
@@ -422,40 +423,40 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: position.tickArrayLower,
         tickArrayUpper: position.tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     const poolAfter = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gte(
-        poolBefore.rewardLastUpdatedTimestamp
-      )
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.ok(poolAfter.liquidity.eq(new BN(0)));
 
     const positionAfter = (await fetcher.getPosition(
       position.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionData;
     assert.ok(positionAfter.liquidity.eq(new BN(0)));
 
     const tickArrayLower = (await fetcher.getTickArray(
       position.tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], false, new BN(0), new BN(0));
     const tickArrayUpper = (await fetcher.getTickArray(
       position.tickArrayUpper,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(tickArrayUpper.ticks[10], false, new BN(0), new BN(0));
 
     const positionInfoAfter = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoAfter);
 
@@ -485,21 +486,21 @@ describe("decrease_liquidity (litesvm)", () => {
       poolInitInfo;
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     const positionInfoBefore = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoBefore);
 
     const tickArrayBefore = await ctx.connection.getAccountInfo(
-      positions[0].tickArrayLower
+      positions[0].tickArrayLower,
     );
     assert.ok(tickArrayBefore);
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -511,7 +512,7 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
@@ -529,59 +530,59 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: positions[0].tickArrayLower,
         tickArrayUpper: positions[0].tickArrayUpper,
-      })
+      }),
     )
       .addInstruction(useMaxCU())
       .buildAndExecute();
 
     const poolAfter = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gt(
-        poolBefore.rewardLastUpdatedTimestamp
-      )
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.ok(poolAfter.liquidity.eq(new BN(0)));
 
     const position = await fetcher.getPosition(
       positions[0].publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(position?.liquidity.eq(new BN(0)));
 
     const tickArray = (await fetcher.getTickArray(
       positions[0].tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(tickArray.ticks[56], false, new BN(0), new BN(0));
     assertTick(tickArray.ticks[70], false, new BN(0), new BN(0));
 
     const positionInfoAfter = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoAfter);
 
     const tickArrayAfter = await ctx.connection.getAccountInfo(
-      positions[0].tickArrayLower
+      positions[0].tickArrayLower,
     );
     assert.ok(tickArrayAfter);
 
     // Rent should move from position to tick array
     assert.equal(
       positionInfoBefore.lamports + TICK_RENT_AMOUNT * 2,
-      positionInfoAfter.lamports
+      positionInfoAfter.lamports,
     );
     assert.equal(
       tickArrayBefore.lamports - TICK_RENT_AMOUNT * 2,
-      tickArrayAfter.lamports
+      tickArrayAfter.lamports,
     );
 
     // Tick array account size should be 112 bytes per tick less
     assert.equal(
       tickArrayAfter.data.length,
-      tickArrayBefore.data.length - TICK_INIT_SIZE * 2
+      tickArrayBefore.data.length - TICK_INIT_SIZE * 2,
     );
   });
 
@@ -609,7 +610,7 @@ describe("decrease_liquidity (litesvm)", () => {
     const position = positions[0];
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -622,20 +623,20 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
     const positionInfoBefore = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoBefore);
     const tickArrayLowerBefore = await ctx.connection.getAccountInfo(
-      positions[0].tickArrayLower
+      positions[0].tickArrayLower,
     );
     assert.ok(tickArrayLowerBefore);
     const tickArrayUpperBefore = await ctx.connection.getAccountInfo(
-      positions[0].tickArrayUpper
+      positions[0].tickArrayUpper,
     );
     assert.ok(tickArrayUpperBefore);
 
@@ -653,82 +654,82 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: position.tickArrayLower,
         tickArrayUpper: position.tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     const poolAfter = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     assert.ok(
       poolAfter.rewardLastUpdatedTimestamp.gte(
-        poolBefore.rewardLastUpdatedTimestamp
-      )
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.ok(poolAfter.liquidity.eq(new BN(0)));
 
     const positionAfter = (await fetcher.getPosition(
       position.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionData;
     assert.ok(positionAfter.liquidity.eq(new BN(0)));
 
     const tickArrayLower = (await fetcher.getTickArray(
       position.tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], false, new BN(0), new BN(0));
     const tickArrayUpper = (await fetcher.getTickArray(
       position.tickArrayUpper,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
     assertTick(
       tickArrayUpper.ticks[10],
       true,
       // One extra because of the second position with 1 liquidity
       new BN(1),
-      new BN(-1)
+      new BN(-1),
     );
 
     const positionInfoAfter = await ctx.connection.getAccountInfo(
-      positions[0].publicKey
+      positions[0].publicKey,
     );
     assert.ok(positionInfoAfter);
 
     const tickArrayLowerAfter = await ctx.connection.getAccountInfo(
-      positions[0].tickArrayLower
+      positions[0].tickArrayLower,
     );
     assert.ok(tickArrayLowerAfter);
 
     const tickArrayUpperAfter = await ctx.connection.getAccountInfo(
-      positions[0].tickArrayUpper
+      positions[0].tickArrayUpper,
     );
     assert.ok(tickArrayUpperAfter);
 
     // Rent should move from tick arrays to position
     assert.equal(
       positionInfoBefore.lamports + TICK_RENT_AMOUNT * 2,
-      positionInfoAfter.lamports
+      positionInfoAfter.lamports,
     );
     assert.equal(
       tickArrayLowerBefore.lamports - TICK_RENT_AMOUNT,
-      tickArrayLowerAfter.lamports
+      tickArrayLowerAfter.lamports,
     );
     assert.equal(
       tickArrayUpperBefore.lamports - TICK_RENT_AMOUNT,
-      tickArrayUpperAfter.lamports
+      tickArrayUpperAfter.lamports,
     );
 
     // Lower tick array account size should be 112 bytes less
     assert.equal(
       tickArrayLowerAfter.data.length,
-      tickArrayLowerBefore.data.length - TICK_INIT_SIZE
+      tickArrayLowerBefore.data.length - TICK_INIT_SIZE,
     );
     // Upper tick array account size should be the same (tick needs to stay initialized)
     assert.equal(
       tickArrayUpperAfter.data.length,
-      tickArrayUpperBefore.data.length
+      tickArrayUpperBefore.data.length,
     );
   });
 
@@ -752,7 +753,7 @@ describe("decrease_liquidity (litesvm)", () => {
       provider,
       positions[0].tokenAccount,
       delegate.publicKey,
-      1
+      1,
     );
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
@@ -775,7 +776,7 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: position.tickArrayLower,
         tickArrayUpper: position.tickArrayUpper,
-      })
+      }),
     )
       .addSigner(delegate)
       .buildAndExecute();
@@ -801,7 +802,7 @@ describe("decrease_liquidity (litesvm)", () => {
       provider,
       positions[0].tokenAccount,
       delegate.publicKey,
-      1
+      1,
     );
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
@@ -824,7 +825,7 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: position.tickArrayLower,
         tickArrayUpper: position.tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
   });
 
@@ -847,13 +848,13 @@ describe("decrease_liquidity (litesvm)", () => {
     const newOwnerPositionTokenAccount = await createTokenAccount(
       provider,
       position.mintKeypair.publicKey,
-      newOwner.publicKey
+      newOwner.publicKey,
     );
     await transferToken(
       provider,
       position.tokenAccount,
       newOwnerPositionTokenAccount,
-      1
+      1,
     );
 
     await toTx(
@@ -872,7 +873,7 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: position.tickArrayLower,
         tickArrayUpper: position.tickArrayUpper,
-      })
+      }),
     )
       .addSigner(newOwner)
       .buildAndExecute();
@@ -910,9 +911,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x177c/ // LiquidityZero
+      /0x177c/, // LiquidityZero
     );
   });
 
@@ -951,9 +952,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x177f/ // LiquidityUnderflow
+      /0x177f/, // LiquidityUnderflow
     );
   });
 
@@ -989,9 +990,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1782/ // TokenMinSubceeded
+      /0x1782/, // TokenMinSubceeded
     );
   });
 
@@ -1026,9 +1027,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1782/ // TokenMinSubceeded
+      /0x1782/, // TokenMinSubceeded
     );
   });
 
@@ -1050,7 +1051,7 @@ describe("decrease_liquidity (litesvm)", () => {
     const newPositionTokenAccount = await createTokenAccount(
       provider,
       positions[0].mintKeypair.publicKey,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
 
     await assert.rejects(
@@ -1070,9 +1071,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     // Send position token to other position token account
@@ -1080,7 +1081,7 @@ describe("decrease_liquidity (litesvm)", () => {
       provider,
       position.tokenAccount,
       newPositionTokenAccount,
-      1
+      1,
     );
 
     await assert.rejects(
@@ -1100,9 +1101,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
@@ -1123,7 +1124,7 @@ describe("decrease_liquidity (litesvm)", () => {
     const invalidPositionTokenAccount = await createAndMintToTokenAccount(
       provider,
       tokenMintA,
-      1
+      1,
     );
 
     await assert.rejects(
@@ -1143,9 +1144,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // A raw constraint was violated
+      /0x7d3/, // A raw constraint was violated
     );
   });
 
@@ -1165,7 +1166,7 @@ describe("decrease_liquidity (litesvm)", () => {
 
     const { poolInitInfo: poolInitInfo2 } = await initTestPool(
       ctx,
-      TickSpacing.Standard
+      TickSpacing.Standard,
     );
     const {
       params: {
@@ -1176,7 +1177,7 @@ describe("decrease_liquidity (litesvm)", () => {
       ctx,
       poolInitInfo2.whirlpoolPda.publicKey,
       7168,
-      8960
+      8960,
     );
 
     await assert.rejects(
@@ -1196,9 +1197,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArray,
           tickArrayUpper: tickArray,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d1/ // A has_one constraint was violated
+      /0x7d1/, // A has_one constraint was violated
     );
   });
 
@@ -1219,12 +1220,12 @@ describe("decrease_liquidity (litesvm)", () => {
     const fakeVaultA = await createAndMintToTokenAccount(
       provider,
       tokenMintA,
-      1_000
+      1_000,
     );
     const fakeVaultB = await createAndMintToTokenAccount(
       provider,
       tokenMintB,
-      1_000
+      1_000,
     );
 
     await assert.rejects(
@@ -1244,9 +1245,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     await assert.rejects(
@@ -1266,9 +1267,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: fakeVaultB,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
@@ -1288,7 +1289,7 @@ describe("decrease_liquidity (litesvm)", () => {
     const invalidTokenAccount = await createAndMintToTokenAccount(
       provider,
       invalidMint,
-      1_000_000
+      1_000_000,
     );
     const position = positions[0];
 
@@ -1309,9 +1310,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     await assert.rejects(
@@ -1331,9 +1332,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
@@ -1372,11 +1373,11 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x1783/ // MissingOrInvalidDelegate
+      /0x1783/, // MissingOrInvalidDelegate
     );
   });
 
@@ -1416,11 +1417,11 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x1784/ // InvalidPositionTokenAmount
+      /0x1784/, // InvalidPositionTokenAmount
     );
   });
 
@@ -1460,9 +1461,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: position.tickArrayLower,
           tickArrayUpper: position.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i
+      /.*signature verification fail.*/i,
     );
   });
 
@@ -1505,9 +1506,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArrayLowerPda.publicKey,
           tickArrayUpper: tickArrayUpperPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1779/ // TicKNotFound
+      /0x1779/, // TicKNotFound
     );
   });
 
@@ -1527,7 +1528,7 @@ describe("decrease_liquidity (litesvm)", () => {
 
     const { poolInitInfo: poolInitInfo2 } = await initTestPool(
       ctx,
-      TickSpacing.Standard
+      TickSpacing.Standard,
     );
 
     const {
@@ -1555,9 +1556,9 @@ describe("decrease_liquidity (litesvm)", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArrayLowerPda.publicKey,
           tickArrayUpper: tickArrayUpperPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+      /0x17a8/, // DifferentWhirlpoolTickArrayAccount
     );
   });
 
@@ -1582,7 +1583,7 @@ describe("decrease_liquidity (litesvm)", () => {
       poolInitInfo;
     const poolBefore = (await fetcher.getPool(
       whirlpoolPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -1595,7 +1596,7 @@ describe("decrease_liquidity (litesvm)", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
         fetcher,
         poolBefore,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       ),
     });
 
@@ -1617,7 +1618,7 @@ describe("decrease_liquidity (litesvm)", () => {
         assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
         assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
         eventVerified = true;
-      }
+      },
     );
 
     const signature = await toTx(
@@ -1634,7 +1635,7 @@ describe("decrease_liquidity (litesvm)", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
         tickArrayLower: positions[0].tickArrayLower,
         tickArrayUpper: positions[0].tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     await sleep(2000);

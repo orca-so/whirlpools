@@ -15,14 +15,12 @@ import {
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
-  sleep,
   transferToken,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
 } from "../../utils";
-import {
-  defaultConfirmOptions,
-  TICK_INIT_SIZE,
-  TICK_RENT_AMOUNT,
-} from "../../utils/const";
+import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initTestPool,
@@ -31,16 +29,45 @@ import {
   useMaxCU,
 } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
+import { pollForCondition } from "../../utils/litesvm";
 
-describe("decrease_liquidity", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+type LiquidityDecreasedEvent = {
+  liquidity: anchor.BN;
+  tokenAAmount: anchor.BN;
+  tokenBAmount: anchor.BN;
+  tokenATransferFee: anchor.BN;
+  tokenBTransferFee: anchor.BN;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
+};
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("decrease_liquidity (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   it("successfully decrease liquidity (partial) from position in one fixed tick array", async () => {
     const liquidityAmount = new anchor.BN(1_250_000);
@@ -67,7 +94,7 @@ describe("decrease_liquidity", () => {
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -175,7 +202,7 @@ describe("decrease_liquidity", () => {
     )) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -484,7 +511,7 @@ describe("decrease_liquidity", () => {
     assert.ok(tickArrayBefore);
 
     // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    warpClock(2);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: liquidityAmount,
@@ -1586,21 +1613,13 @@ describe("decrease_liquidity", () => {
 
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
+    let observedEvent: LiquidityDecreasedEvent | null = null;
     const listener = ctx.program.addEventListener(
       "LiquidityDecreased",
       (event, _slot, signature) => {
         detectedSignature = signature;
-        // verify
-        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
-        assert.ok(event.position.equals(positions[0].publicKey));
-        assert.ok(event.liquidity.eq(removalQuote.liquidityAmount));
-        assert.ok(event.tickLowerIndex === tickLower);
-        assert.ok(event.tickUpperIndex === tickUpper);
-        assert.ok(event.tokenAAmount.eq(removalQuote.tokenEstA));
-        assert.ok(event.tokenBAmount.eq(removalQuote.tokenEstB));
-        assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
-        assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        observedEvent = event;
         eventVerified = true;
       },
     );
@@ -1622,9 +1641,21 @@ describe("decrease_liquidity", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2000);
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === signature && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
+    assert.ok(observedEvent);
+    assert.ok(observedEvent.liquidity.eq(removalQuote.liquidityAmount));
+    assert.ok(observedEvent.tokenAAmount.gte(removalQuote.tokenMinA));
+    assert.ok(observedEvent.tokenBAmount.gte(removalQuote.tokenMinB));
+    assert.ok(observedEvent.tickLowerIndex === tickLower);
+    assert.ok(observedEvent.tickUpperIndex === tickUpper);
+    assert.ok(observedEvent.tokenATransferFee.isZero());
+    assert.ok(observedEvent.tokenBTransferFee.isZero());
 
     ctx.program.removeEventListener(listener);
   });

@@ -23,14 +23,9 @@ import {
   toTx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import {
-  MAX_U64,
-  TickSpacing,
-  ZERO_BN,
-  getTokenBalance,
-  sleep,
-} from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../../utils";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import { pollForCondition } from "../../utils/litesvm";
 import type { FundedPositionParams } from "../../utils/init-utils";
 import {
   fundPositions,
@@ -43,16 +38,35 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
 
-describe("swap", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("swap (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   it("fail on token vault mint a does not match whirlpool token a", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
@@ -1314,29 +1328,34 @@ describe("swap", () => {
     const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
     const listener = ctx.program.addEventListener(
       "Traded",
       (event, _slot, signature) => {
+        // Ignore events from other pools/tests
+        if (!event.whirlpool.equals(whirlpoolPda.publicKey)) {
+          return;
+        }
+
         detectedSignature = signature;
         // verify
-        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
-        assert.ok(event.aToB === aToB);
-        assert.ok(event.preSqrtPrice.eq(preSqrtPrice));
-        assert.ok(event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice));
-        assert.ok(event.inputAmount.eq(quote.estimatedAmountIn));
-        assert.ok(event.outputAmount.eq(quote.estimatedAmountOut));
-        assert.ok(event.inputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
-        assert.ok(event.outputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        eventVerified =
+          event.aToB === aToB &&
+          event.preSqrtPrice.eq(preSqrtPrice) &&
+          event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice) &&
+          event.inputAmount.eq(quote.estimatedAmountIn) &&
+          event.outputAmount.eq(quote.estimatedAmountOut) &&
+          event.inputTransferFee.isZero() &&
+          event.outputTransferFee.isZero();
 
-        const protocolFee = quote.estimatedFeeAmount
-          .muln(whirlpool.getData().protocolFeeRate)
-          .div(PROTOCOL_FEE_RATE_MUL_VALUE);
-        const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
-        assert.ok(event.lpFee.eq(lpFee));
-        assert.ok(event.protocolFee.eq(protocolFee));
-
-        eventVerified = true;
+        if (eventVerified) {
+          const protocolFee = quote.estimatedFeeAmount
+            .muln(whirlpool.getData().protocolFeeRate)
+            .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+          const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
+          eventVerified =
+            event.lpFee.eq(lpFee) && event.protocolFee.eq(protocolFee);
+        }
       },
     );
 
@@ -1354,7 +1373,12 @@ describe("swap", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2000);
+    // Wait for our event to be observed (LiteSVM delivers logs async)
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (s) => s.detectedSignature === signature && s.eventVerified === true,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
 
@@ -2252,7 +2276,7 @@ describe("swap", () => {
     );
   });
 
-  describe("partial fill, b to a", () => {
+  describe("partial fill, b to a (LiteSVM)", () => {
     const tickSpacing = 128;
     const aToB = false;
     let poolInitInfo: InitPoolParams;
@@ -2494,7 +2518,7 @@ describe("swap", () => {
     });
   });
 
-  describe("partial fill, a to b", () => {
+  describe("partial fill, a to b (LiteSVM)", () => {
     const tickSpacing = 128;
     const aToB = true;
     let poolInitInfo: InitPoolParams;

@@ -8,18 +8,36 @@ import {
   ONE_SOL,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
 
-describe("initialize_config", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("initialize_config (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   let initializedConfigInfo: InitConfigParams;
 

@@ -34,21 +34,41 @@ import {
   createMintInstructions,
   mintToDestination,
   systemTransferTx,
+  startLiteSVM,
+  createLiteSVMProvider,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 import { MetaplexHttpClient } from "../../utils/metaplex";
 
-describe("open_position_with_metadata", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("open_position_with_metadata (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const metaplex = new MetaplexHttpClient();
 
@@ -266,7 +286,7 @@ describe("open_position_with_metadata", () => {
     );
   });
 
-  describe("invalid ticks", () => {
+  describe("invalid ticks (LiteSVM)", () => {
     async function assertTicksFail(lowerTick: number, upperTick: number) {
       await assert.rejects(
         openPositionWithMetadata(
@@ -354,7 +374,7 @@ describe("open_position_with_metadata", () => {
     );
   });
 
-  describe("invalid account constraints", () => {
+  describe("invalid account constraints (LiteSVM)", () => {
     function buildOpenWithAccountOverrides(
       overrides: Partial<
         ReturnType<typeof openPositionAccounts> & {

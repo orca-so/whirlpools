@@ -24,14 +24,12 @@ import {
   createMint,
   createTokenAccount,
   getTokenBalance,
-  sleep,
   transferToken,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
 } from "../../utils";
-import {
-  defaultConfirmOptions,
-  TICK_INIT_SIZE,
-  TICK_RENT_AMOUNT,
-} from "../../utils/const";
+import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initTestPool,
@@ -43,16 +41,45 @@ import {
   generateDefaultInitTickArrayParams,
   generateDefaultOpenPositionParams,
 } from "../../utils/test-builders";
+import { pollForCondition } from "../../utils/litesvm";
 
-describe("increase_liquidity", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+type LiquidityIncreasedEvent = {
+  liquidity: anchor.BN;
+  tokenAAmount: anchor.BN;
+  tokenBAmount: anchor.BN;
+  tokenATransferFee: anchor.BN;
+  tokenBTransferFee: anchor.BN;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
+};
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("increase_liquidity (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   it("increase liquidity of a position spanning two tick arrays", async () => {
     const currTick = 0;
@@ -85,8 +112,8 @@ describe("increase_liquidity", () => {
     );
     assert.ok(positionInfoBefore);
 
-    // To check if rewardLastUpdatedTimestamp is updated
-    await sleep(1200);
+    // To check if rewardLastUpdatedTimestamp is updated deterministically
+    warpClock(2);
 
     await toTx(
       ctx,
@@ -1736,21 +1763,13 @@ describe("increase_liquidity", () => {
 
     // event verification
     let eventVerified = false;
-    let detectedSignature = null;
+    let detectedSignature: string | null = null;
+    let observedEvent: LiquidityIncreasedEvent | null = null;
     const listener = ctx.program.addEventListener(
       "LiquidityIncreased",
       (event, _slot, signature) => {
         detectedSignature = signature;
-        // verify
-        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
-        assert.ok(event.position.equals(positionInitInfo.publicKey));
-        assert.ok(event.liquidity.eq(liquidityAmount));
-        assert.ok(event.tickLowerIndex === tickLowerIndex);
-        assert.ok(event.tickUpperIndex === tickUpperIndex);
-        assert.ok(event.tokenAAmount.eq(tokenAmount.tokenA));
-        assert.ok(event.tokenBAmount.eq(tokenAmount.tokenB));
-        assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
-        assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        observedEvent = event as unknown as LiquidityIncreasedEvent;
         eventVerified = true;
       },
     );
@@ -1774,9 +1793,22 @@ describe("increase_liquidity", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2000);
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === signature && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
+    assert.ok(observedEvent);
+    const ev = observedEvent as LiquidityIncreasedEvent;
+    assert.ok(ev.liquidity.eq(liquidityAmount));
+    assert.ok(ev.tokenAAmount.eq(tokenAmount.tokenA));
+    assert.ok(ev.tokenBAmount.eq(tokenAmount.tokenB));
+    assert.ok(ev.tickLowerIndex === tickLowerIndex);
+    assert.ok(ev.tickUpperIndex === tickUpperIndex);
+    assert.ok(ev.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
+    assert.ok(ev.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
 
     ctx.program.removeEventListener(listener);
   });

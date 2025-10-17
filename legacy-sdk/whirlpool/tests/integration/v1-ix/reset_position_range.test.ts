@@ -12,8 +12,17 @@ import {
   WhirlpoolIx,
   toTx,
 } from "../../../src";
-import { ONE_SOL, TickSpacing, ZERO_BN, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
+  systemTransferTx,
+  startLiteSVM,
+  createLiteSVMProvider,
+  loadPreloadAccount,
+} from "../../utils";
+import { pollForCondition } from "../../utils/litesvm";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
   initializePositionBundle,
   initTestPool,
@@ -26,15 +35,48 @@ import { useMaxCU } from "../../utils/v2/init-utils-v2";
 import preloadWalletSecret from "../../preload_account/reset_position_range/owner_wallet_secret.json";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
-describe("reset_position_range", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("reset_position_range (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    // Load all preload accounts needed for this test
+    loadPreloadAccount("reset_position_range/whirlpool.json");
+    loadPreloadAccount("reset_position_range/position.json");
+    loadPreloadAccount("reset_position_range/position_mint.json");
+    loadPreloadAccount("reset_position_range/position_ata.json");
+    loadPreloadAccount("reset_position_range/token_a.json");
+    loadPreloadAccount("reset_position_range/token_b.json");
+    loadPreloadAccount("reset_position_range/token_a_ata.json");
+    loadPreloadAccount("reset_position_range/token_b_ata.json");
+    loadPreloadAccount("reset_position_range/vault_a.json");
+    loadPreloadAccount("reset_position_range/vault_b.json");
+    loadPreloadAccount("reset_position_range/fixed_tick_array_lower.json");
+    loadPreloadAccount("reset_position_range/fixed_tick_array_upper.json");
+    loadPreloadAccount("reset_position_range/owner_wallet.json");
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 32768;
@@ -131,6 +173,20 @@ describe("reset_position_range", () => {
       .addSigner(funderKeypair)
       .buildAndExecute();
 
+    await pollForCondition(
+      async () => fetcher.getPosition(positionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        p &&
+        p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+        p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
+
     await validatePosition(positionPda.publicKey, positionMintAddress);
   });
 
@@ -151,6 +207,20 @@ describe("reset_position_range", () => {
         tickUpperIndex: tickUpperIndex - poolInitInfo.tickSpacing,
       }),
     ).buildAndExecute();
+
+    await pollForCondition(
+      async () => fetcher.getPosition(positionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        p &&
+        p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+        p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+      {
+        accountToReload: positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(positionPda.publicKey, positionMintAddress);
   });
@@ -190,6 +260,21 @@ describe("reset_position_range", () => {
     )
       .addSigner(funderKeypair)
       .buildAndExecute();
+
+    await pollForCondition(
+      async () =>
+        fetcher.getPosition(params.positionPda.publicKey, { maxAge: 0 }),
+      (p: PositionData | null) =>
+        p &&
+        p.tickLowerIndex === tickLowerIndex + poolInitInfo.tickSpacing &&
+        p.tickUpperIndex === tickUpperIndex - poolInitInfo.tickSpacing,
+      {
+        accountToReload: params.positionPda.publicKey,
+        connection: provider.connection,
+        maxRetries: 200,
+        delayMs: 5,
+      },
+    );
 
     await validatePosition(params.positionPda.publicKey, params.positionMint);
   });
@@ -295,7 +380,7 @@ describe("reset_position_range", () => {
     );
   });
 
-  describe("invalid ticks for reset range", () => {
+  describe("invalid ticks for reset range (LiteSVM)", () => {
     async function assertResetRangeFails(lowerTick: number, upperTick: number) {
       const { positionPda, positionTokenAccount } = (
         await initializeDefaultPosition(whirlpoolPda.publicKey)
@@ -355,7 +440,7 @@ describe("reset_position_range", () => {
     });
   });
 
-  describe("rent collection", () => {
+  describe("rent collection (LiteSVM)", () => {
     async function calculateRents(positionKey: PublicKey) {
       const positionAccountInfo =
         await provider.connection.getAccountInfo(positionKey);

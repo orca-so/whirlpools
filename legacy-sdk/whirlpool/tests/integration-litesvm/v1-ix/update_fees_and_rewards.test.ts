@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 import type { PositionData } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { sleep, TickSpacing, ZERO_BN } from "../../utils";
+import { TickSpacing, ZERO_BN, warpClock } from "../../utils";
 import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
@@ -20,27 +20,22 @@ describe("update_fees_and_rewards (litesvm)", () => {
 
   let fetcher: any;
 
-
   beforeAll(async () => {
-
     await startLiteSVM();
 
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
 
     program = new anchor.Program(idl, programId, provider);
 
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  fetcher = ctx.fetcher;
-
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
   });
 
   it("successfully updates fees and rewards", async () => {
@@ -113,7 +108,8 @@ describe("update_fees_and_rewards (litesvm)", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2_000);
+    // Advance blockchain time in LiteSVM so rewards accrue
+    warpClock(2);
 
     await toTx(
       ctx,

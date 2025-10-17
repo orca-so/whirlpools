@@ -2,7 +2,13 @@ import {
   getSetComputeUnitPriceInstruction,
   getSetComputeUnitLimitInstruction,
 } from "@solana-program/compute-budget";
-import type { IInstruction, MicroLamports, Address, Slot } from "@solana/kit";
+import type {
+  IInstruction,
+  MicroLamports,
+  Address,
+  Slot,
+  CompilableTransactionMessage,
+} from "@solana/kit";
 import {
   prependTransactionMessageInstruction,
   isWritableRole,
@@ -15,10 +21,9 @@ import {
   getComputeUnitMarginMultiplier,
   getRpcConfig,
 } from "./config";
-import type { TxMessage } from "./priorityFees";
 
 export async function processComputeBudgetForTxMessage(
-  message: TxMessage,
+  message: CompilableTransactionMessage,
   computeUnits: number,
 ) {
   const { rpcUrl, supportsPriorityFeePercentile } = getRpcConfig();

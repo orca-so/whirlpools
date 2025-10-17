@@ -2,24 +2,22 @@ import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
 import {
   NO_ORACLE_DATA,
   PDAUtil,
   swapQuoteWithParams,
   SwapUtils,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
-  getProviderWalletKeypair,
   getTokenBalance,
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
@@ -27,34 +25,45 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import { amountToUiAmount } from "@solana/spl-token";
+import { getMint, getScaledUiAmountConfig } from "@solana/spl-token";
 
 describe("TokenExtension/ScaledUiAmount", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   async function rawAmountToUIAmount(
     mint: PublicKey,
     rawAmount: BN,
   ): Promise<string> {
-    const result = await amountToUiAmount(
+    // For ScaledUiAmount, we need to read the multiplier from the mint
+    // and multiply the raw amount by the multiplier
+    const mintInfo = await getMint(
       ctx.connection,
-      providerWalletKeypair,
       mint,
-      rawAmount.toNumber(),
+      undefined,
       TEST_TOKEN_2022_PROGRAM_ID,
     );
-    if (typeof result === "string") {
-      return result;
+
+    // Try to get the ScaledUiAmount extension
+    const scaledConfig = getScaledUiAmountConfig(mintInfo);
+
+    if (scaledConfig) {
+      // The multiplier is stored in the config
+      const multiplier = scaledConfig.multiplier;
+      const uiAmount = rawAmount.mul(new BN(multiplier.toString()));
+      return uiAmount.toString();
     }
-    throw new Error("Failed to convert raw amount to UI amount");
+
+    // No ScaledUiAmount extension, return raw amount as string
+    return rawAmount.toString();
   }
 
   // Since ScaledUiAmount is no different from normal mint as far as handling raw amounts (u64 amounts),

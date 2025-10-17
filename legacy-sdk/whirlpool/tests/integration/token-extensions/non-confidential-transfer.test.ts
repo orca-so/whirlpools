@@ -11,6 +11,7 @@ import type {
   SwapQuote,
   TwoHopSwapV2Params,
   WhirlpoolData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   buildWhirlpoolClient,
@@ -26,12 +27,11 @@ import {
   toTokenAmount,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { getTokenBalance, TickSpacing, ZERO_BN } from "../../utils";
+import { warpClock, initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type { FundedPositionV2Params } from "../../utils/v2/init-utils-v2";
 import {
@@ -52,14 +52,18 @@ import { hasConfidentialTransferMintExtension } from "../../utils/v2/confidentia
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   describe("collect_fees_v2, collect_protocol_fees_v2", () => {
     let fixture: WhirlpoolTestFixtureV2;
@@ -362,7 +366,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,

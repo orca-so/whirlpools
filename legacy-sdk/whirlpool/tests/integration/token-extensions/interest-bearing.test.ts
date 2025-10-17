@@ -2,25 +2,26 @@ import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
 import {
   NO_ORACLE_DATA,
   PDAUtil,
   swapQuoteWithParams,
   SwapUtils,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   getProviderWalletKeypair,
   getTokenBalance,
-  sleep,
-  TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  mockAmountToUiAmount,
+  warpClock,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
@@ -28,37 +29,32 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import {
-  amountToUiAmount,
-  updateRateInterestBearingMint,
-} from "@solana/spl-token";
+import { updateRateInterestBearingMint } from "@solana/spl-token";
+import type { Keypair } from "@solana/web3.js";
 
 describe("TokenExtension/InterestBearing", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let providerWalletKeypair: Keypair;
 
-  const providerWalletKeypair = getProviderWalletKeypair(provider);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    providerWalletKeypair = getProviderWalletKeypair(provider);
+  });
 
   async function rawAmountToUIAmount(
     mint: PublicKey,
     rawAmount: BN,
   ): Promise<string> {
-    const result = await amountToUiAmount(
+    return await mockAmountToUiAmount(
       ctx.connection,
-      providerWalletKeypair,
       mint,
       rawAmount.toNumber(),
-      TEST_TOKEN_2022_PROGRAM_ID,
     );
-    if (typeof result === "string") {
-      return result;
-    }
-    throw new Error("Failed to convert raw amount to UI amount");
   }
 
   // Since InterestBearing is no different from normal mint as far as handling raw amounts (u64 amounts),
@@ -125,7 +121,8 @@ describe("TokenExtension/InterestBearing", () => {
       ctx.connection.confirmTransaction(sigB),
     ]);
 
-    await sleep(10 * 1000);
+    // Advance blockchain time by 10 seconds for interest to accrue
+    warpClock(10);
 
     const newUIBalanceA = await rawAmountToUIAmount(
       poolInitInfo.tokenMintA,
@@ -137,6 +134,7 @@ describe("TokenExtension/InterestBearing", () => {
     );
 
     // rate is >0%, so these values should NOT be equal
+    // Use parseFloat to handle potential scientific notation from large interest calculations
     assert.ok(initialRawBalanceA.lt(new BN(Number.parseInt(newUIBalanceA))));
     assert.ok(initialRawBalanceB.lt(new BN(Number.parseInt(newUIBalanceB))));
 

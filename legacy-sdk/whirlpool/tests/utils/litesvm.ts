@@ -14,11 +14,11 @@ import {
   NATIVE_MINT_2022,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
-  createAmountToUiAmountInstruction,
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 import whirlpoolIdl from "../../src/artifacts/whirlpool.json";
 import { WhirlpoolContext } from "../../src";
+import { TEST_TOKEN_2022_PROGRAM_ID } from "../utils";
 
 let _litesvm: LiteSVM | null = null;
 
@@ -1154,19 +1154,21 @@ export function warpClock(seconds: number): void {
 }
 
 /**
- * Advance to the next epoch in the blockchain
+ * Advance to the next epoch(s) in the blockchain
  * This is needed for tests that depend on epoch changes (e.g., transfer fee updates)
+ *
+ * @param numberOfEpochs - Number of epochs to advance (defaults to 1)
  */
-export function advanceEpoch(): void {
+export function advanceEpoch(numberOfEpochs: number = 1): void {
   const litesvm = getLiteSVM();
   const currentClock = litesvm.getClock();
-  // Advance to next epoch
-  const newEpoch = currentClock.epoch + 1n;
+  // Advance to next epoch(s)
+  const newEpoch = currentClock.epoch + BigInt(numberOfEpochs);
   // Advance slot significantly (typical epoch has ~432000 slots)
-  const slotsToAdvance = 432000n;
+  const slotsToAdvance = BigInt(432000 * numberOfEpochs);
   const newSlot = currentClock.slot + slotsToAdvance;
   // Advance timestamp proportionally (assuming ~400ms per slot)
-  const secondsToAdvance = 432000 * 0.4; // ~172800 seconds (2 days)
+  const secondsToAdvance = 432000 * numberOfEpochs * 0.4; // ~172800 seconds per epoch (2 days)
   const newTimestamp =
     currentClock.unixTimestamp + BigInt(Math.floor(secondsToAdvance));
   const newClock = new Clock(
@@ -1179,7 +1181,7 @@ export function advanceEpoch(): void {
   litesvm.setClock(newClock);
   litesvm.expireBlockhash();
   console.info(
-    `🔄 Advanced epoch: ${currentClock.epoch} -> ${newEpoch} (slot: ${currentClock.slot} -> ${newSlot})`,
+    `🔄 Advanced ${numberOfEpochs} epoch${numberOfEpochs !== 1 ? "s" : ""}: ${currentClock.epoch} -> ${newEpoch} (slot: ${currentClock.slot} -> ${newSlot})`,
   );
 }
 
@@ -1228,56 +1230,66 @@ export async function pollForCondition<T>(
 }
 
 /**
- * Converts raw token amount to UI amount using Token-2022's amountToUiAmount instruction.
- * This handles token extensions like interest-bearing and scaled UI amounts.
+ * Mock implementation of amountToUiAmount for LiteSVM
+ * Simulates interest-bearing token conversion from raw amount to UI amount
  */
-export async function amountToUiAmount(
+export async function mockAmountToUiAmount(
   connection: anchor.web3.Connection,
   mint: PublicKey,
   rawAmount: number,
-  tokenProgramId: PublicKey,
+  tokenProgramId: PublicKey = TEST_TOKEN_2022_PROGRAM_ID,
 ): Promise<string> {
   try {
-    const { Transaction } = await import("@solana/web3.js");
-
-    // Create the amountToUiAmount instruction
-    const instruction = createAmountToUiAmountInstruction(
-      mint,
-      BigInt(rawAmount),
-      tokenProgramId,
+    const mintAccount = await connection.getAccountInfo(mint);
+    if (!mintAccount) {
+      throw new Error("Mint account not found");
+    }
+    // For simplicity in LiteSVM, we'll parse the mint using SPL Token's getMint
+    // and calculate interest-bearing UI amounts based on the extension data
+    const { getMint, getInterestBearingMintConfigState } = await import(
+      "@solana/spl-token"
     );
-
-    // Create and simulate transaction
-    const transaction = new Transaction().add(instruction);
-    const simulation = await connection.simulateTransaction(transaction);
-
-    // Check for errors
-    if (simulation.value.err) {
-      console.warn("Simulation error:", simulation.value.err);
+    try {
+      const mintInfo = await getMint(
+        connection,
+        mint,
+        undefined,
+        tokenProgramId,
+      );
+      // Check if mint has interest-bearing extension
+      const interestConfig = getInterestBearingMintConfigState(mintInfo);
+      if (interestConfig === null) {
+        // No interest-bearing extension, return raw amount
+        return rawAmount.toString();
+      }
+      // Get current timestamp from LiteSVM
+      const litesvm = getLiteSVM();
+      const currentClock = litesvm.getClock();
+      const currentTimestamp = currentClock.unixTimestamp;
+      // Calculate time elapsed since last update (in seconds)
+      const lastUpdateTimestamp = interestConfig.lastUpdateTimestamp;
+      const timeElapsed =
+        Number(currentTimestamp) - Number(lastUpdateTimestamp);
+      // Interest rate is in basis points per YEAR (1 bp = 0.0001)
+      // Need to convert to per-second rate for the calculation
+      const rate = interestConfig.currentRate;
+      const annualRateDecimal = Number(rate) / 10000; // e.g., 10000 bps = 1.0 = 100%
+      const secondsPerYear = 365.25 * 24 * 60 * 60; // ~31557600 seconds
+      const perSecondRate = annualRateDecimal / secondsPerYear;
+      // For continuous compounding: UI = raw * e^(per_second_rate * time)
+      const growthFactor = Math.exp(perSecondRate * timeElapsed);
+      const uiAmount = rawAmount * growthFactor;
+      return Math.floor(uiAmount).toString(); // Return as integer string
+    } catch (parseError) {
+      console.warn("Failed to parse interest-bearing config:", parseError);
       return rawAmount.toString();
     }
-
-    // Extract return data from the simulation
-    // Token-2022's amountToUiAmount returns the UI amount as a string in the return data
-    const returnData = simulation.value.returnData;
-    if (returnData && returnData.data) {
-      // Return data is base64 encoded, decode it
-      const buffer = Buffer.from(returnData.data[0], "base64");
-      // The return data is a null-terminated string
-      const uiAmountStr = buffer.toString("utf8").replace(/\0/g, "");
-      return uiAmountStr;
-    }
-
-    // Fallback if no return data
-    console.warn("No return data from amountToUiAmount simulation");
-    return rawAmount.toString();
   } catch (e) {
-    console.warn("amountToUiAmount error:", e);
+    console.warn("mockAmountToUiAmount error:", e);
     // Fallback: return raw amount
     return rawAmount.toString();
   }
 }
-
 /**
  * Initialize the native mint (WSOL) for the regular Token Program if not already initialized.
  * This is needed for LiteSVM testing as it doesn't automatically create the native mint.

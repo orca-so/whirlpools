@@ -29,25 +29,21 @@ describe("initialize_position_bundle (litesvm)", () => {
 
   let fetcher: any;
 
-
   beforeAll(async () => {
-
     await startLiteSVM();
 
     provider = await createLiteSVMProvider();
 
     const programId = new anchor.web3.PublicKey(
-
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = require("../../../src/artifacts/whirlpool.json");
 
     program = new anchor.Program(idl, programId, provider);
 
-  // program initialized in beforeAll
-  ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
   });
 
   async function createInitializePositionBundleTx(
@@ -266,7 +262,8 @@ describe("initialize_position_bundle (litesvm)", () => {
       positionBundleMintKeypair,
     );
     await assert.rejects(tx.buildAndExecute(), (err) => {
-      return JSON.stringify(err).includes("already in use");
+      const errorString = err instanceof Error ? err.message : String(err);
+      return errorString.includes("already in use");
     });
   });
 

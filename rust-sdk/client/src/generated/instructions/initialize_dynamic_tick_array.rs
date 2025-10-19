@@ -8,53 +8,55 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const INITIALIZE_DYNAMIC_TICK_ARRAY_DISCRIMINATOR: [u8; 8] = [41, 33, 165, 200, 120, 231, 142, 50];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct InitializeDynamicTickArray {
       
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub funder: solana_program::pubkey::Pubkey,
+          pub funder: solana_pubkey::Pubkey,
           
               
-          pub tick_array: solana_program::pubkey::Pubkey,
+          pub tick_array: solana_pubkey::Pubkey,
           
               
-          pub system_program: solana_program::pubkey::Pubkey,
+          pub system_program: solana_pubkey::Pubkey,
       }
 
 impl InitializeDynamicTickArray {
-  pub fn instruction(&self, args: InitializeDynamicTickArrayInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: InitializeDynamicTickArrayInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: InitializeDynamicTickArrayInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: InitializeDynamicTickArrayInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(4+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.funder,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.tick_array,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&InitializeDynamicTickArrayInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = InitializeDynamicTickArrayInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -74,7 +76,11 @@ impl InitializeDynamicTickArrayInstructionData {
                         discriminator: [41, 33, 165, 200, 120, 231, 142, 50],
                                               }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for InitializeDynamicTickArrayInstructionData {
   fn default() -> Self {
@@ -89,6 +95,12 @@ impl Default for InitializeDynamicTickArrayInstructionData {
                 pub idempotent: bool,
       }
 
+impl InitializeDynamicTickArrayInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
+
 
 /// Instruction builder for `InitializeDynamicTickArray`.
 ///
@@ -100,13 +112,13 @@ impl Default for InitializeDynamicTickArrayInstructionData {
                 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializeDynamicTickArrayBuilder {
-            whirlpool: Option<solana_program::pubkey::Pubkey>,
-                funder: Option<solana_program::pubkey::Pubkey>,
-                tick_array: Option<solana_program::pubkey::Pubkey>,
-                system_program: Option<solana_program::pubkey::Pubkey>,
+            whirlpool: Option<solana_pubkey::Pubkey>,
+                funder: Option<solana_pubkey::Pubkey>,
+                tick_array: Option<solana_pubkey::Pubkey>,
+                system_program: Option<solana_pubkey::Pubkey>,
                         start_tick_index: Option<i32>,
                 idempotent: Option<bool>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InitializeDynamicTickArrayBuilder {
@@ -114,23 +126,23 @@ impl InitializeDynamicTickArrayBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
             #[inline(always)]
-    pub fn funder(&mut self, funder: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn funder(&mut self, funder: solana_pubkey::Pubkey) -> &mut Self {
                         self.funder = Some(funder);
                     self
     }
             #[inline(always)]
-    pub fn tick_array(&mut self, tick_array: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn tick_array(&mut self, tick_array: solana_pubkey::Pubkey) -> &mut Self {
                         self.tick_array = Some(tick_array);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.system_program = Some(system_program);
                     self
     }
@@ -146,23 +158,23 @@ impl InitializeDynamicTickArrayBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = InitializeDynamicTickArray {
                               whirlpool: self.whirlpool.expect("whirlpool is not set"),
                                         funder: self.funder.expect("funder is not set"),
                                         tick_array: self.tick_array.expect("tick_array is not set"),
-                                        system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
+                                        system_program: self.system_program.unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
                       };
           let args = InitializeDynamicTickArrayInstructionArgs {
                                                               start_tick_index: self.start_tick_index.clone().expect("start_tick_index is not set"),
@@ -177,41 +189,41 @@ impl InitializeDynamicTickArrayBuilder {
   pub struct InitializeDynamicTickArrayCpiAccounts<'a, 'b> {
           
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+              pub funder: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub tick_array: &'b solana_program::account_info::AccountInfo<'a>,
+              pub tick_array: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub system_program: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `initialize_dynamic_tick_array` CPI instruction.
 pub struct InitializeDynamicTickArrayCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+          pub funder: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub tick_array: &'b solana_program::account_info::AccountInfo<'a>,
+          pub tick_array: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub system_program: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: InitializeDynamicTickArrayInstructionArgs,
   }
 
 impl<'a, 'b> InitializeDynamicTickArrayCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: InitializeDynamicTickArrayCpiAccounts<'a, 'b>,
               args: InitializeDynamicTickArrayInstructionArgs,
       ) -> Self {
@@ -225,15 +237,15 @@ impl<'a, 'b> InitializeDynamicTickArrayCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -242,37 +254,37 @@ impl<'a, 'b> InitializeDynamicTickArrayCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(4+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.funder.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.tick_array.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&InitializeDynamicTickArrayInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = InitializeDynamicTickArrayInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -286,9 +298,9 @@ impl<'a, 'b> InitializeDynamicTickArrayCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -307,7 +319,7 @@ pub struct InitializeDynamicTickArrayCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> InitializeDynamicTickArrayCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(InitializeDynamicTickArrayCpiBuilderInstruction {
       __program: program,
               whirlpool: None,
@@ -321,22 +333,22 @@ impl<'a, 'b> InitializeDynamicTickArrayCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn funder(&mut self, funder: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn funder(&mut self, funder: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.funder = Some(funder);
                     self
     }
       #[inline(always)]
-    pub fn tick_array(&mut self, tick_array: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn tick_array(&mut self, tick_array: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.tick_array = Some(tick_array);
                     self
     }
       #[inline(always)]
-    pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn system_program(&mut self, system_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
@@ -352,7 +364,7 @@ impl<'a, 'b> InitializeDynamicTickArrayCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -361,17 +373,17 @@ impl<'a, 'b> InitializeDynamicTickArrayCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = InitializeDynamicTickArrayInstructionArgs {
                                                               start_tick_index: self.instruction.start_tick_index.clone().expect("start_tick_index is not set"),
                                                                   idempotent: self.instruction.idempotent.clone().expect("idempotent is not set"),
@@ -394,14 +406,14 @@ impl<'a, 'b> InitializeDynamicTickArrayCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct InitializeDynamicTickArrayCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                funder: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                tick_array: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                funder: Option<&'b solana_account_info::AccountInfo<'a>>,
+                tick_array: Option<&'b solana_account_info::AccountInfo<'a>>,
+                system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
                         start_tick_index: Option<i32>,
                 idempotent: Option<bool>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

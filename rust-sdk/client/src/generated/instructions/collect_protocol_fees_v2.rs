@@ -9,109 +9,111 @@ use crate::generated::types::RemainingAccountsInfo;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const COLLECT_PROTOCOL_FEES_V2_DISCRIMINATOR: [u8; 8] = [103, 128, 222, 134, 114, 200, 22, 200];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct CollectProtocolFeesV2 {
       
               
-          pub whirlpools_config: solana_program::pubkey::Pubkey,
+          pub whirlpools_config: solana_pubkey::Pubkey,
           
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub collect_protocol_fees_authority: solana_program::pubkey::Pubkey,
+          pub collect_protocol_fees_authority: solana_pubkey::Pubkey,
           
               
-          pub token_mint_a: solana_program::pubkey::Pubkey,
+          pub token_mint_a: solana_pubkey::Pubkey,
           
               
-          pub token_mint_b: solana_program::pubkey::Pubkey,
+          pub token_mint_b: solana_pubkey::Pubkey,
           
               
-          pub token_vault_a: solana_program::pubkey::Pubkey,
+          pub token_vault_a: solana_pubkey::Pubkey,
           
               
-          pub token_vault_b: solana_program::pubkey::Pubkey,
+          pub token_vault_b: solana_pubkey::Pubkey,
           
               
-          pub token_destination_a: solana_program::pubkey::Pubkey,
+          pub token_destination_a: solana_pubkey::Pubkey,
           
               
-          pub token_destination_b: solana_program::pubkey::Pubkey,
+          pub token_destination_b: solana_pubkey::Pubkey,
           
               
-          pub token_program_a: solana_program::pubkey::Pubkey,
+          pub token_program_a: solana_pubkey::Pubkey,
           
               
-          pub token_program_b: solana_program::pubkey::Pubkey,
+          pub token_program_b: solana_pubkey::Pubkey,
           
               
-          pub memo_program: solana_program::pubkey::Pubkey,
+          pub memo_program: solana_pubkey::Pubkey,
       }
 
 impl CollectProtocolFeesV2 {
-  pub fn instruction(&self, args: CollectProtocolFeesV2InstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: CollectProtocolFeesV2InstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: CollectProtocolFeesV2InstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: CollectProtocolFeesV2InstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(12+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.whirlpools_config,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.collect_protocol_fees_authority,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_mint_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_mint_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_vault_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_vault_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_destination_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_destination_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.memo_program,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&CollectProtocolFeesV2InstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = CollectProtocolFeesV2InstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -131,7 +133,11 @@ impl CollectProtocolFeesV2InstructionData {
                         discriminator: [103, 128, 222, 134, 114, 200, 22, 200],
                                 }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for CollectProtocolFeesV2InstructionData {
   fn default() -> Self {
@@ -144,6 +150,12 @@ impl Default for CollectProtocolFeesV2InstructionData {
  pub struct CollectProtocolFeesV2InstructionArgs {
                   pub remaining_accounts_info: Option<RemainingAccountsInfo>,
       }
+
+impl CollectProtocolFeesV2InstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
 
 
 /// Instruction builder for `CollectProtocolFeesV2`.
@@ -161,23 +173,23 @@ impl Default for CollectProtocolFeesV2InstructionData {
                 ///   8. `[writable]` token_destination_b
           ///   9. `[]` token_program_a
           ///   10. `[]` token_program_b
-          ///   11. `[]` memo_program
+                ///   11. `[optional]` memo_program (default to `MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`)
 #[derive(Clone, Debug, Default)]
 pub struct CollectProtocolFeesV2Builder {
-            whirlpools_config: Option<solana_program::pubkey::Pubkey>,
-                whirlpool: Option<solana_program::pubkey::Pubkey>,
-                collect_protocol_fees_authority: Option<solana_program::pubkey::Pubkey>,
-                token_mint_a: Option<solana_program::pubkey::Pubkey>,
-                token_mint_b: Option<solana_program::pubkey::Pubkey>,
-                token_vault_a: Option<solana_program::pubkey::Pubkey>,
-                token_vault_b: Option<solana_program::pubkey::Pubkey>,
-                token_destination_a: Option<solana_program::pubkey::Pubkey>,
-                token_destination_b: Option<solana_program::pubkey::Pubkey>,
-                token_program_a: Option<solana_program::pubkey::Pubkey>,
-                token_program_b: Option<solana_program::pubkey::Pubkey>,
-                memo_program: Option<solana_program::pubkey::Pubkey>,
+            whirlpools_config: Option<solana_pubkey::Pubkey>,
+                whirlpool: Option<solana_pubkey::Pubkey>,
+                collect_protocol_fees_authority: Option<solana_pubkey::Pubkey>,
+                token_mint_a: Option<solana_pubkey::Pubkey>,
+                token_mint_b: Option<solana_pubkey::Pubkey>,
+                token_vault_a: Option<solana_pubkey::Pubkey>,
+                token_vault_b: Option<solana_pubkey::Pubkey>,
+                token_destination_a: Option<solana_pubkey::Pubkey>,
+                token_destination_b: Option<solana_pubkey::Pubkey>,
+                token_program_a: Option<solana_pubkey::Pubkey>,
+                token_program_b: Option<solana_pubkey::Pubkey>,
+                memo_program: Option<solana_pubkey::Pubkey>,
                         remaining_accounts_info: Option<RemainingAccountsInfo>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CollectProtocolFeesV2Builder {
@@ -185,62 +197,63 @@ impl CollectProtocolFeesV2Builder {
     Self::default()
   }
             #[inline(always)]
-    pub fn whirlpools_config(&mut self, whirlpools_config: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpools_config(&mut self, whirlpools_config: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpools_config = Some(whirlpools_config);
                     self
     }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
             #[inline(always)]
-    pub fn collect_protocol_fees_authority(&mut self, collect_protocol_fees_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn collect_protocol_fees_authority(&mut self, collect_protocol_fees_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.collect_protocol_fees_authority = Some(collect_protocol_fees_authority);
                     self
     }
             #[inline(always)]
-    pub fn token_mint_a(&mut self, token_mint_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_mint_a(&mut self, token_mint_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_mint_a = Some(token_mint_a);
                     self
     }
             #[inline(always)]
-    pub fn token_mint_b(&mut self, token_mint_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_mint_b(&mut self, token_mint_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_mint_b = Some(token_mint_b);
                     self
     }
             #[inline(always)]
-    pub fn token_vault_a(&mut self, token_vault_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_vault_a(&mut self, token_vault_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_vault_a = Some(token_vault_a);
                     self
     }
             #[inline(always)]
-    pub fn token_vault_b(&mut self, token_vault_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_vault_b(&mut self, token_vault_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_vault_b = Some(token_vault_b);
                     self
     }
             #[inline(always)]
-    pub fn token_destination_a(&mut self, token_destination_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_destination_a(&mut self, token_destination_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_destination_a = Some(token_destination_a);
                     self
     }
             #[inline(always)]
-    pub fn token_destination_b(&mut self, token_destination_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_destination_b(&mut self, token_destination_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_destination_b = Some(token_destination_b);
                     self
     }
             #[inline(always)]
-    pub fn token_program_a(&mut self, token_program_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program_a(&mut self, token_program_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program_a = Some(token_program_a);
                     self
     }
             #[inline(always)]
-    pub fn token_program_b(&mut self, token_program_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program_b(&mut self, token_program_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program_b = Some(token_program_b);
                     self
     }
-            #[inline(always)]
-    pub fn memo_program(&mut self, memo_program: solana_program::pubkey::Pubkey) -> &mut Self {
+            /// `[optional account, default to 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr']`
+#[inline(always)]
+    pub fn memo_program(&mut self, memo_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.memo_program = Some(memo_program);
                     self
     }
@@ -252,18 +265,18 @@ impl CollectProtocolFeesV2Builder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = CollectProtocolFeesV2 {
                               whirlpools_config: self.whirlpools_config.expect("whirlpools_config is not set"),
                                         whirlpool: self.whirlpool.expect("whirlpool is not set"),
@@ -276,7 +289,7 @@ impl CollectProtocolFeesV2Builder {
                                         token_destination_b: self.token_destination_b.expect("token_destination_b is not set"),
                                         token_program_a: self.token_program_a.expect("token_program_a is not set"),
                                         token_program_b: self.token_program_b.expect("token_program_b is not set"),
-                                        memo_program: self.memo_program.expect("memo_program is not set"),
+                                        memo_program: self.memo_program.unwrap_or(solana_pubkey::pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")),
                       };
           let args = CollectProtocolFeesV2InstructionArgs {
                                                               remaining_accounts_info: self.remaining_accounts_info.clone(),
@@ -290,89 +303,89 @@ impl CollectProtocolFeesV2Builder {
   pub struct CollectProtocolFeesV2CpiAccounts<'a, 'b> {
           
                     
-              pub whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpools_config: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub collect_protocol_fees_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub collect_protocol_fees_authority: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_mint_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_mint_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_mint_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_mint_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_vault_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_vault_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_vault_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_vault_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_destination_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_destination_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_destination_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_destination_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_program_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_program_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub memo_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub memo_program: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `collect_protocol_fees_v2` CPI instruction.
 pub struct CollectProtocolFeesV2Cpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpools_config: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub collect_protocol_fees_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub collect_protocol_fees_authority: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_mint_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_mint_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_mint_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_mint_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_vault_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_vault_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_vault_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_vault_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_destination_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_destination_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_destination_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_destination_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_program_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_program_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub memo_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub memo_program: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: CollectProtocolFeesV2InstructionArgs,
   }
 
 impl<'a, 'b> CollectProtocolFeesV2Cpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: CollectProtocolFeesV2CpiAccounts<'a, 'b>,
               args: CollectProtocolFeesV2InstructionArgs,
       ) -> Self {
@@ -394,15 +407,15 @@ impl<'a, 'b> CollectProtocolFeesV2Cpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -411,69 +424,69 @@ impl<'a, 'b> CollectProtocolFeesV2Cpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(12+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.whirlpools_config.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.collect_protocol_fees_authority.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_mint_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_mint_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_vault_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_vault_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_destination_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_destination_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.memo_program.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&CollectProtocolFeesV2InstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = CollectProtocolFeesV2InstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -495,9 +508,9 @@ impl<'a, 'b> CollectProtocolFeesV2Cpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -524,7 +537,7 @@ pub struct CollectProtocolFeesV2CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CollectProtocolFeesV2CpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(CollectProtocolFeesV2CpiBuilderInstruction {
       __program: program,
               whirlpools_config: None,
@@ -545,62 +558,62 @@ impl<'a, 'b> CollectProtocolFeesV2CpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn whirlpools_config(&mut self, whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpools_config(&mut self, whirlpools_config: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpools_config = Some(whirlpools_config);
                     self
     }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn collect_protocol_fees_authority(&mut self, collect_protocol_fees_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn collect_protocol_fees_authority(&mut self, collect_protocol_fees_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.collect_protocol_fees_authority = Some(collect_protocol_fees_authority);
                     self
     }
       #[inline(always)]
-    pub fn token_mint_a(&mut self, token_mint_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_mint_a(&mut self, token_mint_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_mint_a = Some(token_mint_a);
                     self
     }
       #[inline(always)]
-    pub fn token_mint_b(&mut self, token_mint_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_mint_b(&mut self, token_mint_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_mint_b = Some(token_mint_b);
                     self
     }
       #[inline(always)]
-    pub fn token_vault_a(&mut self, token_vault_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_vault_a(&mut self, token_vault_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_vault_a = Some(token_vault_a);
                     self
     }
       #[inline(always)]
-    pub fn token_vault_b(&mut self, token_vault_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_vault_b(&mut self, token_vault_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_vault_b = Some(token_vault_b);
                     self
     }
       #[inline(always)]
-    pub fn token_destination_a(&mut self, token_destination_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_destination_a(&mut self, token_destination_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_destination_a = Some(token_destination_a);
                     self
     }
       #[inline(always)]
-    pub fn token_destination_b(&mut self, token_destination_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_destination_b(&mut self, token_destination_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_destination_b = Some(token_destination_b);
                     self
     }
       #[inline(always)]
-    pub fn token_program_a(&mut self, token_program_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program_a(&mut self, token_program_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program_a = Some(token_program_a);
                     self
     }
       #[inline(always)]
-    pub fn token_program_b(&mut self, token_program_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program_b(&mut self, token_program_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program_b = Some(token_program_b);
                     self
     }
       #[inline(always)]
-    pub fn memo_program(&mut self, memo_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn memo_program(&mut self, memo_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.memo_program = Some(memo_program);
                     self
     }
@@ -612,7 +625,7 @@ impl<'a, 'b> CollectProtocolFeesV2CpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -621,17 +634,17 @@ impl<'a, 'b> CollectProtocolFeesV2CpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = CollectProtocolFeesV2InstructionArgs {
                                                               remaining_accounts_info: self.instruction.remaining_accounts_info.clone(),
                                     };
@@ -669,21 +682,21 @@ impl<'a, 'b> CollectProtocolFeesV2CpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct CollectProtocolFeesV2CpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            whirlpools_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                collect_protocol_fees_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_mint_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_mint_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_vault_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_vault_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_destination_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_destination_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                memo_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            whirlpools_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+                whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                collect_protocol_fees_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_mint_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_mint_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_vault_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_vault_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_destination_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_destination_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_program_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_program_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                memo_program: Option<&'b solana_account_info::AccountInfo<'a>>,
                         remaining_accounts_info: Option<RemainingAccountsInfo>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

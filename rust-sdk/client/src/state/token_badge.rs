@@ -1,1 +1,0 @@
-pub const TOKEN_BADGE_DISCRIMINATOR: &[u8] = &[116, 219, 204, 229, 249, 116, 255, 150];

@@ -8,102 +8,104 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const SWAP_DISCRIMINATOR: [u8; 8] = [248, 198, 158, 145, 225, 117, 135, 200];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct Swap {
       
               
-          pub token_program: solana_program::pubkey::Pubkey,
+          pub token_program: solana_pubkey::Pubkey,
           
               
-          pub token_authority: solana_program::pubkey::Pubkey,
+          pub token_authority: solana_pubkey::Pubkey,
           
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub token_owner_account_a: solana_program::pubkey::Pubkey,
+          pub token_owner_account_a: solana_pubkey::Pubkey,
           
               
-          pub token_vault_a: solana_program::pubkey::Pubkey,
+          pub token_vault_a: solana_pubkey::Pubkey,
           
               
-          pub token_owner_account_b: solana_program::pubkey::Pubkey,
+          pub token_owner_account_b: solana_pubkey::Pubkey,
           
               
-          pub token_vault_b: solana_program::pubkey::Pubkey,
+          pub token_vault_b: solana_pubkey::Pubkey,
           
               
-          pub tick_array0: solana_program::pubkey::Pubkey,
+          pub tick_array0: solana_pubkey::Pubkey,
           
               
-          pub tick_array1: solana_program::pubkey::Pubkey,
+          pub tick_array1: solana_pubkey::Pubkey,
           
               
-          pub tick_array2: solana_program::pubkey::Pubkey,
+          pub tick_array2: solana_pubkey::Pubkey,
           
               
-          pub oracle: solana_program::pubkey::Pubkey,
+          pub oracle: solana_pubkey::Pubkey,
       }
 
 impl Swap {
-  pub fn instruction(&self, args: SwapInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: SwapInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: SwapInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: SwapInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(11+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_authority,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_owner_account_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_vault_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_owner_account_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_vault_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.tick_array0,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.tick_array1,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.tick_array2,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.oracle,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&SwapInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = SwapInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -123,7 +125,11 @@ impl SwapInstructionData {
                         discriminator: [248, 198, 158, 145, 225, 117, 135, 200],
                                                                                         }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for SwapInstructionData {
   fn default() -> Self {
@@ -140,6 +146,12 @@ impl Default for SwapInstructionData {
                 pub amount_specified_is_input: bool,
                 pub a_to_b: bool,
       }
+
+impl SwapInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
 
 
 /// Instruction builder for `Swap`.
@@ -159,23 +171,23 @@ impl Default for SwapInstructionData {
           ///   10. `[]` oracle
 #[derive(Clone, Debug, Default)]
 pub struct SwapBuilder {
-            token_program: Option<solana_program::pubkey::Pubkey>,
-                token_authority: Option<solana_program::pubkey::Pubkey>,
-                whirlpool: Option<solana_program::pubkey::Pubkey>,
-                token_owner_account_a: Option<solana_program::pubkey::Pubkey>,
-                token_vault_a: Option<solana_program::pubkey::Pubkey>,
-                token_owner_account_b: Option<solana_program::pubkey::Pubkey>,
-                token_vault_b: Option<solana_program::pubkey::Pubkey>,
-                tick_array0: Option<solana_program::pubkey::Pubkey>,
-                tick_array1: Option<solana_program::pubkey::Pubkey>,
-                tick_array2: Option<solana_program::pubkey::Pubkey>,
-                oracle: Option<solana_program::pubkey::Pubkey>,
+            token_program: Option<solana_pubkey::Pubkey>,
+                token_authority: Option<solana_pubkey::Pubkey>,
+                whirlpool: Option<solana_pubkey::Pubkey>,
+                token_owner_account_a: Option<solana_pubkey::Pubkey>,
+                token_vault_a: Option<solana_pubkey::Pubkey>,
+                token_owner_account_b: Option<solana_pubkey::Pubkey>,
+                token_vault_b: Option<solana_pubkey::Pubkey>,
+                tick_array0: Option<solana_pubkey::Pubkey>,
+                tick_array1: Option<solana_pubkey::Pubkey>,
+                tick_array2: Option<solana_pubkey::Pubkey>,
+                oracle: Option<solana_pubkey::Pubkey>,
                         amount: Option<u64>,
                 other_amount_threshold: Option<u64>,
                 sqrt_price_limit: Option<u128>,
                 amount_specified_is_input: Option<bool>,
                 a_to_b: Option<bool>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SwapBuilder {
@@ -184,57 +196,57 @@ impl SwapBuilder {
   }
             /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
 #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program = Some(token_program);
                     self
     }
             #[inline(always)]
-    pub fn token_authority(&mut self, token_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_authority(&mut self, token_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_authority = Some(token_authority);
                     self
     }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
             #[inline(always)]
-    pub fn token_owner_account_a(&mut self, token_owner_account_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_account_a(&mut self, token_owner_account_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_owner_account_a = Some(token_owner_account_a);
                     self
     }
             #[inline(always)]
-    pub fn token_vault_a(&mut self, token_vault_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_vault_a(&mut self, token_vault_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_vault_a = Some(token_vault_a);
                     self
     }
             #[inline(always)]
-    pub fn token_owner_account_b(&mut self, token_owner_account_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_account_b(&mut self, token_owner_account_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_owner_account_b = Some(token_owner_account_b);
                     self
     }
             #[inline(always)]
-    pub fn token_vault_b(&mut self, token_vault_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_vault_b(&mut self, token_vault_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_vault_b = Some(token_vault_b);
                     self
     }
             #[inline(always)]
-    pub fn tick_array0(&mut self, tick_array0: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn tick_array0(&mut self, tick_array0: solana_pubkey::Pubkey) -> &mut Self {
                         self.tick_array0 = Some(tick_array0);
                     self
     }
             #[inline(always)]
-    pub fn tick_array1(&mut self, tick_array1: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn tick_array1(&mut self, tick_array1: solana_pubkey::Pubkey) -> &mut Self {
                         self.tick_array1 = Some(tick_array1);
                     self
     }
             #[inline(always)]
-    pub fn tick_array2(&mut self, tick_array2: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn tick_array2(&mut self, tick_array2: solana_pubkey::Pubkey) -> &mut Self {
                         self.tick_array2 = Some(tick_array2);
                     self
     }
             #[inline(always)]
-    pub fn oracle(&mut self, oracle: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn oracle(&mut self, oracle: solana_pubkey::Pubkey) -> &mut Self {
                         self.oracle = Some(oracle);
                     self
     }
@@ -265,20 +277,20 @@ impl SwapBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = Swap {
-                              token_program: self.token_program.unwrap_or(solana_program::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
+                              token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
                                         token_authority: self.token_authority.expect("token_authority is not set"),
                                         whirlpool: self.whirlpool.expect("whirlpool is not set"),
                                         token_owner_account_a: self.token_owner_account_a.expect("token_owner_account_a is not set"),
@@ -306,83 +318,83 @@ impl SwapBuilder {
   pub struct SwapCpiAccounts<'a, 'b> {
           
                     
-              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_authority: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_owner_account_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_owner_account_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_vault_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_vault_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_owner_account_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_owner_account_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_vault_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_vault_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub tick_array0: &'b solana_program::account_info::AccountInfo<'a>,
+              pub tick_array0: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub tick_array1: &'b solana_program::account_info::AccountInfo<'a>,
+              pub tick_array1: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub tick_array2: &'b solana_program::account_info::AccountInfo<'a>,
+              pub tick_array2: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub oracle: &'b solana_program::account_info::AccountInfo<'a>,
+              pub oracle: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `swap` CPI instruction.
 pub struct SwapCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_authority: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_owner_account_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_owner_account_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_vault_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_vault_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_owner_account_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_owner_account_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_vault_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_vault_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub tick_array0: &'b solana_program::account_info::AccountInfo<'a>,
+          pub tick_array0: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub tick_array1: &'b solana_program::account_info::AccountInfo<'a>,
+          pub tick_array1: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub tick_array2: &'b solana_program::account_info::AccountInfo<'a>,
+          pub tick_array2: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub oracle: &'b solana_program::account_info::AccountInfo<'a>,
+          pub oracle: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: SwapInstructionArgs,
   }
 
 impl<'a, 'b> SwapCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: SwapCpiAccounts<'a, 'b>,
               args: SwapInstructionArgs,
       ) -> Self {
@@ -403,15 +415,15 @@ impl<'a, 'b> SwapCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -420,65 +432,65 @@ impl<'a, 'b> SwapCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(11+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_authority.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_owner_account_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_vault_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_owner_account_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_vault_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.tick_array0.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.tick_array1.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.tick_array2.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.oracle.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&SwapInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = SwapInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -499,9 +511,9 @@ impl<'a, 'b> SwapCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -527,7 +539,7 @@ pub struct SwapCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SwapCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(SwapCpiBuilderInstruction {
       __program: program,
               token_program: None,
@@ -551,57 +563,57 @@ impl<'a, 'b> SwapCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program(&mut self, token_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program = Some(token_program);
                     self
     }
       #[inline(always)]
-    pub fn token_authority(&mut self, token_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_authority(&mut self, token_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_authority = Some(token_authority);
                     self
     }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn token_owner_account_a(&mut self, token_owner_account_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_owner_account_a(&mut self, token_owner_account_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_owner_account_a = Some(token_owner_account_a);
                     self
     }
       #[inline(always)]
-    pub fn token_vault_a(&mut self, token_vault_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_vault_a(&mut self, token_vault_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_vault_a = Some(token_vault_a);
                     self
     }
       #[inline(always)]
-    pub fn token_owner_account_b(&mut self, token_owner_account_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_owner_account_b(&mut self, token_owner_account_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_owner_account_b = Some(token_owner_account_b);
                     self
     }
       #[inline(always)]
-    pub fn token_vault_b(&mut self, token_vault_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_vault_b(&mut self, token_vault_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_vault_b = Some(token_vault_b);
                     self
     }
       #[inline(always)]
-    pub fn tick_array0(&mut self, tick_array0: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn tick_array0(&mut self, tick_array0: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.tick_array0 = Some(tick_array0);
                     self
     }
       #[inline(always)]
-    pub fn tick_array1(&mut self, tick_array1: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn tick_array1(&mut self, tick_array1: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.tick_array1 = Some(tick_array1);
                     self
     }
       #[inline(always)]
-    pub fn tick_array2(&mut self, tick_array2: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn tick_array2(&mut self, tick_array2: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.tick_array2 = Some(tick_array2);
                     self
     }
       #[inline(always)]
-    pub fn oracle(&mut self, oracle: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn oracle(&mut self, oracle: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.oracle = Some(oracle);
                     self
     }
@@ -632,7 +644,7 @@ impl<'a, 'b> SwapCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -641,17 +653,17 @@ impl<'a, 'b> SwapCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = SwapInstructionArgs {
                                                               amount: self.instruction.amount.clone().expect("amount is not set"),
                                                                   other_amount_threshold: self.instruction.other_amount_threshold.clone().expect("other_amount_threshold is not set"),
@@ -691,24 +703,24 @@ impl<'a, 'b> SwapCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct SwapCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_owner_account_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_vault_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_owner_account_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_vault_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                tick_array0: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                tick_array1: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                tick_array2: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+                whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_owner_account_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_vault_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_owner_account_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_vault_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                tick_array0: Option<&'b solana_account_info::AccountInfo<'a>>,
+                tick_array1: Option<&'b solana_account_info::AccountInfo<'a>>,
+                tick_array2: Option<&'b solana_account_info::AccountInfo<'a>>,
+                oracle: Option<&'b solana_account_info::AccountInfo<'a>>,
                         amount: Option<u64>,
                 other_amount_threshold: Option<u64>,
                 sqrt_price_limit: Option<u128>,
                 amount_specified_is_input: Option<bool>,
                 a_to_b: Option<bool>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

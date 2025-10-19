@@ -8,65 +8,67 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const CLOSE_POSITION_DISCRIMINATOR: [u8; 8] = [123, 134, 81, 0, 49, 68, 98, 98];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct ClosePosition {
       
               
-          pub position_authority: solana_program::pubkey::Pubkey,
+          pub position_authority: solana_pubkey::Pubkey,
           
               
-          pub receiver: solana_program::pubkey::Pubkey,
+          pub receiver: solana_pubkey::Pubkey,
           
               
-          pub position: solana_program::pubkey::Pubkey,
+          pub position: solana_pubkey::Pubkey,
           
               
-          pub position_mint: solana_program::pubkey::Pubkey,
+          pub position_mint: solana_pubkey::Pubkey,
           
               
-          pub position_token_account: solana_program::pubkey::Pubkey,
+          pub position_token_account: solana_pubkey::Pubkey,
           
               
-          pub token_program: solana_program::pubkey::Pubkey,
+          pub token_program: solana_pubkey::Pubkey,
       }
 
 impl ClosePosition {
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(&[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(6+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.position_authority,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.receiver,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.position,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.position_mint,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.position_token_account,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let data = borsh::to_vec(&ClosePositionInstructionData::new()).unwrap();
+    let data = ClosePositionInstructionData::new().try_to_vec().unwrap();
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -86,7 +88,11 @@ impl ClosePositionInstructionData {
                         discriminator: [123, 134, 81, 0, 49, 68, 98, 98],
                   }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for ClosePositionInstructionData {
   fn default() -> Self {
@@ -108,13 +114,13 @@ impl Default for ClosePositionInstructionData {
                 ///   5. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 #[derive(Clone, Debug, Default)]
 pub struct ClosePositionBuilder {
-            position_authority: Option<solana_program::pubkey::Pubkey>,
-                receiver: Option<solana_program::pubkey::Pubkey>,
-                position: Option<solana_program::pubkey::Pubkey>,
-                position_mint: Option<solana_program::pubkey::Pubkey>,
-                position_token_account: Option<solana_program::pubkey::Pubkey>,
-                token_program: Option<solana_program::pubkey::Pubkey>,
-                __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+            position_authority: Option<solana_pubkey::Pubkey>,
+                receiver: Option<solana_pubkey::Pubkey>,
+                position: Option<solana_pubkey::Pubkey>,
+                position_mint: Option<solana_pubkey::Pubkey>,
+                position_token_account: Option<solana_pubkey::Pubkey>,
+                token_program: Option<solana_pubkey::Pubkey>,
+                __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl ClosePositionBuilder {
@@ -122,57 +128,57 @@ impl ClosePositionBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn position_authority(&mut self, position_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position_authority(&mut self, position_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.position_authority = Some(position_authority);
                     self
     }
             #[inline(always)]
-    pub fn receiver(&mut self, receiver: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn receiver(&mut self, receiver: solana_pubkey::Pubkey) -> &mut Self {
                         self.receiver = Some(receiver);
                     self
     }
             #[inline(always)]
-    pub fn position(&mut self, position: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position(&mut self, position: solana_pubkey::Pubkey) -> &mut Self {
                         self.position = Some(position);
                     self
     }
             #[inline(always)]
-    pub fn position_mint(&mut self, position_mint: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position_mint(&mut self, position_mint: solana_pubkey::Pubkey) -> &mut Self {
                         self.position_mint = Some(position_mint);
                     self
     }
             #[inline(always)]
-    pub fn position_token_account(&mut self, position_token_account: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn position_token_account(&mut self, position_token_account: solana_pubkey::Pubkey) -> &mut Self {
                         self.position_token_account = Some(position_token_account);
                     self
     }
             /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
 #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program = Some(token_program);
                     self
     }
             /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = ClosePosition {
                               position_authority: self.position_authority.expect("position_authority is not set"),
                                         receiver: self.receiver.expect("receiver is not set"),
                                         position: self.position.expect("position is not set"),
                                         position_mint: self.position_mint.expect("position_mint is not set"),
                                         position_token_account: self.position_token_account.expect("position_token_account is not set"),
-                                        token_program: self.token_program.unwrap_or(solana_program::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
+                                        token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
                       };
     
     accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -183,51 +189,51 @@ impl ClosePositionBuilder {
   pub struct ClosePositionCpiAccounts<'a, 'b> {
           
                     
-              pub position_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position_authority: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub receiver: &'b solana_program::account_info::AccountInfo<'a>,
+              pub receiver: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub position: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub position_mint: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position_mint: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub position_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+              pub position_token_account: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `close_position` CPI instruction.
 pub struct ClosePositionCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub position_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position_authority: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub receiver: &'b solana_program::account_info::AccountInfo<'a>,
+          pub receiver: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub position: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub position_mint: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position_mint: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub position_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+          pub position_token_account: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program: &'b solana_account_info::AccountInfo<'a>,
         }
 
 impl<'a, 'b> ClosePositionCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: ClosePositionCpiAccounts<'a, 'b>,
           ) -> Self {
     Self {
@@ -241,15 +247,15 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
                 }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -258,43 +264,43 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(6+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.position_authority.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.receiver.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.position.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.position_mint.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.position_token_account.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let data = borsh::to_vec(&ClosePositionInstructionData::new()).unwrap();
+    let data = ClosePositionInstructionData::new().try_to_vec().unwrap();
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -310,9 +316,9 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -333,7 +339,7 @@ pub struct ClosePositionCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(ClosePositionCpiBuilderInstruction {
       __program: program,
               position_authority: None,
@@ -347,38 +353,38 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn position_authority(&mut self, position_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position_authority(&mut self, position_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position_authority = Some(position_authority);
                     self
     }
       #[inline(always)]
-    pub fn receiver(&mut self, receiver: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn receiver(&mut self, receiver: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.receiver = Some(receiver);
                     self
     }
       #[inline(always)]
-    pub fn position(&mut self, position: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position(&mut self, position: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position = Some(position);
                     self
     }
       #[inline(always)]
-    pub fn position_mint(&mut self, position_mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position_mint(&mut self, position_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position_mint = Some(position_mint);
                     self
     }
       #[inline(always)]
-    pub fn position_token_account(&mut self, position_token_account: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn position_token_account(&mut self, position_token_account: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.position_token_account = Some(position_token_account);
                     self
     }
       #[inline(always)]
-    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program(&mut self, token_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program = Some(token_program);
                     self
     }
             /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -387,17 +393,17 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = ClosePositionCpi {
         __program: self.instruction.__program,
                   
@@ -419,14 +425,14 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct ClosePositionCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                position_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                position_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            position_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+                receiver: Option<&'b solana_account_info::AccountInfo<'a>>,
+                position: Option<&'b solana_account_info::AccountInfo<'a>>,
+                position_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
+                position_token_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
                 /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

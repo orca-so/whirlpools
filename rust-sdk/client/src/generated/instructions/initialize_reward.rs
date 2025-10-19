@@ -8,81 +8,83 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const INITIALIZE_REWARD_DISCRIMINATOR: [u8; 8] = [95, 135, 192, 196, 242, 129, 230, 68];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct InitializeReward {
       
               
-          pub reward_authority: solana_program::pubkey::Pubkey,
+          pub reward_authority: solana_pubkey::Pubkey,
           
               
-          pub funder: solana_program::pubkey::Pubkey,
+          pub funder: solana_pubkey::Pubkey,
           
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub reward_mint: solana_program::pubkey::Pubkey,
+          pub reward_mint: solana_pubkey::Pubkey,
           
               
-          pub reward_vault: solana_program::pubkey::Pubkey,
+          pub reward_vault: solana_pubkey::Pubkey,
           
               
-          pub token_program: solana_program::pubkey::Pubkey,
+          pub token_program: solana_pubkey::Pubkey,
           
               
-          pub system_program: solana_program::pubkey::Pubkey,
+          pub system_program: solana_pubkey::Pubkey,
           
               
-          pub rent: solana_program::pubkey::Pubkey,
+          pub rent: solana_pubkey::Pubkey,
       }
 
 impl InitializeReward {
-  pub fn instruction(&self, args: InitializeRewardInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: InitializeRewardInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: InitializeRewardInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: InitializeRewardInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(8+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.reward_authority,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.funder,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.reward_mint,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.reward_vault,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.rent,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&InitializeRewardInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = InitializeRewardInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -102,7 +104,11 @@ impl InitializeRewardInstructionData {
                         discriminator: [95, 135, 192, 196, 242, 129, 230, 68],
                                 }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for InitializeRewardInstructionData {
   fn default() -> Self {
@@ -115,6 +121,12 @@ impl Default for InitializeRewardInstructionData {
  pub struct InitializeRewardInstructionArgs {
                   pub reward_index: u8,
       }
+
+impl InitializeRewardInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
 
 
 /// Instruction builder for `InitializeReward`.
@@ -131,16 +143,16 @@ impl Default for InitializeRewardInstructionData {
                 ///   7. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializeRewardBuilder {
-            reward_authority: Option<solana_program::pubkey::Pubkey>,
-                funder: Option<solana_program::pubkey::Pubkey>,
-                whirlpool: Option<solana_program::pubkey::Pubkey>,
-                reward_mint: Option<solana_program::pubkey::Pubkey>,
-                reward_vault: Option<solana_program::pubkey::Pubkey>,
-                token_program: Option<solana_program::pubkey::Pubkey>,
-                system_program: Option<solana_program::pubkey::Pubkey>,
-                rent: Option<solana_program::pubkey::Pubkey>,
+            reward_authority: Option<solana_pubkey::Pubkey>,
+                funder: Option<solana_pubkey::Pubkey>,
+                whirlpool: Option<solana_pubkey::Pubkey>,
+                reward_mint: Option<solana_pubkey::Pubkey>,
+                reward_vault: Option<solana_pubkey::Pubkey>,
+                token_program: Option<solana_pubkey::Pubkey>,
+                system_program: Option<solana_pubkey::Pubkey>,
+                rent: Option<solana_pubkey::Pubkey>,
                         reward_index: Option<u8>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InitializeRewardBuilder {
@@ -148,45 +160,45 @@ impl InitializeRewardBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn reward_authority(&mut self, reward_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn reward_authority(&mut self, reward_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.reward_authority = Some(reward_authority);
                     self
     }
             #[inline(always)]
-    pub fn funder(&mut self, funder: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn funder(&mut self, funder: solana_pubkey::Pubkey) -> &mut Self {
                         self.funder = Some(funder);
                     self
     }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
             #[inline(always)]
-    pub fn reward_mint(&mut self, reward_mint: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn reward_mint(&mut self, reward_mint: solana_pubkey::Pubkey) -> &mut Self {
                         self.reward_mint = Some(reward_mint);
                     self
     }
             #[inline(always)]
-    pub fn reward_vault(&mut self, reward_vault: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn reward_vault(&mut self, reward_vault: solana_pubkey::Pubkey) -> &mut Self {
                         self.reward_vault = Some(reward_vault);
                     self
     }
             /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
 #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program = Some(token_program);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.system_program = Some(system_program);
                     self
     }
             /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
 #[inline(always)]
-    pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn rent(&mut self, rent: solana_pubkey::Pubkey) -> &mut Self {
                         self.rent = Some(rent);
                     self
     }
@@ -197,27 +209,27 @@ impl InitializeRewardBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = InitializeReward {
                               reward_authority: self.reward_authority.expect("reward_authority is not set"),
                                         funder: self.funder.expect("funder is not set"),
                                         whirlpool: self.whirlpool.expect("whirlpool is not set"),
                                         reward_mint: self.reward_mint.expect("reward_mint is not set"),
                                         reward_vault: self.reward_vault.expect("reward_vault is not set"),
-                                        token_program: self.token_program.unwrap_or(solana_program::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
-                                        system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-                                        rent: self.rent.unwrap_or(solana_program::pubkey!("SysvarRent111111111111111111111111111111111")),
+                                        token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
+                                        system_program: self.system_program.unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                                        rent: self.rent.unwrap_or(solana_pubkey::pubkey!("SysvarRent111111111111111111111111111111111")),
                       };
           let args = InitializeRewardInstructionArgs {
                                                               reward_index: self.reward_index.clone().expect("reward_index is not set"),
@@ -231,65 +243,65 @@ impl InitializeRewardBuilder {
   pub struct InitializeRewardCpiAccounts<'a, 'b> {
           
                     
-              pub reward_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub reward_authority: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+              pub funder: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
+              pub reward_mint: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub reward_vault: &'b solana_program::account_info::AccountInfo<'a>,
+              pub reward_vault: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub system_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub rent: &'b solana_program::account_info::AccountInfo<'a>,
+              pub rent: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `initialize_reward` CPI instruction.
 pub struct InitializeRewardCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub reward_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub reward_authority: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+          pub funder: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
+          pub reward_mint: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub reward_vault: &'b solana_program::account_info::AccountInfo<'a>,
+          pub reward_vault: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub system_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub rent: &'b solana_program::account_info::AccountInfo<'a>,
+          pub rent: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: InitializeRewardInstructionArgs,
   }
 
 impl<'a, 'b> InitializeRewardCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: InitializeRewardCpiAccounts<'a, 'b>,
               args: InitializeRewardInstructionArgs,
       ) -> Self {
@@ -307,15 +319,15 @@ impl<'a, 'b> InitializeRewardCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -324,53 +336,53 @@ impl<'a, 'b> InitializeRewardCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(8+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.reward_authority.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.funder.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.reward_mint.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.reward_vault.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.rent.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&InitializeRewardInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = InitializeRewardInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -388,9 +400,9 @@ impl<'a, 'b> InitializeRewardCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -413,7 +425,7 @@ pub struct InitializeRewardCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> InitializeRewardCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(InitializeRewardCpiBuilderInstruction {
       __program: program,
               reward_authority: None,
@@ -430,42 +442,42 @@ impl<'a, 'b> InitializeRewardCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn reward_authority(&mut self, reward_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn reward_authority(&mut self, reward_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.reward_authority = Some(reward_authority);
                     self
     }
       #[inline(always)]
-    pub fn funder(&mut self, funder: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn funder(&mut self, funder: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.funder = Some(funder);
                     self
     }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn reward_mint(&mut self, reward_mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn reward_mint(&mut self, reward_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.reward_mint = Some(reward_mint);
                     self
     }
       #[inline(always)]
-    pub fn reward_vault(&mut self, reward_vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn reward_vault(&mut self, reward_vault: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.reward_vault = Some(reward_vault);
                     self
     }
       #[inline(always)]
-    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program(&mut self, token_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program = Some(token_program);
                     self
     }
       #[inline(always)]
-    pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn system_program(&mut self, system_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
       #[inline(always)]
-    pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn rent(&mut self, rent: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.rent = Some(rent);
                     self
     }
@@ -476,7 +488,7 @@ impl<'a, 'b> InitializeRewardCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -485,17 +497,17 @@ impl<'a, 'b> InitializeRewardCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = InitializeRewardInstructionArgs {
                                                               reward_index: self.instruction.reward_index.clone().expect("reward_index is not set"),
                                     };
@@ -525,17 +537,17 @@ impl<'a, 'b> InitializeRewardCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct InitializeRewardCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            reward_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                funder: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                reward_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                reward_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            reward_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+                funder: Option<&'b solana_account_info::AccountInfo<'a>>,
+                whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                reward_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
+                reward_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                rent: Option<&'b solana_account_info::AccountInfo<'a>>,
                         reward_index: Option<u8>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

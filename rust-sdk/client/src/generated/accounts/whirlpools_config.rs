@@ -5,7 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
@@ -25,6 +25,8 @@ pub feature_flags: u16,
 }
 
 
+pub const WHIRLPOOLS_CONFIG_DISCRIMINATOR: [u8; 8] = [157, 20, 49, 224, 217, 87, 193, 254];
+
 impl WhirlpoolsConfig {
       pub const LEN: usize = 108;
   
@@ -37,10 +39,10 @@ impl WhirlpoolsConfig {
   }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for WhirlpoolsConfig {
+impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for WhirlpoolsConfig {
   type Error = std::io::Error;
 
-  fn try_from(account_info: &solana_program::account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
+  fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
       let mut data: &[u8] = &(*account_info.data).borrow();
       Self::deserialize(&mut data)
   }
@@ -49,7 +51,7 @@ impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for WhirlpoolsC
 #[cfg(feature = "fetch")]
 pub fn fetch_whirlpools_config(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_program::pubkey::Pubkey,
+  address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::DecodedAccount<WhirlpoolsConfig>, std::io::Error> {
   let accounts = fetch_all_whirlpools_config(rpc, &[*address])?;
   Ok(accounts[0].clone())
@@ -58,7 +60,7 @@ pub fn fetch_whirlpools_config(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_whirlpools_config(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_program::pubkey::Pubkey],
+  addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::DecodedAccount<WhirlpoolsConfig>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -76,7 +78,7 @@ pub fn fetch_all_whirlpools_config(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_whirlpools_config(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_program::pubkey::Pubkey,
+  address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::MaybeAccount<WhirlpoolsConfig>, std::io::Error> {
     let accounts = fetch_all_maybe_whirlpools_config(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -85,7 +87,7 @@ pub fn fetch_maybe_whirlpools_config(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_whirlpools_config(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_program::pubkey::Pubkey],
+  addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::MaybeAccount<WhirlpoolsConfig>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -125,6 +127,6 @@ pub fn fetch_all_maybe_whirlpools_config(
   
   #[cfg(feature = "anchor-idl-build")]
   impl anchor_lang::Discriminator for WhirlpoolsConfig {
-    const DISCRIMINATOR: [u8; 8] = [0; 8];
+    const DISCRIMINATOR: &[u8] = &[0; 8];
   }
 

@@ -8,46 +8,48 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const SET_FEE_RATE_BY_DELEGATED_FEE_AUTHORITY_DISCRIMINATOR: [u8; 8] = [121, 121, 54, 114, 131, 230, 162, 104];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct SetFeeRateByDelegatedFeeAuthority {
       
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub adaptive_fee_tier: solana_program::pubkey::Pubkey,
+          pub adaptive_fee_tier: solana_pubkey::Pubkey,
           
               
-          pub delegated_fee_authority: solana_program::pubkey::Pubkey,
+          pub delegated_fee_authority: solana_pubkey::Pubkey,
       }
 
 impl SetFeeRateByDelegatedFeeAuthority {
-  pub fn instruction(&self, args: SetFeeRateByDelegatedFeeAuthorityInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: SetFeeRateByDelegatedFeeAuthorityInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: SetFeeRateByDelegatedFeeAuthorityInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: SetFeeRateByDelegatedFeeAuthorityInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(3+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new(
+                            accounts.push(solana_instruction::AccountMeta::new(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.adaptive_fee_tier,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.delegated_fee_authority,
             true
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&SetFeeRateByDelegatedFeeAuthorityInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = SetFeeRateByDelegatedFeeAuthorityInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -67,7 +69,11 @@ impl SetFeeRateByDelegatedFeeAuthorityInstructionData {
                         discriminator: [121, 121, 54, 114, 131, 230, 162, 104],
                                 }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for SetFeeRateByDelegatedFeeAuthorityInstructionData {
   fn default() -> Self {
@@ -81,6 +87,12 @@ impl Default for SetFeeRateByDelegatedFeeAuthorityInstructionData {
                   pub fee_rate: u16,
       }
 
+impl SetFeeRateByDelegatedFeeAuthorityInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
+
 
 /// Instruction builder for `SetFeeRateByDelegatedFeeAuthority`.
 ///
@@ -91,11 +103,11 @@ impl Default for SetFeeRateByDelegatedFeeAuthorityInstructionData {
                 ///   2. `[signer]` delegated_fee_authority
 #[derive(Clone, Debug, Default)]
 pub struct SetFeeRateByDelegatedFeeAuthorityBuilder {
-            whirlpool: Option<solana_program::pubkey::Pubkey>,
-                adaptive_fee_tier: Option<solana_program::pubkey::Pubkey>,
-                delegated_fee_authority: Option<solana_program::pubkey::Pubkey>,
+            whirlpool: Option<solana_pubkey::Pubkey>,
+                adaptive_fee_tier: Option<solana_pubkey::Pubkey>,
+                delegated_fee_authority: Option<solana_pubkey::Pubkey>,
                         fee_rate: Option<u16>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SetFeeRateByDelegatedFeeAuthorityBuilder {
@@ -103,17 +115,17 @@ impl SetFeeRateByDelegatedFeeAuthorityBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
             #[inline(always)]
-    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: solana_pubkey::Pubkey) -> &mut Self {
                         self.adaptive_fee_tier = Some(adaptive_fee_tier);
                     self
     }
             #[inline(always)]
-    pub fn delegated_fee_authority(&mut self, delegated_fee_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn delegated_fee_authority(&mut self, delegated_fee_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.delegated_fee_authority = Some(delegated_fee_authority);
                     self
     }
@@ -124,18 +136,18 @@ impl SetFeeRateByDelegatedFeeAuthorityBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = SetFeeRateByDelegatedFeeAuthority {
                               whirlpool: self.whirlpool.expect("whirlpool is not set"),
                                         adaptive_fee_tier: self.adaptive_fee_tier.expect("adaptive_fee_tier is not set"),
@@ -153,35 +165,35 @@ impl SetFeeRateByDelegatedFeeAuthorityBuilder {
   pub struct SetFeeRateByDelegatedFeeAuthorityCpiAccounts<'a, 'b> {
           
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>,
+              pub adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub delegated_fee_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub delegated_fee_authority: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `set_fee_rate_by_delegated_fee_authority` CPI instruction.
 pub struct SetFeeRateByDelegatedFeeAuthorityCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>,
+          pub adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub delegated_fee_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub delegated_fee_authority: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: SetFeeRateByDelegatedFeeAuthorityInstructionArgs,
   }
 
 impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: SetFeeRateByDelegatedFeeAuthorityCpiAccounts<'a, 'b>,
               args: SetFeeRateByDelegatedFeeAuthorityInstructionArgs,
       ) -> Self {
@@ -194,15 +206,15 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -211,33 +223,33 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(3+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new(
+                            accounts.push(solana_instruction::AccountMeta::new(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.adaptive_fee_tier.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.delegated_fee_authority.key,
             true
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&SetFeeRateByDelegatedFeeAuthorityInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = SetFeeRateByDelegatedFeeAuthorityInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -250,9 +262,9 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -270,7 +282,7 @@ pub struct SetFeeRateByDelegatedFeeAuthorityCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(SetFeeRateByDelegatedFeeAuthorityCpiBuilderInstruction {
       __program: program,
               whirlpool: None,
@@ -282,17 +294,17 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.adaptive_fee_tier = Some(adaptive_fee_tier);
                     self
     }
       #[inline(always)]
-    pub fn delegated_fee_authority(&mut self, delegated_fee_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn delegated_fee_authority(&mut self, delegated_fee_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.delegated_fee_authority = Some(delegated_fee_authority);
                     self
     }
@@ -303,7 +315,7 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -312,17 +324,17 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = SetFeeRateByDelegatedFeeAuthorityInstructionArgs {
                                                               fee_rate: self.instruction.fee_rate.clone().expect("fee_rate is not set"),
                                     };
@@ -342,12 +354,12 @@ impl<'a, 'b> SetFeeRateByDelegatedFeeAuthorityCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct SetFeeRateByDelegatedFeeAuthorityCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                adaptive_fee_tier: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                delegated_fee_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                adaptive_fee_tier: Option<&'b solana_account_info::AccountInfo<'a>>,
+                delegated_fee_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
                         fee_rate: Option<u16>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

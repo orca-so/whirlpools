@@ -1,1 +1,0 @@
-pub const POSITION_BUNDLE_DISCRIMINATOR: &[u8] = &[129, 169, 175, 65, 185, 95, 32, 100];

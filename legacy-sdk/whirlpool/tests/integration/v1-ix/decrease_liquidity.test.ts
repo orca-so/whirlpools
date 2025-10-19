@@ -1588,7 +1588,7 @@ describe("decrease_liquidity", () => {
     let eventVerified = false;
     let detectedSignature = null;
     const listener = ctx.program.addEventListener(
-      "LiquidityDecreased",
+      "liquidityDecreased",
       (event, _slot, signature) => {
         detectedSignature = signature;
         // verify

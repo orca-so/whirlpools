@@ -2118,7 +2118,7 @@ describe("two_hop_swap_v2", () => {
           let detectedSignatureOne = null;
           let detectedSignatureTwo = null;
           const listener = ctx.program.addEventListener(
-            "Traded",
+            "traded",
             (event, _slot, signature) => {
               // verify
               if (event.whirlpool.equals(whirlpoolOneKey)) {

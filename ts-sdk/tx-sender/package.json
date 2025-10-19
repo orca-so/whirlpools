@@ -29,15 +29,15 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@solana-program/address-lookup-table": "^0.7.0",
-    "@solana-program/compute-budget": "^0.7.0",
-    "@solana-program/system": "^0.7.0"
+    "@solana-program/address-lookup-table": "^0.8.0",
+    "@solana-program/compute-budget": "^0.9.0",
+    "@solana-program/system": "^0.8.0"
   },
   "peerDependencies": {
-    "@solana/kit": "^2.1.0"
+    "@solana/kit": "^3.0.3"
   },
   "devDependencies": {
-    "@solana/kit": "^2.1.0",
+    "@solana/kit": "^3.0.3",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3"
   },

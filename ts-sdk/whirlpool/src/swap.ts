@@ -5,7 +5,7 @@ import type {
   GetEpochInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
-  IInstruction,
+  Instruction,
   Rpc,
   TransactionSigner,
 } from "@solana/kit";
@@ -84,7 +84,7 @@ export type SwapQuote<T extends SwapParams> = T extends ExactInParams
  */
 export type SwapInstructions<T extends SwapParams> = {
   /** The list of instructions needed to perform the swap. */
-  instructions: IInstruction[];
+  instructions: Instruction[];
 
   /** The swap quote, which includes information about the amounts involved in the swap. */
   quote: SwapQuote<T>;
@@ -305,7 +305,7 @@ export async function swapInstructions<T extends SwapParams>(
       [whirlpool.data.tokenMintB]: aToB ? 0n : maxInAmount,
     });
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(...createInstructions);
 

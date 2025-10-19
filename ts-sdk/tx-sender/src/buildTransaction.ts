@@ -1,11 +1,9 @@
 import type {
-  IInstruction,
+  Instruction,
   TransactionSigner,
   Address,
   Rpc,
   SolanaRpcApi,
-  FullySignedTransaction,
-  TransactionWithLifetime,
 } from "@solana/kit";
 import {
   compressTransactionMessageUsingAddressLookupTables,
@@ -26,7 +24,7 @@ import { getRpcConfig } from "./config";
 /**
  * Builds and signs a transaction from the given instructions and configuration.
  *
- * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
+ * @param {Instruction[]} instructions - Array of instructions to include in the transaction
  * @param {TransactionSigner} feePayer - The signer that will pay for the transaction
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
  *
@@ -41,10 +39,10 @@ import { getRpcConfig } from "./config";
  * );
  */
 export async function buildTransaction(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   feePayer: TransactionSigner | Address,
   lookupTableAddresses?: (Address | string)[],
-): Promise<Readonly<FullySignedTransaction & TransactionWithLifetime>> {
+) {
   return buildTransactionMessage(
     instructions,
     !("address" in feePayer) ? createNoopSigner(feePayer) : feePayer,
@@ -53,7 +51,7 @@ export async function buildTransaction(
 }
 
 async function buildTransactionMessage(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   signer: TransactionSigner,
   lookupTableAddresses?: Address[],
 ) {
@@ -89,7 +87,7 @@ async function buildTransactionMessage(
 }
 
 async function prepareTransactionMessage(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   rpc: Rpc<SolanaRpcApi>,
   signer: TransactionSigner,
 ) {

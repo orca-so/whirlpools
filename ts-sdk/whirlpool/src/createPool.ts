@@ -12,7 +12,7 @@ import type {
   Address,
   GetAccountInfoApi,
   GetMultipleAccountsApi,
-  IInstruction,
+  Instruction,
   Lamports,
   Rpc,
   TransactionSigner,
@@ -42,7 +42,7 @@ import { wrapFunctionWithExecution } from "./actionHelpers";
  */
 export type CreatePoolInstructions = {
   /** The list of instructions needed to create the pool. */
-  instructions: IInstruction[];
+  instructions: Instruction[];
 
   /** The estimated rent exemption cost for initializing the pool, in lamports. */
   initializationCost: Lamports;
@@ -155,7 +155,7 @@ export async function createConcentratedLiquidityPoolInstructions(
     orderMints(tokenMintA, tokenMintB)[0] === tokenMintA,
     "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)",
   );
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   const rent = await fetchSysvarRent(rpc);
   let nonRefundableRent: bigint = 0n;

@@ -1,14 +1,16 @@
 import { getRpcConfig } from "./config";
 import type {
   Address,
-  IInstruction,
-  KeyPairSigner,
+  Instruction,
   FullySignedTransaction,
   Signature,
   Commitment,
+  Transaction,
+  TransactionWithLifetime,
+  TransactionSigner,
 } from "@solana/kit";
 import {
-  assertTransactionIsFullySigned,
+  assertIsFullySignedTransaction,
   getBase64EncodedWireTransaction,
   getBase58Decoder,
 } from "@solana/kit";
@@ -18,8 +20,8 @@ import { buildTransaction } from "./buildTransaction";
 /**
  * Builds and sends a transaction with the given instructions, signers, and commitment level.
  *
- * @param {IInstruction[]} instructions - Array of instructions to include in the transaction.
- * @param {KeyPairSigner} payer - The fee payer for the transaction.
+ * @param {Instruction[]} instructions - Array of instructions to include in the transaction.
+ * @param {TransactionSigner} payer - The fee payer for the transaction.
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use.
  * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
@@ -38,13 +40,13 @@ import { buildTransaction } from "./buildTransaction";
  * ```
  */
 export async function buildAndSendTransaction(
-  instructions: IInstruction[],
-  payer: KeyPairSigner,
+  instructions: Instruction[],
+  payer: TransactionSigner,
   lookupTableAddresses?: (Address | string)[],
   commitment: Commitment = "confirmed",
 ) {
   const tx = await buildTransaction(instructions, payer, lookupTableAddresses);
-  assertTransactionIsFullySigned(tx);
+  assertIsFullySignedTransaction(tx);
   return sendTransaction(tx, commitment);
 }
 
@@ -60,7 +62,7 @@ export async function buildAndSendTransaction(
  *
  * @example
  * ```ts
- * assertTransactionIsFullySigned(signedTransaction);
+ * assertIsFullySignedTransaction(signedTransaction);
  *
  * const signature = await sendTransaction(
  *   signedTransaction,
@@ -69,7 +71,7 @@ export async function buildAndSendTransaction(
  * ```
  */
 export async function sendTransaction(
-  transaction: FullySignedTransaction,
+  transaction: Transaction & FullySignedTransaction & TransactionWithLifetime,
   commitment: Commitment = "confirmed",
 ): Promise<Signature> {
   const { rpcUrl } = getRpcConfig();
@@ -121,7 +123,7 @@ export async function sendTransaction(
   throw new Error("Transaction expired");
 }
 
-function getTxHash(transaction: FullySignedTransaction) {
+function getTxHash(transaction: Transaction & FullySignedTransaction) {
   const [signature] = Object.values(transaction.signatures);
   const txHash = getBase58Decoder().decode(signature!) as Signature;
   return txHash;

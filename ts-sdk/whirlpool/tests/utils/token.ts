@@ -11,7 +11,7 @@ import {
   getMintToInstruction,
   getSyncNativeInstruction,
 } from "@solana-program/token";
-import type { Address, IInstruction } from "@solana/kit";
+import type { Address, Instruction } from "@solana/kit";
 import { signer, sendTransaction } from "./mockRpc";
 import { NATIVE_MINT } from "../../src/token";
 import { getNextKeypair } from "./keypair";
@@ -26,7 +26,7 @@ export async function setupAta(
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getCreateAssociatedTokenIdempotentInstruction({
@@ -73,7 +73,7 @@ export async function setupMint(
   config: { decimals?: number } = {},
 ): Promise<Address> {
   const keypair = getNextKeypair();
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getCreateAccountInstruction({

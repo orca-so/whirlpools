@@ -35,7 +35,7 @@ import type {
   GetEpochInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
-  IInstruction,
+  Instruction,
   Rpc,
   TransactionSigner,
 } from "@solana/kit";
@@ -86,7 +86,7 @@ export type DecreaseLiquidityInstructions = {
   quote: DecreaseLiquidityQuote;
 
   /** The list of instructions required to decrease liquidity. */
-  instructions: IInstruction[];
+  instructions: Instruction[];
 };
 
 function getDecreaseLiquidityQuote(
@@ -199,7 +199,7 @@ export async function decreaseLiquidityInstructions(
     transferFeeA,
     transferFeeB,
   );
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   const lowerTickArrayStartIndex = getTickArrayStartTickIndex(
     position.data.tickLowerIndex,
@@ -445,7 +445,7 @@ export async function closePositionInstructions(
       Array.from(requiredMints),
     );
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
   instructions.push(...createInstructions);
 
   if (quote.liquidityDelta > 0n) {

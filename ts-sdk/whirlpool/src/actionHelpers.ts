@@ -2,7 +2,7 @@ import {
   address,
   createNoopSigner,
   getBase64EncodedWireTransaction,
-  type IInstruction,
+  type Instruction,
   type Rpc,
   type Signature,
   type SolanaRpcApi,
@@ -24,7 +24,7 @@ export function wrapFunctionWithExecution<T extends unknown[], R>(
   instructionFn: (
     rpc: Rpc<SolanaRpcApi>,
     ...params: [...T, TransactionSigner]
-  ) => Promise<R & { instructions: IInstruction[] }>,
+  ) => Promise<R & { instructions: Instruction[] }>,
 ): (...params: T) => Promise<R & { callback: () => Promise<Signature> }> {
   return async (...params: T) => {
     const { rpcUrl } = getRpcConfig();
@@ -47,8 +47,8 @@ export function wrapFunctionWithExecution<T extends unknown[], R>(
  * @returns True if adding instructions would exceed size limit, false otherwise
  */
 export async function wouldExceedTransactionSize(
-  currentInstructions: IInstruction[],
-  instructionsToAdd: IInstruction[],
+  currentInstructions: Instruction[],
+  instructionsToAdd: Instruction[],
 ): Promise<boolean> {
   const noopSginer = createNoopSigner(
     address("11111111111111111111111111111111"),

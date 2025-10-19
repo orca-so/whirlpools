@@ -1,5 +1,5 @@
 import type { LockType } from "@orca-so/whirlpools-client";
-import type { Address, IInstruction, TransactionSigner } from "@solana/kit";
+import type { Address, Instruction, TransactionSigner } from "@solana/kit";
 
 import { getLockPositionInstruction } from "@orca-so/whirlpools-client";
 import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
@@ -34,7 +34,7 @@ export type LockPositionParams = {
  */
 export type LockPositionInstructions = {
   /** The list of instructions needed to lock a position. */
-  instructions: IInstruction[];
+  instructions: Instruction[];
 };
 
 /**
@@ -75,7 +75,7 @@ export type LockPositionInstructions = {
 export async function lockPositionInstructions(
   params: LockPositionParams,
 ): Promise<LockPositionInstructions> {
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   instructions.push(
     getLockPositionInstruction({

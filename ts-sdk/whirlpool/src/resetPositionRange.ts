@@ -8,7 +8,7 @@ import type {
   Address,
   GetAccountInfoApi,
   Rpc,
-  IInstruction,
+  Instruction,
   TransactionSigner,
   GetMultipleAccountsApi,
 } from "@solana/kit";
@@ -28,7 +28,7 @@ import {
  * Represents the instructions for resetting a position range.
  */
 export type ResetPositionRageInstructions = {
-  instructions: IInstruction[];
+  instructions: Instruction[];
 };
 
 /**
@@ -73,7 +73,7 @@ export async function resetPositionRangeInstructions(
     "Either supply an authority or set the default funder",
   );
 
-  const instructions: IInstruction[] = [];
+  const instructions: Instruction[] = [];
 
   const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);

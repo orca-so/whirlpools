@@ -1810,7 +1810,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/nodes-from-anchor@npm:^1.1.11":
+"@codama/nodes-from-anchor@npm:^1.2.9":
   version: 1.2.9
   resolution: "@codama/nodes-from-anchor@npm:1.2.9"
   dependencies:
@@ -1844,7 +1844,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-js@npm:^1.2.10":
+"@codama/renderers-js@npm:^1.4.2":
   version: 1.4.3
   resolution: "@codama/renderers-js@npm:1.4.3"
   dependencies:
@@ -1858,7 +1858,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:^1.0.19":
+"@codama/renderers-rust@npm:^1.2.6":
   version: 1.2.7
   resolution: "@codama/renderers-rust@npm:1.2.7"
   dependencies:
@@ -5373,7 +5373,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/kit@npm:^2.1.0":
+"@solana/kit@npm:^2.3.0":
   version: 2.3.0
   resolution: "@solana/kit@npm:2.3.0"
   dependencies:
@@ -5957,22 +5957,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/spl-token@npm:0.4.13":
-  version: 0.4.13
-  resolution: "@solana/spl-token@npm:0.4.13"
-  dependencies:
-    "@solana/buffer-layout": "npm:^4.0.0"
-    "@solana/buffer-layout-utils": "npm:^0.2.0"
-    "@solana/spl-token-group": "npm:^0.0.7"
-    "@solana/spl-token-metadata": "npm:^0.1.6"
-    buffer: "npm:^6.0.3"
-  peerDependencies:
-    "@solana/web3.js": ^1.95.5
-  checksum: 10c0/aaa0b03859c45a8e917e14a8d0703de13ca16cfab31b72685ef148dcd2dc9a6fd37ac8842b1ca9609aea8407d51bf98e69bc7a4f9e2dc86f440b5bd8c0c70bfe
-  languageName: node
-  linkType: hard
-
-"@solana/spl-token@npm:^0.4.13":
+"@solana/spl-token@npm:^0.4.14":
   version: 0.4.14
   resolution: "@solana/spl-token@npm:0.4.14"
   dependencies:
@@ -6009,7 +5994,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/sysvars@npm:2.3.0, @solana/sysvars@npm:^2.1.0":
+"@solana/sysvars@npm:2.3.0":
   version: 2.3.0
   resolution: "@solana/sysvars@npm:2.3.0"
   dependencies:
@@ -6023,7 +6008,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/sysvars@npm:3.0.3":
+"@solana/sysvars@npm:3.0.3, @solana/sysvars@npm:^3.0.3":
   version: 3.0.3
   resolution: "@solana/sysvars@npm:3.0.3"
   dependencies:
@@ -6159,7 +6144,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/web3.js@npm:^1.32.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.69.0, @solana/web3.js@npm:^1.90.0":
+"@solana/web3.js@npm:^1.32.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.69.0, @solana/web3.js@npm:^1.98.4":
   version: 1.98.4
   resolution: "@solana/web3.js@npm:1.98.4"
   dependencies:
@@ -8598,7 +8583,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codama@npm:^1.2.11":
+"codama@npm:^1.3.7":
   version: 1.3.7
   resolution: "codama@npm:1.3.7"
   dependencies:

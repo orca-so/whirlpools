@@ -353,8 +353,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -383,7 +381,7 @@ mod data_layout_tests {
 
         let mut position_data = [0u8; Position::LEN];
         let mut offset = 0;
-        position_data[offset..offset + 8].copy_from_slice(&Position::discriminator());
+        position_data[offset..offset + 8].copy_from_slice(Position::DISCRIMINATOR);
         offset += 8;
         position_data[offset..offset + 32].copy_from_slice(&position_whirlpool.to_bytes());
         offset += 32;

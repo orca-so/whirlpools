@@ -7,6 +7,7 @@ use anchor_spl::token_2022::spl_token_2022::{
     self, extension::ExtensionType, instruction::AuthorityType,
 };
 use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token2022};
+use anchor_spl::token_2022_extensions::spl_token_metadata_interface;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::system_instruction::transfer;
@@ -149,7 +150,8 @@ pub fn initialize_token_metadata_extension<'info>(
     let token_mint_unpacked =
         StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
     let new_account_len = token_mint_unpacked
-        .try_get_new_account_len::<spl_token_metadata_interface::state::TokenMetadata>(&metadata)?;
+        .try_get_new_account_len_for_variable_len_extension::<spl_token_metadata_interface::state::TokenMetadata>(&metadata)?;
+
     let new_rent_exempt_minimum = Rent::get()?.minimum_balance(new_account_len);
     let additional_rent = new_rent_exempt_minimum.saturating_sub(position_mint.lamports());
     drop(token_mint_data); // CPI call will borrow the account data

@@ -106,8 +106,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -121,7 +119,7 @@ mod data_layout_tests {
 
         let mut lock_config_data = [0u8; LockConfig::LEN];
         let mut offset = 0;
-        lock_config_data[offset..offset + 8].copy_from_slice(&LockConfig::discriminator());
+        lock_config_data[offset..offset + 8].copy_from_slice(LockConfig::DISCRIMINATOR);
         offset += 8;
         lock_config_data[offset..offset + 32].copy_from_slice(&lock_config_position.to_bytes());
         offset += 32;

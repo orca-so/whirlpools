@@ -1,6 +1,6 @@
 # Whirlpools
 
-Whirpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
+Whirlpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
 This repository contains the Rust smart contract and SDKs to interact with a deployed program.
 
 The official deployment of the whirlpool contract can be found at the `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` address on:
@@ -15,6 +15,9 @@ The program has been audited several times by different security firms.
 * Jan 28th, 2022 - [Kudelski Security](/.audits/2022-01-28.pdf)
 * May 5th, 2022 - [Neodyme](/.audits/2022-05-05.pdf)
 * Aug 21st, 2024 - [OtterSec](/.audits/2024-08-21.pdf)
+* Feb 28th, 2025 - [Sec3](/.audits/2025-02-28.pdf)
+* Jun 23rd, 2025 - [Sec3](/.audits/2025-06-23.pdf)
+* Aug 22nd, 2025 - [Sec3](/.audits/2025-08-22.pdf)
 
 ## Usage
 
@@ -39,19 +42,27 @@ This monorepo contains all the code needed to build, deploy and interact with th
 
 ### Getting Started
 
-These instructions are for setting up a development environment on a Mac. If you are using a different operating system, you will need to adjust the instructions accordingly.
+#### Automated Setup Script
 
-* Install NodeJS and gcc-12 using `brew install node gcc@12`.
-* Add gcc-12 headers to your cpath using `export CPATH="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"`.
-* Install Rust lang using `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
-* Install the Solana CLI using `curl -sSfL https://release.solana.com/v1.17.22/install | sh`.
-* Add the Solana CLI to your path using `export PATH="/Users/$(whoami)/.local/share/solana/install/active_release/bin:$PATH"`.
-* Install Anchor version manager using `cargo install --git https://github.com/coral-xyz/anchor avm --locked --force`.
-* Install the latest Anchor version using `avm install 0.29.0 && avm use 0.29.0`.
-* Clone this repository using `git clone https://github.com/orca-so/whirlpools`.
-* Install the dependencies using `yarn`.
-* Set up a Solana wallet if you don't have one already (see below).
-* Run one of the commands below to get started such as `yarn build`.
+For a complete development environment setup, use the provided setup script:
+
+```bash
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+```
+
+This script installs all required dependencies and builds the project. It's designed for fresh environments (cloud VMs, containers, new machines) and doesn't check for existing versions. The script also serves as a reference for understanding which dependencies are needed at each stage.
+
+#### Manual Setup
+
+If you prefer manual installation or already have some dependencies:
+
+* Install system dependencies (build tools, Node.js, Rust, Solana CLI, Anchor)
+  * Reference `scripts/setup.sh` for the exact versions and installation steps
+* Clone this repository: `git clone https://github.com/orca-so/whirlpools`
+* Install JavaScript dependencies: `yarn`
+* Build the project: `yarn build`
+* Set up a Solana wallet if needed (see below)
 
 #### Setting up a Solana wallet
 
@@ -65,7 +76,7 @@ These instructions are for setting up a development environment on a Mac. If you
 
 This repository uses NX to manage the Rust and Typescript codebases. This allows us to have a monorepo with multiple packages and share code between them. Dependencies between packages are automatically resolved by NX, so you don't have to worry about managing that yourself.
 
-This repository is split up into sevaral parts. The following is a (non-exhaustive) list of the components and their purpose.
+This repository is split up into several parts. The following is a (non-exhaustive) list of the components and their purpose.
 
 * **`/programs/*`** - Rust programs that are deployed on Solana.
 * **`/ts-sdk/*`** - Typescript SDKs for interacting with the programs.

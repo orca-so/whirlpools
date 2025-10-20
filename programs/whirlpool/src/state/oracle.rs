@@ -481,6 +481,25 @@ impl<'info> OracleAccessor<'info> {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = Oracle::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:Oracle | sha256sum | cut -c 1-16
+        // 8bc283b38cb3e5f4
+        assert_eq!(
+            discriminator,
+            [0x8b, 0xc2, 0x83, 0xb3, 0x8c, 0xb3, 0xe5, 0xf4]
+        );
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use super::*;
 

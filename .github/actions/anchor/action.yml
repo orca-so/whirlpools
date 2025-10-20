@@ -72,7 +72,6 @@ runs:
         else
           echo "${{ inputs.solana-key }}" > ~/.config/solana/id.json
         fi
-        solana airdrop 1 || true
       shell: bash
     - name: Log Installed Tools
       run: |

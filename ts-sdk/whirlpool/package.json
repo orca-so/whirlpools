@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools",
-  "version": "2.0.0",
+  "version": "4.0.0",
   "description": "Orca's high-level typescript sdk to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -24,17 +24,18 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "vitest run tests",
+    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@orca-so/tx-sender": "*",
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
     "@solana-program/memo": "^0.7.0",
     "@solana-program/system": "^0.7.0",
     "@solana-program/token": "^0.5.1",
-    "@solana-program/token-2022": "^0.4.0",
+    "@solana-program/token-2022": "^0.4.2",
     "@solana/sysvars": "^2.1.0"
   },
   "peerDependencies": {
@@ -43,7 +44,8 @@
   "devDependencies": {
     "@solana/kit": "^2.1.0",
     "solana-bankrun": "^0.4.0",
-    "typescript": "^5.8.2"
+    "tsup": "^8.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

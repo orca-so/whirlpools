@@ -1,4 +1,5 @@
-import type { BN, Idl } from "@coral-xyz/anchor";
+import type { Idl } from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { BorshAccountsCoder } from "@coral-xyz/anchor";
 import type { PublicKey } from "@solana/web3.js";
 import WhirlpoolIDL from "../../artifacts/whirlpool.json";
@@ -19,6 +20,7 @@ export enum AccountName {
   WhirlpoolsConfig = "WhirlpoolsConfig",
   Position = "Position",
   TickArray = "TickArray",
+  DynamicTickArray = "DynamicTickArray",
   Whirlpool = "Whirlpool",
   FeeTier = "FeeTier",
   PositionBundle = "PositionBundle",
@@ -53,9 +55,10 @@ export function getAccountSize(accountName: AccountName) {
  * Reserved bytes for each account used for calculating the account size.
  */
 const RESERVED_BYTES: ReservedBytes = {
-  [AccountName.WhirlpoolsConfig]: 2,
+  [AccountName.WhirlpoolsConfig]: 0,
   [AccountName.Position]: 0,
   [AccountName.TickArray]: 0,
+  [AccountName.DynamicTickArray]: 0,
   [AccountName.Whirlpool]: 0,
   [AccountName.FeeTier]: 0,
   [AccountName.PositionBundle]: 64,
@@ -84,8 +87,8 @@ export type WhirlpoolsConfigData = {
   feeAuthority: PublicKey;
   collectProtocolFeesAuthority: PublicKey;
   rewardEmissionsSuperAuthority: PublicKey;
-  defaultFeeRate: number;
   defaultProtocolFeeRate: number;
+  featureFlags: number;
 };
 
 /**
@@ -94,9 +97,9 @@ export type WhirlpoolsConfigData = {
 export type WhirlpoolRewardInfoData = {
   mint: PublicKey;
   vault: PublicKey;
-  authority: PublicKey;
   emissionsPerSecondX64: BN;
   growthGlobalX64: BN;
+  extension: number[];
 };
 
 /**
@@ -145,6 +148,51 @@ export type TickArrayData = {
  */
 export type TickData = {
   initialized: boolean;
+  liquidityNet: BN;
+  liquidityGross: BN;
+  feeGrowthOutsideA: BN;
+  feeGrowthOutsideB: BN;
+  rewardGrowthsOutside: BN[];
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type DynamicTickArrayData = {
+  whirlpool: PublicKey;
+  startTickIndex: number;
+  tickBitmap: BN;
+  ticks: DynamicTick[];
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type DynamicTick =
+  | { uninitialized: object }
+  | { initialized: [DynamicTickData] };
+
+export const toTick = (tick: DynamicTick): TickData => {
+  if ("uninitialized" in tick) {
+    return {
+      initialized: false,
+      liquidityNet: new BN(0),
+      liquidityGross: new BN(0),
+      feeGrowthOutsideA: new BN(0),
+      feeGrowthOutsideB: new BN(0),
+      rewardGrowthsOutside: [new BN(0), new BN(0), new BN(0)],
+    };
+  }
+  return {
+    initialized: true,
+    ...tick.initialized[0],
+  };
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type DynamicTickData = {
   liquidityNet: BN;
   liquidityGross: BN;
   feeGrowthOutsideA: BN;
@@ -223,6 +271,7 @@ export type WhirlpoolsConfigExtensionData = {
 export type TokenBadgeData = {
   whirlpoolsConfig: PublicKey;
   tokenMint: PublicKey;
+  attributeRequireNonTransferablePosition: boolean;
 };
 
 /**
@@ -297,4 +346,18 @@ export type AdaptiveFeeVariablesData = {
   volatilityReference: number;
   tickGroupIndexReference: number;
   volatilityAccumulator: number;
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type TokenBadgeAttributeData = {
+  requireNonTransferablePosition: [boolean];
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type ConfigFeatureFlagData = {
+  tokenBadge: [boolean];
 };

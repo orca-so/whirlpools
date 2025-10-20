@@ -39,6 +39,25 @@ impl FeeTier {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = FeeTier::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:FeeTier | sha256sum | cut -c 1-16
+        // 384b9f4c8e44be69
+        assert_eq!(
+            discriminator,
+            [0x38, 0x4b, 0x9f, 0x4c, 0x8e, 0x44, 0xbe, 0x69]
+        );
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 

@@ -7,9 +7,7 @@ use solana_client::{
 use solana_sdk::pubkey::Pubkey;
 
 use super::fetch_decoded_program_accounts;
-use crate::{generated::shared::DecodedAccount, WhirlpoolsConfig};
-
-pub const WHIRLPOOLS_CONFIG_DISCRIMINATOR: &[u8] = &[157, 20, 49, 224, 217, 87, 193, 254];
+use crate::{generated::shared::DecodedAccount, WhirlpoolsConfig, WHIRLPOOLS_CONFIG_DISCRIMINATOR};
 
 #[derive(Debug, Clone)]
 pub enum WhirlpoolsConfigFilter {

@@ -32,6 +32,10 @@ pub struct InitializeTokenBadge<'info> {
 }
 
 pub fn handler(ctx: Context<InitializeTokenBadge>) -> Result<()> {
+    ctx.accounts
+        .whirlpools_config
+        .verify_enabled_feature(ConfigFeatureFlags::TOKEN_BADGE)?;
+
     ctx.accounts.token_badge.initialize(
         ctx.accounts.whirlpools_config.key(),
         ctx.accounts.token_mint.key(),

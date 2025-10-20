@@ -277,7 +277,7 @@ export async function approveToken(
 export async function setAuthority(
   provider: AnchorProvider,
   tokenAccount: web3.PublicKey,
-  newAuthority: web3.PublicKey,
+  newAuthority: web3.PublicKey | null,
   authorityType: AuthorityType,
   authority: web3.Keypair,
   tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,

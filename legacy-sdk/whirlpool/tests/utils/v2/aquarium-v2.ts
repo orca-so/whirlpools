@@ -4,7 +4,7 @@ import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { TickSpacing } from "..";
+import { getLocalnetAdminKeypair0, TickSpacing } from "..";
 import type {
   InitFeeTierParams,
   InitPoolV2Params,
@@ -53,6 +53,7 @@ interface InitTestTickArrayRangeV2Params {
   startTickIndex: number;
   arrayCount: number;
   aToB: boolean;
+  dynamicTickArrays?: boolean;
 }
 
 interface InitTestPositionV2Params {
@@ -121,6 +122,8 @@ export async function buildTestAquariumsV2(
   ctx: WhirlpoolContext,
   initParams: InitAquariumV2Params[],
 ): Promise<TestAquarium[]> {
+  const admin = await getLocalnetAdminKeypair0(ctx);
+
   const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
   await ctx.connection.requestAirdrop(
@@ -134,10 +137,24 @@ export async function buildTestAquariumsV2(
       configParams = generateDefaultConfigParams(ctx);
     }
     // Could batch
-    await toTx(
+    const initConfigTx = toTx(
       ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo),
-    ).buildAndExecute();
+      WhirlpoolIx.initializeConfigIx(ctx.program, {
+        ...configParams.configInitInfo,
+        funder: admin.publicKey,
+      }),
+    );
+    initConfigTx.addInstruction(
+      WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+        whirlpoolsConfig:
+          configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        authority: admin.publicKey,
+        featureFlag: {
+          tokenBadge: [true],
+        },
+      }),
+    );
+    await initConfigTx.addSigner(admin).buildAndExecute();
 
     // initialize ConfigExtension
     const {
@@ -328,8 +345,13 @@ export async function buildTestAquariumsV2(
 
     const tickArrays = await Promise.all(
       initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const { poolIndex, startTickIndex, arrayCount, aToB } =
-          initTickArrayRangeParam;
+        const {
+          poolIndex,
+          startTickIndex,
+          arrayCount,
+          aToB,
+          dynamicTickArrays,
+        } = initTickArrayRangeParam;
         const pool = pools[poolIndex];
         const pdas = await initTickArrayRange(
           ctx,
@@ -338,6 +360,7 @@ export async function buildTestAquariumsV2(
           arrayCount,
           pool.tickSpacing,
           aToB,
+          dynamicTickArrays,
         );
         return {
           params: initTickArrayRangeParam,

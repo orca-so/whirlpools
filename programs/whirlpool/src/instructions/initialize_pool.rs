@@ -78,6 +78,7 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
+        WhirlpoolControlFlags::empty(),
     )?;
 
     emit!(PoolInitialized {

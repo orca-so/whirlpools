@@ -5,17 +5,34 @@ use anchor_lang::prelude::*;
 pub struct TokenBadge {
     pub whirlpools_config: Pubkey, // 32
     pub token_mint: Pubkey,        // 32
-                                   // 128 RESERVE
+    pub attribute_require_non_transferable_position: bool, // 1
+                                   // 127 RESERVE
 }
 
 impl TokenBadge {
-    pub const LEN: usize = 8 + 32 + 32 + 128;
+    pub const LEN: usize = 8 + 32 + 32 + 1 + 127;
 
     pub fn initialize(&mut self, whirlpools_config: Pubkey, token_mint: Pubkey) -> Result<()> {
         self.whirlpools_config = whirlpools_config;
         self.token_mint = token_mint;
+        self.attribute_require_non_transferable_position = false;
         Ok(())
     }
+
+    pub fn update_attribute(&mut self, attribute: TokenBadgeAttribute) -> Result<()> {
+        match attribute {
+            TokenBadgeAttribute::RequireNonTransferablePosition(value) => {
+                self.attribute_require_non_transferable_position = value;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[non_exhaustive]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
+pub enum TokenBadgeAttribute {
+    RequireNonTransferablePosition(bool),
 }
 
 #[cfg(test)]
@@ -46,6 +63,26 @@ mod token_badge_initialize_tests {
 
         assert_eq!(whirlpools_config, token_badge.whirlpools_config);
         assert_eq!(token_mint, token_badge.token_mint);
+        assert!(!token_badge.attribute_require_non_transferable_position);
+    }
+}
+
+#[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = TokenBadge::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:TokenBadge | sha256sum | cut -c 1-16
+        // 74dbcce5f974ff96
+        assert_eq!(
+            discriminator,
+            [0x74, 0xdb, 0xcc, 0xe5, 0xf9, 0x74, 0xff, 0x96]
+        );
     }
 }
 
@@ -59,7 +96,8 @@ mod data_layout_tests {
     fn test_token_badge_data_layout() {
         let token_badge_whirlpools_config = Pubkey::new_unique();
         let token_badge_token_mint = Pubkey::new_unique();
-        let token_badge_reserved = [0u8; 128];
+        let token_badge_attribute_require_non_transferable_position = true;
+        let token_badge_reserved = [0u8; 127];
 
         // manually build the expected data layout
         let mut token_badge_data = [0u8; TokenBadge::LEN];
@@ -71,6 +109,12 @@ mod data_layout_tests {
         offset += 32;
         token_badge_data[offset..offset + 32].copy_from_slice(&token_badge_token_mint.to_bytes());
         offset += 32;
+        token_badge_data[offset..offset + 1].copy_from_slice(
+            &token_badge_attribute_require_non_transferable_position
+                .try_to_vec()
+                .unwrap(),
+        );
+        offset += 1;
         token_badge_data[offset..offset + token_badge_reserved.len()]
             .copy_from_slice(&token_badge_reserved);
         offset += token_badge_reserved.len();

@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 use std::error::Error;
 
+use orca_whirlpools_client::Whirlpool;
 use orca_whirlpools_client::{
     get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address,
+    DynamicTickArray,
 };
 use orca_whirlpools_client::{
-    InitializePoolV2, InitializePoolV2InstructionArgs, InitializeTickArray,
-    InitializeTickArrayInstructionArgs,
+    InitializeDynamicTickArray, InitializeDynamicTickArrayInstructionArgs, InitializePoolV2,
+    InitializePoolV2InstructionArgs,
 };
-use orca_whirlpools_client::{TickArray, Whirlpool};
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_tick_array_start_tick_index, price_to_sqrt_price,
     sqrt_price_to_tick_index,
@@ -221,21 +222,15 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
 
-    let pool_address = get_whirlpool_address(
-        &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,
-        &token_a,
-        &token_b,
-        tick_spacing,
-    )?
-    .0;
+    let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
+    let pool_address =
+        get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing)?.0;
 
-    let fee_tier = get_fee_tier_address(&*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?, tick_spacing)?.0;
+    let fee_tier = get_fee_tier_address(&whirlpools_config_address, tick_spacing)?.0;
 
-    let token_badge_a =
-        get_token_badge_address(&*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?, &token_a)?.0;
+    let token_badge_a = get_token_badge_address(&whirlpools_config_address, &token_a)?.0;
 
-    let token_badge_b =
-        get_token_badge_address(&*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?, &token_b)?.0;
+    let token_badge_b = get_token_badge_address(&whirlpools_config_address, &token_b)?.0;
 
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();
@@ -245,7 +240,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
     instructions.push(
         InitializePoolV2 {
-            whirlpools_config: *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,
+            whirlpools_config: whirlpools_config_address,
             token_mint_a: token_a,
             token_mint_b: token_b,
             token_badge_a,
@@ -285,15 +280,18 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     for start_tick_index in tick_array_indexes {
         let tick_array_address = get_tick_array_address(&pool_address, start_tick_index)?;
         instructions.push(
-            InitializeTickArray {
+            InitializeDynamicTickArray {
                 whirlpool: pool_address,
                 tick_array: tick_array_address.0,
                 funder,
                 system_program: system_program::id(),
             }
-            .instruction(InitializeTickArrayInstructionArgs { start_tick_index }),
+            .instruction(InitializeDynamicTickArrayInstructionArgs {
+                start_tick_index,
+                idempotent: false,
+            }),
         );
-        initialization_cost += rent.minimum_balance(TickArray::LEN);
+        initialization_cost += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
     Ok(CreatePoolInstructions {
@@ -306,7 +304,9 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
 #[cfg(test)]
 mod tests {
-    use crate::tests::{setup_mint, setup_mint_te, setup_mint_te_fee, RpcContext};
+    use crate::tests::{
+        setup_mint, setup_mint_te, setup_mint_te_fee, setup_mint_te_sua, RpcContext,
+    };
 
     use super::*;
     use serial_test::serial;
@@ -761,6 +761,58 @@ mod tests {
         assert_eq!(sqrt_price, pool_after.sqrt_price);
         assert_eq!(mint, pool_after.token_mint_a);
         assert_eq!(mint_te_fee, pool_after.token_mint_b);
+        assert_eq!(64, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_concentrated_liquidity_pool_with_scaled_ui_amount() {
+        let ctx = RpcContext::new().await;
+        let mint = setup_mint(&ctx).await.unwrap();
+        let mint_te_sua = setup_mint_te_sua(&ctx).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint,
+            mint_te_sua,
+            64,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint, pool_after.token_mint_a);
+        assert_eq!(mint_te_sua, pool_after.token_mint_b);
         assert_eq!(64, pool_after.tick_spacing);
     }
 }

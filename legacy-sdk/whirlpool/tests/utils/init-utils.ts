@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
 import {
   NATIVE_MINT,
@@ -8,7 +8,7 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
-import { Keypair } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
 import Decimal from "decimal.js";
 import {
@@ -16,6 +16,7 @@ import {
   ZERO_BN,
   createAndMintToAssociatedTokenAccount,
   createMint,
+  getLocalnetAdminKeypair0,
   mintToDestination,
 } from ".";
 import type {
@@ -45,6 +46,7 @@ import type {
 } from "./test-builders";
 import {
   generateDefaultConfigParams,
+  generateDefaultInitDynamicTickArrayParams,
   generateDefaultInitAdaptiveFeeTierParams,
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
@@ -88,6 +90,7 @@ interface InitTestTickArrayRangeParams {
   startTickIndex: number;
   arrayCount: number;
   aToB: boolean;
+  dynamicTickArrays?: boolean;
 }
 
 interface InitTestPositionParams {
@@ -149,6 +152,8 @@ export async function buildTestAquariums(
   ctx: WhirlpoolContext,
   initParams: InitAquariumParams[],
 ): Promise<TestAquarium[]> {
+  const admin = await getLocalnetAdminKeypair0(ctx);
+
   const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
   await ctx.connection.requestAirdrop(
@@ -164,8 +169,13 @@ export async function buildTestAquariums(
     // Could batch
     await toTx(
       ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo),
-    ).buildAndExecute();
+      WhirlpoolIx.initializeConfigIx(ctx.program, {
+        ...configParams.configInitInfo,
+        funder: admin.publicKey,
+      }),
+    )
+      .addSigner(admin)
+      .buildAndExecute();
 
     const {
       initFeeTierParams,
@@ -265,8 +275,13 @@ export async function buildTestAquariums(
 
     const tickArrays = await Promise.all(
       initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const { poolIndex, startTickIndex, arrayCount, aToB } =
-          initTickArrayRangeParam;
+        const {
+          poolIndex,
+          startTickIndex,
+          arrayCount,
+          aToB,
+          dynamicTickArrays,
+        } = initTickArrayRangeParam;
         const pool = pools[poolIndex];
         const pdas = await initTickArrayRange(
           ctx,
@@ -275,6 +290,7 @@ export async function buildTestAquariums(
           arrayCount,
           pool.tickSpacing,
           aToB,
+          dynamicTickArrays,
         );
         return {
           params: initTickArrayRangeParam,
@@ -339,11 +355,15 @@ export async function buildTestPoolParams(
   funder?: PublicKey,
   reuseTokenA?: PublicKey,
 ) {
-  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-  await toTx(
+  const admin = await getLocalnetAdminKeypair0(ctx);
+
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
     ctx,
-    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-  ).buildAndExecute();
+    admin.publicKey,
+  );
+  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
+    .addSigner(admin)
+    .buildAndExecute();
 
   const { params: feeTierParams } = await initFeeTier(
     ctx,
@@ -702,6 +722,25 @@ export async function initTickArray(
   return { txId: await tx.buildAndExecute(), params };
 }
 
+export async function initDynamicTickArray(
+  ctx: WhirlpoolContext,
+  whirlpool: PublicKey,
+  startTickIndex: number,
+  funder?: Keypair,
+): Promise<{ txId: string; params: InitTickArrayParams }> {
+  const params = generateDefaultInitDynamicTickArrayParams(
+    ctx,
+    whirlpool,
+    startTickIndex,
+    funder?.publicKey,
+  );
+  const tx = toTx(ctx, WhirlpoolIx.initDynamicTickArrayIx(ctx.program, params));
+  if (funder) {
+    tx.addSigner(funder);
+  }
+  return { txId: await tx.buildAndExecute(), params };
+}
+
 export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
@@ -760,18 +799,28 @@ export async function initTickArrayRange(
   arrayCount: number,
   tickSpacing: number,
   aToB: boolean,
+  dynamicTickArrays?: boolean,
 ): Promise<PDA[]> {
   const ticksInArray = tickSpacing * TICK_ARRAY_SIZE;
   const direction = aToB ? -1 : 1;
   const result: PDA[] = [];
 
   for (let i = 0; i < arrayCount; i++) {
-    const { params } = await initTickArray(
-      ctx,
-      whirlpool,
-      startTickIndex + direction * ticksInArray * i,
-    );
-    result.push(params.tickArrayPda);
+    if (dynamicTickArrays) {
+      const { params } = await initDynamicTickArray(
+        ctx,
+        whirlpool,
+        startTickIndex + direction * ticksInArray * i,
+      );
+      result.push(params.tickArrayPda);
+    } else {
+      const { params } = await initTickArray(
+        ctx,
+        whirlpool,
+        startTickIndex + direction * ticksInArray * i,
+      );
+      result.push(params.tickArrayPda);
+    }
   }
 
   return result;
@@ -921,6 +970,7 @@ export async function fundPositionsWithClient(
         undefined,
         tokenProgramId,
       );
+      tx.addInstruction(useMaxCU());
       await tx.buildAndExecute();
     }),
   );
@@ -990,7 +1040,9 @@ export async function fundPositions(
             tickArrayLower,
             tickArrayUpper,
           }),
-        ).buildAndExecute();
+        )
+          .addInstruction(useMaxCU())
+          .buildAndExecute();
       }
       return {
         initParams: positionInfo,
@@ -1173,4 +1225,51 @@ export async function openBundledPosition(
   }
   const txId = await tx.buildAndExecute();
   return { txId, params };
+}
+
+export async function initializeConfigWithDefaultConfigParams(
+  ctx: WhirlpoolContext,
+) {
+  const admin = await getLocalnetAdminKeypair0(ctx);
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
+    ctx,
+    admin.publicKey,
+  );
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+  );
+
+  // enable TokenBadge feature for convenience
+  tx.addInstruction(
+    WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      authority: admin.publicKey,
+      featureFlag: {
+        tokenBadge: [true],
+      },
+    }),
+  );
+
+  await tx.addSigner(admin).buildAndExecute();
+  return {
+    configInitInfo,
+    configKeypairs,
+  };
+}
+
+export function useCU(cu: number): Instruction {
+  return {
+    cleanupInstructions: [],
+    signers: [],
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: cu,
+      }),
+    ],
+  };
+}
+
+export function useMaxCU(): Instruction {
+  return useCU(1_400_000);
 }

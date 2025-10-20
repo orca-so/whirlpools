@@ -1,11 +1,14 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::token_interface::{Mint, TokenInterface};
 
 use crate::{
     errors::ErrorCode,
     events::*,
     state::*,
-    util::{to_timestamp_u64, verify_supported_token_mint},
+    util::{
+        initialize_vault_token_account, is_non_transferable_position_required, to_timestamp_u64,
+        verify_supported_token_mint,
+    },
 };
 
 #[derive(Accounts)]
@@ -49,19 +52,13 @@ pub struct InitializePoolWithAdaptiveFee<'info> {
         space = Oracle::LEN)]
     pub oracle: AccountLoader<'info, Oracle>,
 
-    #[account(init,
-      payer = funder,
-      token::token_program = token_program_a,
-      token::mint = token_mint_a,
-      token::authority = whirlpool)]
-    pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_a: Signer<'info>,
 
-    #[account(init,
-      payer = funder,
-      token::token_program = token_program_b,
-      token::mint = token_mint_b,
-      token::authority = whirlpool)]
-    pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_b: Signer<'info>,
 
     #[account(has_one = whirlpools_config)]
     pub adaptive_fee_tier: Box<Account<'info, AdaptiveFeeTier>>,
@@ -117,6 +114,39 @@ pub fn handler(
         return Err(ErrorCode::InvalidTradeEnableTimestamp.into());
     }
 
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_mint_a,
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.system_program,
+    )?;
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.token_vault_b,
+        &ctx.accounts.token_mint_b,
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.system_program,
+    )?;
+
+    let mut control_flags = WhirlpoolControlFlags::empty();
+    if is_non_transferable_position_required(
+        &ctx.accounts.token_badge_a,
+        whirlpools_config.key(),
+        &ctx.accounts.token_mint_a,
+    )? {
+        control_flags |= WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION;
+    }
+    if is_non_transferable_position_required(
+        &ctx.accounts.token_badge_b,
+        whirlpools_config.key(),
+        &ctx.accounts.token_mint_b,
+    )? {
+        control_flags |= WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION;
+    }
+
     whirlpool.initialize(
         whirlpools_config,
         fee_tier_index,
@@ -128,6 +158,7 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
+        control_flags,
     )?;
 
     let mut oracle = ctx.accounts.oracle.load_init()?;

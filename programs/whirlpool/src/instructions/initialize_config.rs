@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+use crate::auth::admin::is_admin_key;
 use crate::state::*;
 
 #[derive(Accounts)]
@@ -7,7 +8,7 @@ pub struct InitializeConfig<'info> {
     #[account(init, payer = funder, space = WhirlpoolsConfig::LEN)]
     pub config: Account<'info, WhirlpoolsConfig>,
 
-    #[account(mut)]
+    #[account(mut, constraint = is_admin_key(funder.key))]
     pub funder: Signer<'info>,
 
     pub system_program: Program<'info, System>,

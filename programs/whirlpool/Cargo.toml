@@ -1,6 +1,6 @@
 [package]
 name = "whirlpool"
-version = "0.4.1"
+version = "0.6.1"
 publish = false
 edition = "2021"
 license-file = "../../LICENSE"
@@ -13,6 +13,8 @@ no-entrypoint = []
 no-idl = []
 cpi = ["no-entrypoint"]
 default = []
+devnet = []
+mainnet = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
@@ -27,6 +29,8 @@ arrayref = { version = "=0.3.8" }
 borsh09 = { package = "borsh", version = "=0.9.3" }
 solana-security-txt = { version = "=1.1.1" }
 bytemuck = { version = "=1.16.3", features = ["derive", "min_const_generics"] }
+num_enum = { version = "=0.7.2" }
+bitflags = { version = "=2.4.2" }
 
 [dev-dependencies]
 proptest = "=1.5.0"

@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.5
+
+## 0.2.4
+
+### Patch Changes
+
+- [#1019](https://github.com/orca-so/whirlpools/pull/1019) [`0bff540`](https://github.com/orca-so/whirlpools/commit/0bff540ccb93df71264a158fe88a81fa4b62aa61) Thanks [@wanasim](https://github.com/wanasim)! - Fix typo
+
 ## 0.2.3
 
 ### Patch Changes

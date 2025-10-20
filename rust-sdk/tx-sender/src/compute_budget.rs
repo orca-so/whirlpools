@@ -10,7 +10,21 @@ use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::message::{v0::Message, VersionedMessage};
 use solana_sdk::transaction::VersionedTransaction;
 
-const SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR: u8 = 0x02;
+/// Compute unit limit strategy to apply when building a transaction.
+/// - Dynamic: Estimate compute units by simulating the transaction.
+///            If the simulation fails, the transaction will not build.
+/// - Exact: Directly use the provided compute unit limit.
+#[derive(Debug, Default)]
+pub enum ComputeUnitLimitStrategy {
+    #[default]
+    Dynamic,
+    Exact(u32),
+}
+
+#[derive(Debug, Default)]
+pub struct ComputeConfig {
+    pub unit_limit: ComputeUnitLimitStrategy,
+}
 
 /// Estimate compute units by simulating a transaction
 pub async fn estimate_compute_units(
@@ -25,10 +39,10 @@ pub async fn estimate_compute_units(
         .await
         .map_err(|e| format!("Failed to get recent blockhash: {}", e))?;
 
-    let mut simulation_instructions = instructions.to_vec();
-    if extract_compute_unit_limit(&instructions).is_none() {
-        simulation_instructions.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
-    }
+    // Add max compute unit limit instruction so that the simulation does not fail
+    let mut simulation_instructions =
+        vec![ComputeBudgetInstruction::set_compute_unit_limit(1_400_000)];
+    simulation_instructions.extend_from_slice(instructions);
 
     let message = Message::try_compile(payer, &simulation_instructions, &alt_accounts, blockhash)
         .map_err(|e| format!("Failed to compile message: {}", e))?;
@@ -57,7 +71,6 @@ pub async fn estimate_compute_units(
             if let Some(err) = simulation_result.value.err {
                 return Err(format!("Transaction simulation failed: {}", err));
             }
-
             match simulation_result.value.units_consumed {
                 Some(units) => Ok(units as u32),
                 None => Err("Transaction simulation didn't return consumed units".to_string()),
@@ -208,39 +221,4 @@ pub fn get_writable_accounts(instructions: &[Instruction]) -> Vec<Pubkey> {
     }
 
     writable.into_iter().collect()
-}
-
-/// Extract the compute unit limit from a list of instructions
-fn extract_compute_unit_limit(instructions: &[Instruction]) -> Option<u32> {
-    for ix in instructions {
-        if ix.program_id == solana_sdk::compute_budget::ID {
-            if ix.data.first() == Some(&SET_COMPUTE_UNIT_LIMIT_DISCRIMINATOR) {
-                let limit_bytes_array: [u8; 4] = ix.data.get(1..5)?.try_into().ok()?;
-                return Some(u32::from_le_bytes(limit_bytes_array));
-            } else {
-                return None;
-            }
-        }
-    }
-    None
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_extract_compute_unit_limit() {
-        let instructions = vec![];
-        let compute_unit_limit = extract_compute_unit_limit(&instructions);
-        assert_eq!(compute_unit_limit, None);
-    }
-
-    #[tokio::test]
-    async fn test_extract_compute_unit_limit_with_limit() {
-        let instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(1_400_000)];
-
-        let compute_unit_limit = extract_compute_unit_limit(&instructions);
-        assert_eq!(compute_unit_limit, Some(1_400_000));
-    }
 }

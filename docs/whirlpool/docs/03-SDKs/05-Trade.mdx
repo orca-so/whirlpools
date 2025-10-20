@@ -146,17 +146,16 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
 
     await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    await setPayerFromBytes(new Uint8Array(secret));
+
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
     const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
     const inputAmount = 1_000_000n;
 
     const { instructions, quote, callback: sendTx } = await swap(
-      devnetRpc,
       { inputAmount, mint: mintAddress },
       whirlpoolAddress,
-      100,
-      signer
+      100
     );
 
     // Use the callback to submit the transaction
@@ -279,7 +278,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
         - If `amountSpecifiedIsInput` is false, this amount represents the maximum amount of input token that can be used to trade to an expected amount of the output token. If you do not want to cap, use the maximum amount of tokens in your wallet.
     - Decide the price limit that you would like to cap this trade to with `sqrtPriceLimit`.
         - If `aToB` is true, the trade will push the price lower. This amount is minimum sqrt-price that the trade will trade to if input token amount is sufficient.
-        - If `aToB` is false, the trade will push the price higher. This amount is the maximum sqrt-price that the trade will trade to if the the input token amount is sufficient.
+        - If `aToB` is false, the trade will push the price higher. This amount is the maximum sqrt-price that the trade will trade to if the input token amount is sufficient.
         - If you don't have a cap and want to trade as much as you've defined with `amount` and `otherAmountThreshold`, use the minimum price of your tick-array range for `bToA` and maximum price of your tick-range for `aToB`. If you don't mind hitting tick-array errors or you know your swap won't move the price too much, you can use [`MIN_SQRT_PRICE`](https://dev.orca.so/legacy/variables/MIN_SQRT_PRICE.html) or [`MAX_SQRT_PRICE`](https://dev.orca.so/legacy/variables/MAX_SQRT_PRICE.html).
         - sqrt-price is a x64 number. So your number would need to multiplied by 2^64. Use [`PriceMath`](https://dev.orca.so/legacy/classes/PriceMath.html) utils here to help you do the conversion.
     - `amount` and `otherAmountThreshold` are u64 numbers. So make sure you shift your expected token numbers by the token's decimal.

@@ -1,12 +1,14 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::token_interface::{Mint, TokenInterface};
 
-use crate::{state::Whirlpool, util::verify_supported_token_mint};
+use crate::{
+    state::Whirlpool,
+    util::{initialize_vault_token_account, verify_supported_token_mint},
+};
 
 #[derive(Accounts)]
-#[instruction(reward_index: u8)]
 pub struct InitializeRewardV2<'info> {
-    #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
+    #[account(address = whirlpool.reward_authority())]
     pub reward_authority: Signer<'info>,
 
     #[account(mut)]
@@ -21,14 +23,9 @@ pub struct InitializeRewardV2<'info> {
     /// CHECK: checked in the handler
     pub reward_token_badge: UncheckedAccount<'info>,
 
-    #[account(
-        init,
-        payer = funder,
-        token::token_program = reward_token_program,
-        token::mint = reward_mint,
-        token::authority = whirlpool
-    )]
-    pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub reward_vault: Signer<'info>,
 
     #[account(address = *reward_mint.to_account_info().owner)]
     pub reward_token_program: Interface<'info, TokenInterface>,
@@ -44,6 +41,15 @@ pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()>
         &ctx.accounts.reward_mint,
         whirlpool.whirlpools_config,
         &ctx.accounts.reward_token_badge,
+    )?;
+
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.reward_vault,
+        &ctx.accounts.reward_mint,
+        &ctx.accounts.funder,
+        &ctx.accounts.reward_token_program,
+        &ctx.accounts.system_program,
     )?;
 
     whirlpool.initialize_reward(

@@ -41,7 +41,7 @@ impl From<Hash> for ChainId {
 }
 
 /// RPC configuration for connecting to Solana nodes
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct RpcConfig {
     pub url: String,
     pub supports_priority_fee_percentile: bool,
@@ -72,6 +72,6 @@ impl RpcConfig {
     pub fn is_mainnet(&self) -> bool {
         self.chain_id
             .as_ref()
-            .map_or(false, |chain_id| chain_id.is_mainnet())
+            .is_some_and(|chain_id| chain_id.is_mainnet())
     }
 }

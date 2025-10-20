@@ -6,6 +6,7 @@ import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
 import Decimal from "decimal.js";
 import {
+  getLocalnetAdminKeypair0,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
@@ -76,6 +77,9 @@ export interface TokenTrait {
   hasGroupPointerExtension?: boolean;
   hasGroupMemberExtension?: boolean;
   hasGroupMemberPointerExtension?: boolean;
+  hasScaledUiAmountExtension?: boolean;
+  scaledUiAmountMultiplier?: number; // f64
+  hasPausableExtension?: boolean;
 }
 
 interface TestPoolV2Params {
@@ -288,7 +292,12 @@ export async function buildTestPoolV2Params(
   createTokenBadgeIfNeededA: boolean = true,
   createTokenBadgeIfNeededB: boolean = true,
 ): Promise<TestPoolV2Params> {
-  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+  const admin = await getLocalnetAdminKeypair0(ctx);
+
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
+    ctx,
+    admin.publicKey,
+  );
   const {
     configExtensionInitInfo,
     configExtensionSetTokenBadgeAuthorityInfo,
@@ -299,10 +308,20 @@ export async function buildTestPoolV2Params(
     configKeypairs.feeAuthorityKeypair.publicKey,
   );
 
-  await toTx(
+  const initConfigTx = toTx(
     ctx,
     WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-  ).buildAndExecute();
+  );
+  initConfigTx.addInstruction(
+    WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      authority: admin.publicKey,
+      featureFlag: {
+        tokenBadge: [true],
+      },
+    }),
+  );
+  await initConfigTx.addSigner(admin).buildAndExecute();
   await toTx(
     ctx,
     WhirlpoolIx.initializeConfigExtensionIx(
@@ -448,7 +467,11 @@ export async function buildTestPoolWithAdaptiveFeeParams(
   createTokenBadgeIfNeededA: boolean = true,
   createTokenBadgeIfNeededB: boolean = true,
 ): Promise<TestPoolWithAdaptiveFeeParams> {
-  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+  const admin = await getLocalnetAdminKeypair0(ctx);
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(
+    ctx,
+    admin.publicKey,
+  );
   const {
     configExtensionInitInfo,
     configExtensionSetTokenBadgeAuthorityInfo,
@@ -459,10 +482,21 @@ export async function buildTestPoolWithAdaptiveFeeParams(
     configKeypairs.feeAuthorityKeypair.publicKey,
   );
 
-  await toTx(
+  const initConfigTx = toTx(
     ctx,
     WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-  ).buildAndExecute();
+  );
+  initConfigTx.addInstruction(
+    WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      authority: admin.publicKey,
+      featureFlag: {
+        tokenBadge: [true],
+      },
+    }),
+  );
+  await initConfigTx.addSigner(admin).buildAndExecute();
+
   await toTx(
     ctx,
     WhirlpoolIx.initializeConfigExtensionIx(
@@ -986,6 +1020,7 @@ export async function fundPositionsV2(
   tokenAccountA: PublicKey,
   tokenAccountB: PublicKey,
   fundParams: FundedPositionV2Params[],
+  withTokenExtensions: boolean = false,
 ): Promise<FundedPositionV2Info[]> {
   const {
     whirlpoolPda: { publicKey: whirlpool },
@@ -1018,6 +1053,9 @@ export async function fundPositionsV2(
         whirlpool,
         param.tickLowerIndex,
         param.tickUpperIndex,
+        undefined,
+        undefined,
+        withTokenExtensions,
       );
 
       const tickArrayLower = PDAUtil.getTickArray(
@@ -1163,6 +1201,7 @@ export function isTokenBadgeRequired(tokenTrait: TokenTrait): boolean {
   if (tokenTrait.hasFreezeAuthority) return true;
   if (tokenTrait.hasPermanentDelegate) return true;
   if (tokenTrait.hasTransferHookExtension) return true;
+  if (tokenTrait.hasPausableExtension) return true;
   return false;
 }
 

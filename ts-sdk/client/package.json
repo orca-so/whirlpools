@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-client",
-  "version": "2.0.0",
+  "version": "4.0.1",
   "description": "Typescript client to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
+    "generate": "node ./codama.js",
     "test": "vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist src/generated"
@@ -37,7 +38,8 @@
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.1.0",
     "codama": "^1.2.11",
-    "typescript": "^5.8.2"
+    "tsup": "^8.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

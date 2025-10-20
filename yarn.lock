@@ -4207,12 +4207,12 @@ __metadata:
     "@orca-so/whirlpools-docs-legacy": "npm:*"
     "@orca-so/whirlpools-docs-rust": "npm:*"
     "@orca-so/whirlpools-docs-ts": "npm:*"
-    "@types/react": "npm:^18.3.13"
+    "@types/react": "npm:^19.2.2"
     clsx: "npm:^2.1.1"
     gh-pages: "npm:^6.3.0"
     next: "npm:^15.5.6"
     prism-react-renderer: "npm:^2.4.1"
-    react: "npm:^18.3.1"
+    react: "npm:^19.2.0"
     react-dom: "npm:^19.2.0"
     react-helmet-async: "npm:^2.0.5"
     react-markdown: "npm:^10.1.0"
@@ -4239,10 +4239,10 @@ __metadata:
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^2.1.0"
     "@types/node": "npm:^24.9.0"
-    "@types/react": "npm:^18.3.13"
+    "@types/react": "npm:^19.2.2"
     copy-webpack-plugin: "npm:^13.0.0"
     next: "npm:^15.5.6"
-    react: "npm:^18.3.1"
+    react: "npm:^19.2.0"
     react-dom: "npm:^19.2.0"
     typescript: "npm:^5.9.3"
     webpack: "npm:^5.98.0"
@@ -6177,13 +6177,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/prop-types@npm:*":
-  version: 15.7.14
-  resolution: "@types/prop-types@npm:15.7.14"
-  checksum: 10c0/1ec775160bfab90b67a782d735952158c7e702ca4502968aa82565bd8e452c2de8601c8dfe349733073c31179116cf7340710160d3836aa8a1ef76d1532893b1
-  languageName: node
-  linkType: hard
-
 "@types/qs@npm:*":
   version: 6.9.18
   resolution: "@types/qs@npm:6.9.18"
@@ -6239,13 +6232,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18.3.13":
-  version: 18.3.20
-  resolution: "@types/react@npm:18.3.20"
+"@types/react@npm:^19.2.2":
+  version: 19.2.2
+  resolution: "@types/react@npm:19.2.2"
   dependencies:
-    "@types/prop-types": "npm:*"
     csstype: "npm:^3.0.2"
-  checksum: 10c0/65fa867c91357e4c4c646945c8b99044360f8973cb7f928ec4de115fe3207827985d45be236e6fd6c092b09f631c2126ce835c137be30718419e143d73300d8f
+  checksum: 10c0/f830b1204aca4634ce3c6cb3477b5d3d066b80a4dd832a4ee0069acb504b6debd2416548a43a11c1407c12bc60e2dc6cf362934a18fe75fe06a69c0a98cba8ab
   languageName: node
   linkType: hard
 
@@ -15810,12 +15802,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.3.1":
-  version: 18.3.1
-  resolution: "react@npm:18.3.1"
-  dependencies:
-    loose-envify: "npm:^1.1.0"
-  checksum: 10c0/283e8c5efcf37802c9d1ce767f302dd569dd97a70d9bb8c7be79a789b9902451e0d16334b05d73299b20f048cbc3c7d288bbbde10b701fa194e2089c237dbea3
+"react@npm:^19.2.0":
+  version: 19.2.0
+  resolution: "react@npm:19.2.0"
+  checksum: 10c0/1b6d64eacb9324725bfe1e7860cb7a6b8a34bc89a482920765ebff5c10578eb487e6b46b2f0df263bd27a25edbdae2c45e5ea5d81ae61404301c1a7192c38330
   languageName: node
   linkType: hard
 

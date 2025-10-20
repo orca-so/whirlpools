@@ -7,7 +7,6 @@ import {
 } from "@wallet-standard/react";
 import { useEffect } from "react";
 import { useWallet } from "../contexts/WalletContext";
-import { cn } from "@/lib/utils";
 
 interface WalletListModalProps {
   isOpen: boolean;
@@ -40,11 +39,7 @@ export function WalletListModal({
 
       {/* Modal Content */}
       <div
-        className={cn(
-          "relative z-50 w-full max-w-lg m-4 bg-white p-6 shadow-lg duration-200",
-          "border border-gray-200 rounded-lg",
-          "animate-in",
-        )}
+        className="relative z-50 w-full max-w-lg m-4 bg-white p-6 shadow-lg duration-200 border border-gray-200 rounded-lg animate-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}

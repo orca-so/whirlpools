@@ -9,13 +9,7 @@
       }
     ],
     "noEmit": true,
-    "incremental": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./app/*"],
-      "@/components/*": ["./app/components/*"],
-      "@/lib/*": ["./app/lib/*"]
-    }
+    "incremental": true
   },
   "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

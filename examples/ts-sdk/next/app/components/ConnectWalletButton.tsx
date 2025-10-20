@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useWallets } from "@wallet-standard/react";
 import { useWallet } from "../contexts/WalletContext";
 import { WalletListModal } from "./WalletListModal";
-import { cn } from "@/lib/utils";
 
 export function ConnectWalletButton() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,11 +29,7 @@ export function ConnectWalletButton() {
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          "bg-blue-600 text-white hover:bg-blue-700",
-          "h-10 px-4 py-2",
-        )}
+        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
       >
         Connect Wallet
       </button>

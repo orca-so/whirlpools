@@ -5,7 +5,6 @@ import { useWallet } from "./contexts/WalletContext";
 import { useState, useEffect, useMemo } from "react";
 import { WalletProvider } from "./contexts/WalletContext";
 import { ConnectWalletButton } from "./components/ConnectWalletButton";
-import { cn } from "@/lib/utils";
 import {
   createSolanaRpc,
   address,
@@ -131,11 +130,7 @@ function SwapPage({ account }: SwapPageProps) {
         <button
           onClick={handleSwap}
           disabled={!account || isSwapping}
-          className={cn(
-            "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-            "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400",
-            "h-11 rounded-md px-8 w-full",
-          )}
+          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 h-11 px-8 w-full"
         >
           {isSwapping
             ? "Swapping..."

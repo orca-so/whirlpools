@@ -1,5 +1,5 @@
-name: "Setup Anchor"
-description: "Sets up an Anchor development environment."
+name: 'Setup Anchor'
+description: 'Sets up an Anchor development environment.'
 
 branding:
   icon: anchor
@@ -7,24 +7,24 @@ branding:
 
 inputs:
   solana-cluster:
-    description: "The cluster to use for the solana sdk."
+    description: 'The cluster to use for the solana sdk.'
     required: false
-    default: "devnet"
+    default: 'devnet'
   solana-key:
-    description: "The private key to use for the solana sdk."
+    description: 'The private key to use for the solana sdk.'
     required: false
   rustc-version:
-    description: "The version of rustc to use."
-    default: "v1.84.0"
+    description: 'The version of rustc to use.'
+    default: 'v1.84.0'
   node-version:
-    description: "The version of node to use."
-    default: "v22.8.0"
+    description: 'The version of node to use.'
+    default: 'v22.8.0'
   solana-version:
-    description: "The version of solana to use."
-    default: "v2.2.1"
+    description: 'The version of solana to use.'
+    default: 'v2.2.1'
   anchor-version:
-    description: "The version of anchor to use."
-    default: "v0.32.1"
+    description: 'The version of anchor to use.'
+    default: 'v0.32.1'
 
 runs:
   using: "composite"
@@ -52,8 +52,8 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        cache: "yarn"
-        registry-url: "https://registry.npmjs.org"
+        cache: 'yarn'
+        registry-url: 'https://registry.npmjs.org'
     - name: Install Solana CLI
       run: |
         wget -qO- "https://release.anza.xyz/${{ inputs.solana-version }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" | tar -xvj

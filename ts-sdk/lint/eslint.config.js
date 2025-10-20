@@ -13,6 +13,7 @@ export default [
       "**/artifacts",
       "**/.docusaurus",
       "**/.next",
+      "**/next-env.d.ts",
     ],
   },
   {

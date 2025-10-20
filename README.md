@@ -37,7 +37,7 @@ This monorepo contains all the code needed to build, deploy and interact with th
 
 ### Requirements
 
-- Anchor v0.31.1
+- Anchor v0.32.1
 - Solana v2.1.0
 
 ### Getting Started

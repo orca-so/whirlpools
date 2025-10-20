@@ -11,6 +11,6 @@
     "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
     "typedoc": "^0.28.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.3"
   }
 }

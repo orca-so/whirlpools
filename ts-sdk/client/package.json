@@ -39,7 +39,7 @@
     "@solana/kit": "^2.1.0",
     "codama": "^1.2.11",
     "tsup": "^8.4.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

@@ -98,7 +98,9 @@ async function buildTransactionMessage(
     feePayer,
   );
 
-  return await partiallySignTransactionMessageWithSigners(messageWithPriorityFees);
+  return await partiallySignTransactionMessageWithSigners(
+    messageWithPriorityFees,
+  );
 }
 
 async function prepareTransactionMessage(

@@ -72,6 +72,6 @@ impl RpcConfig {
     pub fn is_mainnet(&self) -> bool {
         self.chain_id
             .as_ref()
-            .map_or(false, |chain_id| chain_id.is_mainnet())
+            .is_some_and(|chain_id| chain_id.is_mainnet())
     }
 }

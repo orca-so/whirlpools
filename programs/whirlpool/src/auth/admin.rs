@@ -20,8 +20,8 @@ pub const ADMINS: [Pubkey; 2] = [
 
 #[cfg(feature = "mainnet")]
 pub const ADMINS: [Pubkey; 2] = [
-    // fee authority of 2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ (Solana)
-    pubkey!("6BLTtBS9miUZruZtR9reTzp6ctGc4kVY4xrcxQwurYtw"),
+    // program upgrade authority, multi-sig (Solana)
+    pubkey!("GwH3Hiv5mACLX3ufTw1pFsrhSPon5tdw252DBs4Rx4PV"),
     // fee authority of FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv (Eclipse)
     pubkey!("AqiJTdr9jLPDAk5prGhWFHtSM1qJszAsdZVV7oeinxhh"),
 ];

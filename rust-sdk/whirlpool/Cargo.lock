@@ -2594,7 +2594,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "async-trait",
  "base64 0.20.0",
@@ -2623,7 +2623,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -6345,9 +6345,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.43.0"
+version = "1.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d61fa4ffa3de412bfea335c6ecff681de2b609ba3c77ef3e00e521813a9ed9e"
+checksum = "75ef51a33ef1da925cea3e4eb122833cb377c61439ca401b770f54902b806779"
 dependencies = [
  "backtrace",
  "bytes",
@@ -6560,9 +6560,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.19"
+version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8189decb5ac0fa7bc8b96b7cb9b2701d60d48805aca84a238004d665fcc4008"
+checksum = "2054a14f5307d601f88daf0553e1cbf472acc4f2c51afab632431cdcd72124d5"
 dependencies = [
  "sharded-slab",
  "thread_local",

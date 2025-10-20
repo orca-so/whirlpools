@@ -309,7 +309,7 @@ mod from_fixed_tick_array_test {
 
         assert_eq!(dynamic_tick_array.start_tick_index, 88);
         assert_eq!(dynamic_tick_array.whirlpool, fixed_tick_array.whirlpool);
-        assert_eq!(dynamic_tick_array.tick_bitmap, 1 << 1 | 1 << 86);
+        assert_eq!(dynamic_tick_array.tick_bitmap, (1 << 1) | (1 << 86));
         for (i, tick) in dynamic_tick_array.ticks.iter().enumerate() {
             if i == 1 {
                 assert_eq!(

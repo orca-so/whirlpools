@@ -9,7 +9,22 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn vitest run --test-timeout 1000000 --no-file-parallelism --globals legacy-sdk"
+# When you run "anchor test" command, it searches for Test.toml files under the anchor_tests directory and executes them in order.
+# These tests are large and require several hours to complete.
+#
+# If you want to run only specific test cases, specify the directory where Test.toml resides using --run option.
+#
+# Example 1) Run all tests
+#
+# anchor test
+#
+# Example 2) Run only the tests for integration/token-badge
+#
+# anchor test --run anchor_tests/int/token-badge
+#
+# Example 3) Run only the tests for integration/token-badge and sdk/whirlpools/utils
+#
+# anchor test --run anchor_tests/int/token-badge --run anchor_tests/sdk/utils
 
 [test.validator]
 # If we use slot_per_epoch = "33", rent for Position account (216 byte) was not 0.00239424 but 0.002394239

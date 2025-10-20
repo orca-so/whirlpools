@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Orca's high-level typescript sdk to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -44,6 +44,7 @@
   "devDependencies": {
     "@solana/kit": "^2.1.0",
     "solana-bankrun": "^0.4.0",
+    "tsup": "^8.4.0",
     "typescript": "^5.8.2"
   },
   "repository": {

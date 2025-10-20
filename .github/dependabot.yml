@@ -9,25 +9,145 @@ updates:
       docusaurus:
         applies-to: version-updates
         patterns:
-          - "@docusaurus/*"
+          - "@docusaurus/*"  
+      solana-v1:
+        applies-to: version-updates
+        patterns:
+          - "@solana/web3.js"
+          - "@solana/spl-token"
+          - "@coral-xyz/*"
+      solana-v2-core:
+        applies-to: version-updates
+        patterns:
+          - "@solana/*"
+        exclude-patterns:
+          - "@solana/web3.js"
+          - "@solana/spl-token"
+      solana-v2-programs:
+        applies-to: version-updates
+        patterns:
+          - "@solana-program/*"
+      typescript-types:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@types/*"
+          - "typescript"
+      build-tools:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@babel/*"
+          - "@esbuild/*"
+          - "@rollup/*"
+          - "@swc/*"
+          - "@webassemblyjs/*"
+      testing-tools:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@vitest/*"
+          - "vitest"
+      monorepo-tools:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@nx/*"
+          - "nx"
+      linting-tools:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@eslint/*"
+          - "@eslint-community/*"
+          - "@typescript-eslint/*"
+          - "eslint"
+      release-tools:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@changesets/*"
+      codegen-tools:
+        applies-to: version-updates
+        patterns:
+          - "@codama/*"
+          - "codama"
+      docs-tooling:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "@algolia/*"
+          - "@img/*"
+          - "@csstools/*"
+          - "@svgr/*"
+      nextjs:
+        applies-to: version-updates
+        patterns:
+          - "@next/*"
+          - "next"
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "daily"
     labels: []
     groups:
-      program-dependencies:
+      solana-ecosystem:
         applies-to: version-updates
-        dependency-type: production
+        patterns:
+          - "solana-*"
+          - "spl-*"
+      anchor-framework:
+        applies-to: version-updates
+        patterns:
+          - "anchor-*"
+      serialization:
+        applies-to: version-updates
+        patterns:
+          - "serde*"
+          - "borsh*"
+      cryptography:
+        applies-to: version-updates
+        patterns:
+          - "ark-*"
+          - "ed25519*"
+          - "libsecp256k1*"
+      wasm-tooling:
+        applies-to: version-updates
+        patterns:
+          - "wasm-*"
   - package-ecosystem: "cargo"
     directories: ["/examples/*", "/rust-sdk/*", "/ts-sdk/*"]
     schedule:
       interval: "daily"
     labels: []
     groups:
-      program-dependencies:
+      solana-sdk:
         applies-to: version-updates
-        dependency-type: production
+        patterns:
+          - "solana-*"
+          - "spl-*"
+      serialization:
+        applies-to: version-updates
+        patterns:
+          - "serde*"
+          - "borsh*"
+      cryptography:
+        applies-to: version-updates
+        patterns:
+          - "ark-*"
+          - "ed25519*"
+          - "libsecp256k1*"
+          - "curve25519*"
+      wasm-tooling:
+        applies-to: version-updates
+        patterns:
+          - "wasm-*"
+      async-runtime:
+        applies-to: version-updates
+        patterns:
+          - "tokio*"
+          - "futures*"
+          - "async-*"
     versioning-strategy: lockfile-only
   - package-ecosystem: "github-actions"
     directory: "/"

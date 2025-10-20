@@ -1,5 +1,16 @@
 # @orca-so/whirlpools
 
+## 4.0.0
+
+### Major Changes
+
+- [#1038](https://github.com/orca-so/whirlpools/pull/1038) [`19875ce`](https://github.com/orca-so/whirlpools/commit/19875ce6595c7e15ad07cd2ede3966b05d34ab62) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Support non transferable position, Whirlpool account layout update (repurpose reward authority field)
+
+### Patch Changes
+
+- Updated dependencies [[`36f14df`](https://github.com/orca-so/whirlpools/commit/36f14dfdc940a7b8d7561a6871d80671efe98b68), [`19875ce`](https://github.com/orca-so/whirlpools/commit/19875ce6595c7e15ad07cd2ede3966b05d34ab62)]:
+  - @orca-so/whirlpools-client@4.0.0
+
 ## 3.0.0
 
 ### Major Changes

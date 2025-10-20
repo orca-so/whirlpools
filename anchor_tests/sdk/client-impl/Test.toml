@@ -1,0 +1,4 @@
+extends = ["../../setup.toml"]
+
+[scripts]
+test = "yarn vitest run --test-timeout 1000000 --no-file-parallelism --globals legacy-sdk/whirlpool/tests/sdk/whirlpools/client-impl"

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs-rust
 
+## 0.2.5
+
+### Patch Changes
+
+- [#1073](https://github.com/orca-so/whirlpools/pull/1073) [`634b06a`](https://github.com/orca-so/whirlpools/commit/634b06a2ca81253ca6f12995ad0f0741c5e59839) Thanks [@calintje](https://github.com/calintje)! - chore: commit Codama-generated clients and wire Nx generate targets. Centralize Codama versions via root resolutions.
+
 ## 0.2.4
 
 ## 0.2.3

@@ -1,5 +1,21 @@
 # @orca-so/whirlpools-rust
 
+## 5.0.1
+
+### Patch Changes
+
+- [#1089](https://github.com/orca-so/whirlpools/pull/1089) [`1d75ad5`](https://github.com/orca-so/whirlpools/commit/1d75ad588d92cea7dca4883255630c0a3d7b3bd7) Thanks [@nam2ee](https://github.com/nam2ee)! - Fix: drop MutexGuard immediately
+
+## 5.0.0
+
+### Major Changes
+
+- [#1038](https://github.com/orca-so/whirlpools/pull/1038) [`19875ce`](https://github.com/orca-so/whirlpools/commit/19875ce6595c7e15ad07cd2ede3966b05d34ab62) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Support non transferable position, Whirlpool account layout update (repurpose reward authority field)
+
+### Patch Changes
+
+- [#1055](https://github.com/orca-so/whirlpools/pull/1055) [`d35aee9`](https://github.com/orca-so/whirlpools/commit/d35aee9034fc9b7feecbfb7e85bd352df0aad1dd) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Fix Dynamic TickArray handling in swap_instructions function
+
 ## 4.0.1
 
 ### Patch Changes

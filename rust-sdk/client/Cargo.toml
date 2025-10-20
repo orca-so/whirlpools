@@ -21,7 +21,7 @@ fetch = ["dep:solana-client", "dep:solana-sdk", "dep:solana-account-decoder"]
 solana-v1 = []
 
 [dependencies]
-anchor-lang = { version = ">=0.32", optional = true }
+anchor-lang = { version = ">=0.31", optional = true }
 borsh = { version = "^0.10" }
 num-derive = { version = "^0.4" }
 num-traits = { version = "^0.2" }

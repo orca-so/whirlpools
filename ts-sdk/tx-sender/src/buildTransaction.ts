@@ -18,8 +18,6 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   partiallySignTransactionMessageWithSigners,
   setTransactionMessageFeePayerSigner,
-  isKeyPairSigner,
-  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
@@ -100,16 +98,7 @@ async function buildTransactionMessage(
     feePayer,
   );
 
-  // Use different signing functions based on signer type:
-  // - KeyPairSigner: Use signTransactionMessageWithSigners (fully signs + asserts completeness)
-  // - NoopSigner: Use partiallySignTransactionMessageWithSigners (partial signature, wallet signs later)
-  //
-  // Note: While signTransactionMessageWithSigners internally calls partiallySignTransactionMessageWithSigners,
-  // tests fail when using only partiallySignTransactionMessageWithSigners for KeyPairSigners. The root cause
-  // is unclear despite investigation, but this conditional approach works reliably.
-  return isKeyPairSigner(feePayer)
-    ? await signTransactionMessageWithSigners(messageWithPriorityFees)
-    : await partiallySignTransactionMessageWithSigners(messageWithPriorityFees);
+  return await partiallySignTransactionMessageWithSigners(messageWithPriorityFees);
 }
 
 async function prepareTransactionMessage(

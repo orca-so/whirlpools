@@ -52,7 +52,7 @@ vi.mock("@solana/kit", async () => {
   const actual = await vi.importActual("@solana/kit");
   return {
     ...actual,
-    signTransactionMessageWithSigners: vi.fn().mockImplementation(
+    partiallySignTransactionMessageWithSigners: vi.fn().mockImplementation(
       (
         message: ITransactionMessageWithFeePayerSigner & {
           instructions: IInstruction[];

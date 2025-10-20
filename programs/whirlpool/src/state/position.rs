@@ -340,7 +340,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = Position::discriminator();
+        let discriminator: [u8; 8] = Position::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:Position | sha256sum | cut -c 1-16
         // aabc8fe47a40f7d0

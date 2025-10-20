@@ -485,7 +485,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = Oracle::discriminator();
+        let discriminator: [u8; 8] = Oracle::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:Oracle | sha256sum | cut -c 1-16
         // 8bc283b38cb3e5f4

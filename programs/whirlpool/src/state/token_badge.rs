@@ -75,7 +75,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = TokenBadge::discriminator();
+        let discriminator: [u8; 8] = TokenBadge::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:TokenBadge | sha256sum | cut -c 1-16
         // 74dbcce5f974ff96

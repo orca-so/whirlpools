@@ -46,7 +46,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = FeeTier::discriminator();
+        let discriminator: [u8; 8] = FeeTier::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:FeeTier | sha256sum | cut -c 1-16
         // 384b9f4c8e44be69

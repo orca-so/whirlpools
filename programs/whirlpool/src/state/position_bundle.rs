@@ -277,7 +277,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = PositionBundle::discriminator();
+        let discriminator: [u8; 8] = PositionBundle::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:PositionBundle | sha256sum | cut -c 1-16
         // 81a9af41b95f2064

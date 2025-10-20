@@ -69,7 +69,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = WhirlpoolsConfigExtension::discriminator();
+        let discriminator: [u8; 8] = WhirlpoolsConfigExtension::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:WhirlpoolsConfigExtension | sha256sum | cut -c 1-16
         // 0263d7a3f01a993a

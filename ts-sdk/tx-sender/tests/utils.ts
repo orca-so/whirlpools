@@ -1,6 +1,4 @@
 import type {
-  FullySignedTransaction,
-  TransactionWithBlockhashLifetime,
   TransactionSigner,
   Instruction,
   TransactionMessageBytes,
@@ -20,7 +18,6 @@ import {
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { rpcFromUrl } from "../src/compatibility";
 

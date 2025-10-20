@@ -3,6 +3,8 @@ use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::metadata::Metadata;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
+use crate::errors::ErrorCode;
+use crate::manager::tick_array_manager::collect_rent_for_ticks_in_position;
 use crate::state;
 use crate::{state::*, util::mint_position_token_with_metadata_and_remove_authority};
 
@@ -71,6 +73,16 @@ pub fn handler(
     let whirlpool = &ctx.accounts.whirlpool;
     let position_mint = &ctx.accounts.position_mint;
     let position = &mut ctx.accounts.position;
+
+    if whirlpool.is_position_with_token_extensions_required() {
+        return Err(ErrorCode::PositionWithTokenExtensionsRequired.into());
+    }
+
+    collect_rent_for_ticks_in_position(
+        &ctx.accounts.funder,
+        position,
+        &ctx.accounts.system_program,
+    )?;
 
     position.open_position(
         whirlpool,

@@ -27,6 +27,7 @@ import { setupConfigAndFeeTiers } from "./program";
 import { getAddMemoInstruction } from "@solana-program/memo";
 import { randomUUID } from "crypto";
 import { getNextKeypair } from "./keypair";
+import { LOCALNET_ADMIN_KEYPAIR_0, LOCALNET_ADMIN_KEYPAIR_1 } from "./admin";
 
 export const signer = getNextKeypair();
 setDefaultFunder(signer);
@@ -51,6 +52,26 @@ export async function getTestContext(): Promise<ProgramTestContext> {
       [
         [
           toBytes(signer.address),
+          new Account(
+            BigInt(100e9),
+            new Uint8Array(),
+            toBytes(SYSTEM_PROGRAM_ADDRESS),
+            false,
+            0n,
+          ),
+        ],
+        [
+          toBytes(LOCALNET_ADMIN_KEYPAIR_0.address),
+          new Account(
+            BigInt(100e9),
+            new Uint8Array(),
+            toBytes(SYSTEM_PROGRAM_ADDRESS),
+            false,
+            0n,
+          ),
+        ],
+        [
+          toBytes(LOCALNET_ADMIN_KEYPAIR_1.address),
           new Account(
             BigInt(100e9),
             new Uint8Array(),

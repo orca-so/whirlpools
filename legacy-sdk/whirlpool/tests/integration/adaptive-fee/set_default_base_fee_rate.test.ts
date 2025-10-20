@@ -11,10 +11,12 @@ import {
 } from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initAdaptiveFeeTier } from "../../utils/init-utils";
+import {
+  initAdaptiveFeeTier,
+  initializeConfigWithDefaultConfigParams,
+} from "../../utils/init-utils";
 import {
   createInOrderMints,
-  generateDefaultConfigParams,
   getDefaultPresetAdaptiveFeeConstants,
 } from "../../utils/test-builders";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -37,11 +39,8 @@ describe("set_default_base_fee_rate", () => {
     const initialDefaultBaseFeeRate = 5_000;
     const newDefaultBaseFeeRate = 10_000;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -142,11 +141,8 @@ describe("set_default_base_fee_rate", () => {
     const initialDefaultBaseFeeRate = 5_000;
     const newDefaultBaseFeeRate = 60_000;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -195,11 +191,8 @@ describe("set_default_base_fee_rate", () => {
     const initialDefaultBaseFeeRate = 5_000;
     const newDefaultBaseFeeRate = 60_000 + 1;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -229,11 +222,8 @@ describe("set_default_base_fee_rate", () => {
   });
 
   it("fails when adaptive fee tier account has not been initialized", async () => {
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const adaptiveFeeTierPda = PDAUtil.getFeeTier(
       ctx.program.programId,
@@ -261,11 +251,8 @@ describe("set_default_base_fee_rate", () => {
     const initialDefaultBaseFeeRate = 5_000;
     const newDefaultBaseFeeRate = 10_000;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,
@@ -305,11 +292,8 @@ describe("set_default_base_fee_rate", () => {
     const initialDefaultBaseFeeRate = 5_000;
     const newDefaultBaseFeeRate = 10_000;
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const { params } = await initAdaptiveFeeTier(
       ctx,

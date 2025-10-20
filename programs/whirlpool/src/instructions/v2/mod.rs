@@ -15,6 +15,7 @@ pub mod delete_token_badge;
 pub mod initialize_config_extension;
 pub mod initialize_token_badge;
 pub mod set_config_extension_authority;
+pub mod set_token_badge_attribute;
 pub mod set_token_badge_authority;
 
 pub use collect_fees::*;
@@ -31,4 +32,5 @@ pub use delete_token_badge::*;
 pub use initialize_config_extension::*;
 pub use initialize_token_badge::*;
 pub use set_config_extension_authority::*;
+pub use set_token_badge_attribute::*;
 pub use set_token_badge_authority::*;

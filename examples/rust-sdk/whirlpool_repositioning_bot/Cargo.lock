@@ -2329,7 +2329,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "3.1.0"
+version = "5.0.0"
 dependencies = [
  "bincode",
  "orca_whirlpools_client",
@@ -2341,14 +2341,14 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "spl-associated-token-account",
- "spl-memo 5.0.0",
- "spl-token 6.0.0",
+ "spl-memo 6.0.0",
+ "spl-token 7.0.0",
  "spl-token-2022 7.0.0",
 ]
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "3.0.0"
+version = "5.0.0"
 dependencies = [
  "borsh 0.10.4",
  "num-derive",
@@ -5225,9 +5225,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.43.0"
+version = "1.43.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d61fa4ffa3de412bfea335c6ecff681de2b609ba3c77ef3e00e521813a9ed9e"
+checksum = "492a604e2fd7f814268a378409e6c92b5525d747d10db9a229723f55a417958c"
 dependencies = [
  "backtrace",
  "bytes",

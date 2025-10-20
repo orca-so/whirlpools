@@ -1,3 +1,4 @@
+use crate::manager::tick_array_manager::collect_rent_for_ticks_in_position;
 use crate::state::*;
 use crate::util::build_position_token_metadata;
 use anchor_lang::prelude::*;
@@ -66,12 +67,20 @@ pub fn handler(
         &[ctx.bumps.position],
     ];
 
+    collect_rent_for_ticks_in_position(
+        &ctx.accounts.funder,
+        position,
+        &ctx.accounts.system_program,
+    )?;
+
     position.open_position(
         whirlpool,
         position_mint.key(),
         tick_lower_index,
         tick_upper_index,
     )?;
+
+    let is_non_transferable_position_required = whirlpool.is_non_transferable_position_required();
 
     initialize_position_mint_2022(
         position_mint,
@@ -80,6 +89,7 @@ pub fn handler(
         &ctx.accounts.system_program,
         &ctx.accounts.token_2022_program,
         with_token_metadata,
+        is_non_transferable_position_required,
     )?;
 
     if with_token_metadata {

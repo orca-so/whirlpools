@@ -1,5 +1,11 @@
 # @orca-so/rust-tx-sender
 
+## 2.1.0
+
+### Minor Changes
+
+- [#1026](https://github.com/orca-so/whirlpools/pull/1026) [`735d4ff`](https://github.com/orca-so/whirlpools/commit/735d4ff05bd5197821352169f6961c16fefb2405) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Provide the ability to skip simulation for compute units, set correct number of default signatures when creating a Versioned Transaction
+
 ## 2.0.1
 
 ### Patch Changes

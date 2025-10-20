@@ -6,7 +6,7 @@ import {
   getInitializeConfigInstruction,
   getInitializeFeeTierInstruction,
   getInitializePoolV2Instruction,
-  getInitializeTickArrayInstruction,
+  getInitializeDynamicTickArrayInstruction,
   getOpenPositionInstruction,
   getOpenPositionWithTokenExtensionsInstruction,
   getPositionAddress,
@@ -35,15 +35,17 @@ import {
 } from "../../src/config";
 import { getNextKeypair } from "./keypair";
 import { rpc, sendTransaction, signer } from "./mockRpc";
+import { LOCALNET_ADMIN_KEYPAIR_0 } from "./admin";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
+  const admin = LOCALNET_ADMIN_KEYPAIR_0;
   const keypair = getNextKeypair();
   const instructions: IInstruction[] = [];
 
   instructions.push(
     getInitializeConfigInstruction({
       config: keypair,
-      funder: signer,
+      funder: admin,
       feeAuthority: signer.address,
       collectProtocolFeesAuthority: signer.address,
       rewardEmissionsSuperAuthority: signer.address,
@@ -200,22 +202,24 @@ export async function setupPosition(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: lowerTickArrayAddress,
         startTickIndex: lowerTickArrayIndex,
+        idempotent: false,
       }),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: upperTickArrayAddress,
         startTickIndex: upperTickArrayIndex,
+        idempotent: false,
       }),
     );
   }
@@ -345,22 +349,24 @@ export async function setupTEPosition(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: lowerTickArrayAddress,
         startTickIndex: lowerTickArrayIndex,
+        idempotent: false,
       }),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeTickArrayInstruction({
+      getInitializeDynamicTickArrayInstruction({
         whirlpool: whirlpool,
         funder: signer,
         tickArray: upperTickArrayAddress,
         startTickIndex: upperTickArrayIndex,
+        idempotent: false,
       }),
     );
   }

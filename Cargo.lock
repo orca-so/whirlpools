@@ -2818,11 +2818,12 @@ dependencies = [
 
 [[package]]
 name = "whirlpool"
-version = "0.4.1"
+version = "0.6.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "arrayref",
+ "bitflags 2.4.2",
  "borsh 0.9.3",
  "bytemuck",
  "num_enum 0.7.2",

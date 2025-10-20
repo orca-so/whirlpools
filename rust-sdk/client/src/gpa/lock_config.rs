@@ -8,7 +8,7 @@ use solana_client::{
 };
 use solana_sdk::pubkey::Pubkey;
 
-pub const LOCK_CONFIG_DISCRIMINATOR: &[u8] = &[106, 47, 238, 159, 124, 12, 160, 192];
+use crate::LOCK_CONFIG_DISCRIMINATOR;
 
 #[derive(Clone, Debug)]
 pub enum LockConfigFilter {

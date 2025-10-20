@@ -14,3 +14,4 @@ export * from "./set-config-extension-authority-ix";
 export * from "./set-token-badge-authority-ix";
 export * from "./initialize-token-badge-ix";
 export * from "./delete-token-badge-ix";
+export * from "./set-token-badge-attribute-ix";

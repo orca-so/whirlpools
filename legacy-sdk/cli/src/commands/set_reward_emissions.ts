@@ -61,8 +61,17 @@ const initializedRewardInfos = initializedRewards.map((ri) => {
   };
 });
 
+const rewardAuthority = PoolUtil.getRewardAuthority(whirlpool);
+
 console.info("pool", whirlpoolPubkey.toBase58());
 console.info("initialized rewards:");
+
+console.info(
+  "authority",
+  rewardAuthority.toBase58(),
+  rewardAuthority.equals(ctx.wallet.publicKey) ? "(current wallet)" : "",
+);
+
 initializedRewardInfos.forEach((ri, i) => {
   const currentEmissions = emissionsPerSecondX64ToDecimal(
     ri.emissionsPerSecondX64,
@@ -79,13 +88,16 @@ initializedRewardInfos.forEach((ri, i) => {
     ri.vault.toBase58(),
     "\n     vaultAmount",
     DecimalUtil.fromBN(ri.vaultAmount, ri.mintDecimals),
-    "\n     authority",
-    ri.authority.toBase58(),
-    ri.authority.equals(ctx.wallet.publicKey) ? "(current wallet)" : "",
     "\n     currentEmissions",
     `${currentEmissions.perWeek} per week (${currentEmissions.perSecond} per second)`,
   );
 });
+
+if (rewardAuthority.equals(ctx.wallet.publicKey)) {
+  throw new Error(
+    `the current wallet must be the reward authority(${rewardAuthority.toBase58()})`,
+  );
+}
 
 const rewardIndexStr = await promptText("rewardIndex");
 const rewardIndex = parseInt(rewardIndexStr);
@@ -96,11 +108,6 @@ if (rewardIndex < 0 || rewardIndex >= initializedRewards.length) {
   throw new Error("rewardIndex is out of range");
 }
 const rewardInfo = initializedRewardInfos[rewardIndex];
-if (!rewardInfo.authority.equals(ctx.wallet.publicKey)) {
-  throw new Error(
-    `the current wallet must be the reward authority(${rewardInfo.authority.toBase58()})`,
-  );
-}
 
 const vaultAmount = DecimalUtil.fromBN(
   rewardInfo.vaultAmount,

@@ -1,5 +1,9 @@
 # @orca-so/whirlpools-docs-ts
 
+## 0.2.5
+
+## 0.2.4
+
 ## 0.2.3
 
 ## 0.2.2

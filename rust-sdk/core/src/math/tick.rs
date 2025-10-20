@@ -102,7 +102,7 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
         tick_low
     } else {
         // If our estimation for tick_high returns a lower sqrt_price than the input
-        // then the actual tick_high has to be higher than than tick_high.
+        // then the actual tick_high has to be higher than tick_high.
         // Otherwise, the actual value is between tick_low & tick_high, so a floor value
         // (tick_low) is returned
         let actual_tick_high_sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick_high).into();

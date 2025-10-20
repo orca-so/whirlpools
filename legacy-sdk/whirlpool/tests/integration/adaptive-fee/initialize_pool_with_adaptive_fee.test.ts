@@ -26,6 +26,9 @@ import {
   TickSpacing,
   ZERO_BN,
   dropIsSignerFlag,
+  getLocalnetAdminKeypair0,
+  getProviderWalletKeypair,
+  setAuthority,
   sleep,
   systemTransferTx,
 } from "../../utils";
@@ -46,17 +49,19 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import {
   AccountState,
+  AuthorityType,
   createInitializeMintInstruction,
   NATIVE_MINT,
   NATIVE_MINT_2022,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { initAdaptiveFeeTier, initFeeTier } from "../../utils/init-utils";
 import {
-  generateDefaultConfigParams,
-  getDefaultPresetAdaptiveFeeConstants,
-} from "../../utils/test-builders";
+  initAdaptiveFeeTier,
+  initFeeTier,
+  initializeConfigWithDefaultConfigParams,
+} from "../../utils/init-utils";
+import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 
 describe("initialize_pool_with_adaptive_fee", () => {
   const provider = anchor.AnchorProvider.local(
@@ -66,6 +71,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
+
+  const providerWalletKeypair = getProviderWalletKeypair(provider);
 
   describe("v2 parity", () => {
     describe("v1 parity", () => {
@@ -214,14 +221,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
             whirlpool.rewardInfos.forEach((rewardInfo) => {
               assert.equal(rewardInfo.emissionsPerSecondX64, 0);
               assert.equal(rewardInfo.growthGlobalX64, 0);
-              assert.ok(
-                rewardInfo.authority.equals(
-                  configInitInfo.rewardEmissionsSuperAuthority,
-                ),
-              );
               assert.ok(rewardInfo.mint.equals(anchor.web3.PublicKey.default));
               assert.ok(rewardInfo.vault.equals(anchor.web3.PublicKey.default));
             });
+
+            assert.ok(
+              PoolUtil.getRewardAuthority(whirlpool).equals(
+                configInitInfo.rewardEmissionsSuperAuthority,
+              ),
+            );
+            assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
+            assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
 
             // Oracle should be initialized
             await asyncAssertOracle(
@@ -336,14 +346,17 @@ describe("initialize_pool_with_adaptive_fee", () => {
             whirlpool.rewardInfos.forEach((rewardInfo) => {
               assert.equal(rewardInfo.emissionsPerSecondX64, 0);
               assert.equal(rewardInfo.growthGlobalX64, 0);
-              assert.ok(
-                rewardInfo.authority.equals(
-                  configInitInfo.rewardEmissionsSuperAuthority,
-                ),
-              );
               assert.ok(rewardInfo.mint.equals(anchor.web3.PublicKey.default));
               assert.ok(rewardInfo.vault.equals(anchor.web3.PublicKey.default));
             });
+
+            assert.ok(
+              PoolUtil.getRewardAuthority(whirlpool).equals(
+                configInitInfo.rewardEmissionsSuperAuthority,
+              ),
+            );
+            assert.ok(whirlpool.rewardInfos[1].extension.every((x) => x === 0));
+            assert.ok(whirlpool.rewardInfos[2].extension.every((x) => x === 0));
 
             // Oracle should be initialized
             await asyncAssertOracle(
@@ -378,6 +391,126 @@ describe("initialize_pool_with_adaptive_fee", () => {
               undefined,
               funderKeypair,
             );
+          });
+
+          it("succeeds when vault accounts have non-zero lamports (not rent-exempt)", async () => {
+            const tickSpacing = TickSpacing.Standard;
+            const feeTierIndex = 1024 + tickSpacing;
+            const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+              ctx,
+              tokenTraits.tokenTraitA,
+              tokenTraits.tokenTraitB,
+              feeTierIndex,
+              tickSpacing,
+              undefined,
+              undefined,
+              getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+              PublicKey.default,
+              PublicKey.default,
+            );
+
+            const preLamports = 1_000_000;
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
+
+            await toTx(
+              ctx,
+              WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+                ctx.program,
+                poolInitInfo,
+              ),
+            ).buildAndExecute();
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              poolInitInfo.tokenMintA,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramA,
+            );
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              poolInitInfo.tokenMintB,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramB,
+            );
+
+            const vaultA = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            );
+            const vaultB = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            );
+            assert.ok(vaultA!.lamports > preLamports);
+            assert.ok(vaultB!.lamports > preLamports);
+          });
+
+          it("succeeds when vault accounts have non-zero lamports (rent-exempt)", async () => {
+            const tickSpacing = TickSpacing.Standard;
+            const feeTierIndex = 1024 + tickSpacing;
+            const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+              ctx,
+              tokenTraits.tokenTraitA,
+              tokenTraits.tokenTraitB,
+              feeTierIndex,
+              tickSpacing,
+              undefined,
+              undefined,
+              getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+              PublicKey.default,
+              PublicKey.default,
+            );
+
+            const preLamports = 1_000_000_000;
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
+            await systemTransferTx(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              preLamports,
+            ).buildAndExecute();
+
+            await toTx(
+              ctx,
+              WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+                ctx.program,
+                poolInitInfo,
+              ),
+            ).buildAndExecute();
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+              poolInitInfo.tokenMintA,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramA,
+            );
+            await asyncAssertTokenVaultV2(
+              provider,
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+              poolInitInfo.tokenMintB,
+              poolInitInfo.whirlpoolPda.publicKey,
+              poolInitInfo.tokenProgramB,
+            );
+
+            const vaultA = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultAKeypair.publicKey,
+            );
+            const vaultB = await provider.connection.getAccountInfo(
+              poolInitInfo.tokenVaultBKeypair.publicKey,
+            );
+            assert.ok(vaultA!.lamports === preLamports);
+            assert.ok(vaultB!.lamports === preLamports);
           });
 
           it("fails when tokenVaultA mint does not match tokenA mint", async () => {
@@ -878,18 +1011,30 @@ describe("initialize_pool_with_adaptive_fee", () => {
           );
 
           // create config and feetier
+          const admin = await getLocalnetAdminKeypair0(ctx);
           const configKeypair = Keypair.generate();
-          await toTx(
+          const initConfigTx = toTx(
             ctx,
             WhirlpoolIx.initializeConfigIx(ctx.program, {
               collectProtocolFeesAuthority: provider.wallet.publicKey,
               feeAuthority: provider.wallet.publicKey,
               rewardEmissionsSuperAuthority: provider.wallet.publicKey,
               defaultProtocolFeeRate: 300,
-              funder: provider.wallet.publicKey,
+              funder: admin.publicKey,
               whirlpoolsConfigKeypair: configKeypair,
             }),
-          )
+          );
+          initConfigTx.addInstruction(
+            WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+              whirlpoolsConfig: configKeypair.publicKey,
+              authority: admin.publicKey,
+              featureFlag: {
+                tokenBadge: [true],
+              },
+            }),
+          );
+          await initConfigTx
+            .addSigner(admin)
             .addSigner(configKeypair)
             .buildAndExecute();
 
@@ -1199,6 +1344,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
         supported: boolean;
         createTokenBadge: boolean;
         tokenTrait: TokenTrait;
+        dropFreezeAuthorityAfterMintInitialization?: boolean;
       }) {
         // create tokens
         const [tokenA, tokenTarget, tokenB] = generate3MintAddress();
@@ -1206,19 +1352,50 @@ describe("initialize_pool_with_adaptive_fee", () => {
         await createMintV2(provider, { isToken2022: false }, undefined, tokenB);
         await createMintV2(provider, params.tokenTrait, undefined, tokenTarget);
 
+        if (params.dropFreezeAuthorityAfterMintInitialization) {
+          await setAuthority(
+            provider,
+            tokenTarget.publicKey,
+            null,
+            AuthorityType.FreezeAccount,
+            providerWalletKeypair,
+            params.tokenTrait.isToken2022
+              ? TEST_TOKEN_2022_PROGRAM_ID
+              : TEST_TOKEN_PROGRAM_ID,
+          );
+
+          const afterSetAuthorityMint = await fetcher.getMintInfo(
+            tokenTarget.publicKey,
+            IGNORE_CACHE,
+          );
+          assert.ok(afterSetAuthorityMint?.freezeAuthority === null);
+        }
+
         // create config and feetier
+        const admin = await getLocalnetAdminKeypair0(ctx);
         const configKeypair = Keypair.generate();
-        await toTx(
+        const initConfigTx = toTx(
           ctx,
           WhirlpoolIx.initializeConfigIx(ctx.program, {
             collectProtocolFeesAuthority: provider.wallet.publicKey,
             feeAuthority: provider.wallet.publicKey,
             rewardEmissionsSuperAuthority: provider.wallet.publicKey,
             defaultProtocolFeeRate: 300,
-            funder: provider.wallet.publicKey,
+            funder: admin.publicKey,
             whirlpoolsConfigKeypair: configKeypair,
           }),
-        )
+        );
+        initConfigTx.addInstruction(
+          WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+            whirlpoolsConfig: configKeypair.publicKey,
+            authority: admin.publicKey,
+            featureFlag: {
+              tokenBadge: [true],
+            },
+          }),
+        );
+        await initConfigTx
+          .addSigner(admin)
           .addSigner(configKeypair)
           .buildAndExecute();
 
@@ -1348,18 +1525,30 @@ describe("initialize_pool_with_adaptive_fee", () => {
         await createMintV2(provider, { isToken2022: false }, undefined, tokenB);
 
         // create config and feetier
+        const admin = await getLocalnetAdminKeypair0(ctx);
         const configKeypair = Keypair.generate();
-        await toTx(
+        const initConfigTx = toTx(
           ctx,
           WhirlpoolIx.initializeConfigIx(ctx.program, {
             collectProtocolFeesAuthority: provider.wallet.publicKey,
             feeAuthority: provider.wallet.publicKey,
             rewardEmissionsSuperAuthority: provider.wallet.publicKey,
             defaultProtocolFeeRate: 300,
-            funder: provider.wallet.publicKey,
+            funder: admin.publicKey,
             whirlpoolsConfigKeypair: configKeypair,
           }),
-        )
+        );
+        initConfigTx.addInstruction(
+          WhirlpoolIx.setConfigFeatureFlagIx(ctx.program, {
+            whirlpoolsConfig: configKeypair.publicKey,
+            authority: admin.publicKey,
+            featureFlag: {
+              tokenBadge: [true],
+            },
+          }),
+        );
+        await initConfigTx
+          .addSigner(admin)
           .addSigner(configKeypair)
           .buildAndExecute();
 
@@ -1626,6 +1815,20 @@ describe("initialize_pool_with_adaptive_fee", () => {
             hasDefaultAccountStateExtension: true,
             defaultAccountInitialState: AccountState.Frozen,
           },
+        });
+      });
+
+      it("Token-2022: [FAIL] with TokenBadge with DefaultAccountState(Frozen), but no freeze authority", async () => {
+        await runTest({
+          supported: false, // thawing is impossible
+          createTokenBadge: true,
+          tokenTrait: {
+            isToken2022: true,
+            hasFreezeAuthority: true, // needed to set initial state to Frozen
+            hasDefaultAccountStateExtension: true,
+            defaultAccountInitialState: AccountState.Frozen,
+          },
+          dropFreezeAuthorityAfterMintInitialization: true,
         });
       });
 
@@ -2325,11 +2528,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+    const { configInitInfo, configKeypairs } =
+      await initializeConfigWithDefaultConfigParams(ctx);
 
     const whirlpoolsConfig = configInitInfo.whirlpoolsConfigKeypair.publicKey;
 

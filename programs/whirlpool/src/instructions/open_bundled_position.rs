@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
-use crate::{state::*, util::verify_position_bundle_authority};
+use crate::{
+    errors::ErrorCode, manager::tick_array_manager::collect_rent_for_ticks_in_position, state::*,
+    util::verify_position_bundle_authority,
+};
 
 #[derive(Accounts)]
 #[instruction(bundle_index: u16)]
@@ -48,10 +51,20 @@ pub fn handler(
     let position_bundle = &mut ctx.accounts.position_bundle;
     let position = &mut ctx.accounts.bundled_position;
 
+    if whirlpool.is_position_with_token_extensions_required() {
+        return Err(ErrorCode::PositionWithTokenExtensionsRequired.into());
+    }
+
     // Allow delegation
     verify_position_bundle_authority(
         &ctx.accounts.position_bundle_token_account,
         &ctx.accounts.position_bundle_authority,
+    )?;
+
+    collect_rent_for_ticks_in_position(
+        &ctx.accounts.funder,
+        position,
+        &ctx.accounts.system_program,
     )?;
 
     position_bundle.open_bundled_position(bundle_index)?;

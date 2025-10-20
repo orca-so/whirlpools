@@ -17,6 +17,9 @@
     },
     "lint": {
       "dependsOn": ["build"]
+    },
+    "generate": {
+      "dependsOn": ["^build"]
     }
   },
   "defaultBase": "main"

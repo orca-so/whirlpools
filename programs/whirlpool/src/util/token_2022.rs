@@ -9,12 +9,13 @@ use anchor_spl::token_2022::spl_token_2022::{
 use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token2022};
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use solana_program::program::{invoke, invoke_signed};
-use solana_program::system_instruction::{create_account, transfer};
+use solana_program::system_instruction::transfer;
 
 use crate::constants::{
     WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL, WP_2022_METADATA_URI_BASE,
 };
 use crate::state::*;
+use crate::util::safe_create_account;
 
 pub fn initialize_position_mint_2022<'info>(
     position_mint: &Signer<'info>,
@@ -23,37 +24,32 @@ pub fn initialize_position_mint_2022<'info>(
     system_program: &Program<'info, System>,
     token_2022_program: &Program<'info, Token2022>,
     use_token_metadata_extension: bool,
+    use_non_transferable_extension: bool,
 ) -> Result<()> {
-    let space = ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(
-        if use_token_metadata_extension {
-            &[
-                ExtensionType::MintCloseAuthority,
-                ExtensionType::MetadataPointer,
-            ]
-        } else {
-            &[ExtensionType::MintCloseAuthority]
-        },
-    )?;
+    let mut extensions = vec![ExtensionType::MintCloseAuthority];
+    if use_token_metadata_extension {
+        extensions.push(ExtensionType::MetadataPointer);
+    }
+    if use_non_transferable_extension {
+        extensions.push(ExtensionType::NonTransferable);
+    }
+
+    let space =
+        ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(&extensions)?;
 
     let lamports = Rent::get()?.minimum_balance(space);
 
     let authority = position;
 
     // create account
-    invoke(
-        &create_account(
-            funder.key,
-            position_mint.key,
-            lamports,
-            space as u64,
-            token_2022_program.key,
-        ),
-        &[
-            funder.to_account_info(),
-            position_mint.to_account_info(),
-            token_2022_program.to_account_info(),
-            system_program.to_account_info(),
-        ],
+    safe_create_account(
+        system_program.to_account_info(),
+        funder.to_account_info(),
+        position_mint.to_account_info(),
+        &token_2022_program.key(),
+        lamports,
+        space as u64,
+        &[],
     )?;
 
     // initialize MintCloseAuthority extension
@@ -86,6 +82,20 @@ pub fn initialize_position_mint_2022<'info>(
             &[
                 position_mint.to_account_info(),
                 authority.to_account_info(),
+                token_2022_program.to_account_info(),
+            ],
+        )?;
+    }
+
+    if use_non_transferable_extension {
+        // initialize NonTransferable extension
+        invoke(
+            &spl_token_2022::instruction::initialize_non_transferable_mint(
+                token_2022_program.key,
+                position_mint.key,
+            )?,
+            &[
+                position_mint.to_account_info(),
                 token_2022_program.to_account_info(),
             ],
         )?;
@@ -489,20 +499,14 @@ pub fn initialize_vault_token_account<'info>(
     let lamports = Rent::get()?.minimum_balance(space as usize);
 
     // create account
-    invoke(
-        &create_account(
-            funder.key,
-            vault_token_account.key,
-            lamports,
-            space as u64,
-            token_program.key,
-        ),
-        &[
-            funder.to_account_info(),
-            vault_token_account.to_account_info(),
-            token_program.to_account_info(),
-            system_program.to_account_info(),
-        ],
+    safe_create_account(
+        system_program.to_account_info(),
+        funder.to_account_info(),
+        vault_token_account.to_account_info(),
+        &token_program.key(),
+        lamports,
+        space,
+        &[],
     )?;
 
     if is_token_2022 {

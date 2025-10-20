@@ -93,8 +93,9 @@ pub(crate) async fn prepare_token_accounts_instructions(
         }
 
         create_instructions.push(create_associated_token_account(
-            &owner,
-            &ata_address,
+            // ATA address will be derived in the function
+            &owner, // funder
+            &owner, // owner
             &mint_address,
             &mint_account_infos[i].owner,
         ));
@@ -367,8 +368,6 @@ mod tests {
     };
     use serial_test::serial;
 
-    use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
-
     use std::str::FromStr;
 
     // 1. Basic Utility Tests
@@ -397,6 +396,9 @@ mod tests {
 
         // Verify empty result
         assert_eq!(result.token_account_addresses.len(), 0);
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.additional_signers.len(), 0);
     }
 
     #[tokio::test]
@@ -419,24 +421,90 @@ mod tests {
         .await
         .unwrap();
 
+        // Verify result
+        assert_eq!(result.token_account_addresses.len(), 1);
         assert_eq!(result.token_account_addresses[&mint], ata);
+        assert_eq!(result.create_instructions.len(), 1);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.additional_signers.len(), 0);
 
-        // Use idempotent version of create ATA
-        let mut instructions = vec![create_associated_token_account_idempotent(
-            &ctx.signer.pubkey(),
-            &ctx.signer.pubkey(),
-            &mint,
-            &TOKEN_PROGRAM_ID,
-        )];
-        instructions.extend(result.create_instructions);
+        // Verify uninitialized state
+        let account = ctx.rpc.get_account(&ata).await;
+        assert!(account
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("AccountNotFound"));
 
-        ctx.send_transaction(instructions).await.unwrap();
+        // Verify instruction
+        ctx.send_transaction(result.create_instructions)
+            .await
+            .unwrap();
 
+        // Verify initialized account
         let account = ctx.rpc.get_account(&ata).await.unwrap();
         let token_account = Account::unpack(&account.data).unwrap();
         assert_eq!(token_account.amount, 0);
         assert_eq!(token_account.mint, mint);
         assert_eq!(token_account.owner, ctx.signer.pubkey());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_token_without_balance_multiple_with_te() {
+        let ctx = RpcContext::new().await;
+        let mint0 = setup_mint(&ctx).await.unwrap();
+        let mint1 = setup_mint_te(&ctx, &[]).await.unwrap();
+
+        let ata0 = get_associated_token_address_with_program_id(
+            &ctx.signer.pubkey(),
+            &mint0,
+            &TOKEN_PROGRAM_ID,
+        );
+        let ata1 = get_associated_token_address_with_program_id(
+            &ctx.signer.pubkey(),
+            &mint1,
+            &TOKEN_2022_PROGRAM_ID,
+        );
+
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![
+                TokenAccountStrategy::WithoutBalance(mint0),
+                TokenAccountStrategy::WithoutBalance(mint1),
+            ],
+        )
+        .await
+        .unwrap();
+
+        // Verify result
+        assert_eq!(result.token_account_addresses.len(), 2);
+        assert_eq!(result.token_account_addresses[&mint0], ata0);
+        assert_eq!(result.token_account_addresses[&mint1], ata1);
+        assert_eq!(result.create_instructions.len(), 2);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.additional_signers.len(), 0);
+
+        // Verify instruction
+        ctx.send_transaction(result.create_instructions)
+            .await
+            .unwrap();
+
+        // Verify initialized account
+        let account = ctx.rpc.get_account(&ata0).await.unwrap();
+        assert_eq!(account.owner, TOKEN_PROGRAM_ID);
+        let token_account = Account::unpack(&account.data).unwrap();
+        assert_eq!(token_account.amount, 0);
+        assert_eq!(token_account.mint, mint0);
+        assert_eq!(token_account.owner, ctx.signer.pubkey());
+
+        let account = ctx.rpc.get_account(&ata1).await.unwrap();
+        assert_eq!(account.owner, TOKEN_2022_PROGRAM_ID);
+        let token_account = StateWithExtensions::<Account>::unpack(&account.data).unwrap();
+        assert_eq!(token_account.base.amount, 0);
+        assert_eq!(token_account.base.mint, mint1);
+        assert_eq!(token_account.base.owner, ctx.signer.pubkey());
     }
 
     #[tokio::test]
@@ -459,6 +527,13 @@ mod tests {
         )
         .await
         .unwrap();
+
+        // Verify result
+        assert_eq!(result.token_account_addresses.len(), 1);
+        assert_eq!(result.token_account_addresses[&mint], ata);
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.additional_signers.len(), 0);
 
         // Verify account state
         let account = ctx.rpc.get_account(&ata).await.unwrap();
@@ -594,6 +669,13 @@ mod tests {
         .await
         .unwrap();
 
+        // Verify result
+        assert_eq!(result.token_account_addresses.len(), 1);
+        assert_eq!(result.token_account_addresses[&mint], ata);
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.additional_signers.len(), 0);
+
         // Verify account wasn't modified
         let final_account = ctx.rpc.get_account(&ata).await.unwrap();
         assert_eq!(initial_account.data, final_account.data);
@@ -620,22 +702,32 @@ mod tests {
         .await
         .unwrap();
 
+        // Verify result
+        assert_eq!(result.token_account_addresses.len(), 1);
         assert_eq!(result.token_account_addresses[&native_mint::ID], ata);
+        assert_eq!(result.create_instructions.len(), 1);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.additional_signers.len(), 0);
 
-        // Use idempotent version of create ATA
-        let mut instructions = vec![create_associated_token_account_idempotent(
-            &ctx.signer.pubkey(),
-            &ctx.signer.pubkey(),
-            &native_mint::ID,
-            &TOKEN_PROGRAM_ID,
-        )];
-        instructions.extend(result.create_instructions);
+        // Verify uninitialized state
+        let account = ctx.rpc.get_account(&ata).await;
+        assert!(account
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("AccountNotFound"));
 
-        ctx.send_transaction(instructions).await.unwrap();
+        // Verify instruction
+        ctx.send_transaction(result.create_instructions)
+            .await
+            .unwrap();
 
+        // Verify initialized account
         let account = ctx.rpc.get_account(&ata).await.unwrap();
         let token_account = Account::unpack(&account.data).unwrap();
         assert_eq!(token_account.amount, 0);
+        assert_eq!(token_account.mint, native_mint::ID);
+        assert_eq!(token_account.owner, ctx.signer.pubkey());
     }
 
     #[tokio::test]
@@ -658,24 +750,41 @@ mod tests {
         .await
         .unwrap();
 
+        // Verify result
+        assert_eq!(result.token_account_addresses.len(), 1);
         assert_eq!(result.token_account_addresses[&native_mint::ID], ata);
+        assert_eq!(result.create_instructions.len(), 1);
+        assert_eq!(result.cleanup_instructions.len(), 1);
+        assert_eq!(result.additional_signers.len(), 0);
 
-        // Use idempotent version of create ATA
-        let mut instructions = vec![create_associated_token_account_idempotent(
-            &ctx.signer.pubkey(),
-            &ctx.signer.pubkey(),
-            &native_mint::ID,
-            &TOKEN_PROGRAM_ID,
-        )];
-        instructions.extend(result.create_instructions);
+        // Verify uninitialized state
+        let account = ctx.rpc.get_account(&ata).await;
+        assert!(account
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("AccountNotFound"));
 
-        ctx.send_transaction(instructions).await.unwrap();
+        // Verify instruction
+        ctx.send_transaction(result.create_instructions)
+            .await
+            .unwrap();
 
+        // Verify initialized account
         let account = ctx.rpc.get_account(&ata).await.unwrap();
         let token_account = Account::unpack(&account.data).unwrap();
         assert_eq!(token_account.amount, 0);
         assert_eq!(token_account.mint, native_mint::ID);
         assert_eq!(token_account.owner, ctx.signer.pubkey());
+
+        // Execute cleanup instructions
+        ctx.send_transaction(result.cleanup_instructions)
+            .await
+            .unwrap();
+
+        // Verify account was cleaned up
+        let accounts = ctx.rpc.get_multiple_accounts(&[ata]).await.unwrap();
+        assert!(accounts[0].is_none() || accounts[0].as_ref().unwrap().data.is_empty());
     }
 
     #[tokio::test]
@@ -694,10 +803,14 @@ mod tests {
         .unwrap();
 
         // Verify token account address is mapped correctly
+        assert_eq!(result.token_account_addresses.len(), 1);
         assert!(result
             .token_account_addresses
             .contains_key(&native_mint::ID));
         let token_address = result.token_account_addresses[&native_mint::ID];
+        assert_eq!(result.create_instructions.len(), 2); // create account + initialize (token) account 3
+        assert_eq!(result.cleanup_instructions.len(), 1);
+        assert_eq!(result.additional_signers.len(), 1);
 
         // Execute create instructions
         ctx.send_transaction_with_signers(
@@ -749,10 +862,14 @@ mod tests {
         .unwrap();
 
         // Verify token account address is mapped correctly
+        assert_eq!(result.token_account_addresses.len(), 1);
         assert!(result
             .token_account_addresses
             .contains_key(&native_mint::ID));
         let token_address = result.token_account_addresses[&native_mint::ID];
+        assert_eq!(result.create_instructions.len(), 2); // create account with seed + initialize (token) account 3
+        assert_eq!(result.cleanup_instructions.len(), 1);
+        assert_eq!(result.additional_signers.len(), 0);
 
         // Execute and verify using get_multiple_accounts
         ctx.send_transaction_with_signers(
@@ -770,6 +887,19 @@ mod tests {
         let account = accounts[0].as_ref().unwrap();
         let token_account = Account::unpack(&account.data).unwrap();
         assert_eq!(token_account.amount, amount);
+
+        // Execute cleanup instructions
+        ctx.send_transaction(result.cleanup_instructions)
+            .await
+            .unwrap();
+
+        // Verify account was cleaned up
+        let accounts = ctx
+            .rpc
+            .get_multiple_accounts(&[token_address])
+            .await
+            .unwrap();
+        assert!(accounts[0].is_none() || accounts[0].as_ref().unwrap().data.is_empty());
     }
 
     #[tokio::test]

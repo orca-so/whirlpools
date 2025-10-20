@@ -25,6 +25,21 @@ export class WhirlpoolIx {
   }
 
   /**
+   * Sets the feature flag for a WhirlpoolsConfig.
+   *
+   * @category Instructions
+   * @param program - program object containing services required to generate the instruction
+   * @param params - SetConfigFeatureFlagParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setConfigFeatureFlagIx(
+    program: Program<Whirlpool>,
+    params: ix.SetConfigFeatureFlagParams,
+  ) {
+    return ix.setConfigFeatureFlagIx(program, params);
+  }
+
+  /**
    * Initializes a fee tier account usable by Whirlpools in this WhirlpoolsConfig space.
    *
    *  Special Errors
@@ -815,6 +830,13 @@ export class WhirlpoolIx {
     return ix.initializeRewardV2Ix(program, params);
   }
 
+  public static initDynamicTickArrayIx(
+    program: Program<Whirlpool>,
+    params: ix.InitDynamicTickArrayParams,
+  ) {
+    return ix.initDynamicTickArrayIx(program, params);
+  }
+
   public static setRewardEmissionsV2Ix(
     program: Program<Whirlpool>,
     params: ix.SetRewardEmissionsV2Params,
@@ -868,5 +890,12 @@ export class WhirlpoolIx {
     params: ix.DeleteTokenBadgeParams,
   ) {
     return ix.deleteTokenBadgeIx(program, params);
+  }
+
+  public static setTokenBadgeAttributeIx(
+    program: Program<Whirlpool>,
+    params: ix.SetTokenBadgeAttributeParams,
+  ) {
+    return ix.setTokenBadgeAttributeIx(program, params);
   }
 }

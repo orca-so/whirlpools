@@ -1,3 +1,4 @@
+export * from "./flag-util";
 export * from "./ix-utils";
 export * from "./lock-config-util";
 export * from "./pda-utils";

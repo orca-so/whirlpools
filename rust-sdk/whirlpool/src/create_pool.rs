@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 use std::error::Error;
 
+use orca_whirlpools_client::Whirlpool;
 use orca_whirlpools_client::{
     get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address,
+    DynamicTickArray,
 };
 use orca_whirlpools_client::{
-    InitializePoolV2, InitializePoolV2InstructionArgs, InitializeTickArray,
-    InitializeTickArrayInstructionArgs,
+    InitializeDynamicTickArray, InitializeDynamicTickArrayInstructionArgs, InitializePoolV2,
+    InitializePoolV2InstructionArgs,
 };
-use orca_whirlpools_client::{TickArray, Whirlpool};
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_tick_array_start_tick_index, price_to_sqrt_price,
     sqrt_price_to_tick_index,
@@ -279,15 +280,18 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     for start_tick_index in tick_array_indexes {
         let tick_array_address = get_tick_array_address(&pool_address, start_tick_index)?;
         instructions.push(
-            InitializeTickArray {
+            InitializeDynamicTickArray {
                 whirlpool: pool_address,
                 tick_array: tick_array_address.0,
                 funder,
                 system_program: system_program::id(),
             }
-            .instruction(InitializeTickArrayInstructionArgs { start_tick_index }),
+            .instruction(InitializeDynamicTickArrayInstructionArgs {
+                start_tick_index,
+                idempotent: false,
+            }),
         );
-        initialization_cost += rent.minimum_balance(TickArray::LEN);
+        initialization_cost += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
     Ok(CreatePoolInstructions {

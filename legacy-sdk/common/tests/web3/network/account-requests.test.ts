@@ -16,14 +16,13 @@ import {
   requestAirdrop,
 } from "../../test-context";
 import { expectMintEquals } from "../../utils/expectations";
-
-jest.setTimeout(100 * 1000 /* ms */);
+import { vi } from "vitest";
 
 describe("account-requests", () => {
   const ctx = createTestContext();
   // Silence the errors when we evaluate invalid token accounts.
   beforeEach(() => {
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   beforeAll(async () => {

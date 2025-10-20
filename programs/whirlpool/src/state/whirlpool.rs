@@ -6,6 +6,7 @@ use crate::{
     },
 };
 use anchor_lang::prelude::*;
+use bitflags::bitflags;
 
 use super::WhirlpoolsConfig;
 
@@ -101,6 +102,20 @@ impl Whirlpool {
         }
     }
 
+    pub fn reward_authority(&self) -> Pubkey {
+        Pubkey::from(self.reward_infos[0].extension)
+    }
+
+    pub fn extension_segment_primary(&self) -> WhirlpoolExtensionSegmentPrimary {
+        WhirlpoolExtensionSegmentPrimary::try_from_slice(&self.reward_infos[1].extension)
+            .expect("Failed to deserialize WhirlpoolExtensionSegmentPrimary")
+    }
+
+    pub fn extension_segment_secondary(&self) -> WhirlpoolExtensionSegmentSecondary {
+        WhirlpoolExtensionSegmentSecondary::try_from_slice(&self.reward_infos[2].extension)
+            .expect("Failed to deserialize WhirlpoolExtensionSegmentSecondary")
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
@@ -114,6 +129,7 @@ impl Whirlpool {
         token_vault_a: Pubkey,
         token_mint_b: Pubkey,
         token_vault_b: Pubkey,
+        control_flags: WhirlpoolControlFlags,
     ) -> Result<()> {
         if token_mint_a.ge(&token_mint_b) {
             return Err(ErrorCode::InvalidTokenMintOrder.into());
@@ -152,9 +168,16 @@ impl Whirlpool {
         self.token_vault_b = token_vault_b;
         self.fee_growth_global_b = 0;
 
-        self.reward_infos =
-            [WhirlpoolRewardInfo::new(whirlpools_config.reward_emissions_super_authority);
-                NUM_REWARDS];
+        self.reward_infos[0] = WhirlpoolRewardInfo::new(
+            whirlpools_config
+                .reward_emissions_super_authority
+                .to_bytes(),
+        );
+        self.reward_infos[1] = WhirlpoolRewardInfo::new(
+            WhirlpoolExtensionSegmentPrimary::new(control_flags).to_bytes(),
+        );
+        self.reward_infos[2] =
+            WhirlpoolRewardInfo::new(WhirlpoolExtensionSegmentSecondary::new().to_bytes());
 
         Ok(())
     }
@@ -183,12 +206,11 @@ impl Whirlpool {
         self.liquidity = liquidity;
     }
 
-    /// Update the reward authority at the specified Whirlpool reward index.
-    pub fn update_reward_authority(&mut self, index: usize, authority: Pubkey) -> Result<()> {
-        if index >= NUM_REWARDS {
-            return Err(ErrorCode::InvalidRewardIndex.into());
-        }
-        self.reward_infos[index].authority = authority;
+    /// Update the reward authority.
+    pub fn update_reward_authority(&mut self, authority: Pubkey) -> Result<()> {
+        self.reward_infos[0]
+            .extension
+            .copy_from_slice(&authority.to_bytes());
 
         Ok(())
     }
@@ -287,6 +309,26 @@ impl Whirlpool {
     pub fn is_initialized_with_adaptive_fee_tier(&self) -> bool {
         self.fee_tier_index() != self.tick_spacing
     }
+
+    pub fn is_non_transferable_position_required(&self) -> bool {
+        // Only newly created pools and migrated pools have control_flags
+        // TODO: remove this check once all whirlpools have been migrated
+        if self.reward_infos[2].extension != [0u8; 32] {
+            return false;
+        }
+
+        self.extension_segment_primary()
+            .control_flags()
+            .contains(WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION)
+    }
+
+    pub fn is_position_with_token_extensions_required(&self) -> bool {
+        if self.is_non_transferable_position_required() {
+            return true;
+        }
+
+        false
+    }
 }
 
 /// Stores the state relevant for tracking liquidity mining rewards at the `Whirlpool` level.
@@ -299,8 +341,14 @@ pub struct WhirlpoolRewardInfo {
     pub mint: Pubkey,
     /// Reward vault token account.
     pub vault: Pubkey,
-    /// Authority account that has permission to initialize the reward and set emissions.
-    pub authority: Pubkey,
+    /// reward_infos[0]: Authority account that has permission to initialize the reward and set emissions.
+    /// reward_infos[1]: used for a struct that contains fields for extending the functionality of Whirlpool.
+    /// reward_infos[2]: reserved for future use.
+    ///
+    /// Historical notes:
+    /// Originally, this was a field named "authority", but it was found that there was no opportunity
+    /// to set different authorities for the three rewards. Therefore, the use of this field was changed for Whirlpool's future extensibility.
+    pub extension: [u8; 32],
     /// Q64.64 number that indicates how many tokens per second are earned per unit of liquidity.
     pub emissions_per_second_x64: u128,
     /// Q64.64 number that tracks the total tokens earned per unit of liquidity since the reward
@@ -309,10 +357,10 @@ pub struct WhirlpoolRewardInfo {
 }
 
 impl WhirlpoolRewardInfo {
-    /// Creates a new `WhirlpoolRewardInfo` with the authority set
-    pub fn new(authority: Pubkey) -> Self {
+    /// Creates a new `WhirlpoolRewardInfo` with the extension set
+    pub fn new(extension: [u8; 32]) -> Self {
         Self {
-            authority,
+            extension,
             ..Default::default()
         }
     }
@@ -332,6 +380,64 @@ impl WhirlpoolRewardInfo {
             reward_growths[i] = reward_infos[i].growth_global_x64;
         }
         reward_growths
+    }
+}
+
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
+pub struct WhirlpoolControlFlags(u16);
+
+bitflags! {
+    impl WhirlpoolControlFlags: u16 {
+        const REQUIRE_NON_TRANSFERABLE_POSITION = 0b0000_0000_0000_0001;
+    }
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
+pub struct WhirlpoolExtensionSegmentPrimary {
+    // total length must be 32 bytes
+    pub control_flags: u16,
+    pub reserved: [u8; 30],
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
+pub struct WhirlpoolExtensionSegmentSecondary {
+    // total length must be 32 bytes
+    pub reserved: [u8; 32],
+}
+
+impl WhirlpoolExtensionSegmentPrimary {
+    pub fn to_bytes(&self) -> [u8; 32] {
+        // We can ensure that the serialization will always produce 32 bytes
+        self.try_to_vec()
+            .expect("Failed to serialize WhirlpoolExtensionSegmentPrimary")
+            .try_into()
+            .expect("Serialized data length mismatch")
+    }
+
+    pub fn new(control_flags: WhirlpoolControlFlags) -> Self {
+        Self {
+            control_flags: control_flags.bits(),
+            reserved: [0; 30],
+        }
+    }
+
+    pub fn control_flags(&self) -> WhirlpoolControlFlags {
+        WhirlpoolControlFlags::from_bits_truncate(self.control_flags)
+    }
+}
+
+impl WhirlpoolExtensionSegmentSecondary {
+    pub fn to_bytes(&self) -> [u8; 32] {
+        // We can ensure that the serialization will always produce 32 bytes
+        self.try_to_vec()
+            .expect("Failed to serialize WhirlpoolExtensionSegmentSecondary")
+            .try_into()
+            .expect("Serialized data length mismatch")
+    }
+
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self { reserved: [0; 32] }
     }
 }
 
@@ -453,6 +559,25 @@ pub mod whirlpool_builder {
 }
 
 #[cfg(test)]
+mod discriminator_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_discriminator() {
+        let discriminator = Whirlpool::discriminator();
+        // The discriminator is determined by the struct name and not depending on the program id.
+        // $ echo -n account:Whirlpool | sha256sum | cut -c 1-16
+        // 3f95d10ce1806309
+        assert_eq!(
+            discriminator,
+            [0x3f, 0x95, 0xd1, 0x0c, 0xe1, 0x80, 0x63, 0x09]
+        );
+    }
+}
+
+#[cfg(test)]
 mod data_layout_tests {
     use anchor_lang::Discriminator;
 
@@ -481,7 +606,7 @@ mod data_layout_tests {
 
         let reward_info_mint = Pubkey::new_unique();
         let reward_info_vault = Pubkey::new_unique();
-        let reward_info_authority = Pubkey::new_unique();
+        let reward_info_extension = Pubkey::new_unique().to_bytes(); // random 32 bytes
         let reward_info_emissions_per_second_x64 = 0x1122334455667788u128;
         let reward_info_growth_global_x64 = 0x99aabbccddeeff00u128;
 
@@ -492,7 +617,7 @@ mod data_layout_tests {
         offset += 32;
         reward_info_data[offset..offset + 32].copy_from_slice(&reward_info_vault.to_bytes());
         offset += 32;
-        reward_info_data[offset..offset + 32].copy_from_slice(&reward_info_authority.to_bytes());
+        reward_info_data[offset..offset + 32].copy_from_slice(&reward_info_extension);
         offset += 32;
         reward_info_data[offset..offset + 16]
             .copy_from_slice(&reward_info_emissions_per_second_x64.to_le_bytes());
@@ -603,8 +728,8 @@ mod data_layout_tests {
             assert_eq!(deserialized.reward_infos[i].mint, reward_info_mint);
             assert_eq!(deserialized.reward_infos[i].vault, reward_info_vault);
             assert_eq!(
-                deserialized.reward_infos[i].authority,
-                reward_info_authority
+                deserialized.reward_infos[i].extension,
+                reward_info_extension
             );
             assert_eq!(
                 deserialized.reward_infos[i].emissions_per_second_x64,
@@ -621,5 +746,30 @@ mod data_layout_tests {
         deserialized.try_serialize(&mut serialized).unwrap();
 
         assert_eq!(serialized.as_slice(), whirlpool_data.as_ref());
+    }
+}
+
+#[cfg(test)]
+mod whirlpool_extension_segment_tests {
+    use super::*;
+
+    #[test]
+    fn test_whirlpool_extension_segment_primary_serde() {
+        let control_flags = WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION;
+        let segment = WhirlpoolExtensionSegmentPrimary::new(control_flags);
+        let serialized: [u8; 32] = segment.to_bytes(); // must be 32 bytes
+        let deserialized: WhirlpoolExtensionSegmentPrimary =
+            WhirlpoolExtensionSegmentPrimary::try_from_slice(&serialized).unwrap();
+        assert_eq!(deserialized.control_flags(), control_flags);
+        assert_eq!(deserialized.reserved, [0; 30]);
+    }
+
+    #[test]
+    fn test_whirlpool_extension_segment_secondary_serde() {
+        let segment = WhirlpoolExtensionSegmentSecondary::new();
+        let serialized: [u8; 32] = segment.to_bytes(); // must be 32 bytes
+        let deserialized: WhirlpoolExtensionSegmentSecondary =
+            WhirlpoolExtensionSegmentSecondary::try_from_slice(&serialized).unwrap();
+        assert_eq!(deserialized.reserved, [0; 32]);
     }
 }

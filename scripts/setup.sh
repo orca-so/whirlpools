@@ -28,7 +28,7 @@ echo "Detected: $OS"
 if [[ "$OS" == "Linux" ]]; then
     echo "=== Updating system packages (Linux) ==="
     sudo apt-get update && sudo apt-get upgrade -y
-    sudo apt-get install -y build-essential pkg-config libssl-dev curl git
+    sudo apt-get install -y build-essential pkg-config libudev-dev libssl-dev curl git
 elif [[ "$OS" == "Mac" ]]; then
     echo "=== Installing Xcode Command Line Tools ==="
     xcode-select --install || true
@@ -73,5 +73,8 @@ rustup default ${RUST_VERSION_FOR_PROJECT}
 cd "$REPO_ROOT"
 yarn install
 yarn build
+# NOTE: without this, most of the auto-generated code in `ts-sdk/client` is shown as unstaged,
+# even though there are no meaningful changes
+yarn format
 
 echo "=== Setup complete ==="

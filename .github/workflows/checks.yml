@@ -41,6 +41,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
+    - name: Remove Unnecessary Files
+      uses: ./.github/actions/cleanup
     - name: Setup Anchor
       uses: ./.github/actions/anchor
     - name: Install dependencies

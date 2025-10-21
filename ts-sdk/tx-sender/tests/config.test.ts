@@ -24,7 +24,7 @@ describe("Config Tests", () => {
 
     describe("setRpc", () => {
       it("Should return a valid RPC object that can be used", async () => {
-        const rpc = await setRpc(rpcUrl, false);
+        const rpc = await setRpc(rpcUrl);
 
         assert.ok(rpc, "rpc should not be undefined");
         assert.ok(
@@ -46,7 +46,7 @@ describe("Config Tests", () => {
       });
 
       it("Should return a functional RPC object that can make calls", async () => {
-        const rpc = await setRpc(rpcUrl, false);
+        const rpc = await setRpc(rpcUrl);
 
         const slot = await rpc.getSlot().send();
         assert.ok(typeof slot === "bigint", "getSlot should return a bigint");
@@ -88,7 +88,9 @@ describe("Config Tests", () => {
       });
 
       it("Should set the global RPC config correctly", async () => {
-        await setRpc(rpcUrl, true);
+        await setRpc(rpcUrl, {
+          supportsPriorityFeePercentile: true,
+        });
 
         const config = getRpcConfig();
         assert.strictEqual(
@@ -102,10 +104,22 @@ describe("Config Tests", () => {
           "Priority fee percentile support should be set correctly",
         );
         assert.ok(config.chainId, "Chain ID should be set");
+        assert.strictEqual(
+          config.pollIntervalMs,
+          0,
+          "Poll interval should use default",
+        );
+        assert.strictEqual(
+          config.resendOnPoll,
+          true,
+          "Resend on poll should use default",
+        );
       });
 
       it("Should handle different priority fee percentile settings", async () => {
-        const rpc1 = await setRpc(rpcUrl, false);
+        const rpc1 = await setRpc(rpcUrl, {
+          supportsPriorityFeePercentile: false,
+        });
         let config = getRpcConfig();
         assert.strictEqual(
           config.supportsPriorityFeePercentile,
@@ -113,7 +127,9 @@ describe("Config Tests", () => {
           "Priority fee percentile should be disabled",
         );
 
-        const rpc2 = await setRpc(rpcUrl, true);
+        const rpc2 = await setRpc(rpcUrl, {
+          supportsPriorityFeePercentile: true,
+        });
         config = getRpcConfig();
         assert.strictEqual(
           config.supportsPriorityFeePercentile,
@@ -125,8 +141,27 @@ describe("Config Tests", () => {
         assert.ok(rpc2, "Second RPC object should be valid");
       });
 
+      it("Should handle RPC usage configuration", async () => {
+        await setRpc(rpcUrl, {
+          pollIntervalMs: 1000,
+          resendOnPoll: false,
+        });
+
+        const config = getRpcConfig();
+        assert.strictEqual(
+          config.pollIntervalMs,
+          1000,
+          "Poll interval should be set",
+        );
+        assert.strictEqual(
+          config.resendOnPoll,
+          false,
+          "Resend on poll should be set",
+        );
+      });
+
       it("Should create RPC objects that are not thenable", async () => {
-        const rpc = await setRpc(rpcUrl, false);
+        const rpc = await setRpc(rpcUrl);
 
         assert.strictEqual(
           Object.hasOwnProperty.call(rpc, "then"),
@@ -143,7 +178,9 @@ describe("Config Tests", () => {
 
     describe("getRpcConfig", () => {
       it("Should return correct config after setRpc", async () => {
-        await setRpc(rpcUrl, true);
+        await setRpc(rpcUrl, {
+          supportsPriorityFeePercentile: true,
+        });
 
         const config = getRpcConfig();
         assert.strictEqual(config.rpcUrl, rpcUrl);

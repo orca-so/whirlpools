@@ -52,7 +52,7 @@ vi.mock("@solana/kit", async () => {
   const actual = await vi.importActual("@solana/kit");
   return {
     ...actual,
-    signTransactionMessageWithSigners: vi.fn().mockImplementation(
+    partiallySignTransactionMessageWithSigners: vi.fn().mockImplementation(
       (
         message: ITransactionMessageWithFeePayerSigner & {
           instructions: IInstruction[];
@@ -96,7 +96,7 @@ describe("Build Transaction", async () => {
   });
 
   it("Should build basic transaction with no priority fees", async () => {
-    await setRpc(rpcUrl, false);
+    await setRpc(rpcUrl, { supportsPriorityFeePercentile: false });
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(

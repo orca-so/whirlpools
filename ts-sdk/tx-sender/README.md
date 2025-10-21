@@ -24,7 +24,15 @@ const kp = await createKeyPairFromBytes(new Uint8Array([1, 2, 3, 4,...]));
 const signer = await createSignerFromKeyPair(kp);
 
 // Initialize RPC connection
+// By default, uses continuous polling (pollIntervalMs: 0) with resending (resendOnPoll: true)
+// for maximum landing rate - best for premium RPCs
 await setRpc("https://api.mainnet-beta.solana.com");
+
+// For public/free RPCs: reduce RPC usage to avoid rate limits
+await setRpc("https://api.devnet.solana.com", {
+  pollIntervalMs: 1000,
+  resendOnPoll: false,
+});
 
 // Optional: Configure priority fees
 setPriorityFeeSetting({

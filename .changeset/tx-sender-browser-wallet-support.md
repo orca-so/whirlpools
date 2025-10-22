@@ -5,7 +5,7 @@
 Improve browser wallet compatibility and add configurable transaction sending strategy
 
 **Browser Wallet Support:**
-- `buildTransaction` now accepts `TransactionSigner` (KeyPairSigner or NoopSigner) and automatically detects signer type
+- `buildTransaction` now accepts `KeyPairSigner | NoopSigner` and automatically detects signer type
 - Performs partial signing for NoopSigner (browser wallets), full signing for KeyPairSigner (Node.js)
 - `sendTransaction` now accepts `(FullySignedTransaction | Transaction) & TransactionWithLifetime` to support both workflows
 
@@ -15,7 +15,7 @@ Improve browser wallet compatibility and add configurable transaction sending st
 - Default settings optimized for premium RPCs; public RPC users can configure conservative settings
 
 **Breaking Changes:**
-- `buildTransaction` no longer accepts `Address` string parameter. Must pass `TransactionSigner` instance to ensure same object is used for both instruction building and transaction building (required by Solana's `@solana/kit` identity checks).
+- `buildTransaction` no longer accepts `Address` string parameter. Must pass `KeyPairSigner | NoopSigner` instance to ensure same object is used for both instruction building and transaction building (required by Solana's `@solana/kit` identity checks).
 
 **Migration:**
 ```typescript

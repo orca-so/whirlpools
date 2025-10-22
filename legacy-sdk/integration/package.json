@@ -7,6 +7,6 @@
   },
   "scripts": {
     "build": "anchor build",
-    "test": "anchor test --skip-build"
+    "test": "yarn workspace @orca-so/whirlpools-sdk test"
   }
 }

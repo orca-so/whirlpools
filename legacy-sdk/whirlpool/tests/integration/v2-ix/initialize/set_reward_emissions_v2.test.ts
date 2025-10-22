@@ -17,6 +17,7 @@ import {
   createAndMintToTokenAccountV2,
   mintToDestinationV2,
 } from "../../../utils/v2/token-2022";
+import { pollForCondition } from "../../../utils/litesvm";
 
 describe("set_reward_emissions_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -108,9 +109,19 @@ describe("set_reward_emissions_v2", () => {
             .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
             .buildAndExecute();
 
-          let whirlpool = (await fetcher.getPool(
-            poolInitInfo.whirlpoolPda.publicKey,
-            IGNORE_CACHE,
+          let whirlpool = (await pollForCondition(
+            () =>
+              fetcher.getPool(
+                poolInitInfo.whirlpoolPda.publicKey,
+                IGNORE_CACHE,
+              ),
+            (wp) =>
+              !!wp &&
+              wp.rewardInfos[0].emissionsPerSecondX64.eq(emissionsPerSecondX64),
+            {
+              accountToReload: poolInitInfo.whirlpoolPda.publicKey,
+              connection: ctx.connection,
+            },
           )) as WhirlpoolData;
           assert.ok(
             whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(

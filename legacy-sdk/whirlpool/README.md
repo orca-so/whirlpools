@@ -25,10 +25,10 @@ Visit our [documentation site on GitHub](https://dev.orca.so/) to learn more abo
 
 ## Tests
 
-To run tests for the SDK, setup your anchor environment and run:
+To run tests for the SDK run:
 
 ```
-anchor test
+yarn workspace @orca-so/whirlpools-sdk-integration test
 ```
 
 # License

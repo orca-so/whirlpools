@@ -737,21 +737,6 @@ describe("initialize_pool_v2", () => {
             tokenBKeypair.publicKey,
           ).publicKey;
 
-          // event verification
-          let _eventVerified = false;
-          let _detectedSignature: string | null = null;
-          const listener = ctx.program.addEventListener(
-            "poolInitialized",
-            (_event, _slot, signature) => {
-              _detectedSignature = signature;
-              // verify
-              // Skip decimals assertions in event due to LiteSVM decoding quirks; verify via mints below
-              // LiteSVM event may misreport tickSpacing and initialSqrtPrice; verify on-chain below instead
-              // LiteSVM may also misdecode pubkeys in the event payload; verify on-chain below instead
-              _eventVerified = true;
-            },
-          );
-
           await toTx(
             ctx,
             WhirlpoolIx.initializePoolV2Ix(ctx.program, {
@@ -816,8 +801,6 @@ describe("initialize_pool_v2", () => {
           assert.ok(poolAccount.whirlpoolsConfig.equals(whirlpoolsConfig));
 
           warpClock(2);
-
-          ctx.program.removeEventListener(listener);
         });
       });
     });

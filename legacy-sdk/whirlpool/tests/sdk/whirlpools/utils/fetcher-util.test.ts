@@ -211,16 +211,22 @@ describe("fetcher util tests", () => {
     );
 
     // Build result manually since LiteSVM connection lacks token scanning RPCs
-    const posFirst = fixture
+    const tokenProgramPositionPublicKeys = fixture
       .getInfos()
       .positions.slice(0, 5)
       .map((p) => p.publicKey);
-    const posExt = fixture
+    const tokenExtensionsPositionPublicKeys = fixture
       .getInfos()
       .positions.slice(5)
       .map((p) => p.publicKey);
-    const fetchedFirst = await fetcher.getPositions(posFirst, IGNORE_CACHE);
-    const fetchedExt = await fetcher.getPositions(posExt, IGNORE_CACHE);
+    const fetchedFirst = await fetcher.getPositions(
+      tokenProgramPositionPublicKeys,
+      IGNORE_CACHE,
+    );
+    const fetchedExt = await fetcher.getPositions(
+      tokenExtensionsPositionPublicKeys,
+      IGNORE_CACHE,
+    );
     const positions = new Map<string, PositionData>();
     for (const [key, value] of fetchedFirst.entries()) {
       if (value) positions.set(key, value);
@@ -396,13 +402,5 @@ describe("fetcher util tests", () => {
 
     assert.ok(resultDefault.positions.size === 5);
     assert.ok(resultDefault.positionsWithTokenExtensions.size === 5);
-
-    const resultAllFalse = {
-      positions: new Map(),
-      positionsWithTokenExtensions: new Map(),
-    };
-
-    assert.ok(resultAllFalse.positions.size === 0);
-    assert.ok(resultAllFalse.positionsWithTokenExtensions.size === 0);
   });
 });

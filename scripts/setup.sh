@@ -73,7 +73,7 @@ rustup default ${RUST_VERSION_FOR_PROJECT}
 cd "$REPO_ROOT"
 yarn install
 yarn build
-# NOTE: without this, most of the auto-generated code in `ts-sdk/client` be shown as unstaged
+# NOTE: without this, most of the auto-generated code in `ts-sdk/client` is shown as unstaged,
 # even though there are no meaningful changes
 yarn format
 

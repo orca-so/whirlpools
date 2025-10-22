@@ -13,10 +13,10 @@ import {
   getBase64Encoder,
   getTransactionDecoder,
   lamports,
+  partiallySignTransactionMessageWithSigners,
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
@@ -115,7 +115,7 @@ export async function sendTransaction(ixs: Instruction[]) {
     (x) => appendTransactionMessageInstructions([memo, ...ixs], x),
     (x) => setTransactionMessageFeePayerSigner(signer, x),
     (x) => setTransactionMessageLifetimeUsingBlockhash(blockhash.value, x),
-    (x) => signTransactionMessageWithSigners(x),
+    (x) => partiallySignTransactionMessageWithSigners(x),
   );
   const serialized = getBase64EncodedWireTransaction(transaction);
   const signature = await rpc.sendTransaction(serialized).send();

@@ -33,7 +33,7 @@ describe("fetcher util tests", () => {
     provider = await createLiteSVMProvider();
     anchor.setProvider(provider);
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = (await import("../../../../src/artifacts/whirlpool.json"))
@@ -47,14 +47,14 @@ describe("fetcher util tests", () => {
     ctx = WhirlpoolContext.from(
       globalCtx.connection,
       isolatedWallet,
-      globalCtx.program.programId
+      globalCtx.program.programId,
     );
     fetcher = ctx.fetcher;
 
     await systemTransferTx(
       provider,
       isolatedOwnerKeypair.publicKey,
-      10 * LAMPORTS_PER_SOL
+      10 * LAMPORTS_PER_SOL,
     ).buildAndExecute();
   });
 
@@ -65,18 +65,18 @@ describe("fetcher util tests", () => {
 
   async function initializePositionBundleWithPositions(
     whirlpool: PublicKey,
-    bundleIndexes: number[]
+    bundleIndexes: number[],
   ): Promise<PublicKey> {
     const positionBundleMintKeypair = Keypair.generate();
     const positionBundlePda = PDAUtil.getPositionBundle(
       ctx.program.programId,
-      positionBundleMintKeypair.publicKey
+      positionBundleMintKeypair.publicKey,
     );
     const positionBundleTokenAccount = getAssociatedTokenAddressSync(
       positionBundleMintKeypair.publicKey,
       ctx.wallet.publicKey,
       undefined,
-      TOKEN_PROGRAM_ID
+      TOKEN_PROGRAM_ID,
     );
 
     await toTx(
@@ -87,14 +87,14 @@ describe("fetcher util tests", () => {
         positionBundleMintKeypair,
         positionBundlePda,
         positionBundleTokenAccount,
-      })
+      }),
     ).buildAndExecute();
 
     for (const bundleIndex of bundleIndexes) {
       const bundledPositionPda = PDAUtil.getBundledPosition(
         ctx.program.programId,
         positionBundleMintKeypair.publicKey,
-        bundleIndex
+        bundleIndex,
       );
       await toTx(
         ctx,
@@ -108,13 +108,13 @@ describe("fetcher util tests", () => {
           positionBundleTokenAccount,
           funder: ctx.wallet.publicKey,
           whirlpool,
-        })
+        }),
       ).buildAndExecute();
     }
 
     const positionBundleData = await fetcher.getPositionBundle(
       positionBundlePda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     assert.ok(!!positionBundleData);
     const occupied =
@@ -197,14 +197,14 @@ describe("fetcher util tests", () => {
       fixture
         .getInfos()
         .positions.slice(0, 5)
-        .map((p) => p.publicKey.toBase58())
+        .map((p) => p.publicKey.toBase58()),
     );
     assert.ok(positionAddresses.size === 5);
     const positionWithTokenExtensionsAddresses = new Set(
       fixture
         .getInfos()
         .positions.slice(5)
-        .map((p) => p.publicKey.toBase58())
+        .map((p) => p.publicKey.toBase58()),
     );
     assert.ok(positionWithTokenExtensionsAddresses.size === 5);
 
@@ -213,12 +213,12 @@ describe("fetcher util tests", () => {
     const positionBundle1BundleIndexes = [0, 128, 250];
     const positionBundle1Pubkey = await initializePositionBundleWithPositions(
       whirlpool,
-      positionBundle1BundleIndexes
+      positionBundle1BundleIndexes,
     );
     const positionBundle2BundleIndexes = [5, 30, 64, 135, 192, 255];
     const positionBundle2Pubkey = await initializePositionBundleWithPositions(
       whirlpool,
-      positionBundle2BundleIndexes
+      positionBundle2BundleIndexes,
     );
 
     // Build result manually since LiteSVM connection lacks token scanning RPCs
@@ -251,19 +251,19 @@ describe("fetcher util tests", () => {
     ] as Array<[PublicKey, number[]]>) {
       const bundleData = await fetcher.getPositionBundle(
         bundlePubkey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       const bundledPdas = bundleIndexes.map(
         (i) =>
           PDAUtil.getBundledPosition(
             ctx.program.programId,
             bundleData!.positionBundleMint,
-            i
-          ).publicKey
+            i,
+          ).publicKey,
       );
       const bundledFetched = await fetcher.getPositions(
         bundledPdas,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       const bundledPositions = new Map<number, PositionData>();
       bundledPdas.forEach((pda, idx) => {
@@ -281,37 +281,39 @@ describe("fetcher util tests", () => {
 
     assert.ok(result.positions.size === 5);
     assert.ok(
-      Array.from(result.positions.keys()).every((p) => positionAddresses.has(p))
+      Array.from(result.positions.keys()).every((p) =>
+        positionAddresses.has(p),
+      ),
     );
     assert.ok(
       Array.from(result.positions.values()).every(
         (p) =>
           p.tickLowerIndex === tickLowerIndex &&
-          p.tickUpperIndex === tickUpperIndex
-      )
+          p.tickUpperIndex === tickUpperIndex,
+      ),
     );
     assert.ok(result.positionsWithTokenExtensions.size === 5);
     assert.ok(
       Array.from(result.positionsWithTokenExtensions.keys()).every((p) =>
-        positionWithTokenExtensionsAddresses.has(p)
-      )
+        positionWithTokenExtensionsAddresses.has(p),
+      ),
     );
     assert.ok(
       Array.from(result.positionsWithTokenExtensions.values()).every(
         (p) =>
           p.tickLowerIndex === tickLowerIndex &&
-          p.tickUpperIndex === tickUpperIndex
-      )
+          p.tickUpperIndex === tickUpperIndex,
+      ),
     );
 
     assert.ok(result.positionBundles.length === 2);
     const pb0 = result.positionBundles[0];
     const pb1 = result.positionBundles[1];
     const occupied0 = PositionBundleUtil.getOccupiedBundleIndexes(
-      pb0.positionBundleData
+      pb0.positionBundleData,
     );
     const occupied1 = PositionBundleUtil.getOccupiedBundleIndexes(
-      pb1.positionBundleData
+      pb1.positionBundleData,
     );
 
     if (
@@ -319,82 +321,82 @@ describe("fetcher util tests", () => {
     ) {
       assert.ok(
         pb0.positionBundleAddress.toString() ===
-          positionBundle1Pubkey.toString()
+          positionBundle1Pubkey.toString(),
       );
       assert.deepEqual(occupied0, positionBundle1BundleIndexes);
       assert.ok(
-        pb0.bundledPositions.size === positionBundle1BundleIndexes.length
+        pb0.bundledPositions.size === positionBundle1BundleIndexes.length,
       );
       assert.deepEqual(
         Array.from(pb0.bundledPositions.keys()),
-        positionBundle1BundleIndexes
+        positionBundle1BundleIndexes,
       );
       assert.ok(
         Array.from(pb0.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex
-        )
+            p.tickUpperIndex === tickUpperIndex,
+        ),
       );
 
       assert.ok(
         pb1.positionBundleAddress.toString() ===
-          positionBundle2Pubkey.toString()
+          positionBundle2Pubkey.toString(),
       );
       assert.deepEqual(occupied1, positionBundle2BundleIndexes);
       assert.ok(
-        pb1.bundledPositions.size === positionBundle2BundleIndexes.length
+        pb1.bundledPositions.size === positionBundle2BundleIndexes.length,
       );
       assert.deepEqual(
         Array.from(pb1.bundledPositions.keys()),
-        positionBundle2BundleIndexes
+        positionBundle2BundleIndexes,
       );
       assert.ok(
         Array.from(pb1.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex
-        )
+            p.tickUpperIndex === tickUpperIndex,
+        ),
       );
     } else {
       assert.ok(
         pb0.positionBundleAddress.toString() ===
-          positionBundle2Pubkey.toString()
+          positionBundle2Pubkey.toString(),
       );
       assert.deepEqual(occupied0, positionBundle2BundleIndexes);
       assert.ok(
-        pb0.bundledPositions.size === positionBundle2BundleIndexes.length
+        pb0.bundledPositions.size === positionBundle2BundleIndexes.length,
       );
       assert.deepEqual(
         Array.from(pb0.bundledPositions.keys()),
-        positionBundle2BundleIndexes
+        positionBundle2BundleIndexes,
       );
       assert.ok(
         Array.from(pb0.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex
-        )
+            p.tickUpperIndex === tickUpperIndex,
+        ),
       );
 
       assert.ok(
         pb1.positionBundleAddress.toString() ===
-          positionBundle1Pubkey.toString()
+          positionBundle1Pubkey.toString(),
       );
       assert.deepEqual(occupied1, positionBundle1BundleIndexes);
       assert.ok(
-        pb1.bundledPositions.size === positionBundle1BundleIndexes.length
+        pb1.bundledPositions.size === positionBundle1BundleIndexes.length,
       );
       assert.deepEqual(
         Array.from(pb1.bundledPositions.keys()),
-        positionBundle1BundleIndexes
+        positionBundle1BundleIndexes,
       );
       assert.ok(
         Array.from(pb1.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex
-        )
+            p.tickUpperIndex === tickUpperIndex,
+        ),
       );
     }
 

@@ -25,7 +25,7 @@ describe("SwapUtils tests", () => {
     provider = await createLiteSVMProvider();
     anchor.setProvider(provider);
     const programId = new anchor.web3.PublicKey(
-      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
     const idl = (await import("../../../../src/artifacts/whirlpool.json"))
@@ -40,7 +40,7 @@ describe("SwapUtils tests", () => {
       const result = SwapUtils.getSwapDirection(
         whirlpoolData,
         whirlpoolData.tokenMintA,
-        true
+        true,
       );
       assert.equal(result, SwapDirection.AtoB);
     });
@@ -50,7 +50,7 @@ describe("SwapUtils tests", () => {
       const result = SwapUtils.getSwapDirection(
         whirlpoolData,
         whirlpoolData.tokenMintB,
-        true
+        true,
       );
       assert.equal(result, SwapDirection.BtoA);
     });
@@ -60,7 +60,7 @@ describe("SwapUtils tests", () => {
       const result = SwapUtils.getSwapDirection(
         whirlpoolData,
         whirlpoolData.tokenMintA,
-        false
+        false,
       );
       assert.equal(result, SwapDirection.BtoA);
     });
@@ -70,7 +70,7 @@ describe("SwapUtils tests", () => {
       const result = SwapUtils.getSwapDirection(
         whirlpoolData,
         whirlpoolData.tokenMintB,
-        false
+        false,
       );
       assert.equal(result, SwapDirection.AtoB);
     });
@@ -80,7 +80,7 @@ describe("SwapUtils tests", () => {
       const result = SwapUtils.getSwapDirection(
         whirlpoolData,
         Keypair.generate().publicKey,
-        true
+        true,
       );
       assert.equal(result, undefined);
     });
@@ -90,7 +90,7 @@ describe("SwapUtils tests", () => {
       const result = SwapUtils.getSwapDirection(
         whirlpoolData,
         Keypair.generate().publicKey,
-        false
+        false,
       );
       assert.equal(result, undefined);
     });
@@ -110,7 +110,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -122,7 +122,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
 
@@ -139,7 +139,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -151,7 +151,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
 
@@ -168,7 +168,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -180,7 +180,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
 
@@ -197,7 +197,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -209,7 +209,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
 
@@ -226,7 +226,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -238,7 +238,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
 
@@ -255,7 +255,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -267,7 +267,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
 
@@ -284,7 +284,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpoolPubkey
+        whirlpoolPubkey,
       );
 
       const expected = [
@@ -296,7 +296,7 @@ describe("SwapUtils tests", () => {
           .publicKey,
       ];
       result.forEach((k, i) =>
-        assert.equal(k.toBase58(), expected[i].toBase58())
+        assert.equal(k.toBase58(), expected[i].toBase58()),
       );
     });
   });
@@ -338,7 +338,7 @@ describe("SwapUtils tests", () => {
       ];
       const result = SwapUtils.interpolateUninitializedTickArrays(
         whirlpoolAddress,
-        tickArrays
+        tickArrays,
       );
 
       // no change
@@ -367,14 +367,14 @@ describe("SwapUtils tests", () => {
       ];
       const result = SwapUtils.interpolateUninitializedTickArrays(
         whirlpoolAddress,
-        tickArrays
+        tickArrays,
       );
 
       // no change
       assert.ok(result[0].data === initializedTickArrayData);
       assert.ok(
         result[1].data !== null &&
-          result[1].data.startTickIndex === result[1].startTickIndex
+          result[1].data.startTickIndex === result[1].startTickIndex,
       );
       for (let i = 0; i < TICK_ARRAY_SIZE; i++) {
         const tick = result[1].data.ticks[i];
@@ -410,13 +410,13 @@ describe("SwapUtils tests", () => {
       ];
       const result = SwapUtils.interpolateUninitializedTickArrays(
         whirlpoolAddress,
-        tickArrays
+        tickArrays,
       );
 
       for (let i = 0; i < 3; i++) {
         assert.ok(
           result[i].data !== null &&
-            result[i].data!.startTickIndex === result[i].startTickIndex
+            result[i].data!.startTickIndex === result[i].startTickIndex,
         );
         for (let j = 0; j < TICK_ARRAY_SIZE; j++) {
           const tick = result[i].data!.ticks[j];
@@ -447,7 +447,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, 0);
       assert.equal(tickArrays[1].startTickIndex, -5632);
@@ -458,13 +458,13 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       const expected = PDAUtil.getTickArray(
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        5632
+        5632,
       );
       assert.ok(result?.toBase58() === expected.publicKey.toBase58());
     });
@@ -480,7 +480,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, 439296);
       assert.equal(tickArrays[1].startTickIndex, 433664);
@@ -491,7 +491,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       assert.ok(result === undefined);
@@ -508,7 +508,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, 0);
       assert.equal(tickArrays[1].startTickIndex, 5632);
@@ -519,13 +519,13 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       const expected = PDAUtil.getTickArray(
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        -5632
+        -5632,
       );
       assert.ok(result?.toBase58() === expected.publicKey.toBase58());
     });
@@ -541,7 +541,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, -444928);
       assert.equal(tickArrays[1].startTickIndex, -439296);
@@ -552,7 +552,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       assert.ok(result === undefined);
@@ -569,7 +569,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, -439296);
       assert.equal(tickArrays[1].startTickIndex, -433664);
@@ -580,13 +580,13 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       const expected = PDAUtil.getTickArray(
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        -444928
+        -444928,
       );
       assert.ok(result?.toBase58() === expected.publicKey.toBase58());
     });
@@ -602,7 +602,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, -2883584);
       assert.equal(tickArrays.length, 1);
@@ -612,13 +612,13 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       const expected = PDAUtil.getTickArray(
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        0
+        0,
       );
       assert.ok(result?.toBase58() === expected.publicKey.toBase58());
     });
@@ -634,7 +634,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, 0);
       assert.equal(tickArrays[1].startTickIndex, -2883584);
@@ -645,7 +645,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       assert.ok(result === undefined);
@@ -662,7 +662,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, 0);
       assert.equal(tickArrays.length, 1);
@@ -672,13 +672,13 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       const expected = PDAUtil.getTickArray(
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        -2883584
+        -2883584,
       );
       assert.ok(result?.toBase58() === expected.publicKey.toBase58());
     });
@@ -694,7 +694,7 @@ describe("SwapUtils tests", () => {
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
         whirlpoolAddress,
-        ctx.fetcher
+        ctx.fetcher,
       );
       assert.equal(tickArrays[0].startTickIndex, -2883584);
       assert.equal(tickArrays[1].startTickIndex, 0);
@@ -705,7 +705,7 @@ describe("SwapUtils tests", () => {
         tickSpacing,
         aToB,
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
 
       assert.ok(result === undefined);

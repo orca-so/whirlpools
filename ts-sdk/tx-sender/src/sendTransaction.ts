@@ -52,7 +52,7 @@ export async function buildAndSendTransaction(
  * Sends a signed transaction message to the Solana network with a specified commitment level.
  * Asserts that the transaction is fully signed before sending.
  *
- * @param {(FullySignedTransaction | Transaction) & TransactionWithLifetime} transaction - The transaction to send (will be asserted as fully signed).
+ * @param {Transaction & TransactionWithLifetime} transaction - The transaction to send (will be asserted as fully signed).
  * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
  * @returns {Promise<Signature>} A promise that resolves to the transaction signature.
@@ -72,7 +72,7 @@ export async function buildAndSendTransaction(
  * ```
  */
 export async function sendTransaction(
-  transaction: FullySignedTransaction & Transaction & TransactionWithLifetime,
+  transaction: Readonly<Transaction & TransactionWithLifetime>,
   commitment: Commitment = "confirmed",
 ): Promise<Signature> {
   assertIsFullySignedTransaction(transaction);

@@ -10,7 +10,7 @@ import {
   address,
   Address,
   createNoopSigner,
-  assertTransactionIsFullySigned,
+  assertIsFullySignedTransaction,
 } from "@solana/kit";
 import { buildTransaction, sendTransaction, setRpc } from "@orca-so/tx-sender";
 
@@ -72,9 +72,8 @@ function SwapPage({ account }: SwapPageProps) {
       const partialTx = await buildTransaction(instructions, noopSigner);
 
       setTransactionStatus("Requesting wallet signature...");
-      const [signedTx] =
-        await signer.transactionSigner.modifyAndSignTransactions([partialTx]);
-      assertTransactionIsFullySigned(signedTx);
+      const [signedTx] = await signer.modifyAndSignTransactions([partialTx]);
+      assertIsFullySignedTransaction(signedTx);
 
       setTransactionStatus("Sending transaction...");
       const signature = await sendTransaction(signedTx, "confirmed");

@@ -9,10 +9,7 @@ interface ConnectedWallet {
   wallet: UiWallet;
 }
 
-type WalletAdapter = {
-  address: Address;
-  transactionSigner: ReturnType<typeof useWalletAccountTransactionSigner>;
-};
+type WalletAdapter = ReturnType<typeof useWalletAccountTransactionSigner>;
 
 interface WalletContextType {
   account: UiWalletAccount | null;
@@ -34,15 +31,10 @@ function WalletProviderInner({
   connectedWallet: ConnectedWallet;
   setConnectedWallet: (wallet: ConnectedWallet | null) => void;
 }) {
-  const transactionSigner = useWalletAccountTransactionSigner(
+  const signer = useWalletAccountTransactionSigner(
     connectedWallet.account,
     "solana:devnet",
   );
-
-  const signer: WalletAdapter = {
-    address: transactionSigner.address,
-    transactionSigner,
-  };
 
   return (
     <WalletContext.Provider

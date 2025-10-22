@@ -5,6 +5,8 @@ import type {
   SolanaRpcApi,
   NoopSigner,
   KeyPairSigner,
+  Transaction,
+  TransactionWithLifetime,
 } from "@solana/kit";
 import {
   compressTransactionMessageUsingAddressLookupTables,
@@ -28,9 +30,7 @@ import { getRpcConfig } from "./config";
  * @param {KeyPairSigner | NoopSigner} feePayer - The signer that will pay for the transaction (must be the SAME instance used to build instructions)
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
  *
- * @returns {Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>>}
- *   - FullySignedTransaction if feePayer is a KeyPairSigner (has keyPair property)
- *   - Transaction (partially signed) if feePayer is NoopSigner (no keyPair property)
+ * @returns {Promise<Readonly<Transaction & TransactionWithLifetime>>}
  *
  * @example
  * // Node.js with KeyPairSigner - fully signed automatically
@@ -49,7 +49,7 @@ export async function buildTransaction(
   instructions: Instruction[],
   feePayer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: (Address | string)[],
-) {
+): Promise<Readonly<Transaction & TransactionWithLifetime>> {
   return buildTransactionMessage(
     instructions,
     feePayer,

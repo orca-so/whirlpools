@@ -2,7 +2,7 @@ import {
   getSetComputeUnitPriceInstruction,
   getSetComputeUnitLimitInstruction,
 } from "@solana-program/compute-budget";
-import type { Address, Instruction, MicroLamports, Slot, TransactionMessageWithBlockhashLifetime, TransactionMessageWithFeePayerSigner, TransactionSigner } from "@solana/kit";
+import type { Address, Instruction, MicroLamports, Slot } from "@solana/kit";
 import {
   prependTransactionMessageInstruction,
   isWritableRole,

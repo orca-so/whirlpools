@@ -16,7 +16,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.7",
-    "@types/node": "^24.9.0",
+    "@types/node": "^24.9.1",
     "nx": "^20.7.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.4.0",

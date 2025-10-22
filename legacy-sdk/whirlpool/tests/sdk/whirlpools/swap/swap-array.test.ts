@@ -2,12 +2,12 @@ import * as anchor from "@coral-xyz/anchor";
 import { AddressUtil, Percentage, ZERO } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
+import type { WhirlpoolContext } from "../../../../src";
 import {
   NO_ORACLE_DATA,
   PriceMath,
   SwapUtils,
   TICK_ARRAY_SIZE,
-  WhirlpoolContext,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
   swapQuoteWithParams,
@@ -17,7 +17,7 @@ import { SwapErrorCode } from "../../../../src/errors/errors";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
 import { TickSpacing } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -27,15 +27,19 @@ import { getTickArrays } from "../../../utils/testDataTypes";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("swap arrays test", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    anchor.setProvider(provider);
+    client = buildWhirlpoolClient(ctx);
+  });
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

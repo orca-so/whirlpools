@@ -2,30 +2,34 @@ import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
+import type { WhirlpoolContext } from "../../../../src";
 import {
   PriceMath,
-  WhirlpoolContext,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import { SystemInstruction } from "@solana/web3.js";
 import { SwapUtils } from "../../../../dist/utils/public/swap-utils";
 
 describe("swap edge case test", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    anchor.setProvider(provider);
+    client = buildWhirlpoolClient(ctx);
+  });
 
   describe("SOL Wrapping", () => {
     async function buildTestFixture() {

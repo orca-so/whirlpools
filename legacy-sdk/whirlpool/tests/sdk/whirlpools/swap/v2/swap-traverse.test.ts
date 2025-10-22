@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
+import type { WhirlpoolContext } from "../../../../../src";
 import {
   buildWhirlpoolClient,
   MAX_SQRT_PRICE,
@@ -15,7 +16,6 @@ import {
   swapQuoteWithParams,
   SwapUtils,
   TICK_ARRAY_SIZE,
-  WhirlpoolContext,
 } from "../../../../../src";
 import type { WhirlpoolsError } from "../../../../../src/errors/errors";
 import { SwapErrorCode } from "../../../../../src/errors/errors";
@@ -25,7 +25,7 @@ import {
   assertQuoteAndResults,
   TickSpacing,
 } from "../../../../utils";
-import { defaultConfirmOptions } from "../../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../../utils/litesvm";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -36,15 +36,19 @@ import { TokenExtensionUtil } from "../../../../../src/utils/public/token-extens
 import { useMaxCU, type TokenTrait } from "../../../../utils/v2/init-utils-v2";
 
 describe("swap traversal tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    anchor.setProvider(provider);
+    client = buildWhirlpoolClient(ctx);
+  });
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

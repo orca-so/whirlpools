@@ -14,30 +14,37 @@ import {
   PriceMath,
   TickUtil,
 } from "../../../../src";
-import { WhirlpoolContext } from "../../../../src/context";
+import type { WhirlpoolContext } from "../../../../src/context";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   createAssociatedTokenAccount,
   TickSpacing,
   transferToken,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { initPosition } from "../../../utils/test-builders";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import { initTestPoolV2, useMaxCU } from "../../../utils/v2/init-utils-v2";
 import { mintTokensToTestAccountV2 } from "../../../utils/v2/token-2022";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../../utils/litesvm";
 
 describe("position-impl", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+    anchor.setProvider(provider);
+  });
 
   const tokenTraitVariations: {
     tokenTraitA: TokenTrait;
@@ -564,11 +571,37 @@ describe("position-impl", () => {
       IGNORE_CACHE,
     );
 
+    // Wait for position to be fully initialized and synced
+    const syncedPositionData = await pollForCondition(
+      () => fetcher.getPosition(positionAddress.publicKey, IGNORE_CACHE),
+      (p) =>
+        !!p &&
+        p.liquidity.gtn(0) &&
+        p.tickLowerIndex === lowerTick &&
+        p.tickUpperIndex === upperTick,
+      {
+        accountToReload: positionAddress.publicKey,
+        connection: ctx.connection,
+      },
+    );
+
     // Position is not empty
-    assert.ok(position.getData().liquidity.gtn(0));
-    // Position range is FullRange
-    assert.ok(position.getData().tickLowerIndex === lowerTick);
-    assert.ok(position.getData().tickUpperIndex === upperTick);
+    assert.ok(syncedPositionData!.liquidity.gtn(0));
+    // Position ticks should match initializable ticks derived from prices
+    const expectedLowerTickIndex = PriceMath.priceToInitializableTickIndex(
+      lowerPrice,
+      pool.getTokenAInfo().decimals,
+      pool.getTokenBInfo().decimals,
+      pool.getData().tickSpacing,
+    );
+    const expectedUpperTickIndex = PriceMath.priceToInitializableTickIndex(
+      upperPrice,
+      pool.getTokenAInfo().decimals,
+      pool.getTokenBInfo().decimals,
+      pool.getData().tickSpacing,
+    );
+    assert.ok(syncedPositionData!.tickLowerIndex === expectedLowerTickIndex);
+    assert.ok(syncedPositionData!.tickUpperIndex === expectedUpperTickIndex);
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       position.getData().positionMint,

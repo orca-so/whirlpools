@@ -469,11 +469,19 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     sendRawTransaction: async (rawTransaction: Buffer | Uint8Array) => {
       const vm = getLiteSVM();
       // Deserialize transaction to extract signature after processing
-      const tx = Transaction.from(rawTransaction);
+      // Try deserializing as versioned transaction first, fall back to legacy
+      let tx: Transaction | anchor.web3.VersionedTransaction;
+      try {
+        // Try VersionedTransaction first
+        tx = anchor.web3.VersionedTransaction.deserialize(rawTransaction);
+      } catch {
+        // Fall back to legacy Transaction
+        tx = Transaction.from(rawTransaction);
+      }
       // Send the raw transaction bytes directly to avoid type conflicts
       // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
       // but at runtime they're compatible
-      const result = vm.sendTransaction(Transaction.from(rawTransaction));
+      const result = vm.sendTransaction(tx);
       // Check if transaction failed
       if ("err" in result) {
         const error = result.err();
@@ -485,14 +493,23 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       }
       // Extract signature and store transaction
       let signature: string;
-      if (
-        tx.signatures &&
-        tx.signatures.length > 0 &&
-        tx.signatures[0].signature
-      ) {
-        signature = bs58.encode(tx.signatures[0].signature);
+      if (tx instanceof Transaction) {
+        if (
+          tx.signatures &&
+          tx.signatures.length > 0 &&
+          tx.signatures[0].signature
+        ) {
+          signature = bs58.encode(tx.signatures[0].signature);
+        } else {
+          signature = "litesvm-raw-tx-sig";
+        }
       } else {
-        signature = "litesvm-raw-tx-sig";
+        // VersionedTransaction
+        if (tx.signatures && tx.signatures.length > 0) {
+          signature = bs58.encode(tx.signatures[0]);
+        } else {
+          signature = "litesvm-raw-tx-sig";
+        }
       }
       // Store transaction for getParsedTransaction
       const txLogs = normalizeLogsForAnchor(result.logs());

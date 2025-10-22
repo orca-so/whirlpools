@@ -1,13 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type { WhirlpoolContext } from "../../../../src";
 import {
   buildWhirlpoolClient,
   PDAUtil,
   PriceMath,
   SPLASH_POOL_TICK_SPACING,
   TickUtil,
-  WhirlpoolContext,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
@@ -16,7 +16,6 @@ import {
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { buildTestPoolParams, initTestPool } from "../../../utils/init-utils";
 import { buildTestPoolV2Params } from "../../../utils/v2/init-utils-v2";
 import {
@@ -29,16 +28,20 @@ import {
   initPosition,
   mintTokensToTestAccount,
 } from "../../../utils/test-builders";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 
 describe("whirlpool-client-impl", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    client = buildWhirlpoolClient(ctx);
+    anchor.setProvider(provider);
+  });
 
   describe("TokenProgram", () => {
     let funderKeypair: anchor.web3.Keypair;
@@ -884,20 +887,22 @@ describe("whirlpool-client-impl", () => {
     const lowerPrice = new Decimal(89);
     const upperPrice = new Decimal(120);
     const withTokenExtensions = [true, false, true, false];
-    const positions = await Promise.all(
-      withTokenExtensions.map((withTokenExtension) =>
-        initPosition(
-          ctx,
-          pool,
-          lowerPrice,
-          upperPrice,
-          poolInitInfo.tokenMintA,
-          50,
-          undefined,
-          withTokenExtension,
-        ),
-      ),
-    );
+    const positions = [] as Array<Awaited<ReturnType<typeof initPosition>>>;
+    for (const withTokenExtension of withTokenExtensions) {
+      // Create positions sequentially to avoid AccountBorrowFailed in LiteSVM
+      // when creating multiple positions concurrently.
+      const pos = await initPosition(
+        ctx,
+        pool,
+        lowerPrice,
+        upperPrice,
+        poolInitInfo.tokenMintA,
+        50,
+        undefined,
+        withTokenExtension,
+      );
+      positions.push(pos);
+    }
 
     // check .getPosition
     const position0 = await client.getPosition(

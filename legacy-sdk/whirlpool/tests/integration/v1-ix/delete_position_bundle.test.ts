@@ -250,10 +250,18 @@ describe("delete_position_bundle", () => {
       "confirmed",
     );
 
-    // PositionBundle account should be closed
-    const postPositionBundle = await fetcher.getPositionBundle(
-      positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE,
+    // PositionBundle account should be closed (wait for state update)
+    const postPositionBundle = await pollForCondition(
+      () =>
+        fetcher.getPositionBundle(
+          positionBundleInfo.positionBundlePda.publicKey,
+          IGNORE_CACHE,
+        ),
+      (p) => p === null,
+      {
+        accountToReload: positionBundleInfo.positionBundlePda.publicKey,
+        connection: ctx.connection,
+      },
     );
     assert.ok(postPositionBundle === null);
 

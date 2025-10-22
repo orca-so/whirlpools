@@ -7,10 +7,9 @@ import {
 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { Whirlpool, WhirlpoolClient } from "../../../../src";
+import type { WhirlpoolClient, WhirlpoolContext } from "../../../../src";
 import {
   PDAUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
   collectFeesQuote,
@@ -23,15 +22,15 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import { useMaxCU } from "../../../utils/v2/init-utils-v2";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
-  program: Whirlpool;
+  program: anchor.Program;
   whirlpoolCtx: WhirlpoolContext;
   whirlpoolClient: WhirlpoolClient;
 }
@@ -43,15 +42,12 @@ describe("PositionImpl#collectFees()", () => {
   const tickSpacing = TickSpacing.Standard;
   const liquidityAmount = new BN(10_000_000);
 
-  beforeAll(() => {
-    const provider = anchor.AnchorProvider.local(
-      undefined,
-      defaultConfirmOptions,
-    );
-
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    const provider = env.provider;
+    const program = env.program;
+    const whirlpoolCtx = env.ctx;
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
-    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
     testCtx = {

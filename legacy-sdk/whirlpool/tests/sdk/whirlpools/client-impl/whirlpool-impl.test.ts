@@ -23,7 +23,7 @@ import {
   swapQuoteByInputToken,
   toTx,
 } from "../../../../src";
-import { WhirlpoolContext } from "../../../../src/context";
+import type { WhirlpoolContext } from "../../../../src/context";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   ONE_SOL,
@@ -37,7 +37,7 @@ import {
   systemTransferTx,
   transferToken,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
@@ -49,15 +49,20 @@ import { initTestPool } from "../../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../../utils/test-builders";
 
 describe("whirlpool-impl", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+
+    anchor.setProvider(provider);
+  });
 
   const tokenTraitVariations: {
     tokenTraitA: TokenTrait;
@@ -1060,15 +1065,9 @@ describe("whirlpool-impl", () => {
           signatures.push(await tx.addSigner(otherWallet).buildAndExecute());
         }
 
-        // To calculate the rewards that have accumulated up to the timing of the close (strictly, decreaseLiquidity),
-        // the block time at transaction execution is used.
-        // TODO: maxSupportedTransactionVersion needs to come from ctx
-        const tx = await ctx.provider.connection.getTransaction(signatures[0], {
-          maxSupportedTransactionVersion: 0,
-        });
-        const closeTimestampInSeconds = new anchor.BN(
-          tx!.blockTime!.toString(),
-        );
+        // To calculate rewards as of close timing under LiteSVM, use the pool's
+        // updated reward_last_updated_timestamp after close.
+        const postClosePoolData = await pool.refreshData();
         const rewardsQuote = collectRewardsQuote({
           whirlpool: poolData,
           position: positionData,
@@ -1080,7 +1079,7 @@ describe("whirlpool-impl", () => {
               poolData,
               IGNORE_CACHE,
             ),
-          timeStampInSeconds: closeTimestampInSeconds,
+          timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
         });
 
         assert.equal(
@@ -1481,13 +1480,8 @@ describe("whirlpool-impl", () => {
       signatures.push(await tx.addSigner(otherWallet).buildAndExecute());
     }
 
-    // To calculate the rewards that have accumulated up to the timing of the close (strictly, decreaseLiquidity),
-    // the block time at transaction execution is used.
-    // TODO: maxSupportedTransactionVersion needs to come from ctx
-    const tx = await ctx.provider.connection.getTransaction(signatures[0], {
-      maxSupportedTransactionVersion: 0,
-    });
-    const closeTimestampInSeconds = new anchor.BN(tx!.blockTime!.toString());
+    // Under LiteSVM, use the pool's updated timestamp after close.
+    const postClosePoolData = await pool.refreshData();
     const rewardsQuote = collectRewardsQuote({
       whirlpool: poolData,
       position: positionData,
@@ -1498,7 +1492,7 @@ describe("whirlpool-impl", () => {
         poolData,
         IGNORE_CACHE,
       ),
-      timeStampInSeconds: closeTimestampInSeconds,
+      timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
     });
 
     const otherWalletBalanceAfter = await ctx.connection.getBalance(

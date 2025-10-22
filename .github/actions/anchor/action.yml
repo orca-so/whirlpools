@@ -24,7 +24,7 @@ inputs:
     default: 'v2.2.1'
   anchor-version:
     description: 'The version of anchor to use.'
-    default: '0.31.2'
+    default: '0.31.0'
 
 runs:
   using: "composite"

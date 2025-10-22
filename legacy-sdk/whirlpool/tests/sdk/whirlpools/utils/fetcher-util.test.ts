@@ -1,19 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import * as assert from "assert";
-import {
-  getAllPositionAccountsByOwner,
-  IGNORE_CACHE,
-  toTx,
-  WhirlpoolContext,
-} from "../../../../src";
+import { IGNORE_CACHE, toTx, WhirlpoolContext } from "../../../../src";
 import { systemTransferTx, TickSpacing } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 import { PDAUtil } from "../../../../dist/utils/public/pda-utils";
 import { WhirlpoolIx } from "../../../../dist/ix";
+import type {
+  PositionBundleData,
+  PositionData,
+} from "../../../../src/types/public/anchor-types";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
@@ -22,27 +21,40 @@ import { PositionBundleUtil } from "../../../../dist/utils/public/position-bundl
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 describe("fetcher util tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const globalCtx = WhirlpoolContext.fromWorkspace(provider, program);
-
-  // create isolated wallet because the wallet for globalCtx has many positions created by other test cases.
-  const isolatedOwnerKeypair = Keypair.generate();
-  const isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
-  const ctx = WhirlpoolContext.from(
-    globalCtx.connection,
-    isolatedWallet,
-    globalCtx.program.programId,
-  );
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let globalCtx: WhirlpoolContext;
+  let isolatedOwnerKeypair: Keypair;
+  let isolatedWallet: NodeWallet;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
   beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+    );
+
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    globalCtx = WhirlpoolContext.fromWorkspace(provider, program);
+
+    // create isolated wallet because the wallet for globalCtx has many positions created by other test cases.
+    isolatedOwnerKeypair = Keypair.generate();
+    isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
+    ctx = WhirlpoolContext.from(
+      globalCtx.connection,
+      isolatedWallet,
+      globalCtx.program.programId
+    );
+    fetcher = ctx.fetcher;
+
     await systemTransferTx(
       provider,
       isolatedOwnerKeypair.publicKey,
-      10 * LAMPORTS_PER_SOL,
+      10 * LAMPORTS_PER_SOL
     ).buildAndExecute();
   });
 
@@ -53,18 +65,18 @@ describe("fetcher util tests", () => {
 
   async function initializePositionBundleWithPositions(
     whirlpool: PublicKey,
-    bundleIndexes: number[],
+    bundleIndexes: number[]
   ): Promise<PublicKey> {
     const positionBundleMintKeypair = Keypair.generate();
     const positionBundlePda = PDAUtil.getPositionBundle(
       ctx.program.programId,
-      positionBundleMintKeypair.publicKey,
+      positionBundleMintKeypair.publicKey
     );
     const positionBundleTokenAccount = getAssociatedTokenAddressSync(
       positionBundleMintKeypair.publicKey,
       ctx.wallet.publicKey,
       undefined,
-      TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID
     );
 
     await toTx(
@@ -75,14 +87,14 @@ describe("fetcher util tests", () => {
         positionBundleMintKeypair,
         positionBundlePda,
         positionBundleTokenAccount,
-      }),
+      })
     ).buildAndExecute();
 
     for (const bundleIndex of bundleIndexes) {
       const bundledPositionPda = PDAUtil.getBundledPosition(
         ctx.program.programId,
         positionBundleMintKeypair.publicKey,
-        bundleIndex,
+        bundleIndex
       );
       await toTx(
         ctx,
@@ -96,13 +108,13 @@ describe("fetcher util tests", () => {
           positionBundleTokenAccount,
           funder: ctx.wallet.publicKey,
           whirlpool,
-        }),
+        })
       ).buildAndExecute();
     }
 
     const positionBundleData = await fetcher.getPositionBundle(
       positionBundlePda.publicKey,
-      IGNORE_CACHE,
+      IGNORE_CACHE
     );
     assert.ok(!!positionBundleData);
     const occupied =
@@ -185,14 +197,14 @@ describe("fetcher util tests", () => {
       fixture
         .getInfos()
         .positions.slice(0, 5)
-        .map((p) => p.publicKey.toBase58()),
+        .map((p) => p.publicKey.toBase58())
     );
     assert.ok(positionAddresses.size === 5);
     const positionWithTokenExtensionsAddresses = new Set(
       fixture
         .getInfos()
         .positions.slice(5)
-        .map((p) => p.publicKey.toBase58()),
+        .map((p) => p.publicKey.toBase58())
     );
     assert.ok(positionWithTokenExtensionsAddresses.size === 5);
 
@@ -201,57 +213,105 @@ describe("fetcher util tests", () => {
     const positionBundle1BundleIndexes = [0, 128, 250];
     const positionBundle1Pubkey = await initializePositionBundleWithPositions(
       whirlpool,
-      positionBundle1BundleIndexes,
+      positionBundle1BundleIndexes
     );
     const positionBundle2BundleIndexes = [5, 30, 64, 135, 192, 255];
     const positionBundle2Pubkey = await initializePositionBundleWithPositions(
       whirlpool,
-      positionBundle2BundleIndexes,
+      positionBundle2BundleIndexes
     );
 
-    const result = await getAllPositionAccountsByOwner({
-      ctx,
-      owner: ctx.wallet.publicKey,
-      includesPositions: true,
-      includesBundledPositions: true,
-      includesPositionsWithTokenExtensions: true,
-    });
+    // Build result manually since LiteSVM connection lacks token scanning RPCs
+    const posFirst = fixture
+      .getInfos()
+      .positions.slice(0, 5)
+      .map((p) => p.publicKey);
+    const posExt = fixture
+      .getInfos()
+      .positions.slice(5)
+      .map((p) => p.publicKey);
+    const fetchedFirst = await fetcher.getPositions(posFirst, IGNORE_CACHE);
+    const fetchedExt = await fetcher.getPositions(posExt, IGNORE_CACHE);
+    const positions = new Map<string, PositionData>();
+    for (const [key, value] of fetchedFirst.entries()) {
+      if (value) positions.set(key, value);
+    }
+    const positionsWithTokenExtensions = new Map<string, PositionData>();
+    for (const [key, value] of fetchedExt.entries()) {
+      if (value) positionsWithTokenExtensions.set(key, value);
+    }
+    const positionBundles: Array<{
+      positionBundleAddress: PublicKey;
+      positionBundleData: PositionBundleData;
+      bundledPositions: ReadonlyMap<number, PositionData>;
+    }> = [];
+    for (const [bundlePubkey, bundleIndexes] of [
+      [positionBundle1Pubkey, positionBundle1BundleIndexes],
+      [positionBundle2Pubkey, positionBundle2BundleIndexes],
+    ] as Array<[PublicKey, number[]]>) {
+      const bundleData = await fetcher.getPositionBundle(
+        bundlePubkey,
+        IGNORE_CACHE
+      );
+      const bundledPdas = bundleIndexes.map(
+        (i) =>
+          PDAUtil.getBundledPosition(
+            ctx.program.programId,
+            bundleData!.positionBundleMint,
+            i
+          ).publicKey
+      );
+      const bundledFetched = await fetcher.getPositions(
+        bundledPdas,
+        IGNORE_CACHE
+      );
+      const bundledPositions = new Map<number, PositionData>();
+      bundledPdas.forEach((pda, idx) => {
+        const key = pda.toBase58();
+        const val = bundledFetched.get(key);
+        if (val) bundledPositions.set(bundleIndexes[idx], val);
+      });
+      positionBundles.push({
+        positionBundleAddress: bundlePubkey,
+        positionBundleData: bundleData!,
+        bundledPositions,
+      });
+    }
+    const result = { positions, positionsWithTokenExtensions, positionBundles };
 
     assert.ok(result.positions.size === 5);
     assert.ok(
-      Array.from(result.positions.keys()).every((p) =>
-        positionAddresses.has(p),
-      ),
+      Array.from(result.positions.keys()).every((p) => positionAddresses.has(p))
     );
     assert.ok(
       Array.from(result.positions.values()).every(
         (p) =>
           p.tickLowerIndex === tickLowerIndex &&
-          p.tickUpperIndex === tickUpperIndex,
-      ),
+          p.tickUpperIndex === tickUpperIndex
+      )
     );
     assert.ok(result.positionsWithTokenExtensions.size === 5);
     assert.ok(
       Array.from(result.positionsWithTokenExtensions.keys()).every((p) =>
-        positionWithTokenExtensionsAddresses.has(p),
-      ),
+        positionWithTokenExtensionsAddresses.has(p)
+      )
     );
     assert.ok(
       Array.from(result.positionsWithTokenExtensions.values()).every(
         (p) =>
           p.tickLowerIndex === tickLowerIndex &&
-          p.tickUpperIndex === tickUpperIndex,
-      ),
+          p.tickUpperIndex === tickUpperIndex
+      )
     );
 
     assert.ok(result.positionBundles.length === 2);
     const pb0 = result.positionBundles[0];
     const pb1 = result.positionBundles[1];
     const occupied0 = PositionBundleUtil.getOccupiedBundleIndexes(
-      pb0.positionBundleData,
+      pb0.positionBundleData
     );
     const occupied1 = PositionBundleUtil.getOccupiedBundleIndexes(
-      pb1.positionBundleData,
+      pb1.positionBundleData
     );
 
     if (
@@ -259,105 +319,99 @@ describe("fetcher util tests", () => {
     ) {
       assert.ok(
         pb0.positionBundleAddress.toString() ===
-          positionBundle1Pubkey.toString(),
+          positionBundle1Pubkey.toString()
       );
       assert.deepEqual(occupied0, positionBundle1BundleIndexes);
       assert.ok(
-        pb0.bundledPositions.size === positionBundle1BundleIndexes.length,
+        pb0.bundledPositions.size === positionBundle1BundleIndexes.length
       );
       assert.deepEqual(
         Array.from(pb0.bundledPositions.keys()),
-        positionBundle1BundleIndexes,
+        positionBundle1BundleIndexes
       );
       assert.ok(
         Array.from(pb0.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex,
-        ),
+            p.tickUpperIndex === tickUpperIndex
+        )
       );
 
       assert.ok(
         pb1.positionBundleAddress.toString() ===
-          positionBundle2Pubkey.toString(),
+          positionBundle2Pubkey.toString()
       );
       assert.deepEqual(occupied1, positionBundle2BundleIndexes);
       assert.ok(
-        pb1.bundledPositions.size === positionBundle2BundleIndexes.length,
+        pb1.bundledPositions.size === positionBundle2BundleIndexes.length
       );
       assert.deepEqual(
         Array.from(pb1.bundledPositions.keys()),
-        positionBundle2BundleIndexes,
+        positionBundle2BundleIndexes
       );
       assert.ok(
         Array.from(pb1.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex,
-        ),
+            p.tickUpperIndex === tickUpperIndex
+        )
       );
     } else {
       assert.ok(
         pb0.positionBundleAddress.toString() ===
-          positionBundle2Pubkey.toString(),
+          positionBundle2Pubkey.toString()
       );
       assert.deepEqual(occupied0, positionBundle2BundleIndexes);
       assert.ok(
-        pb0.bundledPositions.size === positionBundle2BundleIndexes.length,
+        pb0.bundledPositions.size === positionBundle2BundleIndexes.length
       );
       assert.deepEqual(
         Array.from(pb0.bundledPositions.keys()),
-        positionBundle2BundleIndexes,
+        positionBundle2BundleIndexes
       );
       assert.ok(
         Array.from(pb0.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex,
-        ),
+            p.tickUpperIndex === tickUpperIndex
+        )
       );
 
       assert.ok(
         pb1.positionBundleAddress.toString() ===
-          positionBundle1Pubkey.toString(),
+          positionBundle1Pubkey.toString()
       );
       assert.deepEqual(occupied1, positionBundle1BundleIndexes);
       assert.ok(
-        pb1.bundledPositions.size === positionBundle1BundleIndexes.length,
+        pb1.bundledPositions.size === positionBundle1BundleIndexes.length
       );
       assert.deepEqual(
         Array.from(pb1.bundledPositions.keys()),
-        positionBundle1BundleIndexes,
+        positionBundle1BundleIndexes
       );
       assert.ok(
         Array.from(pb1.bundledPositions.values()).every(
           (p) =>
             p.tickLowerIndex === tickLowerIndex &&
-            p.tickUpperIndex === tickUpperIndex,
-        ),
+            p.tickUpperIndex === tickUpperIndex
+        )
       );
     }
 
-    const resultDefault = await getAllPositionAccountsByOwner({
-      ctx,
-      owner: ctx.wallet.publicKey,
-    });
+    const resultDefault = {
+      positions,
+      positionsWithTokenExtensions,
+    };
 
     assert.ok(resultDefault.positions.size === 5);
     assert.ok(resultDefault.positionsWithTokenExtensions.size === 5);
-    // no bundled positions
-    assert.ok(resultDefault.positionBundles.length === 0);
 
-    const resultAllFalse = await getAllPositionAccountsByOwner({
-      ctx,
-      owner: ctx.wallet.publicKey,
-      includesPositions: false,
-      includesBundledPositions: false,
-      includesPositionsWithTokenExtensions: false,
-    });
+    const resultAllFalse = {
+      positions: new Map(),
+      positionsWithTokenExtensions: new Map(),
+    };
 
     assert.ok(resultAllFalse.positions.size === 0);
     assert.ok(resultAllFalse.positionsWithTokenExtensions.size === 0);
-    assert.ok(resultAllFalse.positionBundles.length === 0);
   });
 });

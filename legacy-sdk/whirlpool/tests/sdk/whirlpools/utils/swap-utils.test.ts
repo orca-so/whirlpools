@@ -9,20 +9,22 @@ import {
   SwapUtils,
   TICK_ARRAY_SIZE,
 } from "../../../../src";
-import { WhirlpoolContext } from "../../../../src/context";
-import { defaultConfirmOptions } from "../../../utils/const";
+import type { WhirlpoolContext } from "../../../../src/context";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import { testWhirlpoolData } from "../../../utils/testDataTypes";
 import BN from "bn.js";
 import { TickSpacing } from "../../../utils";
 
 describe("SwapUtils tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    anchor.setProvider(provider);
+  });
 
   describe("getSwapDirection", () => {
     it("SwapToken is tokenA and is an input", async () => {

@@ -31,23 +31,44 @@ import {
   TickSpacing,
   transferToken,
   ZERO_BN,
+  startLiteSVM,
+  createLiteSVMProvider,
+  expireBlockhash,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
   initializePositionBundle,
   initTestPool,
   openBundledPosition,
 } from "../../utils/init-utils";
 
-describe("open_bundled_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("open_bundled_position (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 32768;
@@ -355,7 +376,7 @@ describe("open_bundled_position", () => {
     checkBitmap(positionBundle, [bundleIndex]);
   });
 
-  describe("invalid bundle index", () => {
+  describe("invalid bundle index (LiteSVM)", () => {
     it("should be failed: invalid bundle index (< 0)", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
@@ -417,7 +438,7 @@ describe("open_bundled_position", () => {
     });
   });
 
-  describe("invalid tick index", () => {
+  describe("invalid tick index (LiteSVM)", () => {
     async function assertTicksFail(lowerTick: number, upperTick: number) {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
@@ -496,12 +517,13 @@ describe("open_bundled_position", () => {
         tickUpperIndex,
       ),
       (err) => {
-        return JSON.stringify(err).includes("already in use");
+        const errorString = err instanceof Error ? err.message : String(err);
+        return errorString.includes("already in use");
       },
     );
   });
 
-  describe("invalid input account", () => {
+  describe("invalid input account (LiteSVM)", () => {
     it("should be failed: invalid bundled position", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
@@ -695,7 +717,7 @@ describe("open_bundled_position", () => {
     });
   });
 
-  describe("authority delegation", () => {
+  describe("authority delegation (LiteSVM)", () => {
     it("successfully opens bundled position with delegated authority", async () => {
       const positionBundleInfo = await initializePositionBundle(
         ctx,
@@ -727,7 +749,21 @@ describe("open_bundled_position", () => {
         1,
         funderKeypair,
       );
-      await tx.buildAndExecute();
+
+      // Expire blockhash and rebuild transaction (litesvm requires fresh tx)
+      expireBlockhash();
+      const tx2 = await createOpenBundledPositionTx(
+        ctx,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        0,
+        {
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          positionBundleAuthority: ctx.wallet.publicKey,
+        },
+      );
+
+      await tx2.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
         IGNORE_CACHE,
@@ -797,14 +833,27 @@ describe("open_bundled_position", () => {
         funderKeypair,
       );
 
+      // Expire blockhash and rebuild transaction (litesvm requires fresh tx)
+      expireBlockhash();
+      const tx2 = await createOpenBundledPositionTx(
+        ctx,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        0,
+        {
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          positionBundleAuthority: ctx.wallet.publicKey,
+        },
+      );
+
       await assert.rejects(
-        tx.buildAndExecute(),
+        tx2.buildAndExecute(),
         /0x1784/, // InvalidPositionTokenAmount
       );
     });
   });
 
-  describe("transfer position bundle", () => {
+  describe("transfer position bundle (LiteSVM)", () => {
     it("successfully opens bundled position after position bundle token transfer", async () => {
       const positionBundleInfo = await initializePositionBundle(ctx);
 

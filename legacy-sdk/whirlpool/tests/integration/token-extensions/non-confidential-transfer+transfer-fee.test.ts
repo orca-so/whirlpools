@@ -18,7 +18,7 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import {
   calculateTransferFeeExcludedAmount,
@@ -33,14 +33,32 @@ import {
 import type { TransferFee } from "@solana/spl-token";
 import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 
-describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) + TransferFee", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) + TransferFee (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   // ConfidentialTransfer + TransferFee is combination test
   // We'll test owner to vault transfer by increase liquidity, vault to owner transfer by decrease liquidity
@@ -60,7 +78,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
     return transferFee;
   }
 
-  describe("increase_liquidity_v2", () => {
+  describe("increase_liquidity_v2 (LiteSVM)", () => {
     const tickLowerIndex = 7168;
     const tickUpperIndex = 8960;
     const currTick = Math.round((tickLowerIndex + tickUpperIndex) / 2);
@@ -265,7 +283,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
     });
   });
 
-  describe("decrease_liquidity_v2", () => {
+  describe("decrease_liquidity_v2 (LiteSVM)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let destAccountA: PublicKey;
     let destAccountB: PublicKey;

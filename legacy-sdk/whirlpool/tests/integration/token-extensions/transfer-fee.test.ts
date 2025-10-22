@@ -39,7 +39,12 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  advanceEpoch,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type {
   FundedPositionV2Params,
@@ -79,15 +84,33 @@ import { createSetTransferFeeInstruction } from "../../utils/v2/transfer-fee";
 import type { TokenExtensionContext } from "../../../src/utils/public/token-extension-util";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
-describe("TokenExtension/TransferFee", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+describe("TokenExtension/TransferFee (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   const dummyTokenMintWithProgram: MintWithTokenProgram = {
     address: PublicKey.default,
@@ -126,7 +149,7 @@ describe("TokenExtension/TransferFee", () => {
     return transferFee;
   }
 
-  const WAIT_EPOCH_TIMEOUT_MS = 30 * 1000;
+  const _WAIT_EPOCH_TIMEOUT_MS = 30 * 1000;
 
   async function getCurrentEpoch(): Promise<number> {
     const epochInfo = await provider.connection.getEpochInfo("confirmed");
@@ -134,16 +157,21 @@ describe("TokenExtension/TransferFee", () => {
   }
 
   async function waitEpoch(waitForEpoch: number) {
-    const startWait = Date.now();
+    const currentEpoch = await getCurrentEpoch();
+    const epochsToAdvance = waitForEpoch - currentEpoch;
 
-    while (Date.now() - startWait < WAIT_EPOCH_TIMEOUT_MS) {
-      const epoch = await getCurrentEpoch();
-      if (epoch >= waitForEpoch) return;
-      sleep(1000);
+    // In litesvm, we need to manually advance epochs
+    for (let i = 0; i < epochsToAdvance; i++) {
+      advanceEpoch();
     }
-    throw Error(
-      "waitEpoch Timeout, Please set slots_per_epoch smaller in Anchor.toml",
-    );
+
+    // Verify we've reached the target epoch
+    const newEpoch = await getCurrentEpoch();
+    if (newEpoch < waitForEpoch) {
+      throw Error(
+        `Failed to advance to epoch ${waitForEpoch}, currently at ${newEpoch}`,
+      );
+    }
   }
 
   async function fetchTransferFeeConfig(
@@ -174,7 +202,7 @@ describe("TokenExtension/TransferFee", () => {
     return new BN(amount.withheldAmount.toString());
   }
 
-  describe("collect_fees_v2, collect_protocol_fees_v2", () => {
+  describe("collect_fees_v2, collect_protocol_fees_v2 (LiteSVM)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let feeAccountA: PublicKey;
     let feeAccountB: PublicKey;
@@ -1370,7 +1398,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("collect_reward_v2", () => {
+  describe("collect_reward_v2 (LiteSVM)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let rewardAccounts: PublicKey[];
 
@@ -1428,7 +1456,7 @@ describe("TokenExtension/TransferFee", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,
@@ -1870,7 +1898,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("increase_liquidity_v2", () => {
+  describe("increase_liquidity_v2 (LiteSVM)", () => {
     const tickLowerIndex = 7168;
     const tickUpperIndex = 8960;
     const currTick = Math.round((tickLowerIndex + tickUpperIndex) / 2);
@@ -2948,7 +2976,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("decrease_liquidity_v2", () => {
+  describe("decrease_liquidity_v2 (LiteSVM)", () => {
     let fixture: WhirlpoolTestFixtureV2;
     let destAccountA: PublicKey;
     let destAccountB: PublicKey;
@@ -3986,7 +4014,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("swap_v2", () => {
+  describe("swap_v2 (LiteSVM)", () => {
     let poolInitInfo: InitPoolV2Params;
     let whirlpoolPda: PDA;
     let transferFeeA: TransferFee | null;
@@ -6216,7 +6244,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("two_hop_swap_v2", () => {
+  describe("two_hop_swap_v2 (LiteSVM)", () => {
     let aqConfig: InitAquariumV2Params;
     let aquarium: TestAquarium;
     let whirlpoolOneKey: PublicKey;
@@ -10361,7 +10389,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("Special cases", () => {
+  describe("Special cases (LiteSVM)", () => {
     // We know that all transfers are executed 2 functions depending on the direction, so 2 test cases.
 
     let fixture: WhirlpoolTestFixtureV2;
@@ -10409,7 +10437,7 @@ describe("TokenExtension/TransferFee", () => {
       });
     });
 
-    describe("use current fee rate even if next fee rate exists", () => {
+    describe("use current fee rate even if next fee rate exists (LiteSVM)", () => {
       it("owner to vault", async () => {
         // in A to B, owner to vault is input
 
@@ -10679,7 +10707,7 @@ describe("TokenExtension/TransferFee", () => {
       });
     });
 
-    describe("use updated fee rate once epoch comes", () => {
+    describe("use updated fee rate once epoch comes (LiteSVM)", () => {
       it("owner to vault", async () => {
         // in A to B, owner to vault is input
 
@@ -10976,7 +11004,7 @@ describe("TokenExtension/TransferFee", () => {
       });
     });
 
-    describe("use maximum limit", () => {
+    describe("use maximum limit (LiteSVM)", () => {
       it("owner to vault", async () => {
         // in A to B, owner to vault is input
 

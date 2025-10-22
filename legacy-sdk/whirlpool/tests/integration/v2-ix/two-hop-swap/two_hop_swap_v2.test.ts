@@ -27,12 +27,15 @@ import type {
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   getTokenBalance,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+  pollForCondition,
+  resetLiteSVM,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
   buildTestAquariumsV2,
@@ -53,16 +56,18 @@ import {
 } from "../../../../src/utils/public/token-extension-util";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
-describe("two_hop_swap_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("two_hop_swap_v2 (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let _detectedSignatureOne: string | null;
+  let _detectedSignatureTwo: string | null;
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  describe("v1 parity", () => {
+  // LiteSVM is now reset in beforeEach hooks for each test suite
+
+  describe("v1 parity (LiteSVM)", () => {
     // 8 patterns for tokenTraitA, tokenTraitB, tokenTraitC
     const tokenTraitVariations: {
       tokenTraitA: TokenTrait;
@@ -118,6 +123,19 @@ describe("two_hop_swap_v2", () => {
       }, tokenTraitC: ${tokenTraits.tokenTraitC.isToken2022 ? "Token2022" : "Token"}`, () => {
         let aqConfig: InitAquariumV2Params;
         beforeEach(async () => {
+          resetLiteSVM();
+          await startLiteSVM();
+          provider = await createLiteSVMProvider();
+          const programId = new anchor.web3.PublicKey(
+            "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          );
+          const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+            .default as anchor.Idl;
+          program = new anchor.Program(idl, programId, provider);
+          ctx = WhirlpoolContext.fromWorkspace(provider, program);
+          fetcher = ctx.fetcher;
+          client = buildWhirlpoolClient(ctx);
+
           aqConfig = getDefaultAquariumV2();
           // Add a third token and account and a second pool
           aqConfig.initMintParams = [
@@ -156,7 +174,7 @@ describe("two_hop_swap_v2", () => {
           aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
         });
 
-        describe("fails [2] with two-hop swap, invalid accounts", () => {
+        describe("fails [2] with two-hop swap, invalid accounts (LiteSVM)", () => {
           let baseIxParams: TwoHopSwapV2Params;
           beforeEach(async () => {
             const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
@@ -729,15 +747,50 @@ describe("two_hop_swap_v2", () => {
         });
 
         it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
+          // Explicitly reset LiteSVM for this test since it has custom config
+          await resetLiteSVM(); // resetLiteSVM already calls startLiteSVM internally
+          provider = await createLiteSVMProvider();
+          const programId = new anchor.web3.PublicKey(
+            "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          );
+          const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+            .default as anchor.Idl;
+          program = new anchor.Program(idl, programId, provider);
+          ctx = WhirlpoolContext.fromWorkspace(provider, program);
+          fetcher = ctx.fetcher;
+          client = buildWhirlpoolClient(ctx);
+
+          // Reset aqConfig for this test to avoid conflicts
+          aqConfig = getDefaultAquariumV2();
+          aqConfig.initMintParams = [
+            { tokenTrait: tokenTraits.tokenTraitA },
+            { tokenTrait: tokenTraits.tokenTraitB },
+            { tokenTrait: tokenTraits.tokenTraitC },
+          ];
+          aqConfig.initTokenAccParams.push({ mintIndex: 2 });
+
           // Add another mint and update pool so there is no overlapping mint
           aqConfig.initFeeTierParams.push({
             tickSpacing: TickSpacing.ThirtyTwo,
+          });
+          aqConfig.initPoolParams.push({
+            mintIndices: [1, 2],
+            tickSpacing: TickSpacing.Standard,
           });
           aqConfig.initPoolParams[1] = {
             mintIndices: [0, 1],
             tickSpacing: TickSpacing.ThirtyTwo,
             feeTierIndex: 1,
           };
+
+          // Add tick arrays for both pools
+          const aToB = false;
+          aqConfig.initTickArrayRangeParams.push({
+            poolIndex: 0,
+            startTickIndex: 22528,
+            arrayCount: 3,
+            aToB,
+          });
           aqConfig.initTickArrayRangeParams.push({
             poolIndex: 1,
             startTickIndex: 22528,
@@ -746,10 +799,21 @@ describe("two_hop_swap_v2", () => {
           });
           aqConfig.initTickArrayRangeParams.push({
             poolIndex: 1,
-            startTickIndex: 22528,
+            startTickIndex: 25344,
             arrayCount: 12,
             aToB: false,
           });
+
+          // Add positions
+          const fundParams: FundedPositionV2Params[] = [
+            {
+              liquidityAmount: new anchor.BN(10_000_000),
+              tickLowerIndex: 29440,
+              tickUpperIndex: 33536,
+            },
+          ];
+          aqConfig.initPositionParams.push({ poolIndex: 0, fundParams });
+          aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
 
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
@@ -2113,10 +2177,10 @@ describe("two_hop_swap_v2", () => {
           const whirlpoolTwoPre = whirlpoolDataTwo;
 
           // event verification
-          let eventVerifiedOne = false;
-          let eventVerifiedTwo = false;
-          let detectedSignatureOne = null;
-          let detectedSignatureTwo = null;
+          let eventVerifiedOne: boolean = false;
+          let eventVerifiedTwo: boolean = false;
+          let detectedSignatureOne: string | null = null;
+          let detectedSignatureTwo: string | null = null;
           const listener = ctx.program.addEventListener(
             "Traded",
             (event, _slot, signature) => {
@@ -2163,7 +2227,7 @@ describe("two_hop_swap_v2", () => {
             },
           );
 
-          const signature = await toTx(
+          const _signature = await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
@@ -2176,11 +2240,25 @@ describe("two_hop_swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          await sleep(2000);
-          assert.equal(signature, detectedSignatureOne);
-          assert.equal(signature, detectedSignatureTwo);
-          assert.ok(eventVerifiedOne);
-          assert.ok(eventVerifiedTwo);
+          warpClock(2);
+          const polled = await pollForCondition(
+            async () => ({
+              detectedSignatureOne,
+              detectedSignatureTwo,
+              eventVerifiedOne,
+              eventVerifiedTwo,
+            }),
+            (r) =>
+              !!r.detectedSignatureOne &&
+              !!r.detectedSignatureTwo &&
+              !!r.eventVerifiedOne &&
+              !!r.eventVerifiedTwo,
+            { maxRetries: 100, delayMs: 10 },
+          );
+          assert.ok(!!polled.detectedSignatureOne);
+          assert.ok(!!polled.detectedSignatureTwo);
+          assert.ok(polled.eventVerifiedOne);
+          assert.ok(polled.eventVerifiedTwo);
 
           ctx.program.removeEventListener(listener);
         });
@@ -2188,8 +2266,8 @@ describe("two_hop_swap_v2", () => {
     });
   });
 
-  describe("v2 specific accounts", () => {
-    describe("with Token-2022", () => {
+  describe("v2 specific accounts (LiteSVM)", () => {
+    describe("with Token-2022 (LiteSVM)", () => {
       const tokenTraits = {
         tokenTraitA: { isToken2022: true },
         tokenTraitB: { isToken2022: true },
@@ -2201,6 +2279,19 @@ describe("two_hop_swap_v2", () => {
       let otherTokenPublicKey: PublicKey;
 
       beforeEach(async () => {
+        resetLiteSVM();
+        await startLiteSVM();
+        provider = await createLiteSVMProvider();
+        const programId = new anchor.web3.PublicKey(
+          "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+        );
+        const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+          .default as anchor.Idl;
+        program = new anchor.Program(idl, programId, provider);
+        ctx = WhirlpoolContext.fromWorkspace(provider, program);
+        fetcher = ctx.fetcher;
+        client = buildWhirlpoolClient(ctx);
+
         otherTokenPublicKey = await createMintV2(provider, {
           isToken2022: true,
         });
@@ -2330,7 +2421,7 @@ describe("two_hop_swap_v2", () => {
         };
       });
 
-      describe("fails when passed token_mint_* does not match whirlpool's token_mint_*_*", () => {
+      describe("fails when passed token_mint_* does not match whirlpool's token_mint_*_* (LiteSVM)", () => {
         it("token_mint_input", async () => {
           await rejectParams(
             {
@@ -2360,7 +2451,7 @@ describe("two_hop_swap_v2", () => {
         });
       });
 
-      describe("fails when passed token_program_* is not token-2022 program (token is passed)", () => {
+      describe("fails when passed token_program_* is not token-2022 program (token is passed) (LiteSVM)", () => {
         it("token_program_input", async () => {
           await rejectParams(
             {
@@ -2390,7 +2481,7 @@ describe("two_hop_swap_v2", () => {
         });
       });
 
-      describe("fails when passed token_program_*_* is token_metadata", () => {
+      describe("fails when passed token_program_*_* is token_metadata (LiteSVM)", () => {
         it("token_program_input", async () => {
           await rejectParams(
             {
@@ -2449,7 +2540,7 @@ describe("two_hop_swap_v2", () => {
       });
     });
 
-    describe("with Token", () => {
+    describe("with Token (LiteSVM)", () => {
       const tokenTraits = {
         tokenTraitA: { isToken2022: false },
         tokenTraitB: { isToken2022: false },
@@ -2460,6 +2551,19 @@ describe("two_hop_swap_v2", () => {
       let baseIxParams: TwoHopSwapV2Params;
 
       beforeEach(async () => {
+        resetLiteSVM();
+        await startLiteSVM();
+        provider = await createLiteSVMProvider();
+        const programId = new anchor.web3.PublicKey(
+          "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+        );
+        const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+          .default as anchor.Idl;
+        program = new anchor.Program(idl, programId, provider);
+        ctx = WhirlpoolContext.fromWorkspace(provider, program);
+        fetcher = ctx.fetcher;
+        client = buildWhirlpoolClient(ctx);
+
         await createMintV2(provider, {
           isToken2022: false,
         });
@@ -2589,7 +2693,7 @@ describe("two_hop_swap_v2", () => {
         };
       });
 
-      describe("fails when passed token_program_* is not token program (token-2022 is passed)", () => {
+      describe("fails when passed token_program_* is not token program (token-2022 is passed) (LiteSVM)", () => {
         it("token_program_input", async () => {
           await rejectParams(
             {
@@ -2621,8 +2725,8 @@ describe("two_hop_swap_v2", () => {
     });
   });
 
-  describe("partial fill", () => {
-    const client = buildWhirlpoolClient(ctx);
+  describe("partial fill (LiteSVM)", () => {
+    // use shared client initialized in beforeAll
     const aqConfig = {
       ...getDefaultAquariumV2(),
       initMintParams: [

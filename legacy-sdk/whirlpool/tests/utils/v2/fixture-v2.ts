@@ -162,11 +162,9 @@ async function initTickArraysV2(
     );
   });
 
-  return Promise.all(
-    Array.from(startTickSet).map((startTick) =>
-      initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
-    ),
-  );
+  for (const startTick of Array.from(startTickSet)) {
+    await initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick);
+  }
 }
 
 async function initDynamicTickArraysV2(
@@ -184,11 +182,13 @@ async function initDynamicTickArraysV2(
     );
   });
 
-  return Promise.all(
-    Array.from(startTickSet).map((startTick) =>
-      initDynamicTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
-    ),
-  );
+  for (const startTick of Array.from(startTickSet)) {
+    await initDynamicTickArray(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      startTick,
+    );
+  }
 }
 
 const defaultPoolInitInfoV2: InitPoolV2Params = {

@@ -37,7 +37,7 @@ import {
   systemTransferTx,
   transferToken,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
@@ -49,15 +49,27 @@ import { initTestPool } from "../../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../../utils/test-builders";
 
 describe("whirlpool-impl", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   const tokenTraitVariations: {
     tokenTraitA: TokenTrait;
@@ -1060,15 +1072,9 @@ describe("whirlpool-impl", () => {
           signatures.push(await tx.addSigner(otherWallet).buildAndExecute());
         }
 
-        // To calculate the rewards that have accumulated up to the timing of the close (strictly, decreaseLiquidity),
-        // the block time at transaction execution is used.
-        // TODO: maxSupportedTransactionVersion needs to come from ctx
-        const tx = await ctx.provider.connection.getTransaction(signatures[0], {
-          maxSupportedTransactionVersion: 0,
-        });
-        const closeTimestampInSeconds = new anchor.BN(
-          tx!.blockTime!.toString(),
-        );
+        // To calculate rewards as of close timing under LiteSVM, use the pool's
+        // updated reward_last_updated_timestamp after close.
+        const postClosePoolData = await pool.refreshData();
         const rewardsQuote = collectRewardsQuote({
           whirlpool: poolData,
           position: positionData,
@@ -1080,7 +1086,7 @@ describe("whirlpool-impl", () => {
               poolData,
               IGNORE_CACHE,
             ),
-          timeStampInSeconds: closeTimestampInSeconds,
+          timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
         });
 
         assert.equal(
@@ -1481,13 +1487,8 @@ describe("whirlpool-impl", () => {
       signatures.push(await tx.addSigner(otherWallet).buildAndExecute());
     }
 
-    // To calculate the rewards that have accumulated up to the timing of the close (strictly, decreaseLiquidity),
-    // the block time at transaction execution is used.
-    // TODO: maxSupportedTransactionVersion needs to come from ctx
-    const tx = await ctx.provider.connection.getTransaction(signatures[0], {
-      maxSupportedTransactionVersion: 0,
-    });
-    const closeTimestampInSeconds = new anchor.BN(tx!.blockTime!.toString());
+    // Under LiteSVM, use the pool's updated timestamp after close.
+    const postClosePoolData = await pool.refreshData();
     const rewardsQuote = collectRewardsQuote({
       whirlpool: poolData,
       position: positionData,
@@ -1498,7 +1499,7 @@ describe("whirlpool-impl", () => {
         poolData,
         IGNORE_CACHE,
       ),
-      timeStampInSeconds: closeTimestampInSeconds,
+      timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
     });
 
     const otherWalletBalanceAfter = await ctx.connection.getBalance(
@@ -1628,8 +1629,12 @@ describe("whirlpool-impl", () => {
 
     // check generated instructions
     const instructions = tx.compressIx(true).instructions;
-    const createIxs = instructions.filter((ix) =>
-      ix.programId.equals(ASSOCIATED_PROGRAM_ID),
+    const createIxs = instructions.filter(
+      (ix: {
+        programId: anchor.web3.PublicKey;
+        keys: Array<{ pubkey: anchor.web3.PublicKey }>;
+        data: Uint8Array;
+      }) => ix.programId.equals(ASSOCIATED_PROGRAM_ID),
     );
     assert.ok(createIxs.length === 1);
     assert.ok(createIxs[0].keys[1].pubkey.equals(tokenAccountB));

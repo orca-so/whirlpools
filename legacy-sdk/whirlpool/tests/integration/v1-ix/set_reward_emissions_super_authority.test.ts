@@ -2,19 +2,37 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { WhirlpoolsConfigData } from "../../../src";
 import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
 import { getLocalnetAdminKeypair0 } from "../../utils";
 
-describe("set_reward_emissions_super_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("set_reward_emissions_super_authority (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   it("successfully set_reward_emissions_super_authority with super authority keypair", async () => {
     const admin = await getLocalnetAdminKeypair0(ctx);

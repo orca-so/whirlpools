@@ -1,3 +1,9 @@
+/**
+ * Token Badge Initialize Test - LiteSVM Version
+ *
+ * Migrated from legacy-sdk/whirlpool/tests/integration/token-badge/initialize_token_badge.test.ts
+ * to use Bankrun instead of solana-test-validator for faster test execution.
+ */
 import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
@@ -9,22 +15,19 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
-} from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { InitializeTokenBadgeParams } from "../../../src/instructions";
+} from "@orca-so/whirlpools-sdk";
+import type { InitializeTokenBadgeParams } from "@orca-so/whirlpools-sdk/dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import whirlpoolIdl from "../../../src/artifacts/whirlpool.json";
 
-describe("initialize_token_badge", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("initialize_token_badge (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -32,6 +35,18 @@ describe("initialize_token_badge", () => {
   const initialConfigExtensionAuthorityKeypair = feeAuthorityKeypair;
   const initialTokenBadgeAuthorityKeypair = feeAuthorityKeypair;
   const updatedTokenBadgeAuthorityKeypair = Keypair.generate();
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = whirlpoolIdl as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   async function createOtherWallet(): Promise<Keypair> {
     const keypair = Keypair.generate();
@@ -271,8 +286,16 @@ describe("initialize_token_badge", () => {
     // re-initialize
     await assert.rejects(
       initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
+      (err: unknown) => {
+        const errStr = JSON.stringify(err);
+        const message =
+          typeof err === "object" && err !== null && "message" in err
+            ? String((err as { message?: string }).message)
+            : "";
+        return (
+          errStr.includes("already in use") ||
+          message.includes("already in use")
+        );
       },
     );
   });

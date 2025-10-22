@@ -27,7 +27,7 @@ import {
   TickSpacing,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import {
   initializePositionBundle,
@@ -42,14 +42,32 @@ import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../util
 import type { PublicKey } from "@solana/web3.js";
 import { createTokenAccountV2 } from "../../utils/v2/token-2022";
 
-describe("close_position_with_token_extensions", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("close_position_with_token_extensions (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    await startLiteSVM();
+
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+
+    program = new anchor.Program(idl, programId, provider);
+    // program initialized in beforeAll
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 11392;
@@ -77,7 +95,7 @@ describe("close_position_with_token_extensions", () => {
     assert.equal(await provider.connection.getAccountInfo(address), undefined);
   }
 
-  describe("successfully closes an open position", () => {
+  describe("successfully closes an open position (LiteSVM)", () => {
     [true, false].map((withMetadata) => {
       it(`successfully closes an open position ${withMetadata ? "with" : "without"} metadata`, async () => {
         const { params, mint } =
@@ -945,7 +963,7 @@ describe("close_position_with_token_extensions", () => {
     );
   });
 
-  describe("TokenProgram based position and bundled position", () => {
+  describe("TokenProgram based position and bundled position (LiteSVM)", () => {
     it("fails if position is TokenProgram based position", async () => {
       // TokenProgram based poition
       const { params } = await openPosition(

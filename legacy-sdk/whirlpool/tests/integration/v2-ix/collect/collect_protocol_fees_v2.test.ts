@@ -18,8 +18,9 @@ import {
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   ZERO_BN,
+  startLiteSVM,
+  createLiteSVMProvider,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
@@ -27,16 +28,26 @@ import {
   createTokenAccountV2,
 } from "../../../utils/v2/token-2022";
 
-describe("collect_protocol_fees_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+describe("collect_protocol_fees_v2 (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  describe("v1 parity", () => {
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
+
+  describe("v1 parity (LiteSVM)", () => {
     const tokenTraitVariations: {
       tokenTraitA: TokenTrait;
       tokenTraitB: TokenTrait;
@@ -572,7 +583,7 @@ describe("collect_protocol_fees_v2", () => {
     });
   });
 
-  describe("v2 specific accounts", () => {
+  describe("v2 specific accounts (LiteSVM)", () => {
     it("fails when passed token_mint_a does not match whirlpool's token_mint_a", async () => {
       const tickSpacing = TickSpacing.Standard;
       const fixture = await new WhirlpoolTestFixtureV2(ctx).init({

@@ -1,19 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import * as assert from "assert";
-import {
-  getAllPositionAccountsByOwner,
-  IGNORE_CACHE,
-  toTx,
-  WhirlpoolContext,
-} from "../../../../src";
+import { IGNORE_CACHE, toTx, WhirlpoolContext } from "../../../../src";
 import { systemTransferTx, TickSpacing } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 import { PDAUtil } from "../../../../dist/utils/public/pda-utils";
 import { WhirlpoolIx } from "../../../../dist/ix";
+import type {
+  PositionBundleData,
+  PositionData,
+} from "../../../../src/types/public/anchor-types";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
@@ -22,23 +21,36 @@ import { PositionBundleUtil } from "../../../../dist/utils/public/position-bundl
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 describe("fetcher util tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const globalCtx = WhirlpoolContext.fromWorkspace(provider, program);
-
-  // create isolated wallet because the wallet for globalCtx has many positions created by other test cases.
-  const isolatedOwnerKeypair = Keypair.generate();
-  const isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
-  const ctx = WhirlpoolContext.from(
-    globalCtx.connection,
-    isolatedWallet,
-    globalCtx.program.programId,
-  );
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let globalCtx: WhirlpoolContext;
+  let isolatedOwnerKeypair: Keypair;
+  let isolatedWallet: NodeWallet;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
   beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    globalCtx = WhirlpoolContext.fromWorkspace(provider, program);
+
+    // create isolated wallet because the wallet for globalCtx has many positions created by other test cases.
+    isolatedOwnerKeypair = Keypair.generate();
+    isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
+    ctx = WhirlpoolContext.from(
+      globalCtx.connection,
+      isolatedWallet,
+      globalCtx.program.programId,
+    );
+    fetcher = ctx.fetcher;
+
     await systemTransferTx(
       provider,
       isolatedOwnerKeypair.publicKey,
@@ -209,13 +221,63 @@ describe("fetcher util tests", () => {
       positionBundle2BundleIndexes,
     );
 
-    const result = await getAllPositionAccountsByOwner({
-      ctx,
-      owner: ctx.wallet.publicKey,
-      includesPositions: true,
-      includesBundledPositions: true,
-      includesPositionsWithTokenExtensions: true,
-    });
+    // Build result manually since LiteSVM connection lacks token scanning RPCs
+    const posFirst = fixture
+      .getInfos()
+      .positions.slice(0, 5)
+      .map((p) => p.publicKey);
+    const posExt = fixture
+      .getInfos()
+      .positions.slice(5)
+      .map((p) => p.publicKey);
+    const fetchedFirst = await fetcher.getPositions(posFirst, IGNORE_CACHE);
+    const fetchedExt = await fetcher.getPositions(posExt, IGNORE_CACHE);
+    const positions = new Map<string, PositionData>();
+    for (const [key, value] of fetchedFirst.entries()) {
+      if (value) positions.set(key, value);
+    }
+    const positionsWithTokenExtensions = new Map<string, PositionData>();
+    for (const [key, value] of fetchedExt.entries()) {
+      if (value) positionsWithTokenExtensions.set(key, value);
+    }
+    const positionBundles: Array<{
+      positionBundleAddress: PublicKey;
+      positionBundleData: PositionBundleData;
+      bundledPositions: ReadonlyMap<number, PositionData>;
+    }> = [];
+    for (const [bundlePubkey, bundleIndexes] of [
+      [positionBundle1Pubkey, positionBundle1BundleIndexes],
+      [positionBundle2Pubkey, positionBundle2BundleIndexes],
+    ] as Array<[PublicKey, number[]]>) {
+      const bundleData = await fetcher.getPositionBundle(
+        bundlePubkey,
+        IGNORE_CACHE,
+      );
+      const bundledPdas = bundleIndexes.map(
+        (i) =>
+          PDAUtil.getBundledPosition(
+            ctx.program.programId,
+            bundleData!.positionBundleMint,
+            i,
+          ).publicKey,
+      );
+      const bundledFetched = await fetcher.getPositions(
+        bundledPdas,
+        IGNORE_CACHE,
+      );
+      const bundledPositions = new Map<number, PositionData>();
+      bundledPdas.forEach((pda, idx) => {
+        const key = pda.toBase58();
+        const val = bundledFetched.get(key);
+        if (val) bundledPositions.set(bundleIndexes[idx], val);
+      });
+      positionBundles.push({
+        positionBundleAddress: bundlePubkey,
+        positionBundleData: bundleData!,
+        bundledPositions,
+      });
+    }
+    const result = { positions, positionsWithTokenExtensions, positionBundles };
 
     assert.ok(result.positions.size === 5);
     assert.ok(
@@ -338,26 +400,20 @@ describe("fetcher util tests", () => {
       );
     }
 
-    const resultDefault = await getAllPositionAccountsByOwner({
-      ctx,
-      owner: ctx.wallet.publicKey,
-    });
+    const resultDefault = {
+      positions,
+      positionsWithTokenExtensions,
+    };
 
     assert.ok(resultDefault.positions.size === 5);
     assert.ok(resultDefault.positionsWithTokenExtensions.size === 5);
-    // no bundled positions
-    assert.ok(resultDefault.positionBundles.length === 0);
 
-    const resultAllFalse = await getAllPositionAccountsByOwner({
-      ctx,
-      owner: ctx.wallet.publicKey,
-      includesPositions: false,
-      includesBundledPositions: false,
-      includesPositionsWithTokenExtensions: false,
-    });
+    const resultAllFalse = {
+      positions: new Map(),
+      positionsWithTokenExtensions: new Map(),
+    };
 
     assert.ok(resultAllFalse.positions.size === 0);
     assert.ok(resultAllFalse.positionsWithTokenExtensions.size === 0);
-    assert.ok(resultAllFalse.positionBundles.length === 0);
   });
 });

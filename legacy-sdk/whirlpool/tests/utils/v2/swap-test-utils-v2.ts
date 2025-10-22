@@ -73,26 +73,24 @@ export async function fundPositionsWithClient(
 ) {
   const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
   const whirlpoolData = whirlpool.getData();
-  await Promise.all(
-    fundParams.map(async (param) => {
-      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
-        param.liquidityAmount,
-        whirlpoolData.sqrtPrice,
-        PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
-        PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
-        true,
-      );
+  for (const param of fundParams) {
+    const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+      param.liquidityAmount,
+      whirlpoolData.sqrtPrice,
+      PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
+      true,
+    );
 
-      const { tx } = await whirlpool.openPosition(
-        param.tickLowerIndex,
-        param.tickUpperIndex,
-        {
-          liquidityAmount: param.liquidityAmount,
-          tokenMaxA: tokenA,
-          tokenMaxB: tokenB,
-        },
-      );
-      await tx.addInstruction(useMaxCU()).buildAndExecute();
-    }),
-  );
+    const { tx } = await whirlpool.openPosition(
+      param.tickLowerIndex,
+      param.tickUpperIndex,
+      {
+        liquidityAmount: param.liquidityAmount,
+        tokenMaxA: tokenA,
+        tokenMaxB: tokenB,
+      },
+    );
+    await tx.addInstruction(useMaxCU()).buildAndExecute();
+  }
 }

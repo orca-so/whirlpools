@@ -1,22 +1,42 @@
+/**
+ * initialize_config_extension Test - LiteSVM Version
+ *
+ * Migrated from legacy-sdk/whirlpool/tests/integration/token-badge/initialize_config_extension.test.ts
+ * to use Bankrun instead of solana-test-validator for faster test execution.
+ */
 import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { InitConfigExtensionParams } from "../../../src/instructions";
+import {
+  PDAUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "@orca-so/whirlpools-sdk";
+import type { InitConfigExtensionParams } from "@orca-so/whirlpools-sdk/dist/instructions";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
+import whirlpoolIdl from "../../../src/artifacts/whirlpool.json";
 
-describe("initialize_config_extension", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("initialize_config_extension (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = whirlpoolIdl as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -217,8 +237,16 @@ describe("initialize_config_extension", () => {
         whirlpoolsConfigKeypair.publicKey,
         {},
       ),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
+      (err: unknown) => {
+        const errStr = JSON.stringify(err);
+        const message =
+          typeof err === "object" && err !== null && "message" in err
+            ? String((err as { message?: string }).message)
+            : "";
+        return (
+          errStr.includes("already in use") ||
+          message.includes("already in use")
+        );
       },
     );
   });

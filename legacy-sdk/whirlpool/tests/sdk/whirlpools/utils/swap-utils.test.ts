@@ -10,19 +10,29 @@ import {
   TICK_ARRAY_SIZE,
 } from "../../../../src";
 import { WhirlpoolContext } from "../../../../src/context";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../../utils/litesvm";
 import { testWhirlpoolData } from "../../../utils/testDataTypes";
 import BN from "bn.js";
 import { TickSpacing } from "../../../utils";
 
 describe("SwapUtils tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  });
 
   describe("getSwapDirection", () => {
     it("SwapToken is tokenA and is an input", async () => {

@@ -25,7 +25,7 @@ import {
   assertQuoteAndResults,
   TickSpacing,
 } from "../../../../utils";
-import { defaultConfirmOptions } from "../../../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../../../utils/litesvm";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -36,15 +36,27 @@ import { TokenExtensionUtil } from "../../../../../src/utils/public/token-extens
 import { useMaxCU, type TokenTrait } from "../../../../utils/v2/init-utils-v2";
 
 describe("swap traversal tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

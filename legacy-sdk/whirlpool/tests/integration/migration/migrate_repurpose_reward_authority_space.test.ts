@@ -3,18 +3,36 @@ import * as assert from "assert";
 import { toTx, WhirlpoolContext } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  loadPreloadAccount,
+} from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
+import whirlpoolIdl from "../../../src/artifacts/whirlpool.json";
 
-describe("migrate_repurpose_reward_authority_space", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("migrate_repurpose_reward_authority_space (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = whirlpoolIdl as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+
+    // Load preload accounts for migration testing
+    loadPreloadAccount(
+      "migrate_repurpose_reward_authority_space/whirlpool.json",
+    );
+  });
 
   // SDK doesn't provide WhirlpoolIx interface for this temporary instruction
   // so we need to use the raw instruction builder
@@ -110,8 +128,12 @@ describe("migrate_repurpose_reward_authority_space", () => {
         ),
       ),
     );
-    assert.ok(migratedWhirlpool.rewardInfos[1].extension.every((b) => b === 0));
-    assert.ok(migratedWhirlpool.rewardInfos[2].extension.every((b) => b === 0));
+    assert.ok(
+      migratedWhirlpool.rewardInfos[1].extension.every((b: number) => b === 0),
+    );
+    assert.ok(
+      migratedWhirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+    );
 
     // fields other than rewardInfos should be the same
     assert.ok(

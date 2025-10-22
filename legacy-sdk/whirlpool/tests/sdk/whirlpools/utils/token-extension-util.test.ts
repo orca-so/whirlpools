@@ -10,17 +10,14 @@ import {
   WhirlpoolContext,
 } from "../../../../src";
 import { TickSpacing } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 
 describe("TokenExtensionUtil tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
   let fixture: WhirlpoolTestFixtureV2;
 
@@ -36,6 +33,18 @@ describe("TokenExtensionUtil tests", () => {
   }
 
   beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
     const vaultStartBalance = 1_000_000;
     const lowerTickIndex = -1280,
       upperTickIndex = 1280,

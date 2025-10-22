@@ -18,26 +18,46 @@ import {
   createMint,
   createTokenAccount,
   getTokenBalance,
-  sleep,
   TickSpacing,
   transferToken,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  warpClock,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
-describe("collect_reward", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("collect_reward (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  let program: anchor.Program;
+
+  let ctx: WhirlpoolContext;
+
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   it("successfully collect rewards", async () => {
     const vaultStartBalance = 1_000_000;
@@ -76,7 +96,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     await toTx(
       ctx,
@@ -181,7 +201,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -249,7 +269,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -322,7 +342,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -380,7 +400,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const fakeRewardMint = await createMint(provider);
     const rewardOwnerAccount = await createTokenAccount(
@@ -427,7 +447,7 @@ describe("collect_reward", () => {
     const { positions, rewards } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const {
       poolInitInfo: { whirlpoolPda },
@@ -479,7 +499,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -539,7 +559,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -594,7 +614,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -646,7 +666,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -704,7 +724,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -760,7 +780,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -809,7 +829,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -858,7 +878,7 @@ describe("collect_reward", () => {
     } = fixture.getInfos();
 
     // accrue rewards
-    await sleep(1200);
+    warpClock(2);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -878,7 +898,7 @@ describe("collect_reward", () => {
           rewardIndex: 4,
         }),
       ).buildAndExecute(),
-      /Program failed to complete/, // index out of bounds
+      /ProgramFailedToComplete|SBF program panicked/, // index out of bounds
     );
   });
 });

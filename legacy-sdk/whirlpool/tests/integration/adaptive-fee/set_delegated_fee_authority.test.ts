@@ -8,23 +8,32 @@ import {
   WhirlpoolIx,
 } from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { startLiteSVM, createLiteSVMProvider } from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initializeConfigWithDefaultConfigParams,
 } from "../../utils/init-utils";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import whirlpoolIdl from "../../../src/artifacts/whirlpool.json";
 
-describe("set_delegated_fee_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+describe("set_delegated_fee_authority (LiteSVM)", () => {
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = whirlpoolIdl as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+  });
 
   const tickSpacing = 64;
   const feeTierIndex = 1024 + tickSpacing;

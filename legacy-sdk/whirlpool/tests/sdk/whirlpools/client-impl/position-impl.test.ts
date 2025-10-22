@@ -21,23 +21,35 @@ import {
   TickSpacing,
   transferToken,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { initPosition } from "../../../utils/test-builders";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import { initTestPoolV2, useMaxCU } from "../../../utils/v2/init-utils-v2";
 import { mintTokensToTestAccountV2 } from "../../../utils/v2/token-2022";
+import { startLiteSVM, createLiteSVMProvider } from "../../../utils/litesvm";
 
 describe("position-impl", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    await startLiteSVM();
+    provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    program = new anchor.Program(idl, programId, provider);
+    ctx = WhirlpoolContext.fromWorkspace(provider, program);
+    fetcher = ctx.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   const tokenTraitVariations: {
     tokenTraitA: TokenTrait;

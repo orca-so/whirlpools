@@ -19,7 +19,7 @@ import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { Whirlpool, WhirlpoolClient } from "../../../../src";
+import type { WhirlpoolClient } from "../../../../src";
 import {
   NUM_REWARDS,
   PDAUtil,
@@ -32,17 +32,21 @@ import {
   toTx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import { TickSpacing, ZERO_BN } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { TickSpacing, ZERO_BN, warpClock } from "../../../utils";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
 import type { FundedPositionInfo } from "../../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import { useMaxCU } from "../../../utils/v2/init-utils-v2";
+import {
+  startLiteSVM,
+  createLiteSVMProvider,
+  resetLiteSVM,
+} from "../../../utils/litesvm";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
-  program: Whirlpool;
+  program: anchor.Program;
   whirlpoolCtx: WhirlpoolContext;
   whirlpoolClient: WhirlpoolClient;
 }
@@ -54,17 +58,17 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   const tickSpacing = TickSpacing.Standard;
   const vaultStartBalance = 1_000_000;
   const liquidityAmount = new BN(10_000_000);
-  const sleep = (second: number) =>
-    new Promise((resolve) => setTimeout(resolve, second * 1000));
-
-  beforeAll(() => {
-    const provider = anchor.AnchorProvider.local(
-      undefined,
-      defaultConfirmOptions,
+  beforeAll(async () => {
+    await startLiteSVM();
+    const provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
     );
 
-    anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    const program = new anchor.Program(idl, programId, provider);
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(
       provider,
       program,
@@ -78,6 +82,36 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     );
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
+    testCtx = {
+      provider,
+      program,
+      whirlpoolCtx,
+      whirlpoolClient,
+    };
+  });
+
+  beforeEach(async () => {
+    await resetLiteSVM();
+    const provider = await createLiteSVMProvider();
+    anchor.setProvider(provider);
+    const programId = new anchor.web3.PublicKey(
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    const idl = (await import("../../../../src/artifacts/whirlpool.json"))
+      .default as anchor.Idl;
+    const program = new anchor.Program(idl, programId, provider);
+    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(
+      provider,
+      program,
+      undefined,
+      undefined,
+      {
+        userDefaultBuildOptions: {
+          maxSupportedTransactionVersion: "legacy",
+        },
+      },
+    );
+    const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
     testCtx = {
       provider,
       program,
@@ -430,7 +464,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       );
     }
 
-    await sleep(2); // accrueRewards
+    warpClock(2); // accrueRewards
     for (const fixture of fixtures) {
       await accrueFees(fixture);
       await (ataExists ? createATAs : burnAndCloseATAs)(fixture);
@@ -810,7 +844,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         positions.push(...fixture.getInfos().positions);
       }
 
-      await sleep(2); // accrueRewards
+      warpClock(2); // accrueRewards
       for (const fixture of fixtures) {
         await accrueFeesV2(fixture);
         await createATAs(fixture);

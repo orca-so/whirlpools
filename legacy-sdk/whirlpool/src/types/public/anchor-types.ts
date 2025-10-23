@@ -1,6 +1,7 @@
 import type { Idl } from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { BorshAccountsCoder } from "@coral-xyz/anchor";
+import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import type { PublicKey } from "@solana/web3.js";
 import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 
@@ -17,18 +18,18 @@ import WhirlpoolIDL from "../../artifacts/whirlpool.json";
  * @category Network
  */
 export enum AccountName {
-  WhirlpoolsConfig = "WhirlpoolsConfig",
-  Position = "Position",
-  TickArray = "TickArray",
-  DynamicTickArray = "DynamicTickArray",
-  Whirlpool = "Whirlpool",
-  FeeTier = "FeeTier",
-  PositionBundle = "PositionBundle",
-  WhirlpoolsConfigExtension = "WhirlpoolsConfigExtension",
-  TokenBadge = "TokenBadge",
-  LockConfig = "LockConfig",
-  Oracle = "Oracle",
-  AdaptiveFeeTier = "AdaptiveFeeTier",
+  WhirlpoolsConfig = "whirlpoolsConfig",
+  Position = "position",
+  TickArray = "tickArray",
+  DynamicTickArray = "dynamicTickArray",
+  Whirlpool = "whirlpool",
+  FeeTier = "feeTier",
+  PositionBundle = "positionBundle",
+  WhirlpoolsConfigExtension = "whirlpoolsConfigExtension",
+  TokenBadge = "tokenBadge",
+  LockConfig = "lockConfig",
+  Oracle = "oracle",
+  AdaptiveFeeTier = "adaptiveFeeTier",
 }
 
 export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
@@ -36,8 +37,14 @@ export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
 /**
  * The Anchor coder for the Whirlpool program.
  * @category Solana Accounts
+ *
+ * BorshAccountsCoder does not handle the snake -> camel case
+ * mapping handled internally by the normal Anchor coder, so
+ * we must handle ourselves.
  */
-export const WHIRLPOOL_CODER = new BorshAccountsCoder(WHIRLPOOL_IDL);
+export const WHIRLPOOL_CODER = new BorshAccountsCoder(
+  convertIdlToCamelCase(WHIRLPOOL_IDL),
+);
 
 /**
  * Get the size of an account owned by the Whirlpool program in bytes.
@@ -45,9 +52,7 @@ export const WHIRLPOOL_CODER = new BorshAccountsCoder(WHIRLPOOL_IDL);
  * @returns Size in bytes of the account
  */
 export function getAccountSize(accountName: AccountName) {
-  const size = WHIRLPOOL_CODER.size(
-    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!,
-  );
+  const size = WHIRLPOOL_CODER.size(accountName);
   return size + RESERVED_BYTES[accountName];
 }
 

@@ -566,7 +566,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = Whirlpool::discriminator();
+        let discriminator: [u8; 8] = Whirlpool::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:Whirlpool | sha256sum | cut -c 1-16
         // 3f95d10ce1806309
@@ -579,8 +579,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -629,7 +627,7 @@ mod data_layout_tests {
 
         let mut whirlpool_data = [0u8; Whirlpool::LEN];
         let mut offset = 0;
-        whirlpool_data[offset..offset + 8].copy_from_slice(&Whirlpool::discriminator());
+        whirlpool_data[offset..offset + 8].copy_from_slice(Whirlpool::DISCRIMINATOR);
         offset += 8;
         whirlpool_data[offset..offset + 32]
             .copy_from_slice(&whirlpool_whirlpools_config.to_bytes());

@@ -8,137 +8,139 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const INITIALIZE_POOL_WITH_ADAPTIVE_FEE_DISCRIMINATOR: [u8; 8] = [143, 94, 96, 76, 172, 124, 119, 199];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct InitializePoolWithAdaptiveFee {
       
               
-          pub whirlpools_config: solana_program::pubkey::Pubkey,
+          pub whirlpools_config: solana_pubkey::Pubkey,
           
               
-          pub token_mint_a: solana_program::pubkey::Pubkey,
+          pub token_mint_a: solana_pubkey::Pubkey,
           
               
-          pub token_mint_b: solana_program::pubkey::Pubkey,
+          pub token_mint_b: solana_pubkey::Pubkey,
           
               
-          pub token_badge_a: solana_program::pubkey::Pubkey,
+          pub token_badge_a: solana_pubkey::Pubkey,
           
               
-          pub token_badge_b: solana_program::pubkey::Pubkey,
+          pub token_badge_b: solana_pubkey::Pubkey,
           
               
-          pub funder: solana_program::pubkey::Pubkey,
+          pub funder: solana_pubkey::Pubkey,
           
               
-          pub initialize_pool_authority: solana_program::pubkey::Pubkey,
+          pub initialize_pool_authority: solana_pubkey::Pubkey,
           
               
-          pub whirlpool: solana_program::pubkey::Pubkey,
+          pub whirlpool: solana_pubkey::Pubkey,
           
               
-          pub oracle: solana_program::pubkey::Pubkey,
+          pub oracle: solana_pubkey::Pubkey,
           
               
-          pub token_vault_a: solana_program::pubkey::Pubkey,
+          pub token_vault_a: solana_pubkey::Pubkey,
           
               
-          pub token_vault_b: solana_program::pubkey::Pubkey,
+          pub token_vault_b: solana_pubkey::Pubkey,
           
               
-          pub adaptive_fee_tier: solana_program::pubkey::Pubkey,
+          pub adaptive_fee_tier: solana_pubkey::Pubkey,
           
               
-          pub token_program_a: solana_program::pubkey::Pubkey,
+          pub token_program_a: solana_pubkey::Pubkey,
           
               
-          pub token_program_b: solana_program::pubkey::Pubkey,
+          pub token_program_b: solana_pubkey::Pubkey,
           
               
-          pub system_program: solana_program::pubkey::Pubkey,
+          pub system_program: solana_pubkey::Pubkey,
           
               
-          pub rent: solana_program::pubkey::Pubkey,
+          pub rent: solana_pubkey::Pubkey,
       }
 
 impl InitializePoolWithAdaptiveFee {
-  pub fn instruction(&self, args: InitializePoolWithAdaptiveFeeInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: InitializePoolWithAdaptiveFeeInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: InitializePoolWithAdaptiveFeeInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: InitializePoolWithAdaptiveFeeInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(16+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.whirlpools_config,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_mint_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_mint_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_badge_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_badge_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.funder,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.initialize_pool_authority,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.whirlpool,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.oracle,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_vault_a,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.token_vault_b,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.adaptive_fee_tier,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program_a,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.token_program_b,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.rent,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&InitializePoolWithAdaptiveFeeInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = InitializePoolWithAdaptiveFeeInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -158,7 +160,11 @@ impl InitializePoolWithAdaptiveFeeInstructionData {
                         discriminator: [143, 94, 96, 76, 172, 124, 119, 199],
                                               }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for InitializePoolWithAdaptiveFeeInstructionData {
   fn default() -> Self {
@@ -172,6 +178,12 @@ impl Default for InitializePoolWithAdaptiveFeeInstructionData {
                   pub initial_sqrt_price: u128,
                 pub trade_enable_timestamp: Option<u64>,
       }
+
+impl InitializePoolWithAdaptiveFeeInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
 
 
 /// Instruction builder for `InitializePoolWithAdaptiveFee`.
@@ -196,25 +208,25 @@ impl Default for InitializePoolWithAdaptiveFeeInstructionData {
                 ///   15. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializePoolWithAdaptiveFeeBuilder {
-            whirlpools_config: Option<solana_program::pubkey::Pubkey>,
-                token_mint_a: Option<solana_program::pubkey::Pubkey>,
-                token_mint_b: Option<solana_program::pubkey::Pubkey>,
-                token_badge_a: Option<solana_program::pubkey::Pubkey>,
-                token_badge_b: Option<solana_program::pubkey::Pubkey>,
-                funder: Option<solana_program::pubkey::Pubkey>,
-                initialize_pool_authority: Option<solana_program::pubkey::Pubkey>,
-                whirlpool: Option<solana_program::pubkey::Pubkey>,
-                oracle: Option<solana_program::pubkey::Pubkey>,
-                token_vault_a: Option<solana_program::pubkey::Pubkey>,
-                token_vault_b: Option<solana_program::pubkey::Pubkey>,
-                adaptive_fee_tier: Option<solana_program::pubkey::Pubkey>,
-                token_program_a: Option<solana_program::pubkey::Pubkey>,
-                token_program_b: Option<solana_program::pubkey::Pubkey>,
-                system_program: Option<solana_program::pubkey::Pubkey>,
-                rent: Option<solana_program::pubkey::Pubkey>,
+            whirlpools_config: Option<solana_pubkey::Pubkey>,
+                token_mint_a: Option<solana_pubkey::Pubkey>,
+                token_mint_b: Option<solana_pubkey::Pubkey>,
+                token_badge_a: Option<solana_pubkey::Pubkey>,
+                token_badge_b: Option<solana_pubkey::Pubkey>,
+                funder: Option<solana_pubkey::Pubkey>,
+                initialize_pool_authority: Option<solana_pubkey::Pubkey>,
+                whirlpool: Option<solana_pubkey::Pubkey>,
+                oracle: Option<solana_pubkey::Pubkey>,
+                token_vault_a: Option<solana_pubkey::Pubkey>,
+                token_vault_b: Option<solana_pubkey::Pubkey>,
+                adaptive_fee_tier: Option<solana_pubkey::Pubkey>,
+                token_program_a: Option<solana_pubkey::Pubkey>,
+                token_program_b: Option<solana_pubkey::Pubkey>,
+                system_program: Option<solana_pubkey::Pubkey>,
+                rent: Option<solana_pubkey::Pubkey>,
                         initial_sqrt_price: Option<u128>,
                 trade_enable_timestamp: Option<u64>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InitializePoolWithAdaptiveFeeBuilder {
@@ -222,84 +234,84 @@ impl InitializePoolWithAdaptiveFeeBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn whirlpools_config(&mut self, whirlpools_config: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpools_config(&mut self, whirlpools_config: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpools_config = Some(whirlpools_config);
                     self
     }
             #[inline(always)]
-    pub fn token_mint_a(&mut self, token_mint_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_mint_a(&mut self, token_mint_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_mint_a = Some(token_mint_a);
                     self
     }
             #[inline(always)]
-    pub fn token_mint_b(&mut self, token_mint_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_mint_b(&mut self, token_mint_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_mint_b = Some(token_mint_b);
                     self
     }
             #[inline(always)]
-    pub fn token_badge_a(&mut self, token_badge_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_badge_a(&mut self, token_badge_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_badge_a = Some(token_badge_a);
                     self
     }
             #[inline(always)]
-    pub fn token_badge_b(&mut self, token_badge_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_badge_b(&mut self, token_badge_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_badge_b = Some(token_badge_b);
                     self
     }
             #[inline(always)]
-    pub fn funder(&mut self, funder: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn funder(&mut self, funder: solana_pubkey::Pubkey) -> &mut Self {
                         self.funder = Some(funder);
                     self
     }
             #[inline(always)]
-    pub fn initialize_pool_authority(&mut self, initialize_pool_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn initialize_pool_authority(&mut self, initialize_pool_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.initialize_pool_authority = Some(initialize_pool_authority);
                     self
     }
             #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpool = Some(whirlpool);
                     self
     }
             #[inline(always)]
-    pub fn oracle(&mut self, oracle: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn oracle(&mut self, oracle: solana_pubkey::Pubkey) -> &mut Self {
                         self.oracle = Some(oracle);
                     self
     }
             #[inline(always)]
-    pub fn token_vault_a(&mut self, token_vault_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_vault_a(&mut self, token_vault_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_vault_a = Some(token_vault_a);
                     self
     }
             #[inline(always)]
-    pub fn token_vault_b(&mut self, token_vault_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_vault_b(&mut self, token_vault_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_vault_b = Some(token_vault_b);
                     self
     }
             #[inline(always)]
-    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: solana_pubkey::Pubkey) -> &mut Self {
                         self.adaptive_fee_tier = Some(adaptive_fee_tier);
                     self
     }
             #[inline(always)]
-    pub fn token_program_a(&mut self, token_program_a: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program_a(&mut self, token_program_a: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program_a = Some(token_program_a);
                     self
     }
             #[inline(always)]
-    pub fn token_program_b(&mut self, token_program_b: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn token_program_b(&mut self, token_program_b: solana_pubkey::Pubkey) -> &mut Self {
                         self.token_program_b = Some(token_program_b);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
                         self.system_program = Some(system_program);
                     self
     }
             /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
 #[inline(always)]
-    pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn rent(&mut self, rent: solana_pubkey::Pubkey) -> &mut Self {
                         self.rent = Some(rent);
                     self
     }
@@ -316,18 +328,18 @@ impl InitializePoolWithAdaptiveFeeBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = InitializePoolWithAdaptiveFee {
                               whirlpools_config: self.whirlpools_config.expect("whirlpools_config is not set"),
                                         token_mint_a: self.token_mint_a.expect("token_mint_a is not set"),
@@ -343,8 +355,8 @@ impl InitializePoolWithAdaptiveFeeBuilder {
                                         adaptive_fee_tier: self.adaptive_fee_tier.expect("adaptive_fee_tier is not set"),
                                         token_program_a: self.token_program_a.expect("token_program_a is not set"),
                                         token_program_b: self.token_program_b.expect("token_program_b is not set"),
-                                        system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-                                        rent: self.rent.unwrap_or(solana_program::pubkey!("SysvarRent111111111111111111111111111111111")),
+                                        system_program: self.system_program.unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                                        rent: self.rent.unwrap_or(solana_pubkey::pubkey!("SysvarRent111111111111111111111111111111111")),
                       };
           let args = InitializePoolWithAdaptiveFeeInstructionArgs {
                                                               initial_sqrt_price: self.initial_sqrt_price.clone().expect("initial_sqrt_price is not set"),
@@ -359,113 +371,113 @@ impl InitializePoolWithAdaptiveFeeBuilder {
   pub struct InitializePoolWithAdaptiveFeeCpiAccounts<'a, 'b> {
           
                     
-              pub whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpools_config: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_mint_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_mint_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_mint_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_mint_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_badge_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_badge_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_badge_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_badge_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+              pub funder: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub initialize_pool_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub initialize_pool_authority: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub oracle: &'b solana_program::account_info::AccountInfo<'a>,
+              pub oracle: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_vault_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_vault_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_vault_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_vault_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>,
+              pub adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_program_a: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program_a: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub token_program_b: &'b solana_program::account_info::AccountInfo<'a>,
+              pub token_program_b: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub system_program: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub rent: &'b solana_program::account_info::AccountInfo<'a>,
+              pub rent: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `initialize_pool_with_adaptive_fee` CPI instruction.
 pub struct InitializePoolWithAdaptiveFeeCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpools_config: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_mint_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_mint_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_mint_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_mint_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_badge_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_badge_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_badge_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_badge_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub funder: &'b solana_program::account_info::AccountInfo<'a>,
+          pub funder: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub initialize_pool_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub initialize_pool_authority: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub whirlpool: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpool: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub oracle: &'b solana_program::account_info::AccountInfo<'a>,
+          pub oracle: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_vault_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_vault_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_vault_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_vault_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>,
+          pub adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_program_a: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program_a: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub token_program_b: &'b solana_program::account_info::AccountInfo<'a>,
+          pub token_program_b: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub system_program: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub rent: &'b solana_program::account_info::AccountInfo<'a>,
+          pub rent: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: InitializePoolWithAdaptiveFeeInstructionArgs,
   }
 
 impl<'a, 'b> InitializePoolWithAdaptiveFeeCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: InitializePoolWithAdaptiveFeeCpiAccounts<'a, 'b>,
               args: InitializePoolWithAdaptiveFeeInstructionArgs,
       ) -> Self {
@@ -491,15 +503,15 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -508,85 +520,85 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(16+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.whirlpools_config.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_mint_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_mint_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_badge_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_badge_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.funder.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.initialize_pool_authority.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.whirlpool.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.oracle.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_vault_a.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.token_vault_b.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.adaptive_fee_tier.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program_a.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.token_program_b.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.rent.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&InitializePoolWithAdaptiveFeeInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = InitializePoolWithAdaptiveFeeInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -612,9 +624,9 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -645,7 +657,7 @@ pub struct InitializePoolWithAdaptiveFeeCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> InitializePoolWithAdaptiveFeeCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(InitializePoolWithAdaptiveFeeCpiBuilderInstruction {
       __program: program,
               whirlpools_config: None,
@@ -671,82 +683,82 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn whirlpools_config(&mut self, whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpools_config(&mut self, whirlpools_config: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpools_config = Some(whirlpools_config);
                     self
     }
       #[inline(always)]
-    pub fn token_mint_a(&mut self, token_mint_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_mint_a(&mut self, token_mint_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_mint_a = Some(token_mint_a);
                     self
     }
       #[inline(always)]
-    pub fn token_mint_b(&mut self, token_mint_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_mint_b(&mut self, token_mint_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_mint_b = Some(token_mint_b);
                     self
     }
       #[inline(always)]
-    pub fn token_badge_a(&mut self, token_badge_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_badge_a(&mut self, token_badge_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_badge_a = Some(token_badge_a);
                     self
     }
       #[inline(always)]
-    pub fn token_badge_b(&mut self, token_badge_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_badge_b(&mut self, token_badge_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_badge_b = Some(token_badge_b);
                     self
     }
       #[inline(always)]
-    pub fn funder(&mut self, funder: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn funder(&mut self, funder: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.funder = Some(funder);
                     self
     }
       #[inline(always)]
-    pub fn initialize_pool_authority(&mut self, initialize_pool_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn initialize_pool_authority(&mut self, initialize_pool_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.initialize_pool_authority = Some(initialize_pool_authority);
                     self
     }
       #[inline(always)]
-    pub fn whirlpool(&mut self, whirlpool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpool(&mut self, whirlpool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpool = Some(whirlpool);
                     self
     }
       #[inline(always)]
-    pub fn oracle(&mut self, oracle: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn oracle(&mut self, oracle: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.oracle = Some(oracle);
                     self
     }
       #[inline(always)]
-    pub fn token_vault_a(&mut self, token_vault_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_vault_a(&mut self, token_vault_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_vault_a = Some(token_vault_a);
                     self
     }
       #[inline(always)]
-    pub fn token_vault_b(&mut self, token_vault_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_vault_b(&mut self, token_vault_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_vault_b = Some(token_vault_b);
                     self
     }
       #[inline(always)]
-    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.adaptive_fee_tier = Some(adaptive_fee_tier);
                     self
     }
       #[inline(always)]
-    pub fn token_program_a(&mut self, token_program_a: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program_a(&mut self, token_program_a: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program_a = Some(token_program_a);
                     self
     }
       #[inline(always)]
-    pub fn token_program_b(&mut self, token_program_b: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn token_program_b(&mut self, token_program_b: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.token_program_b = Some(token_program_b);
                     self
     }
       #[inline(always)]
-    pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn system_program(&mut self, system_program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
       #[inline(always)]
-    pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn rent(&mut self, rent: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.rent = Some(rent);
                     self
     }
@@ -763,7 +775,7 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -772,17 +784,17 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = InitializePoolWithAdaptiveFeeInstructionArgs {
                                                               initial_sqrt_price: self.instruction.initial_sqrt_price.clone().expect("initial_sqrt_price is not set"),
                                                                   trade_enable_timestamp: self.instruction.trade_enable_timestamp.clone(),
@@ -829,26 +841,26 @@ impl<'a, 'b> InitializePoolWithAdaptiveFeeCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct InitializePoolWithAdaptiveFeeCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            whirlpools_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_mint_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_mint_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_badge_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_badge_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                funder: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                initialize_pool_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                whirlpool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_vault_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_vault_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                adaptive_fee_tier: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program_a: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program_b: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            whirlpools_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_mint_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_mint_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_badge_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_badge_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                funder: Option<&'b solana_account_info::AccountInfo<'a>>,
+                initialize_pool_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+                whirlpool: Option<&'b solana_account_info::AccountInfo<'a>>,
+                oracle: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_vault_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_vault_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                adaptive_fee_tier: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_program_a: Option<&'b solana_account_info::AccountInfo<'a>>,
+                token_program_b: Option<&'b solana_account_info::AccountInfo<'a>>,
+                system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+                rent: Option<&'b solana_account_info::AccountInfo<'a>>,
                         initial_sqrt_price: Option<u128>,
                 trade_enable_timestamp: Option<u64>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

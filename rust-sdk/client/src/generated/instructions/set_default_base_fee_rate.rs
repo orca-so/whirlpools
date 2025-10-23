@@ -8,46 +8,48 @@
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
+pub const SET_DEFAULT_BASE_FEE_RATE_DISCRIMINATOR: [u8; 8] = [229, 66, 84, 251, 164, 134, 183, 7];
+
 /// Accounts.
 #[derive(Debug)]
 pub struct SetDefaultBaseFeeRate {
       
               
-          pub whirlpools_config: solana_program::pubkey::Pubkey,
+          pub whirlpools_config: solana_pubkey::Pubkey,
           
               
-          pub adaptive_fee_tier: solana_program::pubkey::Pubkey,
+          pub adaptive_fee_tier: solana_pubkey::Pubkey,
           
               
-          pub fee_authority: solana_program::pubkey::Pubkey,
+          pub fee_authority: solana_pubkey::Pubkey,
       }
 
 impl SetDefaultBaseFeeRate {
-  pub fn instruction(&self, args: SetDefaultBaseFeeRateInstructionArgs) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self, args: SetDefaultBaseFeeRateInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: SetDefaultBaseFeeRateInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: SetDefaultBaseFeeRateInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(3+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.whirlpools_config,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             self.adaptive_fee_tier,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.fee_authority,
             true
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = borsh::to_vec(&SetDefaultBaseFeeRateInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&args).unwrap();
+    let mut data = SetDefaultBaseFeeRateInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    solana_program::instruction::Instruction {
+    solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -67,7 +69,11 @@ impl SetDefaultBaseFeeRateInstructionData {
                         discriminator: [229, 66, 84, 251, 164, 134, 183, 7],
                                 }
   }
-}
+
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+  }
 
 impl Default for SetDefaultBaseFeeRateInstructionData {
   fn default() -> Self {
@@ -81,6 +87,12 @@ impl Default for SetDefaultBaseFeeRateInstructionData {
                   pub default_base_fee_rate: u16,
       }
 
+impl SetDefaultBaseFeeRateInstructionArgs {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    borsh::to_vec(self)
+  }
+}
+
 
 /// Instruction builder for `SetDefaultBaseFeeRate`.
 ///
@@ -91,11 +103,11 @@ impl Default for SetDefaultBaseFeeRateInstructionData {
                 ///   2. `[signer]` fee_authority
 #[derive(Clone, Debug, Default)]
 pub struct SetDefaultBaseFeeRateBuilder {
-            whirlpools_config: Option<solana_program::pubkey::Pubkey>,
-                adaptive_fee_tier: Option<solana_program::pubkey::Pubkey>,
-                fee_authority: Option<solana_program::pubkey::Pubkey>,
+            whirlpools_config: Option<solana_pubkey::Pubkey>,
+                adaptive_fee_tier: Option<solana_pubkey::Pubkey>,
+                fee_authority: Option<solana_pubkey::Pubkey>,
                         default_base_fee_rate: Option<u16>,
-        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+        __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SetDefaultBaseFeeRateBuilder {
@@ -103,17 +115,17 @@ impl SetDefaultBaseFeeRateBuilder {
     Self::default()
   }
             #[inline(always)]
-    pub fn whirlpools_config(&mut self, whirlpools_config: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn whirlpools_config(&mut self, whirlpools_config: solana_pubkey::Pubkey) -> &mut Self {
                         self.whirlpools_config = Some(whirlpools_config);
                     self
     }
             #[inline(always)]
-    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: solana_pubkey::Pubkey) -> &mut Self {
                         self.adaptive_fee_tier = Some(adaptive_fee_tier);
                     self
     }
             #[inline(always)]
-    pub fn fee_authority(&mut self, fee_authority: solana_program::pubkey::Pubkey) -> &mut Self {
+    pub fn fee_authority(&mut self, fee_authority: solana_pubkey::Pubkey) -> &mut Self {
                         self.fee_authority = Some(fee_authority);
                     self
     }
@@ -124,18 +136,18 @@ impl SetDefaultBaseFeeRateBuilder {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
     self
   }
   /// Add additional accounts to the instruction.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[solana_program::instruction::AccountMeta]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[solana_instruction::AccountMeta]) -> &mut Self {
     self.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[allow(clippy::clone_on_copy)]
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
+  pub fn instruction(&self) -> solana_instruction::Instruction {
     let accounts = SetDefaultBaseFeeRate {
                               whirlpools_config: self.whirlpools_config.expect("whirlpools_config is not set"),
                                         adaptive_fee_tier: self.adaptive_fee_tier.expect("adaptive_fee_tier is not set"),
@@ -153,35 +165,35 @@ impl SetDefaultBaseFeeRateBuilder {
   pub struct SetDefaultBaseFeeRateCpiAccounts<'a, 'b> {
           
                     
-              pub whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>,
+              pub whirlpools_config: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>,
+              pub adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>,
                 
                     
-              pub fee_authority: &'b solana_program::account_info::AccountInfo<'a>,
+              pub fee_authority: &'b solana_account_info::AccountInfo<'a>,
             }
 
 /// `set_default_base_fee_rate` CPI instruction.
 pub struct SetDefaultBaseFeeRateCpi<'a, 'b> {
   /// The program to invoke.
-  pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+  pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>,
+          pub whirlpools_config: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>,
+          pub adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>,
           
               
-          pub fee_authority: &'b solana_program::account_info::AccountInfo<'a>,
+          pub fee_authority: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: SetDefaultBaseFeeRateInstructionArgs,
   }
 
 impl<'a, 'b> SetDefaultBaseFeeRateCpi<'a, 'b> {
   pub fn new(
-    program: &'b solana_program::account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
           accounts: SetDefaultBaseFeeRateCpiAccounts<'a, 'b>,
               args: SetDefaultBaseFeeRateInstructionArgs,
       ) -> Self {
@@ -194,15 +206,15 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpi<'a, 'b> {
           }
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], &[])
   }
   #[inline(always)]
-  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_with_remaining_accounts(&self, remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(&[], remaining_accounts)
   }
   #[inline(always)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
     self.invoke_signed_with_remaining_accounts(signers_seeds, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
@@ -211,33 +223,33 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpi<'a, 'b> {
   pub fn invoke_signed_with_remaining_accounts(
     &self,
     signers_seeds: &[&[&[u8]]],
-    remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
-  ) -> solana_program::entrypoint::ProgramResult {
+    remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
+  ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(3+ remaining_accounts.len());
-                            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.whirlpools_config.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_instruction::AccountMeta::new(
             *self.adaptive_fee_tier.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.fee_authority.key,
             true
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
-      accounts.push(solana_program::instruction::AccountMeta {
+      accounts.push(solana_instruction::AccountMeta {
           pubkey: *remaining_account.0.key,
           is_signer: remaining_account.1,
           is_writable: remaining_account.2,
       })
     });
-    let mut data = borsh::to_vec(&SetDefaultBaseFeeRateInstructionData::new()).unwrap();
-          let mut args = borsh::to_vec(&self.__args).unwrap();
+    let mut data = SetDefaultBaseFeeRateInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
-    let instruction = solana_program::instruction::Instruction {
+    let instruction = solana_instruction::Instruction {
       program_id: crate::WHIRLPOOL_ID,
       accounts,
       data,
@@ -250,9 +262,9 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpi<'a, 'b> {
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
-      solana_program::program::invoke(&instruction, &account_infos)
+      solana_cpi::invoke(&instruction, &account_infos)
     } else {
-      solana_program::program::invoke_signed(&instruction, &account_infos, signers_seeds)
+      solana_cpi::invoke_signed(&instruction, &account_infos, signers_seeds)
     }
   }
 }
@@ -270,7 +282,7 @@ pub struct SetDefaultBaseFeeRateCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SetDefaultBaseFeeRateCpiBuilder<'a, 'b> {
-  pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
+  pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
     let instruction = Box::new(SetDefaultBaseFeeRateCpiBuilderInstruction {
       __program: program,
               whirlpools_config: None,
@@ -282,17 +294,17 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpiBuilder<'a, 'b> {
     Self { instruction }
   }
       #[inline(always)]
-    pub fn whirlpools_config(&mut self, whirlpools_config: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn whirlpools_config(&mut self, whirlpools_config: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.whirlpools_config = Some(whirlpools_config);
                     self
     }
       #[inline(always)]
-    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn adaptive_fee_tier(&mut self, adaptive_fee_tier: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.adaptive_fee_tier = Some(adaptive_fee_tier);
                     self
     }
       #[inline(always)]
-    pub fn fee_authority(&mut self, fee_authority: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+    pub fn fee_authority(&mut self, fee_authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.fee_authority = Some(fee_authority);
                     self
     }
@@ -303,7 +315,7 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpiBuilder<'a, 'b> {
       }
         /// Add an additional account to the instruction.
   #[inline(always)]
-  pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
+  pub fn add_remaining_account(&mut self, account: &'b solana_account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
     self
   }
@@ -312,17 +324,17 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpiBuilder<'a, 'b> {
   /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
   /// and a `bool` indicating whether the account is a signer or not.
   #[inline(always)]
-  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
+  pub fn add_remaining_accounts(&mut self, accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]) -> &mut Self {
     self.instruction.__remaining_accounts.extend_from_slice(accounts);
     self
   }
   #[inline(always)]
-  pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke(&self) -> solana_program_error::ProgramResult {
     self.invoke_signed(&[])
   }
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+  pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
           let args = SetDefaultBaseFeeRateInstructionArgs {
                                                               default_base_fee_rate: self.instruction.default_base_fee_rate.clone().expect("default_base_fee_rate is not set"),
                                     };
@@ -342,12 +354,12 @@ impl<'a, 'b> SetDefaultBaseFeeRateCpiBuilder<'a, 'b> {
 
 #[derive(Clone, Debug)]
 struct SetDefaultBaseFeeRateCpiBuilderInstruction<'a, 'b> {
-  __program: &'b solana_program::account_info::AccountInfo<'a>,
-            whirlpools_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                adaptive_fee_tier: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                fee_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+  __program: &'b solana_account_info::AccountInfo<'a>,
+            whirlpools_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+                adaptive_fee_tier: Option<&'b solana_account_info::AccountInfo<'a>>,
+                fee_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
                         default_base_fee_rate: Option<u16>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
-  __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
+  __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
 

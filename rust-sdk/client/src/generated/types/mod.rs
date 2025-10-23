@@ -11,13 +11,17 @@
   pub(crate) mod r#config_feature_flag;
   pub(crate) mod r#dynamic_tick;
   pub(crate) mod r#dynamic_tick_data;
+  pub(crate) mod r#liquidity_decreased;
+  pub(crate) mod r#liquidity_increased;
   pub(crate) mod r#lock_type;
   pub(crate) mod r#lock_type_label;
+  pub(crate) mod r#pool_initialized;
   pub(crate) mod r#position_reward_info;
   pub(crate) mod r#remaining_accounts_info;
   pub(crate) mod r#remaining_accounts_slice;
   pub(crate) mod r#tick;
   pub(crate) mod r#token_badge_attribute;
+  pub(crate) mod r#traded;
   pub(crate) mod r#whirlpool_reward_info;
 
   pub use self::r#accounts_type::*;
@@ -26,12 +30,16 @@
   pub use self::r#config_feature_flag::*;
   pub use self::r#dynamic_tick::*;
   pub use self::r#dynamic_tick_data::*;
+  pub use self::r#liquidity_decreased::*;
+  pub use self::r#liquidity_increased::*;
   pub use self::r#lock_type::*;
   pub use self::r#lock_type_label::*;
+  pub use self::r#pool_initialized::*;
   pub use self::r#position_reward_info::*;
   pub use self::r#remaining_accounts_info::*;
   pub use self::r#remaining_accounts_slice::*;
   pub use self::r#tick::*;
   pub use self::r#token_badge_attribute::*;
+  pub use self::r#traded::*;
   pub use self::r#whirlpool_reward_info::*;
 

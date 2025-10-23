@@ -2,7 +2,7 @@
   "name": "@orca-so/whirlpools-program",
   "version": "0.6.1",
   "scripts": {
-    "build": "RUSTUP_TOOLCHAIN=1.78.0 anchor build -p whirlpool",
+    "build": "anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",
     "format": "cargo clippy -p whirlpool --fix --allow-dirty --allow-staged && cargo fmt -p whirlpool",
     "lint": "cargo clippy -p whirlpool && cargo fmt --check -p whirlpool",

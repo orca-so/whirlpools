@@ -277,7 +277,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = PositionBundle::discriminator();
+        let discriminator: [u8; 8] = PositionBundle::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:PositionBundle | sha256sum | cut -c 1-16
         // 81a9af41b95f2064
@@ -290,8 +290,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -302,7 +300,7 @@ mod data_layout_tests {
 
         let mut position_bundle_data = [0u8; PositionBundle::LEN];
         let mut offset = 0;
-        position_bundle_data[offset..offset + 8].copy_from_slice(&PositionBundle::discriminator());
+        position_bundle_data[offset..offset + 8].copy_from_slice(PositionBundle::DISCRIMINATOR);
         offset += 8;
         position_bundle_data[offset..offset + 32]
             .copy_from_slice(&position_bundle_position_bundle_mint.to_bytes());

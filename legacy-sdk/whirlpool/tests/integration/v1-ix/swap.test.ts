@@ -1316,7 +1316,7 @@ describe("swap", () => {
     let eventVerified = false;
     let detectedSignature = null;
     const listener = ctx.program.addEventListener(
-      "Traded",
+      "traded",
       (event, _slot, signature) => {
         detectedSignature = signature;
         // verify

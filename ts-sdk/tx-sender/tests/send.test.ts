@@ -7,8 +7,8 @@ import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
 import type {
-  IInstruction,
-  ITransactionMessageWithFeePayerSigner,
+  Instruction,
+  TransactionMessageWithFeePayerSigner,
   Rpc,
   SolanaRpcApi,
   TransactionMessageBytes,
@@ -32,8 +32,8 @@ vi.mock("@solana/kit", async () => {
     ...actual,
     partiallySignTransactionMessageWithSigners: vi.fn().mockImplementation(
       (
-        message: ITransactionMessageWithFeePayerSigner & {
-          instructions: IInstruction[];
+        message: TransactionMessageWithFeePayerSigner & {
+          instructions: Instruction[];
           version: 0;
         },
       ) => encodeTransaction(message.instructions, message.feePayer),

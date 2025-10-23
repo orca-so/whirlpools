@@ -1,6 +1,7 @@
 import type {
   Account,
   Address,
+  Base58EncodedBytes,
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
@@ -189,7 +190,7 @@ export async function fetchAllAdaptiveFeeTierWithFilter(
 ): Promise<Account<AdaptiveFeeTier>[]> {
   const discriminator = getBase58Decoder().decode(
     ADAPTIVE_FEE_TIER_DISCRIMINATOR,
-  );
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

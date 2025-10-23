@@ -1,17 +1,17 @@
 import { getRpcConfig } from "./config";
 import type {
   Address,
-  IInstruction,
+  Instruction,
   FullySignedTransaction,
   Signature,
   Commitment,
-  TransactionWithLifetime,
   Transaction,
+  TransactionWithLifetime,
   KeyPairSigner,
   NoopSigner,
 } from "@solana/kit";
 import {
-  assertTransactionIsFullySigned,
+  assertIsFullySignedTransaction,
   getBase64EncodedWireTransaction,
   getBase58Decoder,
 } from "@solana/kit";
@@ -21,8 +21,8 @@ import { buildTransaction } from "./buildTransaction";
 /**
  * Builds and sends a transaction with the given instructions, signers, and commitment level.
  *
- * @param {IInstruction[]} instructions - Array of instructions to include in the transaction.
- * @param {TransactionSigner} payer - The fee payer for the transaction (must be the SAME instance used to build instructions).
+ * @param {Instruction[]} instructions - Array of instructions to include in the transaction.
+ * @param {KeyPairSigner | NoopSigner} payer - The fee payer for the transaction.
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use.
  * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
@@ -38,12 +38,13 @@ import { buildTransaction } from "./buildTransaction";
  * ```
  */
 export async function buildAndSendTransaction(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   payer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: (Address | string)[],
   commitment: Commitment = "confirmed",
 ): Promise<Signature> {
   const tx = await buildTransaction(instructions, payer, lookupTableAddresses);
+  assertIsFullySignedTransaction(tx);
   return sendTransaction(tx, commitment);
 }
 
@@ -51,7 +52,7 @@ export async function buildAndSendTransaction(
  * Sends a signed transaction message to the Solana network with a specified commitment level.
  * Asserts that the transaction is fully signed before sending.
  *
- * @param {(FullySignedTransaction | Transaction) & TransactionWithLifetime} transaction - The transaction to send (will be asserted as fully signed).
+ * @param {Transaction & TransactionWithLifetime} transaction - The transaction to send (will be asserted as fully signed).
  * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
  * @returns {Promise<Signature>} A promise that resolves to the transaction signature.
@@ -71,10 +72,10 @@ export async function buildAndSendTransaction(
  * ```
  */
 export async function sendTransaction(
-  transaction: (FullySignedTransaction | Transaction) & TransactionWithLifetime,
+  transaction: Readonly<Transaction & TransactionWithLifetime>,
   commitment: Commitment = "confirmed",
 ): Promise<Signature> {
-  assertTransactionIsFullySigned(transaction);
+  assertIsFullySignedTransaction(transaction);
 
   const { rpcUrl, pollIntervalMs, resendOnPoll } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
@@ -153,7 +154,7 @@ export async function sendTransaction(
   throw new Error("Transaction confirmation timeout");
 }
 
-function getTxHash(transaction: FullySignedTransaction) {
+function getTxHash(transaction: Transaction & FullySignedTransaction) {
   const [signature] = Object.values(transaction.signatures);
   const txHash = getBase58Decoder().decode(signature!) as Signature;
   return txHash;

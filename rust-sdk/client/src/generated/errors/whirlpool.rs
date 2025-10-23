@@ -216,15 +216,9 @@ pub enum WhirlpoolError {
     PositionWithTokenExtensionsRequired = 0x17B3,
 }
 
-impl solana_program::program_error::PrintProgramError for WhirlpoolError {
-    fn print<E>(&self) {
-        solana_program::msg!(&self.to_string());
-    }
-}
-
-impl<T> solana_program::decode_error::DecodeError<T> for WhirlpoolError {
-    fn type_of() -> &'static str {
-        "WhirlpoolError"
+impl From<WhirlpoolError> for solana_program_error::ProgramError {
+    fn from(e: WhirlpoolError) -> Self {
+        solana_program_error::ProgramError::Custom(e as u32)
     }
 }
 

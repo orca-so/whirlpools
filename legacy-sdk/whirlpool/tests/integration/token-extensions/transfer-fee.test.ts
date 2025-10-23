@@ -2632,8 +2632,8 @@ describe("TokenExtension/TransferFee", () => {
       assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
 
       const tokenAmount = toTokenAmount(1_000_000 * 0.8, 1_000_000 * 0.8);
-      const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
-        currTick,
+      const liquidityAmount = PoolUtil.estimateMaxLiquidityFromTokenAmounts(
+        PriceMath.tickIndexToSqrtPriceX64(currTick),
         belowLowerIndex,
         belowUpperIndex,
         tokenAmount,
@@ -2868,8 +2868,8 @@ describe("TokenExtension/TransferFee", () => {
       assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
 
       const tokenAmount = toTokenAmount(1_000_000 * 0.8, 1_000_000 * 0.8);
-      const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
-        currTick,
+      const liquidityAmount = PoolUtil.estimateMaxLiquidityFromTokenAmounts(
+        PriceMath.tickIndexToSqrtPriceX64(currTick),
         tickLowerIndex,
         tickUpperIndex,
         tokenAmount,
@@ -2898,7 +2898,7 @@ describe("TokenExtension/TransferFee", () => {
       let eventVerified = false;
       let detectedSignature = null;
       const listener = ctx.program.addEventListener(
-        "LiquidityIncreased",
+        "liquidityIncreased",
         (event, _slot, signature) => {
           detectedSignature = signature;
           assert.ok(
@@ -3936,7 +3936,7 @@ describe("TokenExtension/TransferFee", () => {
       let eventVerified = false;
       let detectedSignature = null;
       const listener = ctx.program.addEventListener(
-        "LiquidityDecreased",
+        "liquidityDecreased",
         (event, _slot, signature) => {
           detectedSignature = signature;
           assert.ok(event.tokenAAmount.eq(expectedAmount.tokenA));
@@ -6017,7 +6017,7 @@ describe("TokenExtension/TransferFee", () => {
       let eventVerified = false;
       let detectedSignature = null;
       const listener = ctx.program.addEventListener(
-        "Traded",
+        "traded",
         (event, _slot, signature) => {
           detectedSignature = signature;
           assert.ok(event.inputAmount.eq(inputAmount));
@@ -6172,7 +6172,7 @@ describe("TokenExtension/TransferFee", () => {
       let eventVerified = false;
       let detectedSignature = null;
       const listener = ctx.program.addEventListener(
-        "Traded",
+        "traded",
         (event, _slot, signature) => {
           detectedSignature = signature;
           assert.ok(event.inputAmount.eq(inputAmount));
@@ -10104,7 +10104,7 @@ describe("TokenExtension/TransferFee", () => {
         let detectedSignatureOne = null;
         let detectedSignatureTwo = null;
         const listener = ctx.program.addEventListener(
-          "Traded",
+          "traded",
           (event, _slot, signature) => {
             // verify
             if (event.whirlpool.equals(whirlpoolOneKey)) {
@@ -10310,7 +10310,7 @@ describe("TokenExtension/TransferFee", () => {
         let detectedSignatureOne = null;
         let detectedSignatureTwo = null;
         const listener = ctx.program.addEventListener(
-          "Traded",
+          "traded",
           (event, _slot, signature) => {
             // verify
             if (event.whirlpool.equals(whirlpoolTwoKey)) {

@@ -46,7 +46,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = FeeTier::discriminator();
+        let discriminator: [u8; 8] = FeeTier::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:FeeTier | sha256sum | cut -c 1-16
         // 384b9f4c8e44be69
@@ -59,8 +59,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -71,7 +69,7 @@ mod data_layout_tests {
 
         let mut fee_tier_data = [0u8; FeeTier::LEN];
         let mut offset = 0;
-        fee_tier_data[offset..offset + 8].copy_from_slice(&FeeTier::discriminator());
+        fee_tier_data[offset..offset + 8].copy_from_slice(FeeTier::DISCRIMINATOR);
         offset += 8;
         fee_tier_data[offset..offset + 32].copy_from_slice(&fee_tier_whirlpools_config.to_bytes());
         offset += 32;

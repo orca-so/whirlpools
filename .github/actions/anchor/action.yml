@@ -21,10 +21,10 @@ inputs:
     default: 'v22.8.0'
   solana-version:
     description: 'The version of solana to use.'
-    default: 'v1.17.25'
+    default: 'v2.2.1'
   anchor-version:
     description: 'The version of anchor to use.'
-    default: 'v0.29.0'
+    default: '0.32.1'
 
 runs:
   using: "composite"
@@ -59,10 +59,13 @@ runs:
         wget -qO- "https://release.anza.xyz/${{ inputs.solana-version }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" | tar -xvj
         echo "$PWD/solana-release/bin" >> $GITHUB_PATH
       shell: bash
-    - name: Install Anchor CLI
+    - name: Install Anchor via AVM
       run: |
-        anchor_version=${{ inputs.anchor-version }}
-        npm install -g @coral-xyz/anchor-cli@${anchor_version#v}
+        cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+        ~/.cargo/bin/avm install ${{ inputs.anchor-version }}
+        ~/.cargo/bin/avm use ${{ inputs.anchor-version }}
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        echo "$HOME/.avm/bin" >> $GITHUB_PATH
       shell: bash
     - name: Configure Solana CLI
       run: |

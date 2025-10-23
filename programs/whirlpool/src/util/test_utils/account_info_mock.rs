@@ -1,6 +1,5 @@
 use crate::state::{AdaptiveFeeConstants, FixedTickArray, Oracle, Whirlpool};
 use anchor_lang::prelude::*;
-use anchor_lang::Discriminator;
 use std::cell::RefCell;
 
 pub struct AccountInfoMock {
@@ -48,7 +47,7 @@ impl AccountInfoMock {
         owner: Option<Pubkey>,
     ) -> Self {
         let mut data = vec![0u8; FixedTickArray::LEN];
-        data[0..8].copy_from_slice(&FixedTickArray::discriminator());
+        data[0..8].copy_from_slice(FixedTickArray::DISCRIMINATOR);
         data[8..12].copy_from_slice(&start_tick_index.to_le_bytes());
         data[9956..9988].copy_from_slice(&whirlpool.to_bytes());
         Self::new(key, data, owner.unwrap_or(FixedTickArray::owner()))
@@ -99,7 +98,7 @@ impl AccountInfoMock {
         assert_eq!(offset, AdaptiveFeeConstants::LEN);
 
         let mut data = vec![0u8; Oracle::LEN];
-        data[0..8].copy_from_slice(&Oracle::discriminator());
+        data[0..8].copy_from_slice(Oracle::DISCRIMINATOR);
         data[8..40].copy_from_slice(&whirlpool.to_bytes());
         data[40..48].copy_from_slice(&trade_enable_timestamp.to_le_bytes());
         data[48..48 + af_const_data.len()].copy_from_slice(&af_const_data);

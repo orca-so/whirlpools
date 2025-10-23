@@ -406,8 +406,6 @@ impl<'info> OracleAccessor<'info> {
         oracle_account_info: &AccountInfo<'info>,
         whirlpool: Pubkey,
     ) -> Result<bool> {
-        use anchor_lang::Discriminator;
-
         // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
         // AccountLoader can handle initialized account and partially initialized (owner program changed) account only.
         // So we need to handle uninitialized account manually.
@@ -429,12 +427,11 @@ impl<'info> OracleAccessor<'info> {
         }
 
         let data = oracle_account_info.try_borrow_data()?;
-        if data.len() < Oracle::discriminator().len() {
+        if data.len() < Oracle::DISCRIMINATOR.len() {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
         }
 
-        let disc_bytes = arrayref::array_ref![data, 0, 8];
-        if disc_bytes != &Oracle::discriminator() {
+        if &data[..8] != Oracle::DISCRIMINATOR {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
         }
 
@@ -488,7 +485,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = Oracle::discriminator();
+        let discriminator: [u8; 8] = Oracle::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:Oracle | sha256sum | cut -c 1-16
         // 8bc283b38cb3e5f4

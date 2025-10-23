@@ -3,9 +3,9 @@ import { buildTransaction } from "../src/buildTransaction";
 import { vi } from "vitest";
 import * as jito from "../src/jito";
 import type {
-  IInstruction,
-  ITransactionMessageWithFeePayerSigner,
+  Instruction,
   Address,
+  TransactionMessageWithFeePayerSigner,
 } from "@solana/kit";
 import {
   generateKeyPairSigner,
@@ -54,8 +54,8 @@ vi.mock("@solana/kit", async () => {
     ...actual,
     partiallySignTransactionMessageWithSigners: vi.fn().mockImplementation(
       (
-        message: ITransactionMessageWithFeePayerSigner & {
-          instructions: IInstruction[];
+        message: TransactionMessageWithFeePayerSigner & {
+          instructions: Instruction[];
           version: 0;
         },
       ) => encodeTransaction(message.instructions, message.feePayer),

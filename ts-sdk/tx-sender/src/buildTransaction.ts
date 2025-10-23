@@ -1,13 +1,12 @@
 import type {
-  IInstruction,
+  Instruction,
   Address,
   Rpc,
   SolanaRpcApi,
-  FullySignedTransaction,
-  TransactionWithLifetime,
-  Transaction,
   NoopSigner,
   KeyPairSigner,
+  Transaction,
+  TransactionWithLifetime,
 } from "@solana/kit";
 import {
   compressTransactionMessageUsingAddressLookupTables,
@@ -27,13 +26,11 @@ import { getRpcConfig } from "./config";
 /**
  * Builds and signs a transaction from the given instructions and configuration.
  *
- * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
+ * @param {Instruction[]} instructions - Array of instructions to include in the transaction
  * @param {KeyPairSigner | NoopSigner} feePayer - The signer that will pay for the transaction (must be the SAME instance used to build instructions)
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
  *
- * @returns {Promise<Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>>}
- *   - FullySignedTransaction if feePayer is a KeyPairSigner (has keyPair property)
- *   - Transaction (partially signed) if feePayer is NoopSigner (no keyPair property)
+ * @returns {Promise<Readonly<Transaction & TransactionWithLifetime>>}
  *
  * @example
  * // Node.js with KeyPairSigner - fully signed automatically
@@ -49,12 +46,10 @@ import { getRpcConfig } from "./config";
  * await sendTransaction(signedTx);
  */
 export async function buildTransaction(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   feePayer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: (Address | string)[],
-): Promise<
-  Readonly<(FullySignedTransaction | Transaction) & TransactionWithLifetime>
-> {
+): Promise<Readonly<Transaction & TransactionWithLifetime>> {
   return buildTransactionMessage(
     instructions,
     feePayer,
@@ -63,7 +58,7 @@ export async function buildTransaction(
 }
 
 async function buildTransactionMessage(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   feePayer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: Address[],
 ) {
@@ -104,7 +99,7 @@ async function buildTransactionMessage(
 }
 
 async function prepareTransactionMessage(
-  instructions: IInstruction[],
+  instructions: Instruction[],
   rpc: Rpc<SolanaRpcApi>,
   feePayer: KeyPairSigner | NoopSigner,
 ) {

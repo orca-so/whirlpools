@@ -261,7 +261,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = TickArray::discriminator();
+        let discriminator: [u8; 8] = TickArray::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:TickArray | sha256sum | cut -c 1-16
         // 4561bdbe6e0742bb

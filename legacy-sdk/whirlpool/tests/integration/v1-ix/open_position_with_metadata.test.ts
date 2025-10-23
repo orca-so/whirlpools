@@ -35,10 +35,10 @@ import {
   mintToDestination,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT, defaultConfirmOptions } from "../../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../../utils/init-utils";
-import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 import { MetaplexHttpClient } from "../../utils/metaplex";
+import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
 describe("open_position_with_metadata", () => {
   const provider = anchor.AnchorProvider.local(
@@ -431,7 +431,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
+        // https://github.com/coral-xyz/anchor/blob/v0.32.1/lang/src/error.rs#L229-231
         /0xbc0/,
       );
     });
@@ -450,7 +450,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
+        // https://github.com/coral-xyz/anchor/blob/v0.32.1/lang/src/error.rs#L229-L231
         /0xbc0/,
       );
     });
@@ -470,7 +470,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // ConstraintAddress
-        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L89-L91
+        // https://github.com/coral-xyz/anchor/blob/v0.32.1/lang/src/error.rs#L229-231
         /0x7dc/,
       );
     });

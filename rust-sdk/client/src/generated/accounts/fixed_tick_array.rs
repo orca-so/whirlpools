@@ -6,7 +6,7 @@
 //!
 
 use crate::generated::types::Tick;
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
@@ -23,6 +23,8 @@ pub whirlpool: Pubkey,
 }
 
 
+pub const FIXED_TICK_ARRAY_DISCRIMINATOR: [u8; 8] = [69, 97, 189, 190, 110, 7, 66, 187];
+
 impl FixedTickArray {
       pub const LEN: usize = 9988;
   
@@ -35,10 +37,10 @@ impl FixedTickArray {
   }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for FixedTickArray {
+impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for FixedTickArray {
   type Error = std::io::Error;
 
-  fn try_from(account_info: &solana_program::account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
+  fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
       let mut data: &[u8] = &(*account_info.data).borrow();
       Self::deserialize(&mut data)
   }
@@ -47,7 +49,7 @@ impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for FixedTickAr
 #[cfg(feature = "fetch")]
 pub fn fetch_fixed_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_program::pubkey::Pubkey,
+  address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::DecodedAccount<FixedTickArray>, std::io::Error> {
   let accounts = fetch_all_fixed_tick_array(rpc, &[*address])?;
   Ok(accounts[0].clone())
@@ -56,7 +58,7 @@ pub fn fetch_fixed_tick_array(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_fixed_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_program::pubkey::Pubkey],
+  addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::DecodedAccount<FixedTickArray>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -74,7 +76,7 @@ pub fn fetch_all_fixed_tick_array(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_fixed_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_program::pubkey::Pubkey,
+  address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::MaybeAccount<FixedTickArray>, std::io::Error> {
     let accounts = fetch_all_maybe_fixed_tick_array(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -83,7 +85,7 @@ pub fn fetch_maybe_fixed_tick_array(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_fixed_tick_array(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_program::pubkey::Pubkey],
+  addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::MaybeAccount<FixedTickArray>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -123,6 +125,6 @@ pub fn fetch_all_maybe_fixed_tick_array(
   
   #[cfg(feature = "anchor-idl-build")]
   impl anchor_lang::Discriminator for FixedTickArray {
-    const DISCRIMINATOR: [u8; 8] = [0; 8];
+    const DISCRIMINATOR: &[u8] = &[0; 8];
   }
 

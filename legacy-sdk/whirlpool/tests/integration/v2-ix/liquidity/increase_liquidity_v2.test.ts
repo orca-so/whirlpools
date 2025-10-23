@@ -1987,7 +1987,7 @@ describe("increase_liquidity_v2", () => {
           let eventVerified = false;
           let detectedSignature = null;
           const listener = ctx.program.addEventListener(
-            "LiquidityIncreased",
+            "liquidityIncreased",
             (event, _slot, signature) => {
               detectedSignature = signature;
               // verify

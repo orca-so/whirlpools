@@ -4,6 +4,7 @@ import type {
   Account,
   GetProgramAccountsApi,
   Rpc,
+  Base58EncodedBytes,
 } from "@solana/kit";
 import {
   getBase58Decoder,
@@ -82,7 +83,7 @@ export async function fetchAllWhirlpoolsConfigWithFilter(
 ): Promise<Account<WhirlpoolsConfig>[]> {
   const discriminator = getBase58Decoder().decode(
     WHIRLPOOLS_CONFIG_DISCRIMINATOR,
-  );
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

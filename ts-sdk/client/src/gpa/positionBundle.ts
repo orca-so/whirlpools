@@ -1,6 +1,7 @@
 import type {
   Account,
   Address,
+  Base58EncodedBytes,
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
@@ -36,7 +37,7 @@ export async function fetchAllPositionBundleWithFilter(
 ): Promise<Account<PositionBundle>[]> {
   const discriminator = getBase58Decoder().decode(
     POSITION_BUNDLE_DISCRIMINATOR,
-  );
+  ) as Base58EncodedBytes;
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
       offset: 0n,

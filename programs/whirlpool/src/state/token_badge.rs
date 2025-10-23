@@ -75,7 +75,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = TokenBadge::discriminator();
+        let discriminator: [u8; 8] = TokenBadge::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:TokenBadge | sha256sum | cut -c 1-16
         // 74dbcce5f974ff96
@@ -88,8 +88,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -102,7 +100,7 @@ mod data_layout_tests {
         // manually build the expected data layout
         let mut token_badge_data = [0u8; TokenBadge::LEN];
         let mut offset = 0;
-        token_badge_data[offset..offset + 8].copy_from_slice(&TokenBadge::discriminator());
+        token_badge_data[offset..offset + 8].copy_from_slice(TokenBadge::DISCRIMINATOR);
         offset += 8;
         token_badge_data[offset..offset + 32]
             .copy_from_slice(&token_badge_whirlpools_config.to_bytes());

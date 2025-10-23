@@ -93,7 +93,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = LockConfig::discriminator();
+        let discriminator: [u8; 8] = LockConfig::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:LockConfig | sha256sum | cut -c 1-16
         // 6a2fee9f7c0ca0c0
@@ -106,8 +106,6 @@ mod discriminator_tests {
 
 #[cfg(test)]
 mod data_layout_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
 
     #[test]
@@ -121,7 +119,7 @@ mod data_layout_tests {
 
         let mut lock_config_data = [0u8; LockConfig::LEN];
         let mut offset = 0;
-        lock_config_data[offset..offset + 8].copy_from_slice(&LockConfig::discriminator());
+        lock_config_data[offset..offset + 8].copy_from_slice(LockConfig::DISCRIMINATOR);
         offset += 8;
         lock_config_data[offset..offset + 32].copy_from_slice(&lock_config_position.to_bytes());
         offset += 32;

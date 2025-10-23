@@ -2619,7 +2619,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
     let eventVerified = false;
     let detectedSignature = null;
     const listener = ctx.program.addEventListener(
-      "PoolInitialized",
+      "poolInitialized",
       (event, _slot, signature) => {
         detectedSignature = signature;
         // verify

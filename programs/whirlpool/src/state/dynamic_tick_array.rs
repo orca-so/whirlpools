@@ -103,10 +103,7 @@ mod __private {
 
 #[cfg(not(feature = "idl-build"))]
 impl Discriminator for DynamicTickArray {
-    const DISCRIMINATOR: [u8; 8] = __private::DynamicTickArray::DISCRIMINATOR;
-    fn discriminator() -> [u8; 8] {
-        Self::DISCRIMINATOR
-    }
+    const DISCRIMINATOR: &'static [u8] = __private::DynamicTickArray::DISCRIMINATOR;
 }
 
 #[derive(Debug)]
@@ -945,7 +942,7 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator = DynamicTickArray::discriminator();
+        let discriminator: [u8; 8] = DynamicTickArray::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
         // $ echo -n account:DynamicTickArray | sha256sum | cut -c 1-16
         // 11d8f68ee1c7da38

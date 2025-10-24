@@ -69,7 +69,7 @@ version = "2.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81071c030078429f000741da9ea84e34c432614f1b64dba741e1a572beeece3b"
 dependencies = [
- "ahash",
+ "ahash 0.8.11",
  "solana-epoch-schedule",
  "solana-hash",
  "solana-pubkey",
@@ -97,6 +97,17 @@ dependencies = [
  "solana-sdk-ids",
  "solana-secp256k1-program",
  "solana-secp256r1-program",
+]
+
+[[package]]
+name = "ahash"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "891477e0c6a8957309ee5c45a6368af3ae14bb510732d2684ffa19af310920f9"
+dependencies = [
+ "getrandom 0.2.15",
+ "once_cell",
+ "version_check",
 ]
 
 [[package]]
@@ -695,7 +706,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.13.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -1737,6 +1748,9 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+dependencies = [
+ "ahash 0.7.8",
+]
 
 [[package]]
 name = "hashbrown"
@@ -1744,7 +1758,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
 dependencies = [
- "ahash",
+ "ahash 0.8.11",
 ]
 
 [[package]]
@@ -2657,7 +2671,7 @@ name = "orca_whirlpools_client"
 version = "5.0.1"
 dependencies = [
  "anchor-lang",
- "borsh 0.10.4",
+ "borsh 1.5.5",
  "num-derive",
  "num-traits",
  "orca_whirlpools_core",
@@ -4157,7 +4171,7 @@ version = "2.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93b93971e289d6425f88e6e3cb6668c4b05df78b3c518c249be55ced8efd6b6d"
 dependencies = [
- "ahash",
+ "ahash 0.8.11",
  "lazy_static",
  "solana-epoch-schedule",
  "solana-hash",
@@ -4585,7 +4599,7 @@ version = "2.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8c4b8180165c7240f919305079b3d3de447b790290fcc623744e350210e73d7"
 dependencies = [
- "ahash",
+ "ahash 0.8.11",
  "bincode",
  "bv",
  "caps",

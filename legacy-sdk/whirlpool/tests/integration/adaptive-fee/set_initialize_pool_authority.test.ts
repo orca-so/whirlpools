@@ -1,14 +1,8 @@
-import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import {
-  IGNORE_CACHE,
-  PDAUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolIx,
-} from "../../../src";
-import { dropIsSignerFlag } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import type { WhirlpoolContext } from "../../../src";
+import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
+import { dropIsSignerFlag, initializeLiteSVMEnvironment } from "../../utils";
+import { pollForCondition } from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initializeConfigWithDefaultConfigParams,
@@ -17,14 +11,14 @@ import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders"
 import { Keypair, PublicKey } from "@solana/web3.js";
 
 describe("set_initialize_pool_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const tickSpacing = 64;
   const feeTierIndex = 1024 + tickSpacing;
@@ -71,9 +65,14 @@ describe("set_initialize_pool_authority", () => {
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
 
-    const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
-      adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+    const postAdaptiveFeeTierAccount = await pollForCondition(
+      async () =>
+        (await fetcher.getAdaptiveFeeTier(
+          adaptiveFeeTierPda.publicKey,
+          IGNORE_CACHE,
+        ))!,
+      (aft) => aft.initializePoolAuthority.equals(newInitializePoolAuthority),
+      { maxRetries: 50, delayMs: 10 },
     );
     assert.ok(postAdaptiveFeeTierAccount);
     assert.ok(
@@ -125,9 +124,14 @@ describe("set_initialize_pool_authority", () => {
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
 
-    const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
-      adaptiveFeeTierPda.publicKey,
-      IGNORE_CACHE,
+    const postAdaptiveFeeTierAccount = await pollForCondition(
+      async () =>
+        (await fetcher.getAdaptiveFeeTier(
+          adaptiveFeeTierPda.publicKey,
+          IGNORE_CACHE,
+        ))!,
+      (aft) => aft.initializePoolAuthority.equals(newInitializePoolAuthority),
+      { maxRetries: 50, delayMs: 10 },
     );
     assert.ok(postAdaptiveFeeTierAccount);
     assert.ok(

@@ -8,26 +8,24 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import type { PositionBundleData } from "../../../src";
-import {
-  PDAUtil,
-  POSITION_BUNDLE_SIZE,
-  toTx,
-  WhirlpoolContext,
-} from "../../../src";
+import type { PositionBundleData, WhirlpoolContext } from "../../../src";
+import { PDAUtil, POSITION_BUNDLE_SIZE, toTx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createMintInstructions, mintToDestination } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initializePositionBundle } from "../../utils/init-utils";
 
 describe("initialize_position_bundle", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    ctx = env.ctx;
+  });
 
   async function createInitializePositionBundleTx(
     ctx: WhirlpoolContext,
@@ -245,7 +243,8 @@ describe("initialize_position_bundle", () => {
       positionBundleMintKeypair,
     );
     await assert.rejects(tx.buildAndExecute(), (err) => {
-      return JSON.stringify(err).includes("already in use");
+      const errorString = err instanceof Error ? err.message : String(err);
+      return errorString.includes("already in use");
     });
   });
 

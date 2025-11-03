@@ -19,33 +19,44 @@ import type { TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
-import type { InitPoolParams, PositionData } from "../../../src";
+import type {
+  InitPoolParams,
+  PositionData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   IGNORE_CACHE,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
   WHIRLPOOL_NFT_UPDATE_AUTH,
-  WhirlpoolContext,
   WhirlpoolIx,
   toTx,
 } from "../../../src";
-import { ONE_SOL, TickSpacing, ZERO_BN, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
+  initializeLiteSVMEnvironment,
+  systemTransferTx,
+} from "../../utils";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
 import type { OpenPositionWithTokenExtensionsParams } from "../../../src/instructions";
 import { useMaxCU } from "../../utils/v2/init-utils-v2";
 
 describe("open_position_with_token_extensions", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 11392;

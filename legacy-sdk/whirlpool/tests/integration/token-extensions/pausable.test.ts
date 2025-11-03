@@ -2,14 +2,13 @@ import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
 import {
   NO_ORACLE_DATA,
   PDAUtil,
   swapQuoteWithParams,
   SwapUtils,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -18,7 +17,7 @@ import {
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
@@ -34,13 +33,16 @@ import {
 } from "@solana/spl-token";
 
 describe("TokenExtension/Pausable", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   // Since Pausable mint is no different from normal mint as far as paused is disabled,
   // swap_v2 is executed to check the owner to vault and vault to owner logic.

@@ -4,12 +4,11 @@ import { Percentage } from "@orca-so/common-sdk";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
-import type { Whirlpool } from "../../../../src";
+import type { Whirlpool, WhirlpoolContext } from "../../../../src";
 import {
   buildWhirlpoolClient,
   PriceMath,
   swapQuoteByInputToken,
-  WhirlpoolContext,
 } from "../../../../src";
 import type { WhirlpoolsError } from "../../../../src/errors/errors";
 import { SwapErrorCode } from "../../../../src/errors/errors";
@@ -21,7 +20,7 @@ import {
   assertQuoteAndResults,
   TickSpacing,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -30,14 +29,17 @@ import {
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
 describe("whirlpool-dev-fee-swap", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    anchor.setProvider(provider);
+    client = buildWhirlpoolClient(ctx);
+  });
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

@@ -11,6 +11,7 @@ import type {
   PositionData,
   TwoHopSwapV2Params,
   WhirlpoolData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   buildWhirlpoolClient,
@@ -27,7 +28,6 @@ import {
   toTokenAmount,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -39,7 +39,11 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  warpClock,
+  advanceEpoch,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import type {
   FundedPositionV2Params,
@@ -80,14 +84,18 @@ import type { TokenExtensionContext } from "../../../src/utils/public/token-exte
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/TransferFee", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   const dummyTokenMintWithProgram: MintWithTokenProgram = {
     address: PublicKey.default,
@@ -126,24 +134,24 @@ describe("TokenExtension/TransferFee", () => {
     return transferFee;
   }
 
-  const WAIT_EPOCH_TIMEOUT_MS = 30 * 1000;
-
   async function getCurrentEpoch(): Promise<number> {
     const epochInfo = await provider.connection.getEpochInfo("confirmed");
     return epochInfo.epoch;
   }
 
   async function waitEpoch(waitForEpoch: number) {
-    const startWait = Date.now();
+    const currentEpoch = await getCurrentEpoch();
+    const epochsToAdvance = waitForEpoch - currentEpoch;
 
-    while (Date.now() - startWait < WAIT_EPOCH_TIMEOUT_MS) {
-      const epoch = await getCurrentEpoch();
-      if (epoch >= waitForEpoch) return;
-      sleep(1000);
+    advanceEpoch(epochsToAdvance);
+
+    // Verify we've reached the target epoch
+    const newEpoch = await getCurrentEpoch();
+    if (newEpoch < waitForEpoch) {
+      throw Error(
+        `Failed to advance to epoch ${waitForEpoch}, currently at ${newEpoch}`,
+      );
     }
-    throw Error(
-      "waitEpoch Timeout, Please set slots_per_epoch smaller in Anchor.toml",
-    );
   }
 
   async function fetchTransferFeeConfig(
@@ -1428,7 +1436,7 @@ describe("TokenExtension/TransferFee", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(3000);
+      warpClock(3);
 
       await toTx(
         ctx,

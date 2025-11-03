@@ -1,14 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { InitPoolParams, InitTickArrayParams } from "../../../src";
-import {
-  TICK_ARRAY_SIZE,
+import type {
+  InitPoolParams,
+  InitTickArrayParams,
   WhirlpoolContext,
-  WhirlpoolIx,
-  toTx,
 } from "../../../src";
+import { TICK_ARRAY_SIZE, WhirlpoolIx, toTx } from "../../../src";
 import { ONE_SOL, TickSpacing, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool, initTickArray, useMaxCU } from "../../utils/init-utils";
 import {
   generateDefaultInitDynamicTickArrayParams,
@@ -17,14 +16,16 @@ import {
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 describe("initialize_dynamic_tick_array", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully init a TickArray account", async () => {
     const tickSpacing = TickSpacing.Standard;

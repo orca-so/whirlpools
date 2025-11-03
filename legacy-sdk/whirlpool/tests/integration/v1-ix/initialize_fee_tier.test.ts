@@ -1,9 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { FeeTierData } from "../../../src";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { FeeTierData, WhirlpoolContext } from "../../../src";
+import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   initFeeTier,
   initializeConfigWithDefaultConfigParams,
@@ -11,14 +11,16 @@ import {
 import { generateDefaultInitFeeTierParams } from "../../utils/test-builders";
 
 describe("initialize_fee_tier", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully init a FeeRate stable account", async () => {
     const { configInitInfo, configKeypairs } =

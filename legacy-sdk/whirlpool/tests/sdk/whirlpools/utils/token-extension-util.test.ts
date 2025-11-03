@@ -4,23 +4,16 @@ import type { MintWithTokenProgram } from "@orca-so/common-sdk";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import {
-  IGNORE_CACHE,
-  TokenExtensionUtil,
-  WhirlpoolContext,
-} from "../../../../src";
+import type { WhirlpoolContext } from "../../../../src";
+import { IGNORE_CACHE, TokenExtensionUtil } from "../../../../src";
 import { TickSpacing } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 
 describe("TokenExtensionUtil tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
   let fixture: WhirlpoolTestFixtureV2;
 
@@ -36,6 +29,11 @@ describe("TokenExtensionUtil tests", () => {
   }
 
   beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    anchor.setProvider(provider);
     const vaultStartBalance = 1_000_000;
     const lowerTickIndex = -1280,
       upperTickIndex = 1280,

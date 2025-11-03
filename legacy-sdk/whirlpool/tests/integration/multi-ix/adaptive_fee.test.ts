@@ -26,13 +26,17 @@ import {
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  warpClock,
+  getCurrentTimestamp,
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
   getLocalnetAdminKeypair0,
-  sleep,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -56,17 +60,16 @@ interface SharedTestContext {
 const DEBUG_OUTPUT = false;
 
 describe("adaptive fee tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
   let testCtx: SharedTestContext;
   let admin: Keypair;
 
   beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
     anchor.setProvider(provider);
-    const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
@@ -441,13 +444,23 @@ describe("adaptive fee tests", () => {
           }
 
           const postWhirlpool = await pool.refreshData();
-          const postOracle = (await testCtx.whirlpoolCtx.fetcher.getOracle(
-            poolInfo.oracle,
-            IGNORE_CACHE,
+          const postOracle = (await pollForCondition(
+            async () =>
+              (await testCtx.whirlpoolCtx.fetcher.getOracle(
+                poolInfo.oracle,
+                IGNORE_CACHE,
+              )) as OracleData,
+            (o) =>
+              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
+              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp
+                .sub(new BN(getCurrentTimestamp()))
+                .abs()
+                .lten(10),
+            { maxRetries: 50, delayMs: 10 },
           )) as OracleData;
 
           const postVars = postOracle.adaptiveFeeVariables;
-          const currentSystemTimestamp = new BN(Math.floor(Date.now() / 1000));
+          const currentSystemTimestamp = new BN(getCurrentTimestamp());
           assert.ok(postVars.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
             postVars.lastReferenceUpdateTimestamp
@@ -712,19 +725,39 @@ describe("adaptive fee tests", () => {
           }
 
           const postWhirlpoolOne = await poolOne.refreshData();
-          const postOracleOne = (await testCtx.whirlpoolCtx.fetcher.getOracle(
-            oracleOne,
-            IGNORE_CACHE,
+          const postOracleOne = (await pollForCondition(
+            async () =>
+              (await testCtx.whirlpoolCtx.fetcher.getOracle(
+                oracleOne,
+                IGNORE_CACHE,
+              )) as OracleData,
+            (o) =>
+              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
+              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp
+                .sub(new BN(Math.floor(Date.now() / 1000)))
+                .abs()
+                .lten(10),
+            { maxRetries: 50, delayMs: 10 },
           )) as OracleData;
           const postWhirlpoolTwo = await poolTwo.refreshData();
-          const postOracleTwo = (await testCtx.whirlpoolCtx.fetcher.getOracle(
-            oracleTwo,
-            IGNORE_CACHE,
+          const postOracleTwo = (await pollForCondition(
+            async () =>
+              (await testCtx.whirlpoolCtx.fetcher.getOracle(
+                oracleTwo,
+                IGNORE_CACHE,
+              )) as OracleData,
+            (o) =>
+              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
+              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp
+                .sub(new BN(getCurrentTimestamp()))
+                .abs()
+                .lten(10),
+            { maxRetries: 50, delayMs: 10 },
           )) as OracleData;
 
           const postVarsOne = postOracleOne.adaptiveFeeVariables;
           const postVarsTwo = postOracleTwo.adaptiveFeeVariables;
-          const currentSystemTimestamp = new BN(Math.floor(Date.now() / 1000));
+          const currentSystemTimestamp = new BN(getCurrentTimestamp());
 
           assert.ok(postVarsOne.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
@@ -823,7 +856,7 @@ describe("adaptive fee tests", () => {
 
       for (const version of versions) {
         it(`swapV${version}`, async () => {
-          const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+          const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
           const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
           const poolInfo = await buildSwapTestPool(
@@ -914,7 +947,7 @@ describe("adaptive fee tests", () => {
             );
           }
           // wait until trade enable timestamp (margin: 5s)
-          await sleep((20 + 5) * 1000);
+          warpClock(20 + 5);
 
           // now it should be successful
           if (version == 1) {
@@ -955,9 +988,7 @@ describe("adaptive fee tests", () => {
         const versions = [1, 2];
         for (const version of versions) {
           it(`twoHopSwapV${version} should be blocked until trade enable timestamp of whirlpool ${oneOrTwo}`, async () => {
-            const currentTimeInSec = new anchor.BN(
-              Math.floor(Date.now() / 1000),
-            );
+            const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
             const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
             const {
@@ -1135,7 +1166,7 @@ describe("adaptive fee tests", () => {
             }
 
             // wait until trade enable timestamp (margin: 5s)
-            await sleep((20 + 5) * 1000);
+            warpClock(20 + 5);
 
             // now it should be successful
             if (version == 1) {
@@ -1183,6 +1214,22 @@ describe("adaptive fee tests", () => {
       ];
       aqConfig.initPositionParams.push({ poolIndex: 0, fundParams });
       aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
+
+      // Reset LiteSVM state before each test to avoid AccountAlreadyInUse errors
+      beforeEach(async () => {
+        const env = await initializeLiteSVMEnvironment();
+        provider = env.provider;
+        program = env.program;
+        anchor.setProvider(provider);
+        const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+        const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
+        admin = await getLocalnetAdminKeypair0(whirlpoolCtx);
+        testCtx = {
+          provider,
+          whirlpoolCtx,
+          whirlpoolClient,
+        };
+      });
 
       it("swapV1", async () => {
         // build pool with FeeTier
@@ -1249,7 +1296,11 @@ describe("adaptive fee tests", () => {
           cleanupInstructions: [],
           signers: [],
         }).buildAndExecute();
-        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        const postSqrtPrice = await pollForCondition(
+          async () => (await whirlpool.refreshData()).sqrtPrice,
+          (p) => !preSqrtPrice.eq(p),
+          { maxRetries: 50, delayMs: 10 },
+        );
         assert.ok(!preSqrtPrice.eq(postSqrtPrice));
       });
 
@@ -1432,7 +1483,11 @@ describe("adaptive fee tests", () => {
           cleanupInstructions: [],
           signers: [],
         }).buildAndExecute();
-        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        const postSqrtPrice = await pollForCondition(
+          async () => (await whirlpool.refreshData()).sqrtPrice,
+          (p) => !preSqrtPrice.eq(p),
+          { maxRetries: 50, delayMs: 10 },
+        );
         assert.ok(!preSqrtPrice.eq(postSqrtPrice));
       });
 

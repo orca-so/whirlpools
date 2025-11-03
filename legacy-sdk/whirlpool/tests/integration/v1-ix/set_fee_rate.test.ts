@@ -1,22 +1,28 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
+import { toTx, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { getLocalnetAdminKeypair0, TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
+import type { Whirlpool } from "../../../dist/artifacts/whirlpool";
 
 describe("set_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let program: anchor.Program<Whirlpool>;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    program = env.program as unknown as anchor.Program<Whirlpool>;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully sets_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } =
@@ -46,10 +52,15 @@ describe("set_fee_rate", () => {
     ).addSigner(feeAuthorityKeypair);
     await setFeeRateTx.buildAndExecute();
 
-    whirlpool = (await fetcher.getPool(
-      poolInitInfo.whirlpoolPda.publicKey,
-      IGNORE_CACHE,
-    )) as WhirlpoolData;
+    whirlpool = await pollForCondition(
+      async () =>
+        (await fetcher.getPool(
+          poolInitInfo.whirlpoolPda.publicKey,
+          IGNORE_CACHE,
+        )) as WhirlpoolData,
+      (p) => p.feeRate === newFeeRate,
+      { maxRetries: 50, delayMs: 10 },
+    );
     assert.equal(whirlpool.feeRate, newFeeRate);
   });
 
@@ -81,10 +92,15 @@ describe("set_fee_rate", () => {
     ).addSigner(feeAuthorityKeypair);
     await setFeeRateTx.buildAndExecute();
 
-    whirlpool = (await fetcher.getPool(
-      poolInitInfo.whirlpoolPda.publicKey,
-      IGNORE_CACHE,
-    )) as WhirlpoolData;
+    whirlpool = await pollForCondition(
+      async () =>
+        (await fetcher.getPool(
+          poolInitInfo.whirlpoolPda.publicKey,
+          IGNORE_CACHE,
+        )) as WhirlpoolData,
+      (p) => p.feeRate === newFeeRate,
+      { maxRetries: 50, delayMs: 10 },
+    );
     assert.equal(whirlpool.feeRate, newFeeRate);
   });
 

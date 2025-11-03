@@ -2,13 +2,12 @@ import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
-import type { TwoHopSwapV2Params } from "../../../../src";
+import type { TwoHopSwapV2Params, WhirlpoolContext } from "../../../../src";
 import {
   ORCA_WHIRLPOOL_PROGRAM_ID,
   PDAUtil,
   PriceMath,
   UseFallbackTickArray,
-  WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
@@ -17,7 +16,7 @@ import {
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { TickSpacing } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -30,15 +29,19 @@ import {
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("swap with fallback test", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    anchor.setProvider(provider);
+    client = buildWhirlpoolClient(ctx);
+  });
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

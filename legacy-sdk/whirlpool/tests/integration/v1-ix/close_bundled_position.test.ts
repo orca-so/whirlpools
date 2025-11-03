@@ -3,10 +3,13 @@ import type { PDA } from "@orca-so/common-sdk";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
-import type { InitPoolParams, PositionBundleData } from "../../../src";
+import type {
+  InitPoolParams,
+  PositionBundleData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   POSITION_BUNDLE_SIZE,
-  WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
   increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage,
@@ -21,7 +24,11 @@ import {
   systemTransferTx,
   transferToken,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  expireBlockhash,
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import {
   initTestPool,
   initializePositionBundle,
@@ -36,14 +43,18 @@ import {
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("close_bundled_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const client = buildWhirlpoolClient(ctx);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;
@@ -142,16 +153,36 @@ describe("close_bundled_position", () => {
         receiver: receiverKeypair.publicKey,
       }),
     ).buildAndExecute();
-    const postAccount = await fetcher.getPosition(
-      bundledPositionPda.publicKey,
-      IGNORE_CACHE,
+    await pollForCondition(
+      () => fetcher.getPosition(bundledPositionPda.publicKey, IGNORE_CACHE),
+      (p) => p === null,
+      {
+        accountToReload: bundledPositionPda.publicKey,
+        connection: ctx.connection,
+      },
     );
-    const postPositionBundle = await fetcher.getPositionBundle(
-      positionBundleInfo.positionBundlePda.publicKey,
-      IGNORE_CACHE,
+    const postPositionBundle = await pollForCondition(
+      () =>
+        fetcher.getPositionBundle(
+          positionBundleInfo.positionBundlePda.publicKey,
+          IGNORE_CACHE,
+        ),
+      (pb) =>
+        !!pb &&
+        (() => {
+          try {
+            checkBitmap(pb!, []);
+            return true;
+          } catch {
+            return false;
+          }
+        })(),
+      {
+        accountToReload: positionBundleInfo.positionBundlePda.publicKey,
+        connection: ctx.connection,
+      },
     );
     checkBitmap(postPositionBundle!, []);
-    assert.ok(postAccount === null);
 
     const receiverAccount = await provider.connection.getAccountInfo(
       receiverKeypair.publicKey,
@@ -539,7 +570,26 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         1,
       );
-      await tx.buildAndExecute();
+
+      // Expire blockhash to get a fresh one for the next transaction
+      expireBlockhash();
+
+      // Rebuild transaction for second attempt (litesvm requires fresh tx)
+      const tx2 = toTx(
+        ctx,
+        WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+          bundledPosition: positionInitInfo.params.bundledPositionPda.publicKey,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: funderKeypair.publicKey,
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          receiver: ctx.wallet.publicKey,
+        }),
+      );
+      tx2.addSigner(funderKeypair);
+
+      await tx2.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
         IGNORE_CACHE,
@@ -629,8 +679,27 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         0,
       );
+
+      // Expire blockhash to get a fresh one for the next transaction
+      expireBlockhash();
+
+      // Rebuild transaction for second attempt (litesvm requires fresh tx)
+      const tx2 = toTx(
+        ctx,
+        WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+          bundledPosition: positionInitInfo.params.bundledPositionPda.publicKey,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: funderKeypair.publicKey,
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          receiver: ctx.wallet.publicKey,
+        }),
+      );
+      tx2.addSigner(funderKeypair);
+
       await assert.rejects(
-        tx.buildAndExecute(),
+        tx2.buildAndExecute(),
         /0x1784/, // InvalidPositionTokenAmount
       );
     });

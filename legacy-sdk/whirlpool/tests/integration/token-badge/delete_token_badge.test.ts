@@ -1,32 +1,31 @@
-import * as anchor from "@coral-xyz/anchor";
+import type * as anchor from "@coral-xyz/anchor";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import * as assert from "assert";
-import {
-  IGNORE_CACHE,
-  PDAUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolIx,
-} from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
+import type { WhirlpoolContext } from "../../../src";
+import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import type {
   DeleteTokenBadgeParams,
   InitializeTokenBadgeParams,
-} from "../../../src/instructions";
+} from "../../../dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 
 describe("delete_token_badge", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    program = env.program;
+    fetcher = ctx.fetcher;
+  });
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();

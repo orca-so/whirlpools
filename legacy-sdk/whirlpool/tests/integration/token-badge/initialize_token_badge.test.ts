@@ -1,30 +1,21 @@
-import * as anchor from "@coral-xyz/anchor";
+import type * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import {
-  IGNORE_CACHE,
-  PDAUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolIx,
-} from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
-import type { InitializeTokenBadgeParams } from "../../../src/instructions";
+import type { WhirlpoolContext } from "../../../src";
+import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
+import type { InitializeTokenBadgeParams } from "../../..//dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 
 describe("initialize_token_badge", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -32,6 +23,14 @@ describe("initialize_token_badge", () => {
   const initialConfigExtensionAuthorityKeypair = feeAuthorityKeypair;
   const initialTokenBadgeAuthorityKeypair = feeAuthorityKeypair;
   const updatedTokenBadgeAuthorityKeypair = Keypair.generate();
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    program = env.program;
+    fetcher = ctx.fetcher;
+  });
 
   async function createOtherWallet(): Promise<Keypair> {
     const keypair = Keypair.generate();
@@ -271,8 +270,8 @@ describe("initialize_token_badge", () => {
     // re-initialize
     await assert.rejects(
       initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {}),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
+      (err: Error) => {
+        return err.message.includes("already in use");
       },
     );
   });

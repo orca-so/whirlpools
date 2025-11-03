@@ -10,20 +10,23 @@ import {
 import type { Keypair } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
-import type { InitPoolParams, WhirlpoolData } from "../../../src";
+import type {
+  InitPoolParams,
+  WhirlpoolData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   LockConfigUtil,
   NO_TOKEN_EXTENSION_CONTEXT,
   PDAUtil,
   SPLASH_POOL_TICK_SPACING,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   increaseLiquidityQuoteByLiquidityWithParams,
   toTx,
 } from "../../../src";
 import { ONE_SOL, systemTransferTx } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
 import type {
   LockPositionParams,
@@ -34,13 +37,14 @@ import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import { IGNORE_CACHE } from "../../../dist/network/public/fetcher/fetcher-types";
 
 describe("transfer_locked_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+  });
 
   const funderKeypair = anchor.web3.Keypair.generate();
   const delegatedAuthority = anchor.web3.Keypair.generate();

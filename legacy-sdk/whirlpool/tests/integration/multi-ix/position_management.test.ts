@@ -1,20 +1,20 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolIx } from "../../../src";
-import { WhirlpoolContext } from "../../../src/context";
-import { TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import type { WhirlpoolContext } from "../../../src/context";
+import { initializeLiteSVMEnvironment, TickSpacing } from "../../utils";
 import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
 describe("position management tests", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+  });
 
   it("successfully closes and opens a position in one transaction", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);

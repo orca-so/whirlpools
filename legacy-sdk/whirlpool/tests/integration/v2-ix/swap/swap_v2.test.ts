@@ -10,6 +10,7 @@ import type {
   SwapV2Params,
   TickArrayData,
   WhirlpoolData,
+  WhirlpoolContext,
 } from "../../../../src";
 import {
   MAX_SQRT_PRICE,
@@ -23,7 +24,6 @@ import {
   SwapUtils,
   TICK_ARRAY_SIZE,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
@@ -39,9 +39,10 @@ import {
   TickSpacing,
   ZERO_BN,
   getTokenBalance,
-  sleep,
+  warpClock,
+  pollForCondition,
+  initializeLiteSVMEnvironment,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type {
   FundedPositionV2Params,
@@ -60,13 +61,18 @@ import type { PublicKey } from "@solana/web3.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
 describe("swap_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+  let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    client = buildWhirlpoolClient(ctx);
+  });
 
   describe("v1 parity", () => {
     const tokenTraitVariations: {
@@ -2506,7 +2512,7 @@ describe("swap_v2", () => {
     describe("partial fill, b to a", () => {
       const tickSpacing = 128;
       const aToB = false;
-      const client = buildWhirlpoolClient(ctx);
+      /* client initialized in beforeAll */
 
       let poolInitInfo: InitPoolV2Params;
       let whirlpoolPda: PDA;
@@ -2768,7 +2774,7 @@ describe("swap_v2", () => {
     describe("partial fill, a to b", () => {
       const tickSpacing = 128;
       const aToB = true;
-      const client = buildWhirlpoolClient(ctx);
+      /* client initialized in beforeAll */
 
       let poolInitInfo: InitPoolV2Params;
       let whirlpoolPda: PDA;
@@ -3101,8 +3107,8 @@ describe("swap_v2", () => {
 
       const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
       // event verification
-      let eventVerified = false;
-      let detectedSignature = null;
+      let eventVerified: boolean = false;
+      let detectedSignature: string | null = null;
       const listener = ctx.program.addEventListener(
         "traded",
         (event, _slot, signature) => {
@@ -3128,7 +3134,7 @@ describe("swap_v2", () => {
         },
       );
 
-      const signature = await toTx(
+      await toTx(
         ctx,
         WhirlpoolIx.swapV2Ix(ctx.program, {
           ...quote,
@@ -3146,9 +3152,16 @@ describe("swap_v2", () => {
         }),
       ).buildAndExecute();
 
-      await sleep(2000);
-      assert.equal(signature, detectedSignature);
-      assert.ok(eventVerified);
+      warpClock(2);
+      const polled = await pollForCondition(
+        async () => ({ detectedSignature: detectedSignature, eventVerified }),
+        (r) =>
+          !!r.detectedSignature &&
+          !!(r as { eventVerified?: boolean }).eventVerified,
+        { maxRetries: 100, delayMs: 10 },
+      );
+      assert.ok(!!polled.detectedSignature);
+      assert.ok(polled.eventVerified);
 
       ctx.program.removeEventListener(listener);
     });

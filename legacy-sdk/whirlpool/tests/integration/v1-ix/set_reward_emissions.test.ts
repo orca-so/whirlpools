@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
+import { toTx, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   createAndMintToTokenAccount,
@@ -9,18 +9,23 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 import { initializeReward, initTestPool } from "../../utils/init-utils";
 
 describe("set_reward_emissions", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const emissionsPerSecondX64 = new anchor.BN(10_000)
     .shln(64)
@@ -85,10 +90,15 @@ describe("set_reward_emissions", () => {
       .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
       .buildAndExecute();
 
-    whirlpool = (await fetcher.getPool(
-      poolInitInfo.whirlpoolPda.publicKey,
-      IGNORE_CACHE,
-    )) as WhirlpoolData;
+    whirlpool = await pollForCondition(
+      async () =>
+        (await fetcher.getPool(
+          poolInitInfo.whirlpoolPda.publicKey,
+          IGNORE_CACHE,
+        )) as WhirlpoolData,
+      (p) => p.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN),
+      { maxRetries: 50, delayMs: 10 },
+    );
     assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
   });
 

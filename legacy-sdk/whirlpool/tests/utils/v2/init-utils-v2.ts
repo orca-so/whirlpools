@@ -7,6 +7,7 @@ import type BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   getLocalnetAdminKeypair0,
+  requestAirdropIfBalanceLow,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
@@ -161,17 +162,7 @@ export async function initTestPoolWithTokensV2(
 
   // Airdrop SOL into provider's wallet for SOL native token testing.
   const connection = ctx.provider.connection;
-  const airdropTx = await connection.requestAirdrop(
-    ctx.provider.wallet.publicKey,
-    100_000_000_000_000,
-  );
-  await ctx.connection.confirmTransaction(
-    {
-      signature: airdropTx,
-      ...(await ctx.connection.getLatestBlockhash("confirmed")),
-    },
-    "confirmed",
-  );
+  requestAirdropIfBalanceLow(connection, ctx.provider.wallet.publicKey);
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccountV2(
     provider,
@@ -920,98 +911,94 @@ export async function withdrawPositionsV2(
     ? TEST_TOKEN_2022_PROGRAM_ID
     : TEST_TOKEN_PROGRAM_ID;
 
-  await Promise.all(
-    positionInfos.map(async (info) => {
-      const pool = await fetcher.getPool(info.initParams.whirlpool);
-      const position = await fetcher.getPosition(
-        info.initParams.positionPda.publicKey,
+  for (const info of positionInfos) {
+    const pool = await fetcher.getPool(info.initParams.whirlpool);
+    const position = await fetcher.getPosition(
+      info.initParams.positionPda.publicKey,
+    );
+
+    if (!pool) {
+      throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
+    }
+
+    if (!position) {
+      throw new Error(
+        `Failed to fetch position - ${info.initParams.whirlpool}`,
       );
+    }
 
-      if (!pool) {
-        throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
-      }
+    const priceLower = PriceMath.tickIndexToSqrtPriceX64(
+      position.tickLowerIndex,
+    );
+    const priceUpper = PriceMath.tickIndexToSqrtPriceX64(
+      position.tickUpperIndex,
+    );
 
-      if (!position) {
-        throw new Error(
-          `Failed to fetch position - ${info.initParams.whirlpool}`,
-        );
-      }
+    const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+      position.liquidity,
+      pool.sqrtPrice,
+      priceLower,
+      priceUpper,
+      false,
+    );
 
-      const priceLower = PriceMath.tickIndexToSqrtPriceX64(
-        position.tickLowerIndex,
-      );
-      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(
-        position.tickUpperIndex,
-      );
+    const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
+    const lowerStartTick =
+      position.tickLowerIndex - (position.tickLowerIndex % numTicksInTickArray);
+    const tickArrayLower = PDAUtil.getTickArray(
+      ctx.program.programId,
+      info.initParams.whirlpool,
+      lowerStartTick,
+    );
+    const upperStartTick =
+      position.tickUpperIndex - (position.tickUpperIndex % numTicksInTickArray);
+    const tickArrayUpper = PDAUtil.getTickArray(
+      ctx.program.programId,
+      info.initParams.whirlpool,
+      upperStartTick,
+    );
 
-      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
-        position.liquidity,
-        pool.sqrtPrice,
-        priceLower,
-        priceUpper,
-        false,
-      );
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
+        liquidityAmount: position.liquidity,
+        tokenMinA: tokenA,
+        tokenMinB: tokenB,
+        whirlpool: info.initParams.whirlpool,
+        positionAuthority: ctx.provider.wallet.publicKey,
+        position: info.initParams.positionPda.publicKey,
+        positionTokenAccount: info.initParams.positionTokenAccount,
+        tokenMintA: pool.tokenMintA,
+        tokenMintB: pool.tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA: pool.tokenVaultA,
+        tokenVaultB: pool.tokenVaultB,
+        tickArrayLower: tickArrayLower.publicKey,
+        tickArrayUpper: tickArrayUpper.publicKey,
+      }),
+    ).buildAndExecute();
 
-      const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
-      const lowerStartTick =
-        position.tickLowerIndex -
-        (position.tickLowerIndex % numTicksInTickArray);
-      const tickArrayLower = PDAUtil.getTickArray(
-        ctx.program.programId,
-        info.initParams.whirlpool,
-        lowerStartTick,
-      );
-      const upperStartTick =
-        position.tickUpperIndex -
-        (position.tickUpperIndex % numTicksInTickArray);
-      const tickArrayUpper = PDAUtil.getTickArray(
-        ctx.program.programId,
-        info.initParams.whirlpool,
-        upperStartTick,
-      );
-
-      await toTx(
-        ctx,
-        WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
-          liquidityAmount: position.liquidity,
-          tokenMinA: tokenA,
-          tokenMinB: tokenB,
-          whirlpool: info.initParams.whirlpool,
-          positionAuthority: ctx.provider.wallet.publicKey,
-          position: info.initParams.positionPda.publicKey,
-          positionTokenAccount: info.initParams.positionTokenAccount,
-          tokenMintA: pool.tokenMintA,
-          tokenMintB: pool.tokenMintB,
-          tokenProgramA,
-          tokenProgramB,
-          tokenOwnerAccountA,
-          tokenOwnerAccountB,
-          tokenVaultA: pool.tokenVaultA,
-          tokenVaultB: pool.tokenVaultB,
-          tickArrayLower: tickArrayLower.publicKey,
-          tickArrayUpper: tickArrayUpper.publicKey,
-        }),
-      ).buildAndExecute();
-
-      await toTx(
-        ctx,
-        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
-          whirlpool: info.initParams.whirlpool,
-          positionAuthority: ctx.provider.wallet.publicKey,
-          position: info.initParams.positionPda.publicKey,
-          positionTokenAccount: info.initParams.positionTokenAccount,
-          tokenMintA: pool.tokenMintA,
-          tokenMintB: pool.tokenMintB,
-          tokenProgramA,
-          tokenProgramB,
-          tokenOwnerAccountA,
-          tokenOwnerAccountB,
-          tokenVaultA: pool.tokenVaultA,
-          tokenVaultB: pool.tokenVaultB,
-        }),
-      ).buildAndExecute();
-    }),
-  );
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+        whirlpool: info.initParams.whirlpool,
+        positionAuthority: ctx.provider.wallet.publicKey,
+        position: info.initParams.positionPda.publicKey,
+        positionTokenAccount: info.initParams.positionTokenAccount,
+        tokenMintA: pool.tokenMintA,
+        tokenMintB: pool.tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA: pool.tokenVaultA,
+        tokenVaultB: pool.tokenVaultB,
+      }),
+    ).buildAndExecute();
+  }
 }
 
 export async function fundPositionsV2(
@@ -1046,111 +1033,111 @@ export async function fundPositionsV2(
   const feeConfigB = getTransferFeeConfig(mintB);
   const epoch = await ctx.provider.connection.getEpochInfo("confirmed");
 
-  return await Promise.all(
-    fundParams.map(async (param): Promise<FundedPositionV2Info> => {
-      const { params: positionInfo, mint } = await openPosition(
-        ctx,
-        whirlpool,
-        param.tickLowerIndex,
-        param.tickUpperIndex,
-        undefined,
-        undefined,
-        withTokenExtensions,
+  const results: FundedPositionV2Info[] = [];
+  for (const param of fundParams) {
+    const { params: positionInfo, mint } = await openPosition(
+      ctx,
+      whirlpool,
+      param.tickLowerIndex,
+      param.tickUpperIndex,
+      undefined,
+      undefined,
+      withTokenExtensions,
+    );
+
+    const tickArrayLower = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpool,
+      TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing),
+    ).publicKey;
+
+    const tickArrayUpper = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpool,
+      TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing),
+    ).publicKey;
+
+    if (param.liquidityAmount.gt(ZERO_BN)) {
+      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+        param.liquidityAmount,
+        initSqrtPrice,
+        PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
+        PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
+        true,
       );
 
-      const tickArrayLower = PDAUtil.getTickArray(
-        ctx.program.programId,
-        whirlpool,
-        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing),
-      ).publicKey;
+      // transfer fee
+      const transferFeeA = !feeConfigA
+        ? ZERO_BN
+        : calculateTransferFeeIncludedAmount(
+            getEpochFee(feeConfigA, BigInt(epoch.epoch)),
+            tokenA,
+          ).fee;
+      const transferFeeB = !feeConfigB
+        ? ZERO_BN
+        : calculateTransferFeeIncludedAmount(
+            getEpochFee(feeConfigB, BigInt(epoch.epoch)),
+            tokenB,
+          ).fee;
 
-      const tickArrayUpper = PDAUtil.getTickArray(
-        ctx.program.programId,
-        whirlpool,
-        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing),
-      ).publicKey;
+      //console.info("transfer feeA", transferFeeA.toString(), "/", tokenA.toString());
+      //console.info("transfer feeB", transferFeeB.toString(), "/", tokenB.toString());
 
-      if (param.liquidityAmount.gt(ZERO_BN)) {
-        const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
-          param.liquidityAmount,
-          initSqrtPrice,
-          PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
-          PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
-          true,
+      // transfer hook
+      const tokenTransferHookAccountsA =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          ctx.provider,
+          poolInitInfo.tokenMintA,
+          tokenAccountA,
+          tokenVaultAKeypair.publicKey,
+          ctx.provider.wallet.publicKey,
+        );
+      const tokenTransferHookAccountsB =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          ctx.provider,
+          poolInitInfo.tokenMintB,
+          tokenAccountB,
+          tokenVaultBKeypair.publicKey,
+          ctx.provider.wallet.publicKey,
         );
 
-        // transfer fee
-        const transferFeeA = !feeConfigA
-          ? ZERO_BN
-          : calculateTransferFeeIncludedAmount(
-              getEpochFee(feeConfigA, BigInt(epoch.epoch)),
-              tokenA,
-            ).fee;
-        const transferFeeB = !feeConfigB
-          ? ZERO_BN
-          : calculateTransferFeeIncludedAmount(
-              getEpochFee(feeConfigB, BigInt(epoch.epoch)),
-              tokenB,
-            ).fee;
-
-        //console.info("transfer feeA", transferFeeA.toString(), "/", tokenA.toString());
-        //console.info("transfer feeB", transferFeeB.toString(), "/", tokenB.toString());
-
-        // transfer hook
-        const tokenTransferHookAccountsA =
-          await getExtraAccountMetasForTestTransferHookProgram(
-            ctx.provider,
-            poolInitInfo.tokenMintA,
-            tokenAccountA,
-            tokenVaultAKeypair.publicKey,
-            ctx.provider.wallet.publicKey,
-          );
-        const tokenTransferHookAccountsB =
-          await getExtraAccountMetasForTestTransferHookProgram(
-            ctx.provider,
-            poolInitInfo.tokenMintB,
-            tokenAccountB,
-            tokenVaultBKeypair.publicKey,
-            ctx.provider.wallet.publicKey,
-          );
-
-        await toTx(
-          ctx,
-          WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
-            liquidityAmount: param.liquidityAmount,
-            tokenMaxA: tokenA.add(transferFeeA),
-            tokenMaxB: tokenB.add(transferFeeB),
-            whirlpool: whirlpool,
-            positionAuthority: ctx.provider.wallet.publicKey,
-            position: positionInfo.positionPda.publicKey,
-            positionTokenAccount: positionInfo.positionTokenAccount,
-            tokenMintA: poolInitInfo.tokenMintA,
-            tokenMintB: poolInitInfo.tokenMintB,
-            tokenOwnerAccountA: tokenAccountA,
-            tokenOwnerAccountB: tokenAccountB,
-            tokenVaultA: tokenVaultAKeypair.publicKey,
-            tokenVaultB: tokenVaultBKeypair.publicKey,
-            tokenProgramA: poolInitInfo.tokenProgramA,
-            tokenProgramB: poolInitInfo.tokenProgramB,
-            tickArrayLower,
-            tickArrayUpper,
-            tokenTransferHookAccountsA,
-            tokenTransferHookAccountsB,
-          }),
-        )
-          .prependInstruction(useMaxCU())
-          .buildAndExecute();
-      }
-      return {
-        initParams: positionInfo,
-        publicKey: positionInfo.positionPda.publicKey,
-        tokenAccount: positionInfo.positionTokenAccount,
-        mintKeypair: mint,
-        tickArrayLower,
-        tickArrayUpper,
-      };
-    }),
-  );
+      await toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+          liquidityAmount: param.liquidityAmount,
+          tokenMaxA: tokenA.add(transferFeeA),
+          tokenMaxB: tokenB.add(transferFeeB),
+          whirlpool: whirlpool,
+          positionAuthority: ctx.provider.wallet.publicKey,
+          position: positionInfo.positionPda.publicKey,
+          positionTokenAccount: positionInfo.positionTokenAccount,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          tickArrayLower,
+          tickArrayUpper,
+          tokenTransferHookAccountsA,
+          tokenTransferHookAccountsB,
+        }),
+      )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute();
+    }
+    results.push({
+      initParams: positionInfo,
+      publicKey: positionInfo.positionPda.publicKey,
+      tokenAccount: positionInfo.positionTokenAccount,
+      mintKeypair: mint,
+      tickArrayLower,
+      tickArrayUpper,
+    });
+  }
+  return results;
 }
 
 export interface TestWhirlpoolsConfigExtensionKeypairs {

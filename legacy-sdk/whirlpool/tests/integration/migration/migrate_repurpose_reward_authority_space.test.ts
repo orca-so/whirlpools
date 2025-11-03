@@ -1,20 +1,29 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { toTx, WhirlpoolContext } from "../../../src";
+import type { WhirlpoolContext } from "../../../src";
+import { toTx } from "../../../src";
+import { pollForCondition } from "../../utils/litesvm";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import {
+  loadPreloadAccount,
+  initializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 
 describe("migrate_repurpose_reward_authority_space", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+    // Load preload accounts for migration testing
+    loadPreloadAccount(
+      "migrate_repurpose_reward_authority_space/whirlpool.json",
+    );
+  });
 
   // SDK doesn't provide WhirlpoolIx interface for this temporary instruction
   // so we need to use the raw instruction builder
@@ -89,9 +98,13 @@ describe("migrate_repurpose_reward_authority_space", () => {
     );
     await migrateTx.buildAndExecute();
 
-    const migratedWhirlpool = await fetcher.getPool(
-      preloadWhirlpoolAddress,
-      IGNORE_CACHE,
+    const migratedWhirlpool = await pollForCondition(
+      async () =>
+        (await fetcher.getPool(preloadWhirlpoolAddress, IGNORE_CACHE))!,
+      (pool) =>
+        pool.rewardInfos[1].extension.every((b: number) => b === 0) &&
+        pool.rewardInfos[2].extension.every((b: number) => b === 0),
+      { maxRetries: 200, delayMs: 10 },
     );
     const migratedWhirlpoolRawData = await ctx.connection.getAccountInfo(
       preloadWhirlpoolAddress,
@@ -110,8 +123,12 @@ describe("migrate_repurpose_reward_authority_space", () => {
         ),
       ),
     );
-    assert.ok(migratedWhirlpool.rewardInfos[1].extension.every((b) => b === 0));
-    assert.ok(migratedWhirlpool.rewardInfos[2].extension.every((b) => b === 0));
+    assert.ok(
+      migratedWhirlpool.rewardInfos[1].extension.every((b: number) => b === 0),
+    );
+    assert.ok(
+      migratedWhirlpool.rewardInfos[2].extension.every((b: number) => b === 0),
+    );
 
     // fields other than rewardInfos should be the same
     assert.ok(
@@ -146,10 +163,11 @@ describe("migrate_repurpose_reward_authority_space", () => {
     );
     // NOTE: the actual anchor log reads like
     // > Program log: panicked at programs/whirlpool/src/instructions/migrate_repurpose_reward_authority_space.rs:19:9:\\nWhirlpool has been migrated already",
-    await assert.rejects(
-      migrateAgainTx.buildAndExecute(),
-      /panicked at.*Whirlpool has been migrated already/,
-    );
+    await assert.rejects(migrateAgainTx.buildAndExecute(), (err: Error) => {
+      return /panicked at.*Whirlpool has been migrated already/s.test(
+        err.message,
+      );
+    });
   });
 
   it("fail when the instruction is called with a newly initialized whirlpool", async () => {
@@ -164,9 +182,10 @@ describe("migrate_repurpose_reward_authority_space", () => {
     );
     // NOTE: the actual anchor log reads like
     // > Program log: panicked at programs/whirlpool/src/instructions/migrate_repurpose_reward_authority_space.rs:19:9:\\nWhirlpool has been migrated already",
-    await assert.rejects(
-      migrateAgainTx.buildAndExecute(),
-      /panicked at.*Whirlpool has been migrated already/,
-    );
+    await assert.rejects(migrateAgainTx.buildAndExecute(), (err: Error) => {
+      return /panicked at.*Whirlpool has been migrated already/s.test(
+        err.message,
+      );
+    });
   });
 });

@@ -3,23 +3,23 @@ import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData } from "../../../src";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { PositionData, WhirlpoolContext } from "../../../src";
+import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { sleep, TickSpacing, ZERO_BN } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { TickSpacing, ZERO_BN, warpClock } from "../../utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 
 describe("update_fees_and_rewards", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully updates fees and rewards", async () => {
     // In same tick array - start index 22528
@@ -91,7 +91,8 @@ describe("update_fees_and_rewards", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(2_000);
+    // Advance blockchain time in LiteSVM so rewards accrue
+    warpClock(2);
 
     await toTx(
       ctx,

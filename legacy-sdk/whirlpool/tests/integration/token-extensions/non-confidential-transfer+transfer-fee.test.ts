@@ -1,14 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { PositionData, WhirlpoolData } from "../../../src";
+import type {
+  PositionData,
+  WhirlpoolData,
+  WhirlpoolContext,
+} from "../../../src";
 import {
   PoolUtil,
   PriceMath,
   TickUtil,
   toTokenAmount,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -18,7 +21,7 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import {
   calculateTransferFeeExcludedAmount,
@@ -34,13 +37,16 @@ import type { TransferFee } from "@solana/spl-token";
 import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 
 describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) + TransferFee", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   // ConfidentialTransfer + TransferFee is combination test
   // We'll test owner to vault transfer by increase liquidity, vault to owner transfer by decrease liquidity

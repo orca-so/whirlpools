@@ -245,8 +245,25 @@ export async function getTokenBalance(
   provider: AnchorProvider,
   vault: web3.PublicKey,
 ) {
-  return (await provider.connection.getTokenAccountBalance(vault, "confirmed"))
-    .value.amount;
+  // In LiteSVM, the account may not be immediately readable. Retry until available.
+  for (let i = 0; i < 50; i++) {
+    try {
+      const res = await provider.connection.getTokenAccountBalance(
+        vault,
+        "confirmed",
+      );
+      return res.value.amount;
+    } catch (_) {
+      // wait 10ms and retry
+      await new Promise((r) => setTimeout(r, 10));
+    }
+  }
+  // Final attempt or return last known
+  const res = await provider.connection.getTokenAccountBalance(
+    vault,
+    "confirmed",
+  );
+  return res.value.amount;
 }
 
 export async function approveToken(

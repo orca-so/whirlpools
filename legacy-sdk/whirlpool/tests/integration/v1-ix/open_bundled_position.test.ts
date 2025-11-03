@@ -11,6 +11,7 @@ import type {
   InitPoolParams,
   PositionBundleData,
   PositionData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   MAX_TICK_INDEX,
@@ -19,7 +20,6 @@ import {
   POSITION_BUNDLE_SIZE,
   TickUtil,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -31,8 +31,10 @@ import {
   TickSpacing,
   transferToken,
   ZERO_BN,
+  expireBlockhash,
+  initializeLiteSVMEnvironment,
 } from "../../utils";
-import { defaultConfirmOptions, TICK_RENT_AMOUNT } from "../../utils/const";
+import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
   initializePositionBundle,
   initTestPool,
@@ -40,14 +42,18 @@ import {
 } from "../../utils/init-utils";
 
 describe("open_bundled_position", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    program = env.program;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 32768;
@@ -496,7 +502,8 @@ describe("open_bundled_position", () => {
         tickUpperIndex,
       ),
       (err) => {
-        return JSON.stringify(err).includes("already in use");
+        const errorString = err instanceof Error ? err.message : String(err);
+        return errorString.includes("already in use");
       },
     );
   });
@@ -727,7 +734,21 @@ describe("open_bundled_position", () => {
         1,
         funderKeypair,
       );
-      await tx.buildAndExecute();
+
+      // Expire blockhash and rebuild transaction (litesvm requires fresh tx)
+      expireBlockhash();
+      const tx2 = await createOpenBundledPositionTx(
+        ctx,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        0,
+        {
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          positionBundleAuthority: ctx.wallet.publicKey,
+        },
+      );
+
+      await tx2.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(
         positionBundleInfo.positionBundlePda.publicKey,
         IGNORE_CACHE,
@@ -797,8 +818,21 @@ describe("open_bundled_position", () => {
         funderKeypair,
       );
 
+      // Expire blockhash and rebuild transaction (litesvm requires fresh tx)
+      expireBlockhash();
+      const tx2 = await createOpenBundledPositionTx(
+        ctx,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        0,
+        {
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          positionBundleAuthority: ctx.wallet.publicKey,
+        },
+      );
+
       await assert.rejects(
-        tx.buildAndExecute(),
+        tx2.buildAndExecute(),
         /0x1784/, // InvalidPositionTokenAmount
       );
     });

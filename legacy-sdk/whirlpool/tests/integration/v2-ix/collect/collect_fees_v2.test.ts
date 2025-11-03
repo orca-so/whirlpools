@@ -7,6 +7,7 @@ import type {
   PositionData,
   TickArrayData,
   WhirlpoolData,
+  WhirlpoolContext,
 } from "../../../../src";
 import {
   collectFeesQuote,
@@ -14,7 +15,6 @@ import {
   PDAUtil,
   TickArrayUtil,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
@@ -26,8 +26,8 @@ import {
   TickSpacing,
   transferToken,
   ZERO_BN,
+  initializeLiteSVMEnvironment,
 } from "../../../utils";
-import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import {
@@ -39,13 +39,16 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("collect_fees_v2", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
+
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   describe("v1 parity", () => {
     const tokenTraitVariations: {

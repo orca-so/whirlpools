@@ -3,6 +3,7 @@ import * as assert from "assert";
 import type {
   AdaptiveFeeConstantsData,
   AdaptiveFeeTierData,
+  WhirlpoolContext,
 } from "../../../src";
 import {
   AccountName,
@@ -10,7 +11,6 @@ import {
   PDAUtil,
   TICK_ARRAY_SIZE,
   toTx,
-  WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../src";
 import {
@@ -19,7 +19,7 @@ import {
   rewritePubkey,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initFeeTier,
@@ -30,14 +30,16 @@ import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("initialize_adaptive_fee_tier", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   function equalsAdaptiveFeeConstants(
     aft: AdaptiveFeeTierData,
@@ -613,8 +615,8 @@ describe("initialize_adaptive_fee_tier", () => {
         initializePoolAuthority,
         delegatedFeeAuthority,
       ),
-      (err) => {
-        return JSON.stringify(err).includes("already in use");
+      (err: Error) => {
+        return err.message.includes("already in use");
       },
     );
   });

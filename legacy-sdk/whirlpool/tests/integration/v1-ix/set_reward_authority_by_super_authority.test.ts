@@ -1,20 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
-import { PoolUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
+import { PoolUtil, toTx, WhirlpoolIx } from "../../../src";
 import { TickSpacing } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 
 describe("set_reward_authority_by_super_authority", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   it("successfully set_reward_authority_by_super_authority", async () => {
     const { configKeypairs, poolInitInfo, configInitInfo } = await initTestPool(

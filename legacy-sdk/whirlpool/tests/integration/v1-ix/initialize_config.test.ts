@@ -1,25 +1,31 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { InitConfigParams, WhirlpoolsConfigData } from "../../../src";
-import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type {
+  InitConfigParams,
+  WhirlpoolsConfigData,
+  WhirlpoolContext,
+} from "../../../src";
+import { toTx, WhirlpoolIx } from "../../../src";
 import {
   getLocalnetAdminKeypair0,
   getLocalnetAdminKeypair1,
   ONE_SOL,
   systemTransferTx,
 } from "../../utils";
-import { defaultConfirmOptions } from "../../utils/const";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
 
 describe("initialize_config", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    fetcher = env.fetcher;
+  });
 
   let initializedConfigInfo: InitConfigParams;
 

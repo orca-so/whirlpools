@@ -1,32 +1,34 @@
-import * as anchor from "@coral-xyz/anchor";
+import type * as anchor from "@coral-xyz/anchor";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import {
-  IGNORE_CACHE,
-  PDAUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolIx,
-} from "../../../src";
-import { defaultConfirmOptions } from "../../utils/const";
+import type { WhirlpoolContext } from "../../../src";
+import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import type {
   InitializeTokenBadgeParams,
   SetTokenBadgeAttributeParams,
-} from "../../../src/instructions";
+} from "../../../dist/instructions";
 import { createMintV2 } from "../../utils/v2/token-2022";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
 
 describe("set_token_badge_attribute", () => {
-  const provider = anchor.AnchorProvider.local(
-    undefined,
-    defaultConfirmOptions,
-  );
+  let provider: anchor.AnchorProvider;
+  let program: anchor.Program;
+  let ctx: WhirlpoolContext;
+  let fetcher: WhirlpoolContext["fetcher"];
 
-  const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  beforeAll(async () => {
+    const env = await initializeLiteSVMEnvironment();
+    provider = env.provider;
+    ctx = env.ctx;
+    program = env.program;
+    fetcher = env.fetcher;
+  });
 
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
@@ -210,9 +212,13 @@ describe("set_token_badge_attribute", () => {
         });
 
         // true
-        const updatedTokenBadgeData = await fetcher.getTokenBadge(
-          tokenBadgePda.publicKey,
-          IGNORE_CACHE,
+        const updatedTokenBadgeData = await pollForCondition(
+          () => fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE),
+          (d) => !!d && d.attributeRequireNonTransferablePosition,
+          {
+            accountToReload: tokenBadgePda.publicKey,
+            connection: ctx.connection,
+          },
         );
         assert.ok(
           updatedTokenBadgeData!.attributeRequireNonTransferablePosition,
@@ -225,9 +231,13 @@ describe("set_token_badge_attribute", () => {
         });
 
         // false
-        const revertedTokenBadgeData = await fetcher.getTokenBadge(
-          tokenBadgePda.publicKey,
-          IGNORE_CACHE,
+        const revertedTokenBadgeData = await pollForCondition(
+          () => fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE),
+          (d) => !!d && !d.attributeRequireNonTransferablePosition,
+          {
+            accountToReload: tokenBadgePda.publicKey,
+            connection: ctx.connection,
+          },
         );
         assert.ok(
           !revertedTokenBadgeData!.attributeRequireNonTransferablePosition,

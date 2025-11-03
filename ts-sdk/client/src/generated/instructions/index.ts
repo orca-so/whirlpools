@@ -42,6 +42,7 @@ export * from "./openBundledPosition";
 export * from "./openPosition";
 export * from "./openPositionWithMetadata";
 export * from "./openPositionWithTokenExtensions";
+export * from "./repositionLiquidity";
 export * from "./resetPositionRange";
 export * from "./setCollectProtocolFeesAuthority";
 export * from "./setConfigExtensionAuthority";

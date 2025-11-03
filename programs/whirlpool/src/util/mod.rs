@@ -1,4 +1,5 @@
 pub mod account;
+pub mod position;
 pub mod shared;
 pub mod sparse_swap;
 pub mod swap_tick_sequence;
@@ -8,6 +9,7 @@ pub mod token_2022;
 pub mod v2;
 
 pub use account::*;
+pub use position::*;
 pub use shared::*;
 pub use sparse_swap::*;
 pub use swap_tick_sequence::*;

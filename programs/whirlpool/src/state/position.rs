@@ -76,6 +76,11 @@ impl Position {
         self.fee_owed_b = 0;
     }
 
+    pub fn update_fees_owed(&mut self, fees_owed_a: u64, fees_owed_b: u64) {
+        self.fee_owed_a = fees_owed_a;
+        self.fee_owed_b = fees_owed_b;
+    }
+
     pub fn update_reward_owed(&mut self, index: usize, amount_owed: u64) {
         self.reward_infos[index].amount_owed = amount_owed;
     }

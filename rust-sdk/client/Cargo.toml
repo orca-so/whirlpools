@@ -17,26 +17,26 @@ anchor = ["dep:anchor-lang"]
 anchor-idl-build = ["dep:anchor-lang", "anchor-lang/idl-build"]
 core-types = ["dep:orca_whirlpools_core"]
 serde = ["dep:serde", "dep:serde_with", "dep:serde-big-array"]
-fetch = ["dep:solana-client", "dep:solana-sdk", "dep:solana-account-decoder"]
+fetch = ["dep:solana-client", "dep:solana-account-decoder"]
 solana-v1 = []
 
 [dependencies]
 anchor-lang = { version = ">=0.31", optional = true }
-borsh = { version = "^0.10" }
+borsh = { version = "^1.0" }
 num-derive = { version = "^0.4" }
 num-traits = { version = "^0.2" }
 orca_whirlpools_core = { path = "../core", optional = true }
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.10", optional = true }
 serde-big-array = { version = "^0.5", optional = true }
-solana-pubkey = { version = "^2" }
-solana-instruction = { version = "^2" }
-solana-account = { version = "^2" }
-solana-account-info = { version = "^2" }
-solana-program-error = { version = "^2" }
-solana-cpi = { version = "^2" }
-solana-program = { version = "^2" }
-solana-sdk = { version = "^2", optional = true }
-solana-client = { version = "^2", optional = true }
-solana-account-decoder = { version = "^2", optional = true }
+solana-pubkey = { version = ">=1.17, <=3" }
+solana-instruction = { version = ">=1.17, <=3" }
+solana-account = { version = ">=1.17, <=3" }
+solana-account-info = { version = ">=1.17, <=3" }
+solana-program-error = { version = ">=1.17, <=3" }
+solana-cpi = { version = ">=1.17, <=3" }
+solana-program = { version = ">=1.17, <=3" }
+solana-client = { version = ">=1.17, <=3", optional = true }
+solana-account-decoder = { version = ">=1.17, <=3", optional = true }
+solana-rpc-client = { version = ">=1.17, <=3" }
 thiserror = { version = "^2.0" }

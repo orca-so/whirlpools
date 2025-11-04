@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 
 pub mod whirlpool_nft_update_auth {
     use super::*;
-    pub static ID: Pubkey = solana_program::pubkey!("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
+    pub static ID: Pubkey =
+        anchor_lang::prelude::pubkey!("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
 }
 
 // Based on Metaplex TokenMetadata

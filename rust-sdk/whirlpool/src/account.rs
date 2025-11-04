@@ -2,9 +2,9 @@ use serde::Deserialize;
 use serde_json::from_value;
 use solana_account_decoder::UiAccountData;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
-use solana_program::pubkey::Pubkey;
-use solana_sdk::rent::Rent;
-use solana_sdk::sysvar::SysvarId;
+use solana_pubkey::Pubkey;
+use solana_rent::Rent;
+use solana_sysvar_id::SysvarId;
 use std::{error::Error, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -31,9 +31,6 @@ struct SplToken {
 #[serde(rename_all = "camelCase")]
 struct Amount {
     amount: String,
-    ui_amount_string: String,
-    ui_amount: f64,
-    decimals: u8,
 }
 
 pub(crate) async fn get_token_accounts_for_owner(
@@ -47,8 +44,8 @@ pub(crate) async fn get_token_accounts_for_owner(
     for account in accounts {
         if let UiAccountData::Json(data) = account.account.data {
             let token_program = match data.program.as_str() {
-                "spl-token" => &spl_token::ID.to_string(),
-                "spl-token-2022" => &spl_token_2022::ID.to_string(),
+                "spl-token" => &spl_token_interface::ID.to_string(),
+                "spl-token-2022" => &spl_token_2022_interface::ID.to_string(),
                 pubkey => pubkey,
             };
             let token: Parsed = from_value(data.parsed)?;

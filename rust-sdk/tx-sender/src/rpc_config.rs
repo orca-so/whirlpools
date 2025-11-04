@@ -1,5 +1,5 @@
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::hash::Hash;
+use solana_program::hash::Hash;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use std::time::Duration;
 
 const MAINNET_HASH: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";

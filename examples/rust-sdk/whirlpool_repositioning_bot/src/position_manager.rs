@@ -11,9 +11,9 @@ use orca_whirlpools::{
 };
 use orca_whirlpools_client::{get_position_address, Position};
 use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price};
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::signer::Signer;
-use spl_token_2022::state::Mint;
+use solana_keypair::Signer;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use spl_token_2022_interface::state::Mint;
 
 pub async fn run_position_manager(
     rpc: &RpcClient,

@@ -1,6 +1,6 @@
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::account::Account;
-use solana_sdk::pubkey::Pubkey;
+use solana_account::Account;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 const DEFAULT_CHUNK_SIZE: usize = 100;
 

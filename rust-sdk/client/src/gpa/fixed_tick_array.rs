@@ -1,8 +1,8 @@
 use std::error::Error;
 
-use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::{Memcmp, RpcFilterType};
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::{DecodedAccount, FixedTickArray, FIXED_TICK_ARRAY_DISCRIMINATOR};
 

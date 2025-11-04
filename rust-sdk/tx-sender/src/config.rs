@@ -1,22 +1,23 @@
 // Solana program imports
-pub use solana_program::instruction::Instruction;
-// Use Message and versioned transaction types from solana_sdk
-pub use solana_sdk::address_lookup_table::AddressLookupTableAccount;
-pub use solana_sdk::commitment_config::CommitmentConfig;
-pub use solana_sdk::commitment_config::CommitmentLevel;
-pub use solana_sdk::compute_budget::ComputeBudgetInstruction;
-pub use solana_sdk::hash::Hash;
-pub use solana_sdk::message::{v0::Message, Message as LegacyMessage, VersionedMessage};
-pub use solana_sdk::pubkey::Pubkey;
-pub use solana_sdk::signature::{Signature, Signer};
-pub use solana_sdk::transaction::{Transaction, VersionedTransaction};
+pub use solana_commitment_config::CommitmentConfig;
+pub use solana_commitment_config::CommitmentLevel;
+pub use solana_compute_budget_interface::ComputeBudgetInstruction;
+pub use solana_hash::Hash;
+pub use solana_instruction::Instruction;
+pub use solana_keypair::Signer;
+pub use solana_message::AddressLookupTableAccount;
+pub use solana_message::{v0::Message, Message as LegacyMessage, VersionedMessage};
+pub use solana_pubkey::Pubkey;
+pub use solana_signature::Signature;
+pub use solana_transaction::versioned::VersionedTransaction;
+pub use solana_transaction::Transaction;
 // Solana client imports
 pub use solana_client::rpc_config::RpcSendTransactionConfig;
 // Standard library imports
 pub use std::time::{Duration, Instant};
 pub use tokio::time::sleep;
 
-use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use std::sync::{Arc, OnceLock, RwLock};
 
 use crate::fee_config::{FeeConfig, JitoFeeStrategy, PriorityFeeStrategy};

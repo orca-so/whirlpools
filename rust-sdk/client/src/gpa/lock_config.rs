@@ -6,7 +6,7 @@ use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_filter::{Memcmp, RpcFilterType},
 };
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 use crate::LOCK_CONFIG_DISCRIMINATOR;
 

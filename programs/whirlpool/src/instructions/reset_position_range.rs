@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::program::invoke;
+use anchor_lang::solana_program::system_instruction;
 use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
-use solana_program::program::invoke;
-use solana_program::system_instruction;
 
 use crate::manager::tick_array_manager::get_tick_rent_amount;
 use crate::state::*;

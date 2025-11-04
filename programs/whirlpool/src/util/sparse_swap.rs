@@ -239,7 +239,7 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
 mod sparse_swap_tick_sequence_tests {
     use super::*;
     use crate::util::test_utils::account_info_mock::AccountInfoMock;
-    use solana_program::pubkey;
+    use anchor_lang::prelude::pubkey;
 
     #[test]
     fn test_derive_tick_array_pda() {

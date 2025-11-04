@@ -11,13 +11,14 @@ use orca_whirlpools_core::{
     get_initializable_tick_index, get_tick_array_start_tick_index, tick_index_to_sqrt_price,
     TICK_ARRAY_SIZE,
 };
+use solana_keypair::Signer;
 use solana_program::sysvar::rent::ID as RENT_PROGRAM_ID;
-use solana_sdk::{pubkey::Pubkey, signer::Signer, system_program};
-use spl_associated_token_account::{
+use solana_pubkey::Pubkey;
+use spl_associated_token_account_interface::address::{
     get_associated_token_address, get_associated_token_address_with_program_id,
 };
-use spl_token::ID as TOKEN_PROGRAM_ID;
-use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
+use spl_token_2022_interface::ID as TOKEN_2022_PROGRAM_ID;
+use spl_token_interface::ID as TOKEN_PROGRAM_ID;
 use std::error::Error;
 
 use crate::WHIRLPOOLS_CONFIG_ADDRESS;
@@ -61,7 +62,7 @@ pub async fn init_tick_arrays_for_range(
                     whirlpool,
                     funder: ctx.signer.pubkey(),
                     tick_array: tick_array_addr,
-                    system_program: system_program::id(),
+                    system_program: solana_system_interface::program::id(),
                 }
                 .instruction(InitializeTickArrayInstructionArgs {
                     start_tick_index: current,
@@ -113,7 +114,7 @@ pub async fn setup_whirlpool(
         token_badge_b,
         token_program_a: mint_a_info.owner,
         token_program_b: mint_b_info.owner,
-        system_program: system_program::id(),
+        system_program: solana_system_interface::program::id(),
         rent: RENT_PROGRAM_ID,
     }
     .instruction(InitializePoolV2InstructionArgs {
@@ -171,7 +172,7 @@ pub async fn setup_position(
                 whirlpool,
                 funder: ctx.signer.pubkey(),
                 tick_array: lower_tick_array_addr,
-                system_program: system_program::id(),
+                system_program: solana_system_interface::program::id(),
             }
             .instruction(InitializeTickArrayInstructionArgs {
                 start_tick_index: lower_tick_array_start,
@@ -187,7 +188,7 @@ pub async fn setup_position(
                     whirlpool,
                     funder: ctx.signer.pubkey(),
                     tick_array: upper_tick_array_addr,
-                    system_program: system_program::id(),
+                    system_program: solana_system_interface::program::id(),
                 }
                 .instruction(InitializeTickArrayInstructionArgs {
                     start_tick_index: upper_tick_array_start,
@@ -205,7 +206,7 @@ pub async fn setup_position(
     );
     let owner_pubkey = owner.unwrap_or(ctx.signer.pubkey());
 
-    let open_position_ix = OpenPosition {
+    let _open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
         owner: ctx.signer.pubkey(),
         position: position_pubkey,
@@ -213,8 +214,8 @@ pub async fn setup_position(
         position_token_account,
         whirlpool,
         token_program: TOKEN_PROGRAM_ID,
-        system_program: system_program::id(),
-        associated_token_program: spl_associated_token_account::id(),
+        system_program: solana_system_interface::program::id(),
+        associated_token_program: spl_associated_token_account_interface::program::id(),
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
@@ -231,8 +232,8 @@ pub async fn setup_position(
             position_token_account,
             whirlpool,
             token_program: TOKEN_PROGRAM_ID,
-            system_program: system_program::id(),
-            associated_token_program: spl_associated_token_account::id(),
+            system_program: solana_system_interface::program::id(),
+            associated_token_program: spl_associated_token_account_interface::program::id(),
             rent: RENT_PROGRAM_ID,
         }
         .instruction(OpenPositionInstructionArgs {
@@ -295,7 +296,7 @@ pub async fn setup_te_position(
                 whirlpool,
                 funder: ctx.signer.pubkey(),
                 tick_array: tick_array_address,
-                system_program: system_program::id(),
+                system_program: solana_system_interface::program::id(),
             }
             .instruction(InitializeTickArrayInstructionArgs {
                 start_tick_index: *start_tick,
@@ -307,9 +308,9 @@ pub async fn setup_te_position(
 
     let te_position_mint = ctx.get_next_keypair();
 
-    let (position_pubkey, position_bump) = get_position_address(&te_position_mint.pubkey())?;
+    let (position_pubkey, _position_bump) = get_position_address(&te_position_mint.pubkey())?;
 
-    let position_token_account = get_associated_token_address_with_program_id(
+    let _position_token_account = get_associated_token_address_with_program_id(
         &ctx.signer.pubkey(),
         &te_position_mint.pubkey(),
         &TOKEN_2022_PROGRAM_ID,
@@ -326,8 +327,8 @@ pub async fn setup_te_position(
         position_token_account: te_position_token_account,
         whirlpool,
         token2022_program: TOKEN_2022_PROGRAM_ID,
-        system_program: system_program::id(),
-        associated_token_program: spl_associated_token_account::id(),
+        system_program: solana_system_interface::program::id(),
+        associated_token_program: spl_associated_token_account_interface::program::id(),
         metadata_update_auth,
     }
     .instruction(OpenPositionWithTokenExtensionsInstructionArgs {
@@ -359,8 +360,8 @@ pub async fn setup_position_bundle(
         position_bundle_token_account: Pubkey::default(),
         position_bundle_owner: ctx.signer.pubkey(),
         token_program: TOKEN_PROGRAM_ID,
-        system_program: system_program::id(),
-        associated_token_program: spl_associated_token_account::id(),
+        system_program: solana_system_interface::program::id(),
+        associated_token_program: spl_associated_token_account_interface::program::id(),
         rent: RENT_PROGRAM_ID,
     }
     .instruction();
@@ -381,7 +382,7 @@ pub async fn setup_position_bundle(
                 position_bundle_authority: ctx.signer.pubkey(),
                 position_bundle_token_account: Pubkey::default(),
                 whirlpool,
-                system_program: system_program::id(),
+                system_program: solana_system_interface::program::id(),
                 rent: RENT_PROGRAM_ID,
             }
             .instruction(OpenBundledPositionInstructionArgs {

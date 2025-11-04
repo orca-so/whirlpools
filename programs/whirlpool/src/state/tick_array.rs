@@ -301,7 +301,7 @@ mod fuzz_tests {
 mod fixed_tick_array_tests {
     use std::{mem, ops::Deref};
 
-    use solana_program::clock::Epoch;
+    use anchor_lang::solana_program::clock::Epoch;
 
     use crate::state::tick_array_builder::TickArrayBuilder;
 
@@ -485,7 +485,7 @@ mod fixed_tick_array_tests {
 mod dynamic_tick_array_tests {
     use std::ops::Deref;
 
-    use solana_program::clock::Epoch;
+    use anchor_lang::solana_program::clock::Epoch;
 
     use crate::state::{DynamicTick, DynamicTickData};
 
@@ -700,7 +700,7 @@ mod dynamic_tick_array_tests {
 
 #[cfg(test)]
 mod tick_array_misc_tests {
-    use solana_program::clock::Epoch;
+    use anchor_lang::solana_program::clock::Epoch;
 
     use super::*;
 

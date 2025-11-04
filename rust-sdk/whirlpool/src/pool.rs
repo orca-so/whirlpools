@@ -6,10 +6,11 @@ use orca_whirlpools_client::{
 };
 
 use orca_whirlpools_core::sqrt_price_to_price;
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_program::pubkey::Pubkey;
-use solana_sdk::{program_error::ProgramError, program_pack::Pack};
-use spl_token::state::Mint;
+use solana_program_error::ProgramError;
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use spl_token_interface::state::Mint;
 
 use crate::{token::order_mints, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
@@ -76,6 +77,7 @@ impl InitializedPool {
 ///
 /// This enum provides a unified way to describe both initialized and uninitialized pools,
 /// encapsulating their specific data structures.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum PoolInfo {
     /// Represents a pool that has been initialized and contains its current state and price.
@@ -116,8 +118,8 @@ pub enum PoolInfo {
 /// use orca_whirlpools::{
 ///     fetch_splash_pool, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -174,8 +176,8 @@ pub async fn fetch_splash_pool(
 ///     fetch_concentrated_liquidity_pool, set_whirlpools_config_address, PoolInfo,
 ///     WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -287,8 +289,8 @@ pub async fn fetch_concentrated_liquidity_pool(
 /// use orca_whirlpools::{
 ///     fetch_whirlpools_by_token_pair, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]

@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::program::{invoke, invoke_signed};
+use anchor_lang::solana_program::system_instruction::transfer;
 use anchor_spl::associated_token::{self, AssociatedToken};
 use anchor_spl::token_2022::spl_token_2022::extension::{
     BaseStateWithExtensions, StateWithExtensions,
@@ -9,8 +11,6 @@ use anchor_spl::token_2022::spl_token_2022::{
 use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token2022};
 use anchor_spl::token_2022_extensions::spl_token_metadata_interface;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
-use solana_program::program::{invoke, invoke_signed};
-use solana_program::system_instruction::transfer;
 
 use crate::constants::{
     WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL, WP_2022_METADATA_URI_BASE,

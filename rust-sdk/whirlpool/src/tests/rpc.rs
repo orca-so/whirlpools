@@ -6,6 +6,7 @@ use orca_whirlpools_client::{
     get_fee_tier_address, FEE_TIER_DISCRIMINATOR, WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID,
 };
 use serde_json::{from_value, to_value, Value};
+use solana_account::Account;
 use solana_account_decoder::{encode_ui_account, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
 use solana_client::{
@@ -16,23 +17,18 @@ use solana_client::{
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
 };
+use solana_commitment_config::CommitmentLevel;
+use solana_epoch_info::EpochInfo;
+use solana_instruction::Instruction;
+use solana_keypair::{Keypair, Signer};
+use solana_message::{v0::Message, VersionedMessage};
 use solana_program_test::tokio::sync::Mutex;
 use solana_program_test::{ProgramTest, ProgramTestContext};
-use solana_sdk::bs58;
-use solana_sdk::epoch_info::EpochInfo;
-use solana_sdk::{
-    account::Account,
-    commitment_config::CommitmentLevel,
-    instruction::Instruction,
-    message::{v0::Message, VersionedMessage},
-    pubkey::Pubkey,
-    signature::{Keypair, Signature},
-    signer::Signer,
-    system_program,
-    transaction::VersionedTransaction,
-};
+use solana_pubkey::Pubkey;
+use solana_signature::Signature;
+use solana_transaction::versioned::VersionedTransaction;
 use solana_version::Version;
-use spl_memo::build_memo;
+use spl_memo_interface::instruction::build_memo;
 
 use crate::tests::anchor_programs;
 use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
@@ -59,7 +55,7 @@ impl RpcContext {
             Account {
                 lamports: 100_000_000_000,
                 data: vec![],
-                owner: system_program::ID,
+                owner: solana_system_interface::program::id(),
                 executable: false,
                 rent_epoch: 0,
             },
@@ -180,7 +176,15 @@ impl RpcContext {
         // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
         // so that we can fire two seemingly identical transactions in a row.
         let memo = Keypair::new().to_base58_string();
-        let instructions = [instructions, vec![build_memo(memo.as_bytes(), &[])]].concat();
+        let instructions = [
+            instructions,
+            vec![build_memo(
+                &spl_memo_interface::v3::ID,
+                memo.as_bytes(),
+                &[],
+            )],
+        ]
+        .concat();
         let message = VersionedMessage::V0(Message::try_compile(
             &self.signer.pubkey(),
             &instructions,
@@ -219,7 +223,7 @@ fn to_wire_account(
 async fn send(
     context: &mut ProgramTestContext,
     method: &str,
-    params: &Vec<Value>,
+    params: &[Value],
 ) -> Result<Value, Box<dyn Error>> {
     let slot = context.banks_client.get_root_slot().await?;
 

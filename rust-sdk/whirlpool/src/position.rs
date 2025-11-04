@@ -5,9 +5,9 @@ use orca_whirlpools_client::{
     get_position_bundle_address, DecodedAccount, Position, PositionBundle, PositionFilter,
 };
 use orca_whirlpools_core::POSITION_BUNDLE_SIZE;
+use solana_account::Account;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
-use solana_sdk::account::Account;
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 use crate::utils::batch_get_multiple_accounts;
 use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
@@ -119,8 +119,8 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 /// use orca_whirlpools::{
 ///     fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -141,13 +141,16 @@ pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
-    let token_accounts =
-        get_token_accounts_for_owner(rpc, owner, TokenAccountsFilter::ProgramId(spl_token::ID))
-            .await?;
+    let token_accounts = get_token_accounts_for_owner(
+        rpc,
+        owner,
+        TokenAccountsFilter::ProgramId(spl_token_interface::ID),
+    )
+    .await?;
     let token_extension_accounts = get_token_accounts_for_owner(
         rpc,
         owner,
-        TokenAccountsFilter::ProgramId(spl_token_2022::ID),
+        TokenAccountsFilter::ProgramId(spl_token_2022_interface::ID),
     )
     .await?;
 
@@ -276,8 +279,8 @@ pub async fn fetch_positions_for_owner(
 /// use orca_whirlpools::{
 ///     fetch_positions_in_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -310,8 +313,8 @@ mod tests {
         setup_te_position, setup_whirlpool, RpcContext,
     };
     use serial_test::serial;
+    use solana_keypair::Signer;
     use solana_program_test::tokio;
-    use solana_sdk::signer::Signer;
     use std::error::Error;
 
     #[tokio::test]
@@ -342,10 +345,10 @@ mod tests {
         let normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
 
         // 1) Add a te_position (uses token-2022)
-        let te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
+        let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) Add a position bundle, optionally with multiple bundled positions
-        let position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+        let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
 
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;

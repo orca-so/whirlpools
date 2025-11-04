@@ -3,9 +3,9 @@ use orca_tx_sender::{
     set_jito_block_engine_url, set_jito_fee_strategy, set_priority_fee_strategy, set_rpc,
     JitoFeeStrategy, JitoPercentile, Percentile, PriorityFeeStrategy,
 };
-use solana_sdk::commitment_config::CommitmentLevel;
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signer;
+use solana_commitment_config::CommitmentLevel;
+use solana_keypair::Signer;
+use solana_pubkey::Pubkey;
 use std::env;
 use std::error::Error;
 use std::str::FromStr;

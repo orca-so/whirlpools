@@ -12,10 +12,10 @@ use orca_whirlpools_core::{
     get_tick_array_start_tick_index, swap_quote_by_input_token, swap_quote_by_output_token,
     ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade, TickFacade, TICK_ARRAY_SIZE,
 };
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{
-    instruction::AccountMeta, instruction::Instruction, pubkey::Pubkey, signature::Keypair,
-};
+use solana_instruction::{AccountMeta, Instruction};
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::{
     token::{get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountStrategy},
@@ -141,7 +141,7 @@ async fn fetch_oracle(
 /// * `rpc` - A reference to the Solana RPC client for fetching accounts and interacting with the blockchain.
 /// * `whirlpool_address` - The public key of the Whirlpool against which the swap will be executed.
 /// * `amount` - The token amount specified for the swap. For `SwapType::ExactIn`, this is the input token amount.
-///              For `SwapType::ExactOut`, this is the output token amount.
+///   For `SwapType::ExactOut`, this is the output token amount.
 /// * `specified_mint` - The public key of the token mint being swapped.
 /// * `swap_type` - The type of swap (`SwapType::ExactIn` or `SwapType::ExactOut`).
 /// * `slippage_tolerance_bps` - An optional slippage tolerance, in basis points (BPS). Defaults to the global setting if not provided.
@@ -168,8 +168,8 @@ async fn fetch_oracle(
 /// use orca_whirlpools::{
 ///     set_whirlpools_config_address, swap_instructions, SwapType, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -314,7 +314,7 @@ pub async fn swap_instructions(
     let swap_instruction = SwapV2 {
         token_program_a: mint_a_info.owner,
         token_program_b: mint_b_info.owner,
-        memo_program: spl_memo::ID,
+        memo_program: spl_memo_interface::v3::ID,
         token_authority: signer,
         whirlpool: whirlpool_address,
         token_mint_a: whirlpool.token_mint_a,
@@ -366,18 +366,16 @@ mod tests {
 
     use rstest::rstest;
     use serial_test::serial;
-    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_keypair::{Keypair, Signer};
+    use solana_program_pack::Pack;
     use solana_program_test::tokio;
-    use solana_sdk::{
-        program_pack::Pack,
-        pubkey::Pubkey,
-        signer::{keypair::Keypair, Signer},
-    };
-    use spl_token::state::Account as TokenAccount;
-    use spl_token_2022::{
+    use solana_pubkey::Pubkey;
+    use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+    use spl_token_2022_interface::{
         extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
         ID as TOKEN_2022_PROGRAM_ID,
     };
+    use spl_token_interface::state::Account as TokenAccount;
 
     use crate::{
         increase_liquidity_instructions, swap_instructions,

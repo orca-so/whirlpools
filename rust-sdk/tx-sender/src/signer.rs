@@ -1,8 +1,6 @@
-use solana_sdk::{
-    pubkey::Pubkey,
-    signature::Signature,
-    signer::{Signer, SignerError},
-};
+use solana_pubkey::Pubkey;
+use solana_signature::Signature;
+use solana_signer::{Signer, SignerError};
 
 pub struct NoopSigner {
     pubkey: Pubkey,

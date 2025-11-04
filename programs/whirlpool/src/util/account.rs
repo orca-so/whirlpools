@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use solana_program::{program::invoke_signed, system_instruction};
+use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
 use std::cmp::max;
 
 pub fn safe_create_account<'info>(

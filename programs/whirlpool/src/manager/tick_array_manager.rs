@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use solana_program::{program::invoke, system_instruction};
+use anchor_lang::solana_program::{program::invoke, system_instruction};
 
 use crate::errors::ErrorCode;
 use crate::state::{DynamicTick, Position, PositionUpdate, Tick, TickUpdate};

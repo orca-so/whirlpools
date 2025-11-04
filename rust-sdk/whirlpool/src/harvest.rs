@@ -15,9 +15,12 @@ use orca_whirlpools_core::{
     collect_fees_quote, collect_rewards_quote, get_tick_array_start_tick_index,
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote,
 };
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
-use spl_associated_token_account::get_associated_token_address_with_program_id;
+use solana_account::Account;
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
 
 use crate::{
     token::{get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountStrategy},
@@ -82,8 +85,8 @@ pub struct HarvestPositionInstruction {
 /// use orca_whirlpools::{
 ///     harvest_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 /// use crate::utils::load_wallet;
 ///
@@ -229,7 +232,7 @@ pub async fn harvest_position_instructions(
         required_mints.insert(TokenAccountStrategy::WithoutBalance(pool.token_mint_b));
     }
 
-    for i in 0..3 {
+    for (i, _) in reward_infos.iter().enumerate().take(3) {
         if rewards_quote.rewards[i].rewards_owed > 0 {
             required_mints.insert(TokenAccountStrategy::WithoutBalance(
                 pool.reward_infos[i].mint,
@@ -280,7 +283,7 @@ pub async fn harvest_position_instructions(
                 token_mint_b: pool.token_mint_b,
                 token_program_a: mint_a_info.owner,
                 token_program_b: mint_b_info.owner,
-                memo_program: spl_memo::ID,
+                memo_program: spl_memo_interface::v3::ID,
             }
             .instruction(CollectFeesV2InstructionArgs {
                 remaining_accounts_info: None,
@@ -288,7 +291,7 @@ pub async fn harvest_position_instructions(
         );
     }
 
-    for i in 0..3 {
+    for (i, _) in reward_infos.iter().enumerate().take(3) {
         if rewards_quote.rewards[i].rewards_owed == 0 {
             continue;
         }
@@ -309,7 +312,7 @@ pub async fn harvest_position_instructions(
                 reward_vault: pool.reward_infos[i].vault,
                 reward_mint: pool.reward_infos[i].mint,
                 reward_token_program: reward_info.owner,
-                memo_program: spl_memo::ID,
+                memo_program: spl_memo_interface::v3::ID,
             }
             .instruction(CollectRewardV2InstructionArgs {
                 reward_index: i as u8,
@@ -335,18 +338,16 @@ mod tests {
 
     use orca_whirlpools_client::{get_position_address, Position};
     use serial_test::serial;
-    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_keypair::{Keypair, Signer};
+    use solana_program_pack::Pack;
     use solana_program_test::tokio;
-    use solana_sdk::{
-        program_pack::Pack,
-        pubkey::Pubkey,
-        signer::{keypair::Keypair, Signer},
-    };
-    use spl_token::state::Account as TokenAccount;
-    use spl_token_2022::{
+    use solana_pubkey::Pubkey;
+    use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+    use spl_token_2022_interface::{
         extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
         ID as TOKEN_2022_PROGRAM_ID,
     };
+    use spl_token_interface::state::Account as TokenAccount;
 
     use rstest::rstest;
 
@@ -414,7 +415,7 @@ mod tests {
         );
 
         let position_pubkey = get_position_address(&position_mint)?.0;
-        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+        let _position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
 
         Ok(())
     }
@@ -518,8 +519,8 @@ mod tests {
             let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
             let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
-            let pubkey_a = minted.get(mint_a_key).unwrap();
-            let pubkey_b = minted.get(mint_b_key).unwrap();
+            let _pubkey_a = minted.get(mint_a_key).unwrap();
+            let _pubkey_b = minted.get(mint_b_key).unwrap();
             let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
             let pubkey_a = *minted.get(mint_a_key).unwrap();
             let pubkey_b = *minted.get(mint_b_key).unwrap();

@@ -1,10 +1,10 @@
+use anchor_lang::solana_program::program_option::COption;
 use anchor_lang::{
     prelude::{AccountInfo, Pubkey, Signer, *},
     ToAccountInfo,
 };
 use anchor_spl::token::TokenAccount;
 use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
-use solana_program::program_option::COption;
 use std::convert::TryFrom;
 
 use crate::errors::ErrorCode;

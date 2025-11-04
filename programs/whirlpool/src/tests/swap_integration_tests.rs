@@ -4,10 +4,10 @@ use crate::math::*;
 use crate::state::{MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE};
 use crate::util::test_utils::swap_test_fixture::*;
 use crate::util::{create_whirlpool_reward_infos, SwapTickSequence};
+use anchor_lang::solana_program::msg;
 use serde::Deserialize;
 use serde_json;
 use serde_with::{serde_as, DisplayFromStr};
-use solana_program::msg;
 use std::fs;
 
 #[serde_as]

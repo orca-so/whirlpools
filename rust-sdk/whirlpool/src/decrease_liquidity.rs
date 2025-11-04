@@ -11,9 +11,12 @@ use orca_whirlpools_core::{
     decrease_liquidity_quote_a, decrease_liquidity_quote_b, get_tick_array_start_tick_index,
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote, DecreaseLiquidityQuote,
 };
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
-use spl_associated_token_account::get_associated_token_address_with_program_id;
+use solana_account::Account;
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
 use std::{
     collections::HashSet,
     error::Error,
@@ -91,8 +94,8 @@ pub struct DecreaseLiquidityInstruction {
 /// use orca_whirlpools::{
 ///     decrease_liquidity_instructions, set_whirlpools_config_address, DecreaseLiquidityParam, WhirlpoolsConfigInput
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 /// use crate::utils::load_wallet;
 ///
@@ -227,7 +230,7 @@ pub async fn decrease_liquidity_instructions(
             whirlpool: position.whirlpool,
             token_program_a: mint_a_info.owner,
             token_program_b: mint_b_info.owner,
-            memo_program: spl_memo::ID,
+            memo_program: spl_memo_interface::v3::ID,
             position_authority: authority,
             position: position_address,
             position_token_account: position_token_account_address,
@@ -324,8 +327,8 @@ pub struct ClosePositionInstruction {
 /// use orca_whirlpools::{
 ///     close_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -489,7 +492,7 @@ pub async fn close_position_instructions(
         required_mints.insert(TokenAccountStrategy::WithoutBalance(pool.token_mint_b));
     }
 
-    for i in 0..3 {
+    for (i, _) in reward_infos.iter().enumerate().take(3) {
         if rewards_quote.rewards[i].rewards_owed > 0 {
             required_mints.insert(TokenAccountStrategy::WithoutBalance(
                 pool.reward_infos[i].mint,
@@ -519,7 +522,7 @@ pub async fn close_position_instructions(
                 whirlpool: position.whirlpool,
                 token_program_a: mint_a_info.owner,
                 token_program_b: mint_b_info.owner,
-                memo_program: spl_memo::ID,
+                memo_program: spl_memo_interface::v3::ID,
                 position_authority: authority,
                 position: position_address,
                 position_token_account: position_token_account_address,
@@ -556,7 +559,7 @@ pub async fn close_position_instructions(
                 token_mint_b: pool.token_mint_b,
                 token_program_a: mint_a_info.owner,
                 token_program_b: mint_b_info.owner,
-                memo_program: spl_memo::ID,
+                memo_program: spl_memo_interface::v3::ID,
             }
             .instruction(CollectFeesV2InstructionArgs {
                 remaining_accounts_info: None,
@@ -564,7 +567,7 @@ pub async fn close_position_instructions(
         );
     }
 
-    for i in 0..3 {
+    for (i, _) in reward_infos.iter().enumerate().take(3) {
         if rewards_quote.rewards[i].rewards_owed == 0 {
             continue;
         }
@@ -585,7 +588,7 @@ pub async fn close_position_instructions(
                 reward_vault: pool.reward_infos[i].vault,
                 reward_mint: pool.reward_infos[i].mint,
                 reward_token_program: reward_info.owner,
-                memo_program: spl_memo::ID,
+                memo_program: spl_memo_interface::v3::ID,
             }
             .instruction(CollectRewardV2InstructionArgs {
                 reward_index: i as u8,
@@ -595,7 +598,7 @@ pub async fn close_position_instructions(
     }
 
     match position_mint_info.owner {
-        spl_token::ID => {
+        spl_token_interface::ID => {
             instructions.push(
                 ClosePosition {
                     position_authority: authority,
@@ -603,12 +606,12 @@ pub async fn close_position_instructions(
                     position_token_account: position_token_account_address,
                     position_mint: position_mint_address,
                     receiver: authority,
-                    token_program: spl_token::ID,
+                    token_program: spl_token_interface::ID,
                 }
                 .instruction(),
             );
         }
-        spl_token_2022::ID => {
+        spl_token_2022_interface::ID => {
             instructions.push(
                 ClosePositionWithTokenExtensions {
                     position_authority: authority,
@@ -616,7 +619,7 @@ pub async fn close_position_instructions(
                     position_token_account: position_token_account_address,
                     position_mint: position_mint_address,
                     receiver: authority,
-                    token2022_program: spl_token_2022::ID,
+                    token2022_program: spl_token_2022_interface::ID,
                 }
                 .instruction(),
             );
@@ -644,18 +647,16 @@ mod tests {
 
     use rstest::rstest;
     use serial_test::serial;
-    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_keypair::{Keypair, Signer};
+    use solana_program_pack::Pack;
     use solana_program_test::tokio;
-    use solana_sdk::{
-        program_pack::Pack,
-        pubkey::Pubkey,
-        signer::{keypair::Keypair, Signer},
-    };
-    use spl_token::state::Account as TokenAccount;
-    use spl_token_2022::{
+    use solana_pubkey::Pubkey;
+    use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+    use spl_token_2022_interface::{
         extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
         ID as TOKEN_2022_PROGRAM_ID,
     };
+    use spl_token_interface::state::Account as TokenAccount;
 
     use crate::{
         close_position_instructions, decrease_liquidity_instructions,
@@ -836,7 +837,7 @@ mod tests {
     #[serial]
     fn test_decrease_liquidity_cases(
         #[case] pool_name: &str,
-        #[case] position_name: &str,
+        #[case] _position_name: &str,
         #[case] lower_tick: i32,
         #[case] upper_tick: i32,
     ) {

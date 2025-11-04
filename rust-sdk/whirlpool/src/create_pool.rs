@@ -14,15 +14,14 @@ use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_tick_array_start_tick_index, price_to_sqrt_price,
     sqrt_price_to_tick_index,
 };
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_program::rent::Rent;
-use solana_program::system_program;
-use solana_program::sysvar::SysvarId;
-use solana_program::{instruction::Instruction, pubkey::Pubkey};
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
-use spl_token_2022::extension::StateWithExtensions;
-use spl_token_2022::state::Mint;
+use solana_instruction::Instruction;
+use solana_keypair::{Keypair, Signer};
+use solana_pubkey::Pubkey;
+use solana_rent::Rent;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use solana_sysvar_id::SysvarId;
+use spl_token_2022_interface::extension::StateWithExtensions;
+use spl_token_2022_interface::state::Mint;
 
 use crate::token::order_mints;
 use crate::{
@@ -76,8 +75,9 @@ pub struct CreatePoolInstructions {
 /// use orca_whirlpools::{
 ///     create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_keypair::{Keypair, Signer};
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -154,8 +154,9 @@ pub async fn create_splash_pool_instructions(
 ///     create_concentrated_liquidity_pool_instructions, set_whirlpools_config_address,
 ///     WhirlpoolsConfigInput,
 /// };
-/// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
+/// use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+/// use solana_keypair::{Keypair, Signer};
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -252,7 +253,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
             fee_tier,
             token_program_a,
             token_program_b,
-            system_program: system_program::id(),
+            system_program: solana_system_interface::program::id(),
             rent: Rent::id(),
         }
         .instruction(InitializePoolV2InstructionArgs {
@@ -284,7 +285,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
                 whirlpool: pool_address,
                 tick_array: tick_array_address.0,
                 funder,
-                system_program: system_program::id(),
+                system_program: solana_system_interface::program::id(),
             }
             .instruction(InitializeDynamicTickArrayInstructionArgs {
                 start_tick_index,

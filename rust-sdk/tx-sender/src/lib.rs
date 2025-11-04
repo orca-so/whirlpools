@@ -12,7 +12,7 @@ pub use jito::*;
 pub use rpc_config::*;
 pub use signer::*;
 
-use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 /// Build and send a transaction using the supplied configuration
 ///
@@ -171,7 +171,7 @@ pub async fn build_transaction_with_config_obj(
     // Provide the correct number of signatures for the transaction, otherwise (de)serialization can fail
     Ok(VersionedTransaction {
         signatures: vec![
-            solana_sdk::signature::Signature::default();
+            solana_signature::Signature::default();
             message.header.num_required_signatures.into()
         ],
         message: VersionedMessage::V0(message),
@@ -336,19 +336,15 @@ pub async fn send_transaction(
 mod tests {
     use super::*;
     use crate::compute_budget;
-    use solana_sdk::signature::{Keypair, Signer};
-    use solana_sdk::system_instruction;
+    use solana_keypair::{Keypair, Signer};
+    use solana_system_interface::instruction::transfer;
 
     #[test]
     fn test_get_writable_accounts() {
         let keypair = Keypair::new();
         let recipient = Keypair::new().pubkey();
 
-        let instructions = vec![system_instruction::transfer(
-            &keypair.pubkey(),
-            &recipient,
-            1_000_000,
-        )];
+        let instructions = vec![transfer(&keypair.pubkey(), &recipient, 1_000_000)];
 
         let writable_accounts = compute_budget::get_writable_accounts(&instructions);
         assert_eq!(writable_accounts.len(), 2);

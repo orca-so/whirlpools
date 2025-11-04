@@ -1,16 +1,18 @@
 use clap::ValueEnum;
 use orca_whirlpools::close_position_instructions;
 use orca_whirlpools_client::{Position, Whirlpool};
-use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSendTransactionConfig;
-use solana_sdk::commitment_config::CommitmentLevel;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
-use solana_sdk::{
-    message::Message, program_pack::Pack, pubkey::Pubkey, signature::Signature, signer::Signer,
-    transaction::Transaction,
-};
-use spl_associated_token_account::get_associated_token_address_with_program_id;
-use spl_token_2022::state::Mint;
+use solana_commitment_config::CommitmentLevel;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_keypair::Signer;
+use solana_message::Message;
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use solana_signature::Signature;
+use solana_transaction::Transaction;
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
+use spl_token_2022_interface::state::Mint;
 use std::error::Error;
 use tokio::time::{sleep, Duration, Instant};
 use tokio_retry::strategy::ExponentialBackoff;
@@ -131,7 +133,7 @@ pub async fn send_transaction(
     rpc: &RpcClient,
     wallet: &dyn Signer,
     whirlpool_address: &Pubkey,
-    instructions: Vec<solana_sdk::instruction::Instruction>,
+    instructions: Vec<solana_instruction::Instruction>,
     additional_signers: Vec<&dyn Signer>,
     tier: PriorityFeeTier,
     max_priority_fee: u64,
@@ -193,14 +195,14 @@ pub async fn send_transaction(
 
 async fn get_compute_unit_instructions(
     rpc: &RpcClient,
-    instructions: &[solana_sdk::instruction::Instruction],
+    instructions: &[solana_instruction::Instruction],
     wallet: &dyn Signer,
     whirlpool_address: &Pubkey,
     additional_signers: &[&dyn Signer],
     tier: PriorityFeeTier,
     max_priority_fee_lamports: u64,
-    recent_blockhash: solana_sdk::hash::Hash,
-) -> Result<Vec<solana_sdk::instruction::Instruction>, Box<dyn Error>> {
+    recent_blockhash: solana_hash::Hash,
+) -> Result<Vec<solana_instruction::Instruction>, Box<dyn Error>> {
     let mut compute_unit_instructions = vec![];
 
     let message = Message::new(instructions, Some(&wallet.pubkey()));

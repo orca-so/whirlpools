@@ -225,18 +225,18 @@ export async function startLiteSVM(): Promise<LiteSVM> {
     __dirname,
     "../external_program/token_2022.20250510.so",
   );
-  loadProgramFromPath(
-    token2022ProgramId,
-    token2022Path,
-    () =>
-      console.info(
-        "✅ Loaded latest Token-2022 program from mainnet (overriding built-in)",
-      ),
-    () =>
-      console.warn(
-        "⚠️  Token-2022 program not found - some Token-2022 extension instructions may not work",
-      ),
-  );
+  // loadProgramFromPath(
+  //   token2022ProgramId,
+  //   token2022Path,
+  //   () =>
+  //     console.info(
+  //       "✅ Loaded latest Token-2022 program from mainnet (overriding built-in)",
+  //     ),
+  //   () =>
+  //     console.warn(
+  //       "⚠️  Token-2022 program not found - some Token-2022 extension instructions may not work",
+  //     ),
+  // );
   // Load the Transfer Hook program for Token-2022 tests
   const transferHookProgramId = new PublicKey(
     "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS",
@@ -596,9 +596,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       signersOrOptions?:
         | Keypair[]
         | {
-            skipPreflight?: boolean;
-            preflightCommitment?: "processed" | "confirmed" | "finalized";
-          },
+          skipPreflight?: boolean;
+          preflightCommitment?: "processed" | "confirmed" | "finalized";
+        },
       _options?: {
         skipPreflight?: boolean;
         preflightCommitment?: "processed" | "confirmed" | "finalized";

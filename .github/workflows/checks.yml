@@ -18,6 +18,13 @@ jobs:
         uses: ./.github/actions/anchor
       - name: Install dependencies
         run: yarn install
+      - name: Print Node/ABI versions
+        run: |
+          node -v
+          node -p "process.versions"
+      - name: Force native rebuild of litesvm
+        run: |
+          yarn workspace @orca-so/whirlpools-sdk exec npm rebuild litesvm --build-from-source
       - name: Build packages
         run: yarn build --output-style static
 
@@ -51,6 +58,13 @@ jobs:
         uses: ./.github/actions/anchor
       - name: Install dependencies
         run: yarn install
+      - name: Print Node/ABI versions
+        run: |
+          node -v
+          node -p "process.versions"
+      - name: Force native rebuild of litesvm
+        run: |
+          yarn workspace @orca-so/whirlpools-sdk exec npm rebuild litesvm --build-from-source
       - name: Build common SDK
         run: yarn workspace @orca-so/common-sdk build
       - name: Build Whirlpool program (IDL)
@@ -64,6 +78,8 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
           VITEST_SEGFAULT_RETRY: "2"
         run: |
+          # Sanity: ensure litesvm native addon loads before running tests
+          yarn workspace @orca-so/whirlpools-sdk node -e "require('litesvm'); console.log('litesvm ok')"
           yarn vitest run legacy-sdk/whirlpool \
             --config legacy-sdk/whirlpool/vitest.config.mts \
             --reporter verbose

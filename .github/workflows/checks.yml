@@ -28,7 +28,19 @@ jobs:
         uses: actions/checkout@v5
       - name: Add swap to increase memory
         run: |
-          sudo fallocate -l 16G /swapfile
+          set -euxo pipefail
+
+          # Remove any existing/busy swapfile first
+          if [ -f /swapfile ]; then
+            sudo swapoff /swapfile || true
+            sudo rm -f /swapfile
+          fi
+
+          # Try fallocate; fall back to dd if fallocate is unsupported or fails (e.g., Text file busy)
+          if ! sudo fallocate -l 16G /swapfile 2>/dev/null; then
+            sudo dd if=/dev/zero of=/swapfile bs=1M count=16384 status=none
+          fi
+
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile

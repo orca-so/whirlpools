@@ -73,11 +73,18 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=8192
         run: yarn workspace @orca-so/whirlpools-sdk build
+      - name: Install jemalloc
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libjemalloc2
       - name: Run LiteSVM-safe tests
         env:
-          NODE_OPTIONS: --max-old-space-size=3072
+          NODE_OPTIONS: --max-old-space-size=2048
           VITEST_SEGFAULT_RETRY: "2"
           GLIBC_TUNABLES: glibc.malloc.arena_max=2
+          UV_THREADPOOL_SIZE: "2"
+          LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+          MALLOC_CONF: background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000
         run: |
           echo "=== System memory & limits ==="
           free -h || true

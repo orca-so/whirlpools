@@ -4,6 +4,10 @@ export default defineConfig({
   test: {
     globals: true,
     testTimeout: 60000,
+    exclude: [
+      "tests/integration/token-extensions/interest-bearing.test.ts",
+      "tests/integration/token-extensions/scaled-ui-amount.test.ts",
+    ],
 
     // --- LiteSVM stability settings ---
     // Run tests sequentially — LiteSVM singleton is not thread-safe

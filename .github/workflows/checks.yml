@@ -75,9 +75,17 @@ jobs:
         run: yarn workspace @orca-so/whirlpools-sdk build
       - name: Run LiteSVM-safe tests
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=3072
           VITEST_SEGFAULT_RETRY: "2"
+          GLIBC_TUNABLES: glibc.malloc.arena_max=2
         run: |
+          echo "=== System memory & limits ==="
+          free -h || true
+          cat /proc/meminfo | head -n 20 || true
+          cat /sys/fs/cgroup/memory.max 2>/dev/null || true
+          ulimit -a || true
+          node -p "process.arch + ' ' + process.platform" || true
+          node -e "console.log('pre-test memoryUsage', process.memoryUsage())"
           # Sanity: ensure litesvm native addon loads before running tests
           yarn workspace @orca-so/whirlpools-sdk node -e "require('litesvm'); console.log('litesvm ok')"
           yarn vitest run legacy-sdk/whirlpool \

@@ -185,6 +185,12 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   }
   // info-level logging only (allowed by lint rule)
   console.info("🚀 Starting LiteSVM...");
+  try {
+    const mu = process.memoryUsage();
+    console.info(
+      `📈 pre-start memory rss=${mu.rss} heapTotal=${mu.heapTotal} heapUsed=${mu.heapUsed} external=${mu.external}`,
+    );
+  } catch { }
   // Reset event listeners and transaction history
   _logListeners = [];
   _nextListenerId = 1;
@@ -205,6 +211,12 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   console.info(
     `⏰ Set blockchain clock to current time: ${currentTimeInSeconds}`,
   );
+  try {
+    const mu2 = process.memoryUsage();
+    console.info(
+      `📈 post-init memory rss=${mu2.rss} heapTotal=${mu2.heapTotal} heapUsed=${mu2.heapUsed} external=${mu2.external}`,
+    );
+  } catch { }
   // Load the Whirlpool program
   const programId = new PublicKey(
     "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",

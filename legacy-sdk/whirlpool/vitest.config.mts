@@ -14,15 +14,10 @@ export default defineConfig({
     fileParallelism: false,
     maxConcurrency: 1,
 
-    // Use a single forked process to avoid native memory duplication
-    pool: "forks",
-    poolOptions: {
-      forks: {
-        singleFork: true, // all tests share one process
-      },
-    },
+    // Use threads to share address space and reduce native duplication
+    pool: "threads",
+    poolOptions: {},
 
-    // Avoid isolating test environments so the singleton persists cleanly
-    isolate: false,
+    // Keep default isolation; sequential + threads should suffice
   },
 });

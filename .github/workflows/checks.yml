@@ -26,13 +26,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      # - name: Add swap to increase memory
-      #   run: |
-      #     sudo fallocate -l 16G /swapfile
-      #     sudo chmod 600 /swapfile
-      #     sudo mkswap /swapfile
-      #     sudo swapon /swapfile
-      #     free -h
+      - name: Add swap to increase memory
+        run: |
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
       - name: Remove Unnecessary Files
         uses: ./.github/actions/cleanup
       - name: Setup Anchor

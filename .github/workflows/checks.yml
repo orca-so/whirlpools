@@ -91,7 +91,7 @@ jobs:
         run: yarn lint --output-style static
 
   verify-generated:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -108,7 +108,7 @@ jobs:
             rust-sdk/client/src/generated
 
   changeset:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
     steps:
       - name: Checkout repository

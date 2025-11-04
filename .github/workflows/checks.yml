@@ -22,7 +22,6 @@ jobs:
         run: yarn build --output-style static
 
   test:
-    if: false # temporarily disable test script
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

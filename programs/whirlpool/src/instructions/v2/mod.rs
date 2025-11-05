@@ -5,6 +5,7 @@ pub mod collect_protocol_fees;
 pub mod collect_reward;
 pub mod decrease_liquidity;
 pub mod increase_liquidity;
+pub mod increase_liquidity_by_token_amounts;
 pub mod initialize_pool;
 pub mod initialize_reward;
 pub mod set_reward_emissions;

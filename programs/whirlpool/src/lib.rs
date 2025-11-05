@@ -997,6 +997,34 @@ pub mod whirlpool {
         )
     }
 
+    /// Add liquidity to a position by specifying token maxima, not liquidity.
+    /// This instruction works with both Token and Token-2022.
+    ///
+    /// ### Authority
+    /// - `position_authority` - authority that owns the token corresponding to this desired position.
+    ///
+    /// ### Parameters
+    /// - `token_max_a` - The maximum amount of tokenA the user is willing to deposit.
+    /// - `token_max_b` - The maximum amount of tokenB the user is willing to deposit.
+    ///
+    /// #### Special Errors
+    /// - `LiquidityZero` - Computed liquidity amount is zero.
+    /// - `LiquidityTooHigh` - Computed liquidity exceeds u128::max.
+    /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    pub fn increase_liquidity_by_token_amounts_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
+        token_max_a: u64,
+        token_max_b: u64,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        instructions::v2::increase_liquidity_by_token_amounts::handler(
+            ctx,
+            token_max_a,
+            token_max_b,
+            remaining_accounts_info,
+        )
+    }
+
     /// Initializes a Whirlpool account.
     /// This instruction works with both Token and Token-2022.
     /// Fee rate is set to the default values on the config and supplied fee_tier.

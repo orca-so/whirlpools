@@ -37,7 +37,7 @@ pub fn handler<'info>(
     let tick_lower_index = ctx.accounts.position.tick_lower_index;
     let tick_upper_index = ctx.accounts.position.tick_upper_index;
 
-    let (max_delta_a) =
+    let max_delta_a =
         calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_a, token_max_a)?.amount;
     let max_delta_b =
         calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_b, token_max_b)?.amount;

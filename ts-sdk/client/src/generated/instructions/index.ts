@@ -21,6 +21,7 @@ export * from "./deletePositionBundle";
 export * from "./deleteTokenBadge";
 export * from "./idlInclude";
 export * from "./increaseLiquidity";
+export * from "./increaseLiquidityByTokenAmountsV2";
 export * from "./increaseLiquidityV2";
 export * from "./initializeAdaptiveFeeTier";
 export * from "./initializeConfig";

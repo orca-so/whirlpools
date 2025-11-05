@@ -28,6 +28,7 @@ import {
   type ParsedDeletePositionBundleInstruction,
   type ParsedDeleteTokenBadgeInstruction,
   type ParsedIdlIncludeInstruction,
+  type ParsedIncreaseLiquidityByTokenAmountsV2Instruction,
   type ParsedIncreaseLiquidityInstruction,
   type ParsedIncreaseLiquidityV2Instruction,
   type ParsedInitializeAdaptiveFeeTierInstruction,
@@ -254,6 +255,7 @@ export enum WhirlpoolInstruction {
   DeleteTokenBadge,
   IdlInclude,
   IncreaseLiquidity,
+  IncreaseLiquidityByTokenAmountsV2,
   IncreaseLiquidityV2,
   InitializeAdaptiveFeeTier,
   InitializeConfig,
@@ -472,6 +474,17 @@ export function identifyWhirlpoolInstruction(
     )
   ) {
     return WhirlpoolInstruction.IncreaseLiquidity;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([239, 251, 9, 124, 210, 198, 53, 43]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.IncreaseLiquidityByTokenAmountsV2;
   }
   if (
     containsBytes(
@@ -1054,6 +1067,9 @@ export type ParsedWhirlpoolInstruction<
   | ({
       instructionType: WhirlpoolInstruction.IncreaseLiquidity;
     } & ParsedIncreaseLiquidityInstruction<TProgram>)
+  | ({
+      instructionType: WhirlpoolInstruction.IncreaseLiquidityByTokenAmountsV2;
+    } & ParsedIncreaseLiquidityByTokenAmountsV2Instruction<TProgram>)
   | ({
       instructionType: WhirlpoolInstruction.IncreaseLiquidityV2;
     } & ParsedIncreaseLiquidityV2Instruction<TProgram>)

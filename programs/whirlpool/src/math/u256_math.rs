@@ -449,6 +449,12 @@ pub fn hi_lo(hi: u64, lo: u64) -> u128 {
     ((hi as u128) << U64_RESOLUTION) | (lo as u128)
 }
 
+pub fn u128_to_u256(value: u128) -> U256Muldiv {
+    // A u128 value only occupies the low 128 bits (l) of the U256Muldiv.
+    // The high 128 bits (h) are set to 0.
+    U256Muldiv::new(0, value)
+}
+
 pub fn mul_u256(v: u128, n: u128) -> U256Muldiv {
     // do 128 bits multiply
     //                   nh   nl
@@ -1048,5 +1054,35 @@ mod test_div {
         let dividend = U256Muldiv::new(1 << 63, 0);
         let divisor = U256Muldiv::new(0, 0);
         let _ = dividend.div(divisor, true);
+    }
+}
+
+#[cfg(test)]
+mod test_u128_to_u256 {
+    use super::{u128_to_u256, U256Muldiv};
+
+    #[test]
+    fn test_zero() {
+        let v = 0u128;
+        let u = u128_to_u256(v);
+        assert!(u.eq(U256Muldiv::new(0, v)));
+        assert_eq!(u.try_into_u128().unwrap(), v);
+    }
+
+    #[test]
+    fn test_small_values() {
+        for v in [1u128, 42u128, (1u128 << 64) + 3u128] {
+            let u = u128_to_u256(v);
+            assert!(u.eq(U256Muldiv::new(0, v)));
+            assert_eq!(u.try_into_u128().unwrap(), v);
+        }
+    }
+
+    #[test]
+    fn test_max() {
+        let v = u128::MAX;
+        let u = u128_to_u256(v);
+        assert!(u.eq(U256Muldiv::new(0, v)));
+        assert_eq!(u.try_into_u128().unwrap(), v);
     }
 }

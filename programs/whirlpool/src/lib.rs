@@ -2,6 +2,11 @@ use anchor_lang::prelude::*;
 
 declare_id!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
 
+mod entrypoint;
+
+#[doc(hidden)]
+pub mod pinocchio;
+
 #[doc(hidden)]
 pub mod auth;
 #[doc(hidden)]
@@ -1031,6 +1036,7 @@ pub mod whirlpool {
         token_max_b: u64,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
+        unreachable!(); // Pinocchio
         instructions::v2::increase_liquidity::handler(
             ctx,
             liquidity_amount,

@@ -1,6 +1,6 @@
 use solana_security_txt::security_txt;
 
-#[cfg(not(feature = "no-entrypoint"))]
+#[cfg(feature = "whirlpool-entrypoint")]
 security_txt! {
     name: "Orca Whirlpool program",
     project_url: "https://orca.so",

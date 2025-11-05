@@ -38,7 +38,9 @@
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.3.0",
     "codama": "^1.3.7",
-    "typescript": "^5.9.3"
+    "tsup": "^8.4.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "repository": {
     "type": "git",

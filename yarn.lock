@@ -4299,6 +4299,7 @@ __metadata:
     "@solana/kit": "npm:^3.0.3"
     tsup: "npm:^8.4.0"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^3.2.4"
   peerDependencies:
     "@solana/kit": ^3.0.3
   languageName: unknown
@@ -4313,7 +4314,9 @@ __metadata:
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/kit": "npm:^2.3.0"
     codama: "npm:^1.3.7"
+    tsup: "npm:^8.4.0"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^3.2.4"
   peerDependencies:
     "@solana/kit": ^2.1.0
   languageName: unknown
@@ -4325,7 +4328,9 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
+    tsup: "npm:^8.4.0"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^3.2.4"
     wasm-pack: "npm:^0.13.1"
   languageName: unknown
   linkType: soft
@@ -4431,6 +4436,7 @@ __metadata:
     "@orca-so/whirlpools": "npm:*"
     tsx: "npm:^4.19.3"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
 
@@ -4582,6 +4588,7 @@ __metadata:
     solana-bankrun: "npm:^0.4.0"
     tsup: "npm:^8.4.0"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^3.2.4"
   peerDependencies:
     "@solana/kit": ^3.0.3
   languageName: unknown

@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       - name: Build all packages
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
@@ -24,8 +22,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       - name: Run all tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
@@ -34,8 +30,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       - name: Run lint
         run: docker compose --profile lint up --quiet-pull --abort-on-container-failure
 

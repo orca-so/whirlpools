@@ -202,7 +202,7 @@ services:
 
   test-program-integration:
     platform: linux/amd64
-    image: rust:1.85.0
+    image: ubuntu:24.04
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apt-get update && apt-get install -y curl ca-certificates

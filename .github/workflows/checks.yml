@@ -26,6 +26,8 @@ jobs:
         uses: actions/checkout@v5
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Raise max_map_count
+        run: sudo sysctl -w vm.max_map_count=262144
       - name: Run all tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 

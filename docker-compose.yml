@@ -79,11 +79,11 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "rustup component add clippy rustfmt
-      && cargo build --manifest-path rust-sdk/macros/Cargo.toml
-      && cargo build --manifest-path rust-sdk/core/Cargo.toml
-      && cargo build --manifest-path rust-sdk/client/Cargo.toml
-      && cargo build --manifest-path rust-sdk/whirlpool/Cargo.toml
-      && cargo build --manifest-path rust-sdk/tx-sender/Cargo.toml
+      && cargo build --quiet --manifest-path rust-sdk/macros/Cargo.toml
+      && cargo build --quiet --manifest-path rust-sdk/core/Cargo.toml
+      && cargo build --quiet --manifest-path rust-sdk/client/Cargo.toml
+      && cargo build --quiet --manifest-path rust-sdk/whirlpool/Cargo.toml
+      && cargo build --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
     profiles: [build, lint]
@@ -254,11 +254,11 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "cp legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so target/deploy/
-      && cargo test --manifest-path rust-sdk/macros/Cargo.toml --lib
-      && cargo test --manifest-path rust-sdk/core/Cargo.toml --lib
-      && cargo test --manifest-path rust-sdk/client/Cargo.toml --lib
-      && cargo test --manifest-path rust-sdk/whirlpool/Cargo.toml --lib
-      && cargo test --manifest-path rust-sdk/tx-sender/Cargo.toml --lib"
+      && cargo test --quiet --manifest-path rust-sdk/macros/Cargo.toml --lib
+      && cargo test --quiet --manifest-path rust-sdk/core/Cargo.toml --lib
+      && cargo test --quiet --manifest-path rust-sdk/client/Cargo.toml --lib
+      && cargo test --quiet --manifest-path rust-sdk/whirlpool/Cargo.toml --lib
+      && cargo test --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml --lib"
     profiles: [test]
     depends_on:
       build-solana-program:

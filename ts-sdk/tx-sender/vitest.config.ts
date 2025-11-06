@@ -5,5 +5,11 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./tests/setup.ts"],
+    pool: "forks",
+    minThreads: 1,
+    maxThreads: 1,
+    isolate: true,
+    hookTimeout: 120000,
+    teardownTimeout: 120000,
   },
 });

@@ -5,19 +5,19 @@ use pinocchio::{
     ProgramResult,
 };
 
-pub struct BuildMemo<'a> {
+pub struct BuildMemo<'a, 'b> {
     pub program: &'a AccountInfo,
-    pub memo: &'a String,
+    pub memo: &'b [u8],
 }
 
-impl BuildMemo<'_> {
+impl BuildMemo<'_, '_> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
         let account_metas: [AccountMeta; 0] = [];
 
         // Instruction data layout:
         // -  memo in UTF-8
-        let instruction_data = self.memo.as_bytes();
+        let instruction_data = self.memo;
 
         let instruction = Instruction {
             program_id: self.program.key(),

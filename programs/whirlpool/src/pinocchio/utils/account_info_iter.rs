@@ -1,7 +1,7 @@
 use crate::pinocchio::{constants::address, errors::AnchorErrorCode, Result};
 use pinocchio::account_info::AccountInfo;
-use pinocchio::pubkey::Pubkey;
 use pinocchio::pubkey::pubkey_eq;
+use pinocchio::pubkey::Pubkey;
 
 /// Iterator wrapper for sequential account access with validation
 pub struct AccountIterator<'a> {
@@ -83,6 +83,12 @@ impl<'a> AccountIterator<'a> {
     #[inline(always)]
     pub fn next_program_token_or_token_2022(&mut self) -> Result<&'a AccountInfo> {
         self.next_program_account(&[&address::TOKEN_PROGRAM_ID, &address::TOKEN_2022_PROGRAM_ID])
+    }
+
+    /// Get the next account that must be the System program
+    #[inline(always)]
+    pub fn next_program_system(&mut self) -> Result<&'a AccountInfo> {
+        self.next_program_account(&[&address::SYSTEM_PROGRAM_ID])
     }
 
     /// Get remaining accounts as a slice

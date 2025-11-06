@@ -1,6 +1,6 @@
-use pinocchio::instruction::Seed;
 use super::super::{BytesI32, BytesU128, BytesU16, BytesU64, Pubkey};
 use crate::pinocchio::state::WhirlpoolProgramAccount;
+use pinocchio::instruction::Seed;
 
 #[repr(C)]
 pub struct MemoryMappedWhirlpoolRewardInfo {
@@ -123,6 +123,11 @@ impl MemoryMappedWhirlpool {
     #[inline(always)]
     pub fn token_vault_b(&self) -> &Pubkey {
         &self.token_vault_b
+    }
+
+    #[inline(always)]
+    pub fn whirlpool_bump(&self) -> u8 {
+        self.whirlpool_bump[0]
     }
 
     #[inline(always)]

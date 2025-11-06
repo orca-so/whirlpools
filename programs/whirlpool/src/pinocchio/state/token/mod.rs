@@ -24,7 +24,7 @@ impl<'a, T> TokenProgramAccountWithExtensions<'a, T> {
     }
 }
 
-impl<'a, T> core::ops::Deref for TokenProgramAccountWithExtensions<'a, T> {
+impl<T> core::ops::Deref for TokenProgramAccountWithExtensions<'_, T> {
     type Target = T;
 
     #[inline(always)]
@@ -33,7 +33,7 @@ impl<'a, T> core::ops::Deref for TokenProgramAccountWithExtensions<'a, T> {
     }
 }
 
-impl<'a, T> TokenProgramAccountWithExtensions<'a, T> {
+impl<T> TokenProgramAccountWithExtensions<'_, T> {
     #[inline(always)]
     pub fn is_token_2022(&self) -> bool {
         self.is_token_2022

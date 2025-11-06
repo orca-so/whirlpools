@@ -61,3 +61,19 @@ pub struct Traded {
     pub lp_fee: u64,
     pub protocol_fee: u64,
 }
+
+#[event]
+pub struct LiquidityRepositioned {
+    pub whirlpool: Pubkey,
+    pub position: Pubkey,
+    pub old_tick_lower_index: i32,
+    pub old_tick_upper_index: i32,
+    pub new_tick_lower_index: i32,
+    pub new_tick_upper_index: i32,
+    pub old_liquidity: u128,
+    pub new_liquidity: u128,
+    pub old_token_a_amount: u64,
+    pub old_token_b_amount: u64,
+    pub new_token_a_amount: u64,
+    pub new_token_b_amount: u64,
+}

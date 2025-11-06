@@ -41,6 +41,7 @@
   pub(crate) mod r#open_position;
   pub(crate) mod r#open_position_with_metadata;
   pub(crate) mod r#open_position_with_token_extensions;
+  pub(crate) mod r#reposition_liquidity_v2;
   pub(crate) mod r#reset_position_range;
   pub(crate) mod r#set_adaptive_fee_constants;
   pub(crate) mod r#set_collect_protocol_fees_authority;
@@ -106,6 +107,7 @@
   pub use self::r#open_position::*;
   pub use self::r#open_position_with_metadata::*;
   pub use self::r#open_position_with_token_extensions::*;
+  pub use self::r#reposition_liquidity_v2::*;
   pub use self::r#reset_position_range::*;
   pub use self::r#set_adaptive_fee_constants::*;
   pub use self::r#set_collect_protocol_fees_authority::*;

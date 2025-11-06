@@ -1,10 +1,5 @@
-use crate::pinocchio::{
-    constants::address::TOKEN_2022_PROGRAM_ID,
-    state::{token::TokenProgramAccountWithExtensions, TokenProgramAccount},
-    Result,
-};
+use crate::pinocchio::Result;
 use arrayref::array_ref;
-use pinocchio::account_info::AccountInfo;
 use pinocchio::program_error::ProgramError;
 
 use super::super::{ByteBool, BytesU16, BytesU64, Pubkey};
@@ -96,7 +91,7 @@ const TOKEN_EXTENSION_TYPE_TRANSFER_FEE_CONFIG: u16 = 1;
 const TOKEN_EXTENSION_TYPE_TRANSFER_HOOK: u16 = 14;
 const TOKEN_EXTENSION_TYPE_MEMO_TRANSFER: u16 = 8;
 
-pub fn parse_token_extensions<'a>(tlv_data: &'a [u8]) -> Result<TokenExtensions<'a>> {
+pub fn parse_token_extensions(tlv_data: &[u8]) -> Result<TokenExtensions<'_>> {
     let mut transfer_fee_config: Option<&MemoryMappedTransferFeeConfigExtension> = None;
     let mut transfer_hook: Option<&MemoryMappedTransferHookExtension> = None;
     let mut memo_transfer: Option<&MemoryMappedMemoTransfer> = None;

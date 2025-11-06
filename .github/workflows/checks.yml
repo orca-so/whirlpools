@@ -17,7 +17,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build all packages
-        run: docker compose --profile build up
+        run: docker compose --profile build up --quiet-pull --quiet-build --abort-on-container-failure
 
   test:
     runs-on: blacksmith-8vcpu-ubuntu-2404
@@ -27,7 +27,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Run all tests
-        run: docker compose --profile test up
+        run: docker compose --profile test up --quiet-pull --quiet-build --abort-on-container-failure
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404
@@ -37,7 +37,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Run lint
-        run: docker compose --profile lint up
+        run: docker compose --profile lint up --quiet-pull --quiet-build --abort-on-container-failure
 
   verify-generated:
     runs-on: ubuntu-latest

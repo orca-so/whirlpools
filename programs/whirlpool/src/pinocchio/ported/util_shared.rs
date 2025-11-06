@@ -29,3 +29,9 @@ fn pino_validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo
 
     Ok(())
 }
+
+pub fn pino_is_locked_position(
+    position_token_account: &MemoryMappedTokenAccount,
+) -> bool {
+    position_token_account.is_frozen()
+}

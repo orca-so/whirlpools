@@ -19,14 +19,14 @@ jobs:
         uses: docker/setup-buildx-action@v3
       
       - name: Build all packages
-        run: docker compose --profile build up --quiet-pull --abort-on-container-exit
+        run: docker compose --profile build up --quiet-pull --abort-on-container-failure
       
       - name: Run all tests
-        run: docker compose --profile test up --quiet-pull --abort-on-container-exit
+        run: docker compose --profile test up --quiet-pull --abort-on-container-failure
       
       - name: Run lint
         if: always()
-        run: docker compose --profile lint up --quiet-pull --abort-on-container-exit
+        run: docker compose --profile lint up --quiet-pull --abort-on-container-failure
 
   verify-generated:
     runs-on: ubuntu-latest

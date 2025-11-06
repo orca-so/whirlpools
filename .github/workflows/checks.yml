@@ -27,9 +27,10 @@ jobs:
       - name: Install Docker
         run: |
           brew install docker docker-compose colima
-          colima start --cpu 4 --memory 8 --disk 50
+          # Start colima with qemu driver (more compatible with CI)
+          colima start --cpu 4 --memory 8 --disk 50 --vm-type=qemu --mount-type=sshfs
           # Wait for Docker to be ready
-          for i in {1..30}; do
+          for i in {1..60}; do
             docker info &>/dev/null && break
             echo "Waiting for Docker to be ready..."
             sleep 2

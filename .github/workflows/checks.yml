@@ -24,29 +24,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Show initial memory / vm settings
-        run: |
-          grep -E 'CommitLimit|Committed_AS|MemTotal|MemFree|SwapTotal|SwapFree' /proc/meminfo || true
-          sysctl vm.max_map_count || true
-          sysctl vm.overcommit_memory || true
-          sysctl vm.overcommit_ratio || true
-
-      - name: Relax kernel limits for tests
-        run: |
-          # Allow more VMAs (helps with mmap-heavy workloads like V8 + native addons)
-          sudo sysctl -w vm.max_map_count=262144
-
-          # Loosen commit accounting (helps avoid std::bad_alloc from ENOMEM under overcommit=0)
-          sudo sysctl -w vm.overcommit_memory=1
-          sudo sysctl -w vm.overcommit_ratio=100
-
       - name: Run all tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
-
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404

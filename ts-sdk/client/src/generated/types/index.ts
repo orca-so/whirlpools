@@ -14,6 +14,7 @@ export * from "./dynamicTick";
 export * from "./dynamicTickData";
 export * from "./liquidityDecreased";
 export * from "./liquidityIncreased";
+export * from "./liquidityRepositioned";
 export * from "./lockType";
 export * from "./lockTypeLabel";
 export * from "./poolInitialized";

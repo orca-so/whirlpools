@@ -126,6 +126,11 @@ impl MemoryMappedWhirlpool {
     }
 
     #[inline(always)]
+    pub fn whirlpool_bump(&self) -> u8 {
+        self.whirlpool_bump[0]
+    }
+
+    #[inline(always)]
     pub fn fee_growth_global_a(&self) -> u128 {
         u128::from_le_bytes(self.fee_growth_global_a)
     }

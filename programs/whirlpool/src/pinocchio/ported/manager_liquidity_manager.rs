@@ -54,6 +54,35 @@ pub fn pino_calculate_modify_liquidity(
     )
 }
 
+pub fn pino_calculate_fee_and_reward_growths(
+    whirlpool: &MemoryMappedWhirlpool,
+    position: &MemoryMappedPosition,
+    tick_array_lower: &dyn TickArray,
+    tick_array_upper: &dyn TickArray,
+    timestamp: u64,
+) -> Result<(PositionUpdate, [u128; NUM_REWARDS])> {
+    let tick_lower =
+        tick_array_lower.get_tick(position.tick_lower_index(), whirlpool.tick_spacing())?;
+
+    let tick_upper =
+        tick_array_upper.get_tick(position.tick_upper_index(), whirlpool.tick_spacing())?;
+
+    let update = _pino_calculate_modify_liquidity(
+        whirlpool,
+        position,
+        tick_lower,
+        tick_upper,
+        position.tick_lower_index(),
+        position.tick_upper_index(),
+        tick_array_lower.is_variable_size(),
+        tick_array_upper.is_variable_size(),
+        0,
+        timestamp,
+    )?;
+
+    Ok((update.position_update, update.next_reward_growth_global))
+}
+
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 fn _pino_calculate_modify_liquidity(

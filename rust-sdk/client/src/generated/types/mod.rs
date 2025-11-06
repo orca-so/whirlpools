@@ -13,6 +13,7 @@
   pub(crate) mod r#dynamic_tick_data;
   pub(crate) mod r#liquidity_decreased;
   pub(crate) mod r#liquidity_increased;
+  pub(crate) mod r#liquidity_repositioned;
   pub(crate) mod r#lock_type;
   pub(crate) mod r#lock_type_label;
   pub(crate) mod r#pool_initialized;
@@ -33,6 +34,7 @@
   pub use self::r#dynamic_tick_data::*;
   pub use self::r#liquidity_decreased::*;
   pub use self::r#liquidity_increased::*;
+  pub use self::r#liquidity_repositioned::*;
   pub use self::r#lock_type::*;
   pub use self::r#lock_type_label::*;
   pub use self::r#pool_initialized::*;

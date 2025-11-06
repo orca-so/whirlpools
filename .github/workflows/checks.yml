@@ -20,7 +20,7 @@ jobs:
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
   test:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

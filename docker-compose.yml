@@ -205,32 +205,11 @@ services:
     image: ubuntu:24.04
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "
-        set -e
-
-        apt-get update &&
-        apt-get install -y curl ca-certificates binutils &&
-        curl -fsSL https://deb.nodesource.com/setup_22.x | bash - &&
-        apt-get install -y nodejs &&
-        corepack enable &&
-        corepack prepare yarn@4.6.0 --activate &&
-
-        echo '=== Node / process.versions ===' &&
-        node -p 'process.versions' &&
-
-        echo '=== litesvm binary info ===' &&
-        LITESVM_PATH=$(node -p \"require.resolve('litesvm')\") &&
-        echo \"litesvm.node path: $LITESVM_PATH\" &&
-
-        echo '--- ldd ---' &&
-        ldd \"$LITESVM_PATH\" || true &&
-
-        echo '--- objdump NEEDED/GLIBC ---' &&
-        objdump -p \"$LITESVM_PATH\" | grep -E 'NEEDED|GLIBC' || true &&
-
-        echo '=== Running workspace tests ===' &&
-        yarn workspace @orca-so/whirlpools-sdk test
-      "
+      sh -c "apt-get update && apt-get install -y curl ca-certificates
+      && curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+      && apt-get install -y nodejs
+      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && yarn workspace @orca-so/whirlpools-sdk test"
     profiles: [test]
     depends_on:
       build-solana-program:
@@ -243,7 +222,6 @@ services:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
-
 
   test-ts-sdk:
     platform: linux/amd64

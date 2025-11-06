@@ -24,6 +24,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+      - name: Install Docker
+        run: |
+          brew install docker docker-compose colima
+          colima start --cpu 4 --memory 8 --disk 50
+          # Wait for Docker to be ready
+          for i in {1..30}; do
+            docker info &>/dev/null && break
+            echo "Waiting for Docker to be ready..."
+            sleep 2
+          done
+          docker info
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Run all tests

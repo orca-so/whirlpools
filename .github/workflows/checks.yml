@@ -24,20 +24,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Install Docker
-        run: |
-          brew install docker docker-compose colima qemu
-          # Start colima with qemu driver (more compatible with CI)
-          colima start --cpu 4 --memory 8 --disk 50 --vm-type=qemu --mount-type=sshfs
-          # Wait for Docker to be ready
-          for i in {1..60}; do
-            docker info &>/dev/null && break
-            echo "Waiting for Docker to be ready..."
-            sleep 2
-          done
-          docker info
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Docker
+        uses: docker-practice/actions-setup-docker@master
       - name: Run all tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 

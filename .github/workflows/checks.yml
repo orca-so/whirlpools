@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -20,7 +20,7 @@ jobs:
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
   test:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -30,7 +30,7 @@ jobs:
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
   lint:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

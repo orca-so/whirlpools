@@ -30,18 +30,14 @@ jobs:
         run: docker compose --profile test up
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Remove Unnecessary Files
-        uses: ./.github/actions/cleanup
-      - name: Setup Anchor
-        uses: ./.github/actions/anchor
-      - name: Install dependencies
-        run: yarn install
-      - name: Run Lint
-        run: yarn lint --output-style static
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Run lint
+        run: docker compose --profile lint up
 
   verify-generated:
     runs-on: ubuntu-latest
@@ -62,7 +58,7 @@ jobs:
 
   changeset:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && !contains(github.event.pull_request.labels.*.name, 'skip-changeset') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

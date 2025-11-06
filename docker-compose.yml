@@ -20,7 +20,7 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install"
-    profiles: [build, test]
+    profiles: [build, test, lint]
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
@@ -298,17 +298,47 @@ services:
     command: >
       echo "Tests Completed"
     depends_on:
-      # test-program:
-      #   condition: service_completed_successfully
-      # test-program-integration:
-      #   condition: service_completed_successfully
-      # test-ts-sdk:
-      #   condition: service_completed_successfully
+      test-program:
+        condition: service_completed_successfully
+      test-program-integration:
+        condition: service_completed_successfully
+      test-ts-sdk:
+        condition: service_completed_successfully
       test-rust-sdk:
         condition: service_completed_successfully
     profiles: [test]
     volumes:
       - ./:/usr/src/whirlpools
+
+  lint:
+    platform: linux/amd64
+    image: rust:1.84.0
+    working_dir: /usr/src/whirlpools
+    command: >
+      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      && apt-get update && apt-get install -y nodejs
+      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && rustup component add clippy rustfmt
+      && yarn workspace @orca-so/whirlpools-lint lint
+      && cargo clippy -p whirlpool && cargo fmt --check -p whirlpool
+      && cargo clippy --manifest-path rust-sdk/macros/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/macros/Cargo.toml
+      && cargo clippy --manifest-path rust-sdk/core/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/core/Cargo.toml
+      && cargo clippy --manifest-path rust-sdk/client/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/client/Cargo.toml
+      && cargo clippy --manifest-path rust-sdk/whirlpool/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/whirlpool/Cargo.toml
+      && cargo clippy --manifest-path rust-sdk/tx-sender/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/tx-sender/Cargo.toml
+      && cargo clippy --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml && cargo fmt --check --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
+    profiles: [lint]
+    depends_on:
+      build-solana-program:
+        condition: service_completed_successfully
+      build-rust-sdk:
+        condition: service_completed_successfully
+      yarn-install:
+        condition: service_completed_successfully
+    volumes:
+      - ./:/usr/src/whirlpools
+      - node_modules:/usr/src/whirlpools/node_modules:ro
+      - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
 volumes:
   node_modules:

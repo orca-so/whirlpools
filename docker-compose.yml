@@ -86,7 +86,7 @@ services:
       && cargo build --manifest-path rust-sdk/tx-sender/Cargo.toml
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
-    profiles: [build, test, lint]
+    profiles: [build, lint]
     depends_on:
       build-solana-program:
         condition: service_completed_successfully
@@ -262,8 +262,6 @@ services:
     profiles: [test]
     depends_on:
       build-solana-program:
-        condition: service_completed_successfully
-      build-rust-sdk:
         condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools

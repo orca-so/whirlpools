@@ -204,24 +204,11 @@ services:
     platform: linux/amd64
     image: ubuntu:24.04
     working_dir: /usr/src/whirlpools
-    environment:
-      - NODE_OPTIONS=--max-old-space-size=4096
-    mem_limit: 6g
-    ulimits:
-      stack: 67108864
-      memlock: -1
     command: >
       sh -c "apt-get update && apt-get install -y curl ca-certificates
       && curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
-      && yarn install
-      && echo '=== Diagnostics ===' 
-      && ulimit -a
-      && cat /proc/sys/vm/overcommit_memory || echo 'no overcommit info'
-      && cat /sys/fs/cgroup/memory.max 2>/dev/null || echo 'no cgroup v2'
-      && cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null || echo 'no cgroup v1'
-      && echo '=== Running tests ===' 
       && yarn workspace @orca-so/whirlpools-sdk test"
     profiles: [test]
     depends_on:

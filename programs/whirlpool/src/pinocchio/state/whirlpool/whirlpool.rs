@@ -1,3 +1,4 @@
+use pinocchio::instruction::Seed;
 use super::super::{BytesI32, BytesU128, BytesU16, BytesU64, Pubkey};
 use crate::pinocchio::state::WhirlpoolProgramAccount;
 
@@ -72,6 +73,18 @@ impl WhirlpoolProgramAccount for MemoryMappedWhirlpool {
 }
 
 impl MemoryMappedWhirlpool {
+    #[inline(always)]
+    pub fn seeds(&self) -> [Seed<'_>; 6] {
+        [
+            Seed::from(b"whirlpool"),
+            Seed::from(&self.whirlpools_config),
+            Seed::from(&self.token_mint_a),
+            Seed::from(&self.token_mint_b),
+            Seed::from(&self.fee_tier_index_seed),
+            Seed::from(&self.whirlpool_bump),
+        ]
+    }
+
     #[inline(always)]
     pub fn tick_spacing(&self) -> u16 {
         u16::from_le_bytes(self.tick_spacing)

@@ -15,7 +15,7 @@ pub struct MemoryMappedTokenAccount {
     owner: Pubkey,
     amount: BytesU64,
     delegate: COption<Pubkey>,
-    state: AccountState,
+    state: u8,
     is_native: COption<BytesU64>,
     delegated_amount: BytesU64,
     close_authority: COption<Pubkey>,
@@ -49,6 +49,11 @@ impl MemoryMappedTokenAccount {
     #[inline(always)]
     pub fn delegated_amount(&self) -> u64 {
         u64::from_le_bytes(self.delegated_amount)
+    }
+
+    #[inline(always)]
+    pub fn is_frozen(&self) -> bool {
+        self.state == AccountState::Frozen as u8
     }
 }
 

@@ -73,6 +73,13 @@ pub struct MemoryMappedMemoTransfer {
     require_incoming_transfer_memos: ByteBool,
 }
 
+impl MemoryMappedMemoTransfer {
+    #[inline(always)]
+    pub fn is_memo_required(&self) -> bool {
+        self.require_incoming_transfer_memos != 0
+    }
+}
+
 pub struct TokenExtensions<'a> {
     // Extensions for Mint
     pub transfer_fee_config: Option<&'a MemoryMappedTransferFeeConfigExtension>,

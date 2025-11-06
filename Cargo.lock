@@ -1266,26 +1266,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pinocchio-token"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eb3a10d04ea7a633c01c4fe68eb650b4606cee4a3977bd1a1259cba324abafb"
-dependencies = [
- "pinocchio",
- "pinocchio-pubkey",
-]
-
-[[package]]
-name = "pinocchio-token-2022"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0aec08d3b6eddafdacc17bd5b7842050394b0199062a3cc20428f1c40c9dbe7d"
-dependencies = [
- "pinocchio",
- "pinocchio-pubkey",
-]
-
-[[package]]
 name = "polyval"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3469,8 +3449,6 @@ dependencies = [
  "num_enum",
  "pinocchio",
  "pinocchio-pubkey",
- "pinocchio-token",
- "pinocchio-token-2022",
  "proptest",
  "serde",
  "serde_json",

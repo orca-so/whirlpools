@@ -49,7 +49,7 @@ impl MemoryMappedTick {
 
     #[inline(always)]
     pub fn update(&mut self, update: &TickUpdate) {
-        self.initialized = 1;
+        self.initialized = update.initialized as u8;
         self.liquidity_net = update.liquidity_net.to_le_bytes();
         self.liquidity_gross = update.liquidity_gross.to_le_bytes();
         self.fee_growth_outside_a = update.fee_growth_outside_a.to_le_bytes();

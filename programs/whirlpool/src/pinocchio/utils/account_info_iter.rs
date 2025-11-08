@@ -108,7 +108,7 @@ impl<'a> AccountIterator<'a> {
             .iter()
             .any(|program_id| pubkey_eq(account.key(), program_id))
         {
-            return Err(AnchorErrorCode::ConstraintAddress.into());
+            return Err(AnchorErrorCode::InvalidProgramId.into());
         }
         Ok(account)
     }

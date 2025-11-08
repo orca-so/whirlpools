@@ -35,10 +35,7 @@ pub fn pino_update_tick_array_accounts(
         upper_tick_array_info,
     )?;
 
-    // Verify that the tick arrays are rent-exempt
-    //verify_rent_exempt(&position_account)?;
-    //verify_rent_exempt(&lower_tick_array)?;
-    //verify_rent_exempt(&upper_tick_array)?;
+    // No explicit verification is performed because the runtime does not allow non-rent-exempt accounts.
 
     Ok(())
 }

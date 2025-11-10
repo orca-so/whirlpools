@@ -1,5 +1,5 @@
 use crate::pinocchio::{
-    Result, cpi::{memo_build_memo::BuildMemo, token_transfer_checked::TransferChecked}, errors::WhirlpoolErrorCode, state::{token::{
+    Result, cpi::{memo_build_memo::BuildMemo, token_transfer_checked::TransferChecked, token_transfer::Transfer}, errors::WhirlpoolErrorCode, state::{token::{
         MemoryMappedTokenMint, MemoryMappedTokenAccount, extensions::{TokenExtensions, parse_token_extensions}
     }, whirlpool::MemoryMappedWhirlpool}, utils::account_load::{load_token_program_account, load_token_program_account_unchecked}
 };
@@ -335,4 +335,41 @@ fn pino_is_transfer_memo_required(
         None => false,
         Some(memo_transfer) => memo_transfer.is_memo_required(),
     }
+}
+
+pub fn pino_transfer_from_owner_to_vault(
+    authority_info: &AccountInfo,
+    token_owner_account_info: &AccountInfo,
+    token_vault_info: &AccountInfo,
+    token_program_info: &AccountInfo,
+    amount: u64,
+) -> Result<()> {
+    Transfer {
+        program: token_program_info,
+        from: token_owner_account_info,
+        to: token_vault_info,
+        authority: authority_info,
+        amount,
+    }
+    .invoke_signed(&[])?;
+    Ok(())
+}
+
+pub fn pino_transfer_from_vault_to_owner<'info>(
+    whirlpool: &MemoryMappedWhirlpool,
+    whirlpool_info: &AccountInfo,
+    token_vault_info: &AccountInfo,
+    token_owner_account_info: &AccountInfo,
+    token_program_info: &AccountInfo,
+    amount: u64,
+) -> Result<()> {
+    Transfer {
+        program: token_program_info,
+        from: token_vault_info,
+        to: token_owner_account_info,
+        authority: whirlpool_info,
+        amount,
+    }
+    .invoke_signed(&[whirlpool.seeds().as_ref().into()])?;
+    Ok(())
 }

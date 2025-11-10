@@ -79,6 +79,12 @@ impl<'a> AccountIterator<'a> {
         self.next_program_account(&[&address::MEMO_PROGRAM_ID])
     }
 
+    /// Get the next account that must be the SPL Token program
+    #[inline(always)]
+    pub fn next_program_token(&mut self) -> Result<&'a AccountInfo> {
+        self.next_program_account(&[&address::TOKEN_PROGRAM_ID])
+    }
+
     /// Get the next account that must be either the SPL Token program or SPL Token 2022 program
     #[inline(always)]
     pub fn next_program_token_or_token_2022(&mut self) -> Result<&'a AccountInfo> {

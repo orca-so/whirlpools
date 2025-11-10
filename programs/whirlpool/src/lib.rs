@@ -249,6 +249,7 @@ pub mod whirlpool {
         token_max_a: u64,
         token_max_b: u64,
     ) -> Result<()> {
+        unreachable!(); // Pinocchio
         instructions::increase_liquidity::handler(ctx, liquidity_amount, token_max_a, token_max_b)
     }
 
@@ -272,6 +273,7 @@ pub mod whirlpool {
         token_min_a: u64,
         token_min_b: u64,
     ) -> Result<()> {
+        unreachable!(); // Pinocchio
         instructions::decrease_liquidity::handler(ctx, liquidity_amount, token_min_a, token_min_b)
     }
 
@@ -1005,6 +1007,7 @@ pub mod whirlpool {
         token_min_b: u64,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
+        unreachable!(); // Pinocchio
         instructions::v2::decrease_liquidity::handler(
             ctx,
             liquidity_amount,

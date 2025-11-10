@@ -7,7 +7,6 @@ import type { WhirlpoolContext } from "../../../../src";
 import {
   IGNORE_CACHE,
   MAX_SQRT_PRICE_BN,
-  MEMO_PROGRAM_ADDRESS,
   MIN_SQRT_PRICE_BN,
   PDAUtil,
   PriceMath,
@@ -31,14 +30,12 @@ describe("reposition_v2", () => {
   let provider: anchor.AnchorProvider;
   let ctx: WhirlpoolContext;
   let fetcher: WhirlpoolContext["fetcher"];
-  let program: anchor.Program;
 
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
     provider = env.provider;
     ctx = env.ctx;
     fetcher = env.fetcher;
-    program = env.program;
   });
 
   describe("direct transfer", () => {
@@ -179,45 +176,35 @@ describe("reposition_v2", () => {
             rentEpoch: Number(positionAccount.rentEpoch),
           });
 
-          await toTx(ctx, {
-            instructions: [
-              await program.methods
-                .repositionLiquidityV2(
-                  repositionTickLower,
-                  repositionTickUpper,
-                  initialLiquidity,
-                  ZERO_BN,
-                  ZERO_BN,
-                  new BN(500_000),
-                  new BN(500_000),
-                  null, // remainingAccountsInfo
-                )
-                .accounts({
-                  whirlpool: whirlpoolPda.publicKey,
-                  tokenProgramA: tokenProgramA,
-                  tokenProgramB: tokenProgramB,
-                  memoProgram: MEMO_PROGRAM_ADDRESS,
-                  positionAuthority: provider.wallet.publicKey,
-                  funder: provider.wallet.publicKey,
-                  position: positions[0].publicKey,
-                  positionTokenAccount: positions[0].tokenAccount,
-                  tokenMintA: tokenMintA,
-                  tokenMintB: tokenMintB,
-                  tokenOwnerAccountA: tokenAccountA,
-                  tokenOwnerAccountB: tokenAccountB,
-                  tokenVaultA: tokenVaultAKeypair.publicKey,
-                  tokenVaultB: tokenVaultBKeypair.publicKey,
-                  existingTickArrayLower: positions[0].tickArrayLower,
-                  existingTickArrayUpper: positions[0].tickArrayUpper,
-                  newTickArrayLower: newTickArrayLower.publicKey,
-                  newTickArrayUpper: newTickArrayUpper.publicKey,
-                  systemProgram: anchor.web3.SystemProgram.programId,
-                })
-                .instruction(),
-            ],
-            cleanupInstructions: [],
-            signers: [],
-          }).buildAndExecute();
+          await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: repositionTickLower,
+              newTickUpperIndex: repositionTickUpper,
+              newLiquidityAmount: initialLiquidity,
+              tokenMinA: ZERO_BN,
+              tokenMinB: ZERO_BN,
+              tokenMaxA: new BN(500_000),
+              tokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
 
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
@@ -289,45 +276,35 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
-          await toTx(ctx, {
-            instructions: [
-              await program.methods
-                .repositionLiquidityV2(
-                  newTickLower,
-                  newTickUpper,
-                  initialLiquidity,
-                  ZERO_BN,
-                  ZERO_BN,
-                  new BN(500_000),
-                  new BN(500_000),
-                  null, // remainingAccountsInfo
-                )
-                .accounts({
-                  whirlpool: whirlpoolPda.publicKey,
-                  tokenProgramA: tokenProgramA,
-                  tokenProgramB: tokenProgramB,
-                  memoProgram: MEMO_PROGRAM_ADDRESS,
-                  positionAuthority: provider.wallet.publicKey,
-                  funder: provider.wallet.publicKey,
-                  position: positions[0].publicKey,
-                  positionTokenAccount: positions[0].tokenAccount,
-                  tokenMintA: tokenMintA,
-                  tokenMintB: tokenMintB,
-                  tokenOwnerAccountA: tokenAccountA,
-                  tokenOwnerAccountB: tokenAccountB,
-                  tokenVaultA: tokenVaultAKeypair.publicKey,
-                  tokenVaultB: tokenVaultBKeypair.publicKey,
-                  existingTickArrayLower: positions[0].tickArrayLower,
-                  existingTickArrayUpper: positions[0].tickArrayUpper,
-                  newTickArrayLower: newTickArrayLower.publicKey,
-                  newTickArrayUpper: newTickArrayUpper.publicKey,
-                  systemProgram: anchor.web3.SystemProgram.programId,
-                })
-                .instruction(),
-            ],
-            cleanupInstructions: [],
-            signers: [],
-          }).buildAndExecute();
+          await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: newTickLower,
+              newTickUpperIndex: newTickUpper,
+              newLiquidityAmount: initialLiquidity,
+              tokenMinA: ZERO_BN,
+              tokenMinB: ZERO_BN,
+              tokenMaxA: new BN(500_000),
+              tokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
 
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
@@ -390,45 +367,35 @@ describe("reposition_v2", () => {
 
           // A lower liquidity amount on a tigher position should trigger a transfer from vault -> owner
           const repositionLiquidityAmount = new BN(1_000_000);
-          const repositionSignature = await toTx(ctx, {
-            instructions: [
-              await program.methods
-                .repositionLiquidityV2(
-                  newTickLower,
-                  newTickUpper,
-                  repositionLiquidityAmount,
-                  ZERO_BN,
-                  ZERO_BN,
-                  new BN(500_000),
-                  new BN(500_000),
-                  null, // remainingAccountsInfo
-                )
-                .accounts({
-                  whirlpool: whirlpoolPda.publicKey,
-                  tokenProgramA: tokenProgramA,
-                  tokenProgramB: tokenProgramB,
-                  memoProgram: MEMO_PROGRAM_ADDRESS,
-                  positionAuthority: provider.wallet.publicKey,
-                  funder: provider.wallet.publicKey,
-                  position: positions[0].publicKey,
-                  positionTokenAccount: positions[0].tokenAccount,
-                  tokenMintA: tokenMintA,
-                  tokenMintB: tokenMintB,
-                  tokenOwnerAccountA: tokenAccountA,
-                  tokenOwnerAccountB: tokenAccountB,
-                  tokenVaultA: tokenVaultAKeypair.publicKey,
-                  tokenVaultB: tokenVaultBKeypair.publicKey,
-                  existingTickArrayLower: positions[0].tickArrayLower,
-                  existingTickArrayUpper: positions[0].tickArrayUpper,
-                  newTickArrayLower: newTickArrayLower.publicKey,
-                  newTickArrayUpper: newTickArrayUpper.publicKey,
-                  systemProgram: anchor.web3.SystemProgram.programId,
-                })
-                .instruction(),
-            ],
-            cleanupInstructions: [],
-            signers: [],
-          }).buildAndExecute();
+          const repositionSignature = await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: newTickLower,
+              newTickUpperIndex: newTickUpper,
+              newLiquidityAmount: repositionLiquidityAmount,
+              tokenMinA: ZERO_BN,
+              tokenMinB: ZERO_BN,
+              tokenMaxA: new BN(500_000),
+              tokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
 
           const getTransferFeeLogCount = (tokenTrait: TokenTrait) =>
             tokenTrait.hasTransferFeeExtension ? 1 : 0;
@@ -525,45 +492,35 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
-          await toTx(ctx, {
-            instructions: [
-              await program.methods
-                .repositionLiquidityV2(
-                  newTickLower,
-                  newTickUpper,
-                  initialLiquidity,
-                  ZERO_BN,
-                  ZERO_BN,
-                  new BN(500_000),
-                  new BN(500_000),
-                  null, // remainingAccountsInfo
-                )
-                .accounts({
-                  whirlpool: whirlpoolPda.publicKey,
-                  tokenProgramA: tokenProgramA,
-                  tokenProgramB: tokenProgramB,
-                  memoProgram: MEMO_PROGRAM_ADDRESS,
-                  positionAuthority: provider.wallet.publicKey,
-                  funder: provider.wallet.publicKey,
-                  position: positions[0].publicKey,
-                  positionTokenAccount: positions[0].tokenAccount,
-                  tokenMintA: tokenMintA,
-                  tokenMintB: tokenMintB,
-                  tokenOwnerAccountA: tokenAccountA,
-                  tokenOwnerAccountB: tokenAccountB,
-                  tokenVaultA: tokenVaultAKeypair.publicKey,
-                  tokenVaultB: tokenVaultBKeypair.publicKey,
-                  existingTickArrayLower: positions[0].tickArrayLower,
-                  existingTickArrayUpper: positions[0].tickArrayUpper,
-                  newTickArrayLower: newTickArrayLower.publicKey,
-                  newTickArrayUpper: newTickArrayUpper.publicKey,
-                  systemProgram: anchor.web3.SystemProgram.programId,
-                })
-                .instruction(),
-            ],
-            cleanupInstructions: [],
-            signers: [],
-          }).buildAndExecute();
+          await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: newTickLower,
+              newTickUpperIndex: newTickUpper,
+              newLiquidityAmount: initialLiquidity,
+              tokenMinA: ZERO_BN,
+              tokenMinB: ZERO_BN,
+              tokenMaxA: new BN(500_000),
+              tokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
 
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
@@ -635,45 +592,35 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
-          await toTx(ctx, {
-            instructions: [
-              await program.methods
-                .repositionLiquidityV2(
-                  newTickLower,
-                  newTickUpper,
-                  initialLiquidity,
-                  ZERO_BN,
-                  ZERO_BN,
-                  new BN(500_000),
-                  new BN(500_000),
-                  null, // remainingAccountsInfo
-                )
-                .accounts({
-                  whirlpool: whirlpoolPda.publicKey,
-                  tokenProgramA: tokenProgramA,
-                  tokenProgramB: tokenProgramB,
-                  memoProgram: MEMO_PROGRAM_ADDRESS,
-                  positionAuthority: provider.wallet.publicKey,
-                  funder: provider.wallet.publicKey,
-                  position: positions[0].publicKey,
-                  positionTokenAccount: positions[0].tokenAccount,
-                  tokenMintA: tokenMintA,
-                  tokenMintB: tokenMintB,
-                  tokenOwnerAccountA: tokenAccountA,
-                  tokenOwnerAccountB: tokenAccountB,
-                  tokenVaultA: tokenVaultAKeypair.publicKey,
-                  tokenVaultB: tokenVaultBKeypair.publicKey,
-                  existingTickArrayLower: positions[0].tickArrayLower,
-                  existingTickArrayUpper: positions[0].tickArrayUpper,
-                  newTickArrayLower: newTickArrayLower.publicKey,
-                  newTickArrayUpper: newTickArrayUpper.publicKey,
-                  systemProgram: anchor.web3.SystemProgram.programId,
-                })
-                .instruction(),
-            ],
-            cleanupInstructions: [],
-            signers: [],
-          }).buildAndExecute();
+          await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: newTickLower,
+              newTickUpperIndex: newTickUpper,
+              newLiquidityAmount: initialLiquidity,
+              tokenMinA: ZERO_BN,
+              tokenMinB: ZERO_BN,
+              tokenMaxA: new BN(500_000),
+              tokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
 
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
@@ -720,45 +667,35 @@ describe("reposition_v2", () => {
           } = fixture.getInfos();
 
           await assert.rejects(
-            toTx(ctx, {
-              instructions: [
-                await program.methods
-                  .repositionLiquidityV2(
-                    initialTickLower,
-                    initialTickUpper,
-                    initialLiquidity,
-                    ZERO_BN,
-                    ZERO_BN,
-                    new BN(500_000),
-                    new BN(500_000),
-                    null, // remainingAccountsInfo
-                  )
-                  .accounts({
-                    whirlpool: whirlpoolPda.publicKey,
-                    tokenProgramA: tokenProgramA,
-                    tokenProgramB: tokenProgramB,
-                    memoProgram: MEMO_PROGRAM_ADDRESS,
-                    positionAuthority: provider.wallet.publicKey,
-                    funder: provider.wallet.publicKey,
-                    position: positions[0].publicKey,
-                    positionTokenAccount: positions[0].tokenAccount,
-                    tokenMintA: tokenMintA,
-                    tokenMintB: tokenMintB,
-                    tokenOwnerAccountA: tokenAccountA,
-                    tokenOwnerAccountB: tokenAccountB,
-                    tokenVaultA: tokenVaultAKeypair.publicKey,
-                    tokenVaultB: tokenVaultBKeypair.publicKey,
-                    existingTickArrayLower: positions[0].tickArrayLower,
-                    existingTickArrayUpper: positions[0].tickArrayUpper,
-                    newTickArrayLower: positions[0].tickArrayLower,
-                    newTickArrayUpper: positions[0].tickArrayUpper,
-                    systemProgram: anchor.web3.SystemProgram.programId,
-                  })
-                  .instruction(),
-              ],
-              cleanupInstructions: [],
-              signers: [],
-            }).buildAndExecute(),
+            toTx(
+              ctx,
+              WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+                newTickLowerIndex: initialTickLower,
+                newTickUpperIndex: initialTickUpper,
+                newLiquidityAmount: initialLiquidity,
+                tokenMinA: ZERO_BN,
+                tokenMinB: ZERO_BN,
+                tokenMaxA: new BN(500_000),
+                tokenMaxB: new BN(500_000),
+                whirlpool: whirlpoolPda.publicKey,
+                tokenProgramA: tokenProgramA,
+                tokenProgramB: tokenProgramB,
+                positionAuthority: provider.wallet.publicKey,
+                funder: provider.wallet.publicKey,
+                position: positions[0].publicKey,
+                positionTokenAccount: positions[0].tokenAccount,
+                tokenMintA: tokenMintA,
+                tokenMintB: tokenMintB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultA: tokenVaultAKeypair.publicKey,
+                tokenVaultB: tokenVaultBKeypair.publicKey,
+                existingTickArrayLower: positions[0].tickArrayLower,
+                existingTickArrayUpper: positions[0].tickArrayUpper,
+                newTickArrayLower: positions[0].tickArrayLower,
+                newTickArrayUpper: positions[0].tickArrayUpper,
+              }),
+            ).buildAndExecute(),
             (err) => /.*SameTickRangeNotAllowed|0x17ac.*/i.test(String(err)),
           );
         });
@@ -825,45 +762,35 @@ describe("reposition_v2", () => {
           );
 
           await assert.rejects(
-            toTx(ctx, {
-              instructions: [
-                await program.methods
-                  .repositionLiquidityV2(
-                    newTickLower,
-                    newTickUpper,
-                    initialLiquidity,
-                    ZERO_BN,
-                    ZERO_BN,
-                    new BN(500_000),
-                    new BN(500_000),
-                    null, // remainingAccountsInfo
-                  )
-                  .accounts({
-                    whirlpool: whirlpoolPda.publicKey,
-                    tokenProgramA: tokenProgramA,
-                    tokenProgramB: tokenProgramB,
-                    memoProgram: MEMO_PROGRAM_ADDRESS,
-                    positionAuthority: provider.wallet.publicKey,
-                    funder: provider.wallet.publicKey,
-                    position: positions[0].publicKey,
-                    positionTokenAccount: positions[0].tokenAccount,
-                    tokenMintA: tokenMintA,
-                    tokenMintB: tokenMintB,
-                    tokenOwnerAccountA: tokenAccountA,
-                    tokenOwnerAccountB: tokenAccountB,
-                    tokenVaultA: tokenVaultAKeypair.publicKey,
-                    tokenVaultB: tokenVaultBKeypair.publicKey,
-                    existingTickArrayLower: positions[0].tickArrayLower,
-                    existingTickArrayUpper: positions[0].tickArrayUpper,
-                    newTickArrayLower: newTickArrayLower.publicKey,
-                    newTickArrayUpper: newTickArrayUpper.publicKey,
-                    systemProgram: anchor.web3.SystemProgram.programId,
-                  })
-                  .instruction(),
-              ],
-              cleanupInstructions: [],
-              signers: [],
-            }).buildAndExecute(),
+            toTx(
+              ctx,
+              WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+                newTickLowerIndex: newTickLower,
+                newTickUpperIndex: newTickUpper,
+                newLiquidityAmount: initialLiquidity,
+                tokenMinA: ZERO_BN,
+                tokenMinB: ZERO_BN,
+                tokenMaxA: new BN(500_000),
+                tokenMaxB: new BN(500_000),
+                whirlpool: whirlpoolPda.publicKey,
+                tokenProgramA: tokenProgramA,
+                tokenProgramB: tokenProgramB,
+                positionAuthority: provider.wallet.publicKey,
+                funder: provider.wallet.publicKey,
+                position: positions[0].publicKey,
+                positionTokenAccount: positions[0].tokenAccount,
+                tokenMintA: tokenMintA,
+                tokenMintB: tokenMintB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultA: tokenVaultAKeypair.publicKey,
+                tokenVaultB: tokenVaultBKeypair.publicKey,
+                existingTickArrayLower: positions[0].tickArrayLower,
+                existingTickArrayUpper: positions[0].tickArrayUpper,
+                newTickArrayLower: newTickArrayLower.publicKey,
+                newTickArrayUpper: newTickArrayUpper.publicKey,
+              }),
+            ).buildAndExecute(),
             (err) => /.*InvalidTickIndex|0x177a.*/i.test(String(err)),
           );
         });
@@ -931,45 +858,35 @@ describe("reposition_v2", () => {
           );
 
           await assert.rejects(
-            toTx(ctx, {
-              instructions: [
-                await program.methods
-                  .repositionLiquidityV2(
-                    newTickLower,
-                    newTickUpper,
-                    initialLiquidity,
-                    ZERO_BN,
-                    ZERO_BN,
-                    new BN(100_000),
-                    new BN(100_000),
-                    null, // remainingAccountsInfo
-                  )
-                  .accounts({
-                    whirlpool: whirlpoolPda.publicKey,
-                    tokenProgramA: tokenProgramA,
-                    tokenProgramB: tokenProgramB,
-                    memoProgram: MEMO_PROGRAM_ADDRESS,
-                    positionAuthority: provider.wallet.publicKey,
-                    funder: provider.wallet.publicKey,
-                    position: positions[0].publicKey,
-                    positionTokenAccount: positions[0].tokenAccount,
-                    tokenMintA: tokenMintA,
-                    tokenMintB: tokenMintB,
-                    tokenOwnerAccountA: tokenAccountA,
-                    tokenOwnerAccountB: tokenAccountB,
-                    tokenVaultA: tokenVaultAKeypair.publicKey,
-                    tokenVaultB: tokenVaultBKeypair.publicKey,
-                    existingTickArrayLower: positions[0].tickArrayLower,
-                    existingTickArrayUpper: positions[0].tickArrayUpper,
-                    newTickArrayLower: newTickArrayLower.publicKey,
-                    newTickArrayUpper: newTickArrayUpper.publicKey,
-                    systemProgram: anchor.web3.SystemProgram.programId,
-                  })
-                  .instruction(),
-              ],
-              cleanupInstructions: [],
-              signers: [],
-            }).buildAndExecute(),
+            toTx(
+              ctx,
+              WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+                newTickLowerIndex: newTickLower,
+                newTickUpperIndex: newTickUpper,
+                newLiquidityAmount: initialLiquidity,
+                tokenMinA: ZERO_BN,
+                tokenMinB: ZERO_BN,
+                tokenMaxA: new BN(100_000),
+                tokenMaxB: new BN(100_000),
+                whirlpool: whirlpoolPda.publicKey,
+                tokenProgramA: tokenProgramA,
+                tokenProgramB: tokenProgramB,
+                positionAuthority: provider.wallet.publicKey,
+                funder: provider.wallet.publicKey,
+                position: positions[0].publicKey,
+                positionTokenAccount: positions[0].tokenAccount,
+                tokenMintA: tokenMintA,
+                tokenMintB: tokenMintB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultA: tokenVaultAKeypair.publicKey,
+                tokenVaultB: tokenVaultBKeypair.publicKey,
+                existingTickArrayLower: positions[0].tickArrayLower,
+                existingTickArrayUpper: positions[0].tickArrayUpper,
+                newTickArrayLower: newTickArrayLower.publicKey,
+                newTickArrayUpper: newTickArrayUpper.publicKey,
+              }),
+            ).buildAndExecute(),
             (err) => /.*TokenMaxExceeded|0x1781.*/i.test(String(err)),
           );
         });
@@ -1192,45 +1109,35 @@ describe("reposition_v2", () => {
           assert.ok(!positionAfterSwaps?.feeOwedB.isZero());
           assert.ok(!positionAfterSwaps?.rewardInfos[0].amountOwed.isZero());
 
-          const repositionSignature = await toTx(ctx, {
-            instructions: [
-              await program.methods
-                .repositionLiquidityV2(
-                  newTickLower,
-                  newTickUpper,
-                  initialLiquidityAmount,
-                  ZERO_BN,
-                  ZERO_BN,
-                  new BN(500_000),
-                  new BN(500_000),
-                  null, // remainingAccountsInfo
-                )
-                .accounts({
-                  whirlpool: whirlpoolPda.publicKey,
-                  tokenProgramA: tokenProgramA,
-                  tokenProgramB: tokenProgramB,
-                  memoProgram: MEMO_PROGRAM_ADDRESS,
-                  positionAuthority: provider.wallet.publicKey,
-                  funder: provider.wallet.publicKey,
-                  position: positions[0].publicKey,
-                  positionTokenAccount: positions[0].tokenAccount,
-                  tokenMintA: tokenMintA,
-                  tokenMintB: tokenMintB,
-                  tokenOwnerAccountA: tokenAccountA,
-                  tokenOwnerAccountB: tokenAccountB,
-                  tokenVaultA: tokenVaultAKeypair.publicKey,
-                  tokenVaultB: tokenVaultBKeypair.publicKey,
-                  existingTickArrayLower: positions[0].tickArrayLower,
-                  existingTickArrayUpper: positions[0].tickArrayUpper,
-                  newTickArrayLower: newTickArrayLower.publicKey,
-                  newTickArrayUpper: newTickArrayUpper.publicKey,
-                  systemProgram: anchor.web3.SystemProgram.programId,
-                })
-                .instruction(),
-            ],
-            cleanupInstructions: [],
-            signers: [],
-          }).buildAndExecute();
+          const repositionSignature = await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: newTickLower,
+              newTickUpperIndex: newTickUpper,
+              newLiquidityAmount: initialLiquidityAmount,
+              tokenMinA: ZERO_BN,
+              tokenMinB: ZERO_BN,
+              tokenMaxA: new BN(500_000),
+              tokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
 
           const repositionTx = await ctx.connection.getTransaction(
             repositionSignature,

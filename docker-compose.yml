@@ -7,7 +7,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
-    profiles: [build, test-whirlpools-program, test, lint]
+    profiles: [build, test-whirlpools-program, test]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -40,7 +40,7 @@ services:
       && yarn workspace @orca-so/tx-sender build
       && yarn workspace @orca-so/whirlpools build
       && yarn workspace @orca-so/whirlpools-lint format"
-    profiles: [build, test, lint]
+    profiles: [build, test]
     depends_on:
       build-solana-program:
         condition: service_completed_successfully
@@ -62,7 +62,7 @@ services:
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-cli build"
-    profiles: [build, lint]
+    profiles: [build]
     depends_on:
       build-solana-program:
         condition: service_completed_successfully
@@ -86,7 +86,7 @@ services:
       && cargo build --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
-    profiles: [build, lint]
+    profiles: [build]
     depends_on:
       build-solana-program:
         condition: service_completed_successfully
@@ -103,7 +103,7 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-integration build
       && yarn workspace @orca-so/whirlpools-rust-integration build"
-    profiles: [build, lint]
+    profiles: [build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -126,7 +126,7 @@ services:
       && yarn workspace @orca-so/whirlpools-docs-rust build
       && yarn workspace @orca-so/whirlpools-docs-legacy build
       && yarn workspace @orca-so/whirlpools-docs build"
-    profiles: [build, lint]
+    profiles: [build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -149,7 +149,7 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-example-ts-next build
       && cargo build --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
-    profiles: [build, lint]
+    profiles: [build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -183,7 +183,7 @@ services:
         condition: service_completed_successfully
       build-examples:
         condition: service_completed_successfully
-    profiles: [build, lint]
+    profiles: [build]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -337,7 +337,7 @@ services:
       && cargo clippy --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml && cargo fmt --check --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
     profiles: [lint]
     depends_on:
-      build:
+      yarn-install:
         condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools

@@ -27,7 +27,6 @@ pub fn pino_calculate_transfer_fee_excluded_amount(
     token_mint_info: &AccountInfo,
     transfer_fee_included_amount: u64,
 ) -> Result<TransferFeeExcludedAmount> {
-    // This mint account is stored as token_mint_a or token_mint_b of the whirlpool, so it must be valid Mint account.
     let token_mint =
         load_token_program_account_unchecked::<MemoryMappedTokenMint>(token_mint_info)?;
     let token_mint_extensions = parse_token_extensions(token_mint.extensions_tlv_data())?;

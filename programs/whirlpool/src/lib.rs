@@ -1037,6 +1037,31 @@ pub mod whirlpool {
         unreachable!(); // Pinocchio
     }
 
+    /// Add liquidity to a position by specifying token maxima, not liquidity.
+    /// This instruction works with both Token and Token-2022.
+    ///
+    /// NOTE: This instruction is only implemented in Pinocchio, not Anchor.
+    ///
+    /// ### Authority
+    /// - `position_authority` - authority that owns the token corresponding to this desired position.
+    ///
+    /// ### Parameters
+    /// - `token_max_a` - The maximum amount of tokenA the user is willing to deposit.
+    /// - `token_max_b` - The maximum amount of tokenB the user is willing to deposit.
+    ///
+    /// #### Special Errors
+    /// - `LiquidityZero` - Computed liquidity amount is zero.
+    /// - `LiquidityTooHigh` - Computed liquidity exceeds u128::max.
+    /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    pub fn increase_liquidity_by_token_amounts_v2<'info>(
+        _ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
+        _token_max_a: u64,
+        _token_max_b: u64,
+        _remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        unreachable!(); // Pinocchio only
+    }
+
     /// Initializes a Whirlpool account.
     /// This instruction works with both Token and Token-2022.
     /// Fee rate is set to the default values on the config and supplied fee_tier.

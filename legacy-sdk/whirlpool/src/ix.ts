@@ -874,6 +874,13 @@ export class WhirlpoolIx {
     return ix.twoHopSwapV2Ix(program, params);
   }
 
+  public static repositionLiquidityV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.RepositionLiquidityV2Params,
+  ) {
+    return ix.repositionLiquidityV2Ix(program, params);
+  }
+
   // V2 instructions (TokenBadge related)
   // TODO: comments
   public static initializeConfigExtensionIx(

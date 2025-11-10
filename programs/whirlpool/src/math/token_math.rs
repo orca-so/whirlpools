@@ -2,8 +2,8 @@ use crate::errors::ErrorCode;
 use crate::math::{Q64_MASK, Q64_RESOLUTION};
 
 use super::{
-    div_round_up_if, div_round_up_if_u256, mul_u256, U256Muldiv, MAX_SQRT_PRICE_X64,
-    MIN_SQRT_PRICE_X64,
+    div_round_up_if, div_round_up_if_u256, mul_u256, sqrt_price_from_tick_index, U256Muldiv,
+    MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64,
 };
 
 // Fee rate is represented as hundredths of a basis point.
@@ -348,6 +348,59 @@ pub fn get_next_sqrt_price(
             amount_specified_is_input,
         )
     }
+}
+
+/// Estimate the maximum liquidity that can be added given token A/B maximums, current price,
+/// and position tick bounds. Liquidity is rounded down to prevent token inputs exceeding their maxima.
+pub fn estimate_max_liquidity_from_token_amounts(
+    current_sqrt_price: u128,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
+    token_max_a: u64,
+    token_max_b: u64,
+) -> Result<u128, ErrorCode> {
+    let lower_sqrt_price = sqrt_price_from_tick_index(tick_lower_index);
+    let upper_sqrt_price = sqrt_price_from_tick_index(tick_upper_index);
+
+    if current_sqrt_price >= upper_sqrt_price {
+        // Entirely above range – constrained by token B
+        est_liquidity_for_token_b(upper_sqrt_price, lower_sqrt_price, token_max_b)
+    } else if current_sqrt_price < lower_sqrt_price {
+        // Entirely below range – constrained by token A
+        est_liquidity_for_token_a(lower_sqrt_price, upper_sqrt_price, token_max_a)
+    } else {
+        // Within range – constrained by the tighter side
+        let liq_a = est_liquidity_for_token_a(current_sqrt_price, upper_sqrt_price, token_max_a)?;
+        let liq_b = est_liquidity_for_token_b(current_sqrt_price, lower_sqrt_price, token_max_b)?;
+        Ok(liq_a.min(liq_b))
+    }
+}
+
+fn est_liquidity_for_token_a(
+    sqrt_price_0: u128,
+    sqrt_price_1: u128,
+    token_amount_a: u64,
+) -> Result<u128, ErrorCode> {
+    let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+    let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
+    // this operation does not trigger overflow (MAX_SQRT_PRICE * MAX_SQRT_PRICE * u64::MAX < u256::MAX)
+    let numerator_x128 = mul_u256(sqrt_price_upper, sqrt_price_lower).mul((token_amount_a).into());
+    // Shift right by 64 bits to convert Q64.128 -> Q64.64
+    let numerator_x64 = numerator_x128.shift_word_right();
+    let (liquidity_u256, _) = numerator_x64.div(sqrt_price_diff.into(), false);
+    liquidity_u256.try_into_u128()
+}
+
+fn est_liquidity_for_token_b(
+    sqrt_price_0: u128,
+    sqrt_price_1: u128,
+    token_amount_b: u64,
+) -> Result<u128, ErrorCode> {
+    let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+    let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
+    let numerator_x64: u128 = (token_amount_b as u128) << 64;
+    let liquidity_u128 = numerator_x64 / sqrt_price_diff;
+    Ok(liquidity_u128)
 }
 
 #[cfg(test)]

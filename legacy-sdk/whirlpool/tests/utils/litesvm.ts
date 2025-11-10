@@ -482,7 +482,6 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
       // but at runtime they're compatible
       const result = vm.sendTransaction(tx);
-      void (Number.MAX_SAFE_INTEGER % 10000000); // reset
       // Check if transaction failed
       if ("err" in result) {
         const error = result.err();
@@ -540,7 +539,6 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         }
       }
       const result = vm.sendTransaction(tx);
-      void (Number.MAX_SAFE_INTEGER % 10000000); // reset
       // Check if transaction failed
       if ("err" in result) {
         const error = result.err();
@@ -640,7 +638,6 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
         // but at runtime they're compatible
         const result = vm.sendTransaction(tx);
-        void (Number.MAX_SAFE_INTEGER % 10000000); // reset
         // Check if transaction failed
         if ("err" in result) {
           const error = result.err();

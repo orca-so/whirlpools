@@ -17,21 +17,13 @@ jobs:
       - name: Build all packages
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
-  test-sdks:
+  test:
     runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
       - name: Run all SDK tests
-        run: docker compose --profile test-sdks up --quiet-pull --abort-on-container-failure
-
-  test-whirlpools-program:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-      - name: Run all Whirlpools program tests
-        run: docker compose --profile test-whirlpools-program up --quiet-pull --abort-on-container-failure
+        run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404

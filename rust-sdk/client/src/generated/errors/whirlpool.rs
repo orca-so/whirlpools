@@ -217,6 +217,9 @@ pub enum WhirlpoolError {
     /// 6068 - Provided adaptive fee constants are unchanged
     #[error("Provided adaptive fee constants are unchanged")]
     AdaptiveFeeConstantsUnchanged = 0x17B4,
+    /// 6069 - Price outside slippage bounds
+    #[error("Price outside slippage bounds")]
+    PriceSlippageOutOfBounds = 0x17B5,
 }
 
 impl From<WhirlpoolError> for solana_program_error::ProgramError {
@@ -224,4 +227,3 @@ impl From<WhirlpoolError> for solana_program_error::ProgramError {
         solana_program_error::ProgramError::Custom(e as u32)
     }
 }
-

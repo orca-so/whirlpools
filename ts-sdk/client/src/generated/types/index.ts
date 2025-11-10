@@ -12,6 +12,7 @@ export * from "./adaptiveFeeVariables";
 export * from "./configFeatureFlag";
 export * from "./dynamicTick";
 export * from "./dynamicTickData";
+export * from "./increaseLiquidityMethod";
 export * from "./liquidityDecreased";
 export * from "./liquidityIncreased";
 export * from "./liquidityRepositioned";

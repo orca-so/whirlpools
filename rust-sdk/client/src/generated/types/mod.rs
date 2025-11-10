@@ -11,6 +11,7 @@
   pub(crate) mod r#config_feature_flag;
   pub(crate) mod r#dynamic_tick;
   pub(crate) mod r#dynamic_tick_data;
+  pub(crate) mod r#increase_liquidity_method;
   pub(crate) mod r#liquidity_decreased;
   pub(crate) mod r#liquidity_increased;
   pub(crate) mod r#liquidity_repositioned;
@@ -33,6 +34,7 @@
   pub use self::r#config_feature_flag::*;
   pub use self::r#dynamic_tick::*;
   pub use self::r#dynamic_tick_data::*;
+  pub use self::r#increase_liquidity_method::*;
   pub use self::r#liquidity_decreased::*;
   pub use self::r#liquidity_increased::*;
   pub use self::r#liquidity_repositioned::*;

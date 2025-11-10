@@ -76,7 +76,7 @@ export type ByTokenAmountsParams = {
 };
 
 export function getIncreaseLiquidityMethod(
-  params: IncreaseLiquidityInput
+  params: IncreaseLiquidityInput,
 ): IncreaseLiquidityMethod {
   if ("tokenMaxA" in params && "tokenMaxB" in params) {
     // by liquidity variant
@@ -90,7 +90,7 @@ export function getIncreaseLiquidityMethod(
     };
   } else {
     throw new Error(
-      "Unsupported method variant for params: " + JSON.stringify(params)
+      "Unsupported method variant for params: " + JSON.stringify(params),
     );
   }
 }
@@ -110,7 +110,7 @@ export function getIncreaseLiquidityMethod(
  */
 export function increaseLiquidityByTokenAmountsV2Ix(
   program: Program<Whirlpool>,
-  params: IncreaseLiquidityByTokenAmountsV2Params
+  params: IncreaseLiquidityByTokenAmountsV2Params,
 ): Instruction {
   const {
     whirlpool,
@@ -160,7 +160,7 @@ export function increaseLiquidityByTokenAmountsV2Ix(
         memoProgram: MEMO_PROGRAM_ADDRESS,
       },
       remainingAccounts,
-    }
+    },
   );
 
   return {

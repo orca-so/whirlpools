@@ -21,3 +21,7 @@ export const ONE_SOL = 1000000000;
 export const MAX_U64 = new BN(
   new anchor.BN(2).pow(new anchor.BN(64)).sub(new anchor.BN(1)).toString(),
 );
+
+export const MAX_U128 = new BN(
+  new anchor.BN(2).pow(new anchor.BN(128)).sub(new anchor.BN(1)).toString(),
+);

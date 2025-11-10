@@ -944,49 +944,6 @@ pub mod whirlpool {
         instructions::migrate_repurpose_reward_authority_space::handler(ctx)
     }
 
-    /// RepositionLiquidityV2 liquidity creates an atomic operation that:
-    /// - Withdraws liquidity from the current position range
-    /// - Resets the position to a new tick range
-    /// - Adds liquidity to the new position range
-    /// - Restores fees and rewards
-    ///
-    /// This instruction works with both Token and Token-2022.
-    ///
-    /// ### Authority
-    /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    ///
-    /// ### Parameters
-    /// - `new_tick_lower_index` - The new tick index for the lower end of the position range.
-    /// - `new_tick_upper_index` - The new tick index for the upper end of the position range.
-    /// - `new_liquidity_amount` - The total amount of Liquidity the user is willing to deposit.
-    /// - `token_min_a` - The minimum amount of tokenA the user is willing to withdraw.
-    /// - `token_min_b` - The minimum amount of tokenB the user is willing to withdraw.
-    /// - `token_max_a` - The maximum amount of tokenA the user is willing to deposit.
-    /// - `token_max_b` - The maximum amount of tokenB the user is willing to deposit.
-    ///
-    /// #### Special Errors
-    /// - `LiquidityZero` - Provided liquidity amount is zero.
-    /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
-    /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
-    /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
-    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
-    ///                        the tick-spacing in this pool.
-    /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
-    pub fn reposition_liquidity_v2<'info>(
-        ctx: Context<'_, '_, '_, 'info, RepositionLiquidityV2<'info>>,
-        new_tick_lower_index: i32,
-        new_tick_upper_index: i32,
-        new_liquidity_amount: u128,
-        token_min_a: u64,
-        token_min_b: u64,
-        token_max_a: u64,
-        token_max_b: u64,
-        remaining_accounts_info: Option<RemainingAccountsInfo>,
-    ) -> Result<()> {
-        // pinocchio implementation should be used
-        unreachable!()
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     // V2 instructions (TokenExtensions)
     ////////////////////////////////////////////////////////////////////////////////
@@ -1236,6 +1193,49 @@ pub mod whirlpool {
             sqrt_price_limit_two,
             remaining_accounts_info,
         )
+    }
+
+    /// An atomic that repositions liquidity for a position through the following steps:
+    /// - Withdraws liquidity from the current position range
+    /// - Resets the position to a new tick range
+    /// - Adds liquidity to the new position range
+    /// - Restores fees and rewards
+    ///
+    /// This instruction works with both Token and Token-2022.
+    ///
+    /// ### Authority
+    /// - `position_authority` - authority that owns the token corresponding to this desired position.
+    ///
+    /// ### Parameters
+    /// - `new_tick_lower_index` - The new tick index for the lower end of the position range.
+    /// - `new_tick_upper_index` - The new tick index for the upper end of the position range.
+    /// - `new_liquidity_amount` - The total amount of Liquidity the user is willing to deposit.
+    /// - `token_min_a` - The minimum amount of tokenA the user is willing to withdraw.
+    /// - `token_min_b` - The minimum amount of tokenB the user is willing to withdraw.
+    /// - `token_max_a` - The maximum amount of tokenA the user is willing to deposit.
+    /// - `token_max_b` - The maximum amount of tokenB the user is willing to deposit.
+    ///
+    /// #### Special Errors
+    /// - `LiquidityZero` - Provided liquidity amount is zero.
+    /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
+    /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
+    pub fn reposition_liquidity_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, RepositionLiquidityV2<'info>>,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+        new_liquidity_amount: u128,
+        token_min_a: u64,
+        token_min_b: u64,
+        token_max_a: u64,
+        token_max_b: u64,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        // pinocchio implementation should be used
+        unreachable!()
     }
 
     /// Initializes a WhirlpoolConfigExtension account that hosts info & authorities.

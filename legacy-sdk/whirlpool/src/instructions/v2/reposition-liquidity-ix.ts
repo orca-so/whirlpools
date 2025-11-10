@@ -19,10 +19,10 @@ import {
  * @param newTickLowerIndex - the new lower tick index for the position.
  * @param newTickUpperIndex - the new upper tick index for the position.
  * @param newLiquidityAmount - the new amount of liquidity for the position.
- * @param tokenMinA - the minimum amount of tokenA to add to the position.
- * @param tokenMinB - the minimum amount of tokenB to add to the position.
- * @param tokenMaxA - the maximum amount of tokenA to add to the position.
- * @param tokenMaxB - the maximum amount of tokenB to add to the position.
+ * @param tokenMinA - the minimum amount of tokenA to remove from the position in the existing tick range.
+ * @param tokenMinB - the minimum amount of tokenB to remove from the position in the existing tick range.
+ * @param tokenMaxA - the maximum amount of tokenA to add to the position in the new tick range.
+ * @param tokenMaxB - the maximum amount of tokenB to add to the position in the new tick range.
  * @param whirlpool - PublicKey for the whirlpool that the position will be opened for.
  * @param tokenProgramA - PublicKey for the token program for token A.
  * @param tokenProgramB - PublicKey for the token program for token B.
@@ -38,10 +38,10 @@ import {
  * @param tokenVaultB - PublicKey for the tokenB vault for this whirlpool.
  * @param tokenTransferHookAccountsA - Optional array of token transfer hook accounts for token A.
  * @param tokenTransferHookAccountsB - Optional array of token transfer hook accounts for token B.
- * @param existingTickArrayLower - PublicKey for the tick-array account that hosts the tick at the lower tick index.
- * @param existingTickArrayUpper - PublicKey for the tick-array account that hosts the tick at the upper tick index.
- * @param newTickArrayLower - PublicKey for the tick-array account that hosts the tick at the lower tick index.
- * @param newTickArrayUpper - PublicKey for the tick-array account that hosts the tick at the upper tick index.
+ * @param existingTickArrayLower - PublicKey for the tick-array account that hosts the tick at the existing lower tick index.
+ * @param existingTickArrayUpper - PublicKey for the tick-array account that hosts the tick at the existing upper tick index.
+ * @param newTickArrayLower - PublicKey for the tick-array account that hosts the tick at the new lower tick index.
+ * @param newTickArrayUpper - PublicKey for the tick-array account that hosts the tick at the new upper tick index.
  * @param systemProgram - PublicKey for the system program.
  */
 export type RepositionLiquidityV2Params = {
@@ -78,10 +78,10 @@ export type RepositionLiquidityV2Params = {
  * @param newTickLowerIndex - the new lower tick index for the position.
  * @param newTickUpperIndex - the new upper tick index for the position.
  * @param newLiquidityAmount - the new amount of liquidity for the position.
- * @param tokenMinA - the minimum amount of tokenA to add to the position.
- * @param tokenMinB - the minimum amount of tokenB to add to the position.
- * @param tokenMaxA - the maximum amount of tokenA to add to the position.
- * @param tokenMaxB - the maximum amount of tokenB to add to the position.
+ * @param tokenMinA - the minimum amount of tokenA to remove from the position in the existing tick range.
+ * @param tokenMinB - the minimum amount of tokenB to remove from the position in the existing tick range.
+ * @param tokenMaxA - the maximum amount of tokenA to add to the position in the new tick range.
+ * @param tokenMaxB - the maximum amount of tokenB to add to the position in the new tick range.
  */
 export type RepositionLiquidityInput = {
   newTickLowerIndex: number;
@@ -94,12 +94,16 @@ export type RepositionLiquidityInput = {
 };
 
 /**
- * Add liquidity to a position in the Whirlpool.
+ * Reposition liquidity for a position in the Whirlpool.
  *
  * #### Special Errors
- * `LiquidityZero` - Provided liquidity amount is zero.
- * `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
- * `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+ * - `LiquidityZero` - Provided liquidity amount is zero.
+ * - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
+ * - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+ * - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
+ * - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+ *                        the tick-spacing in this pool.
+ * - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
  *
  * @category Instructions
  * @param context - Context object containing services required to generate the instruction

@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Run all SDK tests
+      - name: Run tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
   lint:

@@ -598,9 +598,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       signersOrOptions?:
         | Keypair[]
         | {
-          skipPreflight?: boolean;
-          preflightCommitment?: "processed" | "confirmed" | "finalized";
-        },
+            skipPreflight?: boolean;
+            preflightCommitment?: "processed" | "confirmed" | "finalized";
+          },
       _options?: {
         skipPreflight?: boolean;
         preflightCommitment?: "processed" | "confirmed" | "finalized";

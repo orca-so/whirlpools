@@ -77,10 +77,6 @@ impl TickArray for MemoryMappedDynamicTickArray {
         };
         let byte_offset = self.byte_offset(tick_offset)?;
 
-        //let data = &self.ticks;
-        //let mut tick_data = &data[byte_offset..byte_offset + crate::state::DynamicTick::INITIALIZED_LEN];
-        //let tick: Tick = DynamicTick::deserialize(&mut tick_data)?.into();
-
         let tick_initialized = self.ticks[byte_offset] != 0;
 
         // If the tick needs to be initialized, we need to right-shift everything after byte_offset by DynamicTickData::LEN

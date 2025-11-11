@@ -104,7 +104,6 @@ pub fn check_is_usable_tick_and_get_offset(
 
     let mut remaining = (tick_index - start_tick_index).unsigned_abs();
     let mut offset: isize = 0;
-    assert!(remaining < tick_spacing_u32 * TICK_ARRAY_SIZE as u32);
 
     // manual division
     // 64, 32, 16, 8, 4, 2, 1

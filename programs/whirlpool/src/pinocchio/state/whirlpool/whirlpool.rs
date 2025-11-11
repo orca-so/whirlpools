@@ -1,6 +1,6 @@
-use pinocchio::instruction::Seed;
 use super::super::{BytesI32, BytesU128, BytesU16, BytesU64, Pubkey};
 use crate::pinocchio::state::WhirlpoolProgramAccount;
+use pinocchio::instruction::Seed;
 
 #[repr(C)]
 pub struct MemoryMappedWhirlpoolRewardInfo {

@@ -1,6 +1,6 @@
 use crate::pinocchio::{errors::AnchorErrorCode, Result};
-use pinocchio::pubkey::Pubkey;
 use pinocchio::pubkey::pubkey_eq;
+use pinocchio::pubkey::Pubkey;
 
 pub fn verify_constraint(condition: bool) -> Result<()> {
     if !condition {

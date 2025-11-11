@@ -14,6 +14,7 @@ use crate::{
             util_remaining_accounts_utils::pino_parse_remaining_accounts,
             util_shared::{pino_is_locked_position, pino_verify_position_authority},
             util_token::{
+                pino_calculate_transfer_fee_excluded_amount,
                 pino_calculate_transfer_fee_included_amount, pino_transfer_from_owner_to_vault_v2,
                 pino_transfer_from_vault_to_owner_v2,
             },
@@ -111,17 +112,17 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
-    let current_tick_lower_index = position.tick_lower_index();
-    let current_tick_upper_index = position.tick_upper_index();
-    let current_liquidity_amount = position.liquidity();
+    let existing_range_tick_lower_index = position.tick_lower_index();
+    let existing_range_tick_upper_index = position.tick_upper_index();
+    let existing_range_liquidity = position.liquidity();
 
-    let mut current_position_token_a_amount = 0u64;
-    let mut current_position_token_b_amount = 0u64;
+    let mut existing_range_token_a_decrease_amount = 0u64;
+    let mut existing_range_token_b_decrease_amount = 0u64;
     let mut fees_owed_a = 0u64;
     let mut fees_owed_b = 0u64;
     let mut reward_infos = [PositionRewardInfo::default(); NUM_REWARDS];
 
-    decrease_liquidity_from_current_position(
+    decrease_liquidity_from_existing_range(
         whirlpool_info.key(),
         &mut whirlpool,
         &mut position,
@@ -129,14 +130,31 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         existing_tick_array_lower_info,
         existing_tick_array_upper_info,
         timestamp,
-        data.token_min_a,
-        data.token_min_b,
-        &mut current_position_token_a_amount,
-        &mut current_position_token_b_amount,
+        &mut existing_range_token_a_decrease_amount,
+        &mut existing_range_token_b_decrease_amount,
         &mut fees_owed_a,
         &mut fees_owed_b,
         &mut reward_infos,
     )?;
+
+    // Even though there is no token transfer at this point, we use the transfer fee excluded amount
+    // to ensure that withdrawing existing position range tokens would not exceed the minimum
+    // limits. This is consistent with the behavior of the standalone decrease_liquidity instruction.
+    let transfer_fee_excluded_amount_a = pino_calculate_transfer_fee_excluded_amount(
+        token_mint_a_info,
+        existing_range_token_a_decrease_amount,
+    )?;
+    if transfer_fee_excluded_amount_a.amount < data.existing_range_token_min_a {
+        return Err(WhirlpoolErrorCode::TokenMinSubceeded.into());
+    }
+
+    let transfer_fee_excluded_amount_b = pino_calculate_transfer_fee_excluded_amount(
+        token_mint_b_info,
+        existing_range_token_b_decrease_amount,
+    )?;
+    if transfer_fee_excluded_amount_b.amount < data.existing_range_token_min_b {
+        return Err(WhirlpoolErrorCode::TokenMinSubceeded.into());
+    }
 
     position.reset_position_range(
         &whirlpool,
@@ -144,8 +162,8 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         data.new_tick_upper_index,
     )?;
 
-    let (new_position_token_a_amount, new_position_token_b_amount) =
-        increase_liquidity_into_current_position(
+    let (new_range_token_a_increase_amount, new_range_token_b_increase_amount) =
+        increase_liquidity_into_new_range(
             whirlpool_info.key(),
             &mut whirlpool,
             &mut position,
@@ -156,58 +174,29 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
             timestamp,
         )?;
 
-    let mut token_a_delta = 0u64;
-    let mut is_token_a_delta_increase = false;
-    compute_token_amount_delta(
-        current_position_token_a_amount,
-        new_position_token_a_amount,
-        &mut token_a_delta,
-        &mut is_token_a_delta_increase,
+    let (token_a_delta, is_token_a_transfer_from_user) = calculate_token_delta(
+        existing_range_token_a_decrease_amount,
+        new_range_token_a_increase_amount,
+    );
+    let (token_a_transfer_amount, token_a_transfer_fee) = calculate_net_transfer_amount_and_fee(
+        token_mint_a_info,
+        token_a_delta,
+        new_range_token_a_increase_amount,
+        is_token_a_transfer_from_user,
+        data.new_range_token_max_a,
     )?;
 
-    let mut token_b_delta = 0u64;
-    let mut is_token_b_delta_increase = false;
-    compute_token_amount_delta(
-        current_position_token_b_amount,
-        new_position_token_b_amount,
-        &mut token_b_delta,
-        &mut is_token_b_delta_increase,
+    let (token_b_delta, is_token_b_transfer_from_user) = calculate_token_delta(
+        existing_range_token_b_decrease_amount,
+        new_range_token_b_increase_amount,
+    );
+    let (token_b_transfer_amount, token_b_transfer_fee) = calculate_net_transfer_amount_and_fee(
+        token_mint_b_info,
+        token_b_delta,
+        new_range_token_b_increase_amount,
+        is_token_b_transfer_from_user,
+        data.new_range_token_max_b,
     )?;
-
-    // For positive deltas (user -> vault), compute the SPL transfer fee on just the
-    // incremental amount while enforcing token_max_a and token_max_b against the
-    // full new position requirement plus that fee.
-    if is_token_a_delta_increase {
-        let transfer_fee_included_delta_a =
-            pino_calculate_transfer_fee_included_amount(token_mint_a_info, token_a_delta)?;
-        let token_a_total_with_fee = new_position_token_a_amount
-            .checked_add(transfer_fee_included_delta_a.transfer_fee)
-            .ok_or(WhirlpoolErrorCode::TransferFeeCalculationError)?;
-        if token_a_total_with_fee > data.token_max_a {
-            pinocchio_log::log!(
-                "token a total {} exceeded max {}",
-                token_a_total_with_fee,
-                data.token_max_a
-            );
-            return Err(WhirlpoolErrorCode::TokenMaxExceeded.into());
-        }
-    }
-
-    if is_token_b_delta_increase {
-        let transfer_fee_included_delta_b =
-            pino_calculate_transfer_fee_included_amount(token_mint_b_info, token_b_delta)?;
-        let token_b_total_with_fee = new_position_token_b_amount
-            .checked_add(transfer_fee_included_delta_b.transfer_fee)
-            .ok_or(WhirlpoolErrorCode::TransferFeeCalculationError)?;
-        if token_b_total_with_fee > data.token_max_b {
-            pinocchio_log::log!(
-                "token b total {} exceeded max {}",
-                token_b_total_with_fee,
-                data.token_max_b
-            );
-            return Err(WhirlpoolErrorCode::TokenMaxExceeded.into());
-        }
-    }
 
     // After increase_liquidity, the new position range will have new growth checkpoints,
     // but fees_owed and reward_infos were zeroed during reset. This restores the previous values
@@ -220,7 +209,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
             position.update_reward_owed(i, reward_info.amount_owed);
         });
 
-    settle_via_spl_transfer(
+    execute_token_delta_transfers(
         whirlpool_info,
         &whirlpool,
         position_authority_info,
@@ -229,38 +218,44 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_owner_account_a_info,
         token_program_a_info,
         &remaining_accounts.transfer_hook_a,
-        token_a_delta,
-        is_token_a_delta_increase,
+        token_a_transfer_amount,
+        is_token_a_transfer_from_user,
         token_mint_b_info,
         token_vault_b_info,
         token_owner_account_b_info,
         token_program_b_info,
         &remaining_accounts.transfer_hook_b,
         memo_program_info,
-        token_b_delta,
-        is_token_b_delta_increase,
+        token_b_transfer_amount,
+        is_token_b_transfer_from_user,
     )?;
 
     Event::LiquidityRepositioned {
         whirlpool: whirlpool_info.key(),
         position: position_account_info.key(),
-        old_tick_lower_index: current_tick_lower_index,
-        old_tick_upper_index: current_tick_upper_index,
-        new_tick_lower_index: data.new_tick_lower_index,
-        new_tick_upper_index: data.new_tick_upper_index,
-        old_liquidity: current_liquidity_amount,
-        new_liquidity: data.new_liquidity_amount,
-        old_token_a_amount: current_position_token_a_amount,
-        old_token_b_amount: current_position_token_b_amount,
-        new_token_a_amount: new_position_token_a_amount,
-        new_token_b_amount: new_position_token_b_amount,
+        existing_range_tick_lower_index,
+        existing_range_tick_upper_index,
+        new_range_tick_lower_index: data.new_tick_lower_index,
+        new_range_tick_upper_index: data.new_tick_upper_index,
+        existing_range_liquidity,
+        new_range_liquidity: data.new_liquidity_amount,
+        existing_range_token_a_amount: existing_range_token_a_decrease_amount,
+        existing_range_token_b_amount: existing_range_token_b_decrease_amount,
+        new_range_token_a_amount: new_range_token_a_increase_amount,
+        new_range_token_b_amount: new_range_token_b_increase_amount,
+        token_a_transfer_amount,
+        token_a_transfer_fee,
+        is_token_a_transfer_from_user,
+        token_b_transfer_amount,
+        token_b_transfer_fee,
+        is_token_b_transfer_from_user,
     }
     .emit()?;
 
     Ok(())
 }
 
-fn decrease_liquidity_from_current_position<'info>(
+fn decrease_liquidity_from_existing_range(
     whirlpool_pubkey: &Pubkey,
     whirlpool: &mut MemoryMappedWhirlpool,
     position: &mut MemoryMappedPosition,
@@ -268,15 +263,13 @@ fn decrease_liquidity_from_current_position<'info>(
     existing_tick_array_lower_info: &AccountInfo,
     existing_tick_array_upper_info: &AccountInfo,
     timestamp: u64,
-    token_min_a: u64,
-    token_min_b: u64,
     token_a_amount_out: &mut u64,
     token_b_amount_out: &mut u64,
     fees_owed_a_out: &mut u64,
     fees_owed_b_out: &mut u64,
     reward_infos_out: &mut [PositionRewardInfo; NUM_REWARDS],
 ) -> Result<()> {
-    let position_current_liquidity = position.liquidity();
+    let position_existing_range_liquidity = position.liquidity();
 
     let mut tick_arrays = TickArraysMut::load(
         existing_tick_array_lower_info,
@@ -293,21 +286,21 @@ fn decrease_liquidity_from_current_position<'info>(
         timestamp,
     )?;
 
-    let current_fees_owed_a = position_update.fee_owed_a;
-    let current_fees_owed_b = position_update.fee_owed_b;
-    let current_reward_infos = position_update.reward_infos;
+    let existing_range_fees_owed_a = position_update.fee_owed_a;
+    let existing_range_fees_owed_b = position_update.fee_owed_b;
+    let existing_range_reward_infos = position_update.reward_infos;
 
     // A position without liquidity can still be repositioned
-    if position_current_liquidity == 0 {
+    if position_existing_range_liquidity == 0 {
         *token_a_amount_out = 0;
         *token_b_amount_out = 0;
-        *fees_owed_a_out = current_fees_owed_a;
-        *fees_owed_b_out = current_fees_owed_b;
-        *reward_infos_out = current_reward_infos;
+        *fees_owed_a_out = existing_range_fees_owed_a;
+        *fees_owed_b_out = existing_range_fees_owed_b;
+        *reward_infos_out = existing_range_reward_infos;
         return Ok(());
     }
 
-    let liquidity_delta = convert_to_liquidity_delta(position_current_liquidity, false)?;
+    let liquidity_delta = convert_to_liquidity_delta(position_existing_range_liquidity, false)?;
     let modify_liquidity_update = pino_calculate_modify_liquidity(
         whirlpool,
         position,
@@ -345,16 +338,6 @@ fn decrease_liquidity_from_current_position<'info>(
         liquidity_delta,
     )?;
 
-    // token_min_a and token_min_b apply to the raw token deltas emitted by the liquidity math.
-    // no user transfer occurs here, so transfer-fee adjustments are irrelevant for this comparison.
-    if token_a_delta < token_min_a {
-        return Err(WhirlpoolErrorCode::TokenMinSubceeded.into());
-    }
-
-    if token_b_delta < token_min_b {
-        return Err(WhirlpoolErrorCode::TokenMinSubceeded.into());
-    }
-
     position.reset_fees_owed();
     for i in 0..NUM_REWARDS {
         position.update_reward_owed(i, 0);
@@ -362,24 +345,24 @@ fn decrease_liquidity_from_current_position<'info>(
 
     *token_a_amount_out = token_a_delta;
     *token_b_amount_out = token_b_delta;
-    *fees_owed_a_out = current_fees_owed_a;
-    *fees_owed_b_out = current_fees_owed_b;
-    *reward_infos_out = current_reward_infos;
+    *fees_owed_a_out = existing_range_fees_owed_a;
+    *fees_owed_b_out = existing_range_fees_owed_b;
+    *reward_infos_out = existing_range_reward_infos;
 
     Ok(())
 }
 
-fn increase_liquidity_into_current_position<'info>(
+fn increase_liquidity_into_new_range(
     whirlpool_pubkey: &Pubkey,
     whirlpool: &mut MemoryMappedWhirlpool,
     position: &mut MemoryMappedPosition,
     position_account_info: &AccountInfo,
     new_tick_array_lower_info: &AccountInfo,
     new_tick_array_upper_info: &AccountInfo,
-    new_liquidity_amount: u128,
+    new_range_liquidity: u128,
     timestamp: u64,
 ) -> Result<(u64, u64)> {
-    let liquidity_delta = convert_to_liquidity_delta(new_liquidity_amount, true)?;
+    let liquidity_delta = convert_to_liquidity_delta(new_range_liquidity, true)?;
 
     let tick_arrays = TickArraysMut::load(
         new_tick_array_lower_info,
@@ -434,25 +417,15 @@ fn increase_liquidity_into_current_position<'info>(
     Ok((token_a_amount, token_b_amount))
 }
 
-fn compute_token_amount_delta(
-    existing_amount: u64,
-    new_amount: u64,
-    token_delta: &mut u64,
-    is_delta_increase: &mut bool,
-) -> Result<()> {
-    let (net_amount, is_increase) = if existing_amount > new_amount {
+fn calculate_token_delta(existing_amount: u64, new_amount: u64) -> (u64, bool) {
+    if existing_amount > new_amount {
         (existing_amount - new_amount, false) // User receives tokens
     } else {
         (new_amount - existing_amount, true) // User sends tokens
-    };
-
-    *token_delta = net_amount;
-    *is_delta_increase = is_increase;
-
-    Ok(())
+    }
 }
 
-fn settle_via_spl_transfer<'info>(
+fn execute_token_delta_transfers(
     whirlpool_info: &AccountInfo,
     whirlpool: &MemoryMappedWhirlpool,
     position_authority: &AccountInfo,
@@ -462,7 +435,7 @@ fn settle_via_spl_transfer<'info>(
     token_program_a: &AccountInfo,
     transfer_hook_a_accounts: &Option<Vec<&AccountInfo>>,
     token_a_delta: u64,
-    is_token_a_delta_increase: bool,
+    is_token_a_transfer_from_user: bool,
     token_mint_b: &AccountInfo,
     token_vault_b: &AccountInfo,
     token_owner_account_b: &AccountInfo,
@@ -470,9 +443,9 @@ fn settle_via_spl_transfer<'info>(
     transfer_hook_b_accounts: &Option<Vec<&AccountInfo>>,
     memo_program: &AccountInfo,
     token_b_delta: u64,
-    is_token_b_delta_increase: bool,
+    is_token_b_transfer_from_user: bool,
 ) -> Result<()> {
-    if !is_token_a_delta_increase {
+    if !is_token_a_transfer_from_user {
         pino_transfer_from_vault_to_owner_v2(
             whirlpool,
             whirlpool_info,
@@ -498,7 +471,7 @@ fn settle_via_spl_transfer<'info>(
         )?;
     }
 
-    if !is_token_b_delta_increase {
+    if !is_token_b_transfer_from_user {
         pino_transfer_from_vault_to_owner_v2(
             whirlpool,
             whirlpool_info,
@@ -522,6 +495,56 @@ fn settle_via_spl_transfer<'info>(
             transfer_hook_b_accounts,
             token_b_delta,
         )?;
+    }
+
+    Ok(())
+}
+
+fn calculate_net_transfer_amount_and_fee(
+    token_mint_info: &AccountInfo,
+    token_delta: u64,
+    new_range_token_increase_amount: u64,
+    is_transfer_from_user: bool,
+    token_max: u64,
+) -> Result<(u64, u64)> {
+    if !is_transfer_from_user {
+        return Ok((token_delta, 0));
+    }
+
+    let transfer_fee_included_amount =
+        pino_calculate_transfer_fee_included_amount(token_mint_info, token_delta)?;
+
+    assert_new_range_token_increase_under_max(
+        new_range_token_increase_amount,
+        transfer_fee_included_amount.transfer_fee,
+        token_max,
+    )?;
+
+    Ok((
+        transfer_fee_included_amount.amount,
+        transfer_fee_included_amount.transfer_fee,
+    ))
+}
+
+// For positive transfer deltas from user to vault, enforce new_range_token_max_a and
+// new_range_token_max_b against the full new position requirement plus the provided SPL
+// transfer fee amount.
+fn assert_new_range_token_increase_under_max(
+    new_range_amount: u64,
+    transfer_fee: u64,
+    token_max: u64,
+) -> Result<()> {
+    let new_range_amount_with_fee = new_range_amount
+        .checked_add(transfer_fee)
+        .ok_or(WhirlpoolErrorCode::TransferFeeCalculationError)?;
+
+    if new_range_amount_with_fee > token_max {
+        pinocchio_log::log!(
+            "new amount with fee {} exceeded token max {}",
+            new_range_amount_with_fee,
+            token_max
+        );
+        return Err(WhirlpoolErrorCode::TokenMaxExceeded.into());
     }
 
     Ok(())

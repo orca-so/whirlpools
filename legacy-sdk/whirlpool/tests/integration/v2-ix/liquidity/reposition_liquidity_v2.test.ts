@@ -1175,18 +1175,31 @@ describe("reposition_v2", () => {
             event.position.toBase58(),
             positions[0].publicKey.toBase58(),
           );
-          assert.equal(event.oldTickLowerIndex, initialTickLower);
-          assert.equal(event.oldTickUpperIndex, initialTickUpper);
-          assert.equal(event.newTickLowerIndex, newTickLower);
-          assert.equal(event.newTickUpperIndex, newTickUpper);
+          assert.equal(event.existingRangeTickLowerIndex, initialTickLower);
+          assert.equal(event.existingRangeTickUpperIndex, initialTickUpper);
+          assert.equal(event.newRangeTickLowerIndex, newTickLower);
+          assert.equal(event.newRangeTickUpperIndex, newTickUpper);
           assert.ok(
-            !event.newTokenAAmount.eq(event.oldTokenAAmount),
+            !event.newRangeTokenAAmount.eq(event.existingRangeTokenAAmount),
             "Token A amount should change",
           );
           assert.ok(
-            !event.newTokenBAmount.eq(event.oldTokenBAmount),
+            !event.newRangeTokenBAmount.eq(event.existingRangeTokenBAmount),
             "Token B amount should change",
           );
+
+          // the 40/60 -> 60/40 reposition results in the following transfers:
+          // token a: user -> pool
+          // token b: pool -> user
+          assert.equal(event.isTokenATransferFromUser, true);
+          assert.ok(
+            tokenTraits.tokenTraitA.hasTransferFeeExtension
+              ? event.tokenATransferFee.gt(ZERO_BN)
+              : event.tokenATransferFee.eq(ZERO_BN),
+          );
+
+          assert.equal(event.isTokenBTransferFromUser, false);
+          assert.ok(event.tokenBTransferFee.eq(ZERO_BN));
 
           await sleep(100);
 

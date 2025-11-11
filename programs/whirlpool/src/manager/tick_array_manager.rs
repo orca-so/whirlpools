@@ -59,10 +59,20 @@ pub struct TickArrayUpdate {
 
 pub fn get_tick_rent_amount() -> Result<u64> {
     let rent = Rent::get()?;
-    let amount = ((TICK_INITIALIZATION_SIZE as u64 * rent.lamports_per_byte_year) as f64
-        * rent.exemption_threshold)
-        .ceil() as u64;
-    Ok(amount)
+    match (
+        TICK_INITIALIZATION_SIZE,
+        rent.lamports_per_byte_year,
+        rent.exemption_threshold.to_bits(),
+    ) {
+        // floating point number operation is high cost, so we hardcode a precalculated value here
+        (112, 46980000u64, 4549597725964596257u64) => Ok(779520u64), // Solana
+        _ => {
+            let amount = ((TICK_INITIALIZATION_SIZE as u64 * rent.lamports_per_byte_year) as f64
+                * rent.exemption_threshold)
+                .ceil() as u64;
+            Ok(amount)
+        }
+    }
 }
 
 pub fn calculate_modify_tick_array(

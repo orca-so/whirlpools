@@ -74,7 +74,8 @@ pub fn validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo)
 }
 
 pub fn to_timestamp_u64(t: i64) -> Result<u64> {
-    u64::try_from(t).or(Err(ErrorCode::InvalidTimestampConversion.into()))
+    // note: use .map_err, .or is high cost because it always generates a new error.
+    u64::try_from(t).map_err(|_| ErrorCode::InvalidTimestampConversion.into())
 }
 
 pub fn is_locked_position(

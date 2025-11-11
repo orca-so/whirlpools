@@ -1,34 +1,90 @@
 {
-  "name": "@orca-so/whirlpools-monorepo",
-  "private": true,
-  "packageManager": "yarn@4.6.0",
+  "name": "@orca-so/whirlpools",
+  "version": "0.0.0",
+  "packageManager": "bun@1.3.2",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
+  "sideEffects": [
+    "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.js",
+    "./ts-sdk/core/dist/browser/orca_whirlpools_core_js_bindings.js"
+  ],
+  "files": [
+    "./ts-sdk/core/dist/*",
+    "./ts-sdk/core/package.json",
+    "./ts-sdk/client/dist/*",
+    "./ts-sdk/client/package.json",
+    "./ts-sdk/whirlpool/dist/*",
+    "./ts-sdk/whirlpool/package.json",
+    "./legacy-sdk/whirlpool/dist/*",
+    "./legacy-sdk/whirlpool/package.json",
+    "./legacy-sdk/common/dist/*",
+    "./legacy-sdk/common/package.json"
+  ],
+  "types": "./legacy-sdk/whirlpool/dist/index.d.ts",
+  "main": "./legacy-sdk/whirlpool/dist/index.js",
+  "module": "./legacy-sdk/whirlpool/dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./legacy-sdk/whirlpool/dist/index.d.ts",
+      "default": "./legacy-sdk/whirlpool/dist/index.js"
+    },
+    "./common-sdk": {
+      "types": "./legacy-sdk/common/dist/index.d.ts",
+      "default": "./legacy-sdk/common/dist/index.js"
+    },
+    "./whirlpools": {
+      "types": "./ts-sdk/whirlpool/dist/index.d.ts",
+      "require": "./ts-sdk/whirlpool/dist/index.cjs",
+      "default": "./ts-sdk/whirlpool/dist/index.js"
+    },
+    "./whirlpools-core": {
+      "types": "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
+      "node": "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.js",
+      "browser": "./ts-sdk/core/dist/browser/orca_whirlpools_core_js_bindings.js",
+      "default": "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.js"
+    },
+    "./whirlpools-core/node": {
+      "types": "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
+      "default": "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.js"
+    },
+    "./whirlpools-core/browser": {
+      "types": "./ts-sdk/core/dist/browser/orca_whirlpools_core_js_bindings.d.ts",
+      "default": "./ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings.js"
+    },
+    "./whirlpools-client": {
+      "types": "./ts-sdk/client/dist/index.d.ts",
+      "require": "./ts-sdk/client/dist/index.cjs",
+      "default": "./ts-sdk/client/dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "nx run-many --target build --projects",
-    "start": "nx run-many --target start --projects",
-    "test": "nx run-many --target test --projects",
-    "deploy": "nx run-many --target deploy --projects",
-    "format": "nx run-many --target format --projects",
-    "lint": "nx run-many --target lint --projects",
-    "clean": "nx reset && nx run-many --target clean --projects",
-    "generate": "nx run-many --target generate --projects && nx run-many --target format --projects @orca-so/whirlpools-lint,@orca-so/whirlpools-rust-client"
+    "build": "turbo build && ./build.sh",
+    "postinstall": "echo 'starting postinstall' && bun i --production --ignore-scripts && echo 'ending postinstall'"
+  },
+  "optionalDependencies": {
+    "@orca-so/common-sdk": "workspace:*",
+    "@orca-so/whirlpools-core": "workspace:*"
+  },
+  "dependencies": {
+    "@solana-program/memo": "^0.8.0",
+    "@solana-program/system": "^0.8.1",
+    "@solana-program/token": "^0.6.0",
+    "@solana-program/token-2022": "^0.5.0",
+    "@solana/sysvars": "^3.0.3"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.29.7",
     "@types/node": "^24.9.1",
-    "nx": "^20.7.2",
-    "rimraf": "^6.0.1",
+    "rimraf": "^6.1.0",
     "tsup": "^8.4.0",
-    "vitest": "^3.2.4"
+    "turbo": "^2.6.0"
   },
   "workspaces": [
     "programs/*",
     "rust-sdk/*",
     "ts-sdk/*",
     "legacy-sdk/*",
-    "examples/ts-sdk/*",
-    "examples/rust-sdk/*",
-    "docs/*"
+    "examples/*"
   ]
 }

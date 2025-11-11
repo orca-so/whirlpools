@@ -1,0 +1,13 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [],
+  "tasks": {
+    "build": {
+      "env": ["SENTRY_AUTH_TOKEN"],
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "outputs": ["dist/**", "out/**", ".next/**"]
+    },
+    "lint": {}
+  }
+}

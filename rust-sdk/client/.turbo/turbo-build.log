@@ -1,0 +1,25 @@
+
+[0m[2m[35m$[0m [2m[1mnode ./codama.js && cargo build[0m
+[0m[1m[33mwarning[0m[0m[1m: method `get_next_adaptive_fee_info` is never used[0m
+[0m   [0m[0m[1m[38;5;12m--> [0m[0m/Users/macbookpro/code/rhiva/external/whirlpools/rust-sdk/core/src/math/adaptive_fee.rs:348:12[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m [0m[0m[1m[38;5;12m40[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mimpl FeeRateManager {[0m
+[0m    [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m-------------------[0m[0m [0m[0m[1m[38;5;12mmethod in this implementation[0m
+[0m[1m[38;5;12m...[0m
+[0m[1m[38;5;12m348[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    pub fn get_next_adaptive_fee_info(&self) -> Option<AdaptiveFeeInfo> {[0m
+[0m    [0m[0m[1m[38;5;12m|[0m[0m            [0m[0m[1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m    [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default[0m
+
+[1m[33mwarning[0m: `orca_whirlpools_core` (lib) generated 1 warning
+[1m[92m   Compiling[0m orca_whirlpools_client v5.0.1 (/Users/macbookpro/code/rhiva/external/whirlpools/rust-sdk/client)
+[1m[96m    Building[0m [=======================> ] 201/202: orca_whirlpools_client                                     [K[0m[1m[33mwarning[0m[0m[1m: unused import: `programs::*`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0msrc/generated/mod.rs:15:18[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m15[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m  pub(crate) use programs::*;[0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m                  [0m[0m[1m[33m^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default[0m
+
+[1m[96m    Building[0m [=======================> ] 201/202: orca_whirlpools_client                                     [K[1m[33mwarning[0m: `orca_whirlpools_client` (lib) generated 1 warning (run `cargo fix --lib -p orca_whirlpools_client` to apply 1 suggestion)
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 7.95s

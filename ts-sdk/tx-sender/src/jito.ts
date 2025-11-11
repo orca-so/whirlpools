@@ -1,7 +1,8 @@
 import type {
   Address,
   TransactionSigner,
-  CompilableTransactionMessage,
+  BaseTransactionMessage,
+  TransactionMessageWithFeePayer
 } from "@solana/kit";
 import {
   address,
@@ -15,8 +16,8 @@ import {
 } from "./config";
 import { getTransferSolInstruction } from "@solana-program/system";
 
-export async function processJitoTipForTxMessage(
-  message: CompilableTransactionMessage,
+export async function processJitoTipForTxMessage<TTransactionMessage extends BaseTransactionMessage & TransactionMessageWithFeePayer>(
+  message: TTransactionMessage,
   signer: TransactionSigner,
   jito: JitoFeeSetting,
   chainId: string,

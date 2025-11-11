@@ -1,0 +1,4 @@
+
+[0m[2m[35m$[0m [2m[1mcargo build[0m
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.42s

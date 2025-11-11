@@ -24,27 +24,27 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && vitest run tests",
-    "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@orca-so/tx-sender": "*",
-    "@orca-so/whirlpools-client": "*",
-    "@orca-so/whirlpools-core": "*",
+    "@orca-so/whirlpools-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@solana/kit": "^5.0.0",
     "@solana-program/memo": "^0.8.0",
-    "@solana-program/system": "^0.8.0",
+    "@solana-program/system": "^0.8.1",
     "@solana-program/token": "^0.6.0",
     "@solana-program/token-2022": "^0.5.0",
     "@solana/sysvars": "^3.0.3"
   },
-  "peerDependencies": {
-    "@solana/kit": "^3.0.3"
+  "optionalDependencies": {
+    "@orca-so/tx-sender": "workspace:*",
+    "@orca-so/whirlpools-client": "workspace:*"
   },
   "devDependencies": {
-    "@solana/kit": "^3.0.3",
+    "@solana/kit": "^5.0.0",
     "solana-bankrun": "^0.4.0",
-    "tsup": "^8.4.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.9.3"
   },
   "repository": {

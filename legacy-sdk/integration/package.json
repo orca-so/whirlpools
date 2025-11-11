@@ -8,5 +8,12 @@
   "scripts": {
     "build": "anchor build",
     "test": "yarn workspace @orca-so/whirlpools-sdk test"
+  },
+  "dependencies": {
+    "@oasismystre/whirlpools": "link:@oasismystre/whirlpools",
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.98.4",
+    "bn.js": "^5.2.2",
+    "decimal.js": "^10.6.0"
   }
 }

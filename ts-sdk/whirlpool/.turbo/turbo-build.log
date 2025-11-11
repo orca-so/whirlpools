@@ -1,0 +1,18 @@
+
+[0m[2m[35m$[0m [2m[1mtsup src/index.ts --format cjs,esm --dts --sourcemap[0m
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.0
+[34mCLI[39m Target: esnext
+[34mCJS[39m Build start
+[34mESM[39m Build start
+[32mCJS[39m [1mdist/index.cjs     [22m[32m158.53 KB[39m
+[32mCJS[39m [1mdist/index.cjs.map [22m[32m1.27 MB[39m
+[32mCJS[39m ⚡️ Build success in 257ms
+[32mESM[39m [1mdist/index.js     [22m[32m192.11 KB[39m
+[32mESM[39m [1mdist/index.js.map [22m[32m1.28 MB[39m
+[32mESM[39m ⚡️ Build success in 258ms
+DTS Build start
+DTS ⚡️ Build success in 5323ms
+DTS dist/index.d.cts 12.04 KB
+DTS dist/index.d.ts  12.04 KB

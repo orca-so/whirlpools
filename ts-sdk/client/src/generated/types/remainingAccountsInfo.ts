@@ -15,13 +15,13 @@ import {
   type Codec,
   type Decoder,
   type Encoder,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getRemainingAccountsSliceDecoder,
   getRemainingAccountsSliceEncoder,
   type RemainingAccountsSlice,
   type RemainingAccountsSliceArgs,
-} from ".";
+} from '.';
 
 export type RemainingAccountsInfo = { slices: Array<RemainingAccountsSlice> };
 
@@ -31,13 +31,13 @@ export type RemainingAccountsInfoArgs = {
 
 export function getRemainingAccountsInfoEncoder(): Encoder<RemainingAccountsInfoArgs> {
   return getStructEncoder([
-    ["slices", getArrayEncoder(getRemainingAccountsSliceEncoder())],
+    ['slices', getArrayEncoder(getRemainingAccountsSliceEncoder())],
   ]);
 }
 
 export function getRemainingAccountsInfoDecoder(): Decoder<RemainingAccountsInfo> {
   return getStructDecoder([
-    ["slices", getArrayDecoder(getRemainingAccountsSliceDecoder())],
+    ['slices', getArrayDecoder(getRemainingAccountsSliceDecoder())],
   ]);
 }
 
@@ -47,6 +47,6 @@ export function getRemainingAccountsInfoCodec(): Codec<
 > {
   return combineCodec(
     getRemainingAccountsInfoEncoder(),
-    getRemainingAccountsInfoDecoder(),
+    getRemainingAccountsInfoDecoder()
   );
 }

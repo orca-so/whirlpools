@@ -1,4 +1,4 @@
-import { createSolanaRpcApi, createRpc } from "@solana/rpc";
+import { createSolanaRpcApi, createRpc } from "@solana/kit";
 import type { Address, Rpc, SolanaRpcApi } from "@solana/kit";
 import { createDefaultRpcTransport, address } from "@solana/kit";
 

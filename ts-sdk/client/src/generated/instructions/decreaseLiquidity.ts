@@ -33,9 +33,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const DECREASE_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
   160, 38, 208, 111, 104, 91, 44, 1,
@@ -43,7 +43,7 @@ export const DECREASE_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
 
 export function getDecreaseLiquidityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    DECREASE_LIQUIDITY_DISCRIMINATOR,
+    DECREASE_LIQUIDITY_DISCRIMINATOR
   );
 }
 
@@ -52,7 +52,7 @@ export type DecreaseLiquidityInstruction<
   TAccountWhirlpool extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountPositionAuthority extends string | AccountMeta<string> = string,
   TAccountPosition extends string | AccountMeta<string> = string,
   TAccountPositionTokenAccount extends string | AccountMeta<string> = string,
@@ -121,21 +121,21 @@ export type DecreaseLiquidityInstructionDataArgs = {
 export function getDecreaseLiquidityInstructionDataEncoder(): FixedSizeEncoder<DecreaseLiquidityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["liquidityAmount", getU128Encoder()],
-      ["tokenMinA", getU64Encoder()],
-      ["tokenMinB", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['liquidityAmount', getU128Encoder()],
+      ['tokenMinA', getU64Encoder()],
+      ['tokenMinB', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: DECREASE_LIQUIDITY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: DECREASE_LIQUIDITY_DISCRIMINATOR })
   );
 }
 
 export function getDecreaseLiquidityInstructionDataDecoder(): FixedSizeDecoder<DecreaseLiquidityInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["liquidityAmount", getU128Decoder()],
-    ["tokenMinA", getU64Decoder()],
-    ["tokenMinB", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['liquidityAmount', getU128Decoder()],
+    ['tokenMinA', getU64Decoder()],
+    ['tokenMinB', getU64Decoder()],
   ]);
 }
 
@@ -145,7 +145,7 @@ export function getDecreaseLiquidityInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getDecreaseLiquidityInstructionDataEncoder(),
-    getDecreaseLiquidityInstructionDataDecoder(),
+    getDecreaseLiquidityInstructionDataDecoder()
   );
 }
 
@@ -173,9 +173,9 @@ export type DecreaseLiquidityInput<
   tokenVaultB: Address<TAccountTokenVaultB>;
   tickArrayLower: Address<TAccountTickArrayLower>;
   tickArrayUpper: Address<TAccountTickArrayUpper>;
-  liquidityAmount: DecreaseLiquidityInstructionDataArgs["liquidityAmount"];
-  tokenMinA: DecreaseLiquidityInstructionDataArgs["tokenMinA"];
-  tokenMinB: DecreaseLiquidityInstructionDataArgs["tokenMinB"];
+  liquidityAmount: DecreaseLiquidityInstructionDataArgs['liquidityAmount'];
+  tokenMinA: DecreaseLiquidityInstructionDataArgs['tokenMinA'];
+  tokenMinB: DecreaseLiquidityInstructionDataArgs['tokenMinB'];
 };
 
 export function getDecreaseLiquidityInstruction<
@@ -205,7 +205,7 @@ export function getDecreaseLiquidityInstruction<
     TAccountTickArrayLower,
     TAccountTickArrayUpper
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): DecreaseLiquidityInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -260,10 +260,10 @@ export function getDecreaseLiquidityInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -279,7 +279,7 @@ export function getDecreaseLiquidityInstruction<
       getAccountMeta(accounts.tickArrayUpper),
     ],
     data: getDecreaseLiquidityInstructionDataEncoder().encode(
-      args as DecreaseLiquidityInstructionDataArgs,
+      args as DecreaseLiquidityInstructionDataArgs
     ),
     programAddress,
   } as DecreaseLiquidityInstruction<
@@ -325,11 +325,11 @@ export function parseDecreaseLiquidityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedDecreaseLiquidityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 11) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

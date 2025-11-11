@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const COLLECT_PROTOCOL_FEES_DISCRIMINATOR = new Uint8Array([
   22, 67, 23, 98, 150, 178, 70, 220,
@@ -39,7 +39,7 @@ export const COLLECT_PROTOCOL_FEES_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectProtocolFeesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_PROTOCOL_FEES_DISCRIMINATOR,
+    COLLECT_PROTOCOL_FEES_DISCRIMINATOR
   );
 }
 
@@ -56,7 +56,7 @@ export type CollectProtocolFeesInstruction<
   TAccountTokenDestinationB extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -99,17 +99,17 @@ export type CollectProtocolFeesInstructionDataArgs = {};
 
 export function getCollectProtocolFeesInstructionDataEncoder(): FixedSizeEncoder<CollectProtocolFeesInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: COLLECT_PROTOCOL_FEES_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getCollectProtocolFeesInstructionDataDecoder(): FixedSizeDecoder<CollectProtocolFeesInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -119,7 +119,7 @@ export function getCollectProtocolFeesInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectProtocolFeesInstructionDataEncoder(),
-    getCollectProtocolFeesInstructionDataDecoder(),
+    getCollectProtocolFeesInstructionDataDecoder()
   );
 }
 
@@ -164,7 +164,7 @@ export function getCollectProtocolFeesInstruction<
     TAccountTokenDestinationB,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): CollectProtocolFeesInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -210,10 +210,10 @@ export function getCollectProtocolFeesInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -264,11 +264,11 @@ export function parseCollectProtocolFeesInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCollectProtocolFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -289,7 +289,7 @@ export function parseCollectProtocolFeesInstruction<
       tokenProgram: getNextAccount(),
     },
     data: getCollectProtocolFeesInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

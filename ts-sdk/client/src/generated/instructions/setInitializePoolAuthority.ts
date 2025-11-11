@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_INITIALIZE_POOL_AUTHORITY_DISCRIMINATOR = new Uint8Array([
   125, 43, 127, 235, 149, 26, 106, 236,
@@ -39,7 +39,7 @@ export const SET_INITIALIZE_POOL_AUTHORITY_DISCRIMINATOR = new Uint8Array([
 
 export function getSetInitializePoolAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_INITIALIZE_POOL_AUTHORITY_DISCRIMINATOR,
+    SET_INITIALIZE_POOL_AUTHORITY_DISCRIMINATOR
   );
 }
 
@@ -81,17 +81,17 @@ export type SetInitializePoolAuthorityInstructionDataArgs = {};
 
 export function getSetInitializePoolAuthorityInstructionDataEncoder(): FixedSizeEncoder<SetInitializePoolAuthorityInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: SET_INITIALIZE_POOL_AUTHORITY_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetInitializePoolAuthorityInstructionDataDecoder(): FixedSizeDecoder<SetInitializePoolAuthorityInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -101,7 +101,7 @@ export function getSetInitializePoolAuthorityInstructionDataCodec(): FixedSizeCo
 > {
   return combineCodec(
     getSetInitializePoolAuthorityInstructionDataEncoder(),
-    getSetInitializePoolAuthorityInstructionDataDecoder(),
+    getSetInitializePoolAuthorityInstructionDataDecoder()
   );
 }
 
@@ -130,7 +130,7 @@ export function getSetInitializePoolAuthorityInstruction<
     TAccountFeeAuthority,
     TAccountNewInitializePoolAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetInitializePoolAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -159,7 +159,7 @@ export function getSetInitializePoolAuthorityInstruction<
     ResolvedAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -198,11 +198,11 @@ export function parseSetInitializePoolAuthorityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetInitializePoolAuthorityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -219,7 +219,7 @@ export function parseSetInitializePoolAuthorityInstruction<
       newInitializePoolAuthority: getNextAccount(),
     },
     data: getSetInitializePoolAuthorityInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

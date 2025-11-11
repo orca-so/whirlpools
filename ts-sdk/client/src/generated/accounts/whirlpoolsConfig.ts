@@ -35,7 +35,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const WHIRLPOOLS_CONFIG_DISCRIMINATOR = new Uint8Array([
   157, 20, 49, 224, 217, 87, 193, 254,
@@ -43,7 +43,7 @@ export const WHIRLPOOLS_CONFIG_DISCRIMINATOR = new Uint8Array([
 
 export function getWhirlpoolsConfigDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    WHIRLPOOLS_CONFIG_DISCRIMINATOR,
+    WHIRLPOOLS_CONFIG_DISCRIMINATOR
   );
 }
 
@@ -67,25 +67,25 @@ export type WhirlpoolsConfigArgs = {
 export function getWhirlpoolsConfigEncoder(): FixedSizeEncoder<WhirlpoolsConfigArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["feeAuthority", getAddressEncoder()],
-      ["collectProtocolFeesAuthority", getAddressEncoder()],
-      ["rewardEmissionsSuperAuthority", getAddressEncoder()],
-      ["defaultProtocolFeeRate", getU16Encoder()],
-      ["featureFlags", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['feeAuthority', getAddressEncoder()],
+      ['collectProtocolFeesAuthority', getAddressEncoder()],
+      ['rewardEmissionsSuperAuthority', getAddressEncoder()],
+      ['defaultProtocolFeeRate', getU16Encoder()],
+      ['featureFlags', getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: WHIRLPOOLS_CONFIG_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: WHIRLPOOLS_CONFIG_DISCRIMINATOR })
   );
 }
 
 export function getWhirlpoolsConfigDecoder(): FixedSizeDecoder<WhirlpoolsConfig> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["feeAuthority", getAddressDecoder()],
-    ["collectProtocolFeesAuthority", getAddressDecoder()],
-    ["rewardEmissionsSuperAuthority", getAddressDecoder()],
-    ["defaultProtocolFeeRate", getU16Decoder()],
-    ["featureFlags", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['feeAuthority', getAddressDecoder()],
+    ['collectProtocolFeesAuthority', getAddressDecoder()],
+    ['rewardEmissionsSuperAuthority', getAddressDecoder()],
+    ['defaultProtocolFeeRate', getU16Decoder()],
+    ['featureFlags', getU16Decoder()],
   ]);
 }
 
@@ -95,31 +95,31 @@ export function getWhirlpoolsConfigCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getWhirlpoolsConfigEncoder(),
-    getWhirlpoolsConfigDecoder(),
+    getWhirlpoolsConfigDecoder()
   );
 }
 
 export function decodeWhirlpoolsConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<WhirlpoolsConfig, TAddress>;
 export function decodeWhirlpoolsConfig<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<WhirlpoolsConfig, TAddress>;
 export function decodeWhirlpoolsConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ):
   | Account<WhirlpoolsConfig, TAddress>
   | MaybeAccount<WhirlpoolsConfig, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getWhirlpoolsConfigDecoder(),
+    getWhirlpoolsConfigDecoder()
   );
 }
 
 export async function fetchWhirlpoolsConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<WhirlpoolsConfig, TAddress>> {
   const maybeAccount = await fetchMaybeWhirlpoolsConfig(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -131,7 +131,7 @@ export async function fetchMaybeWhirlpoolsConfig<
 >(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<WhirlpoolsConfig, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeWhirlpoolsConfig(maybeAccount);
@@ -140,12 +140,12 @@ export async function fetchMaybeWhirlpoolsConfig<
 export async function fetchAllWhirlpoolsConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<WhirlpoolsConfig>[]> {
   const maybeAccounts = await fetchAllMaybeWhirlpoolsConfig(
     rpc,
     addresses,
-    config,
+    config
   );
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
@@ -154,11 +154,11 @@ export async function fetchAllWhirlpoolsConfig(
 export async function fetchAllMaybeWhirlpoolsConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<WhirlpoolsConfig>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) =>
-    decodeWhirlpoolsConfig(maybeAccount),
+    decodeWhirlpoolsConfig(maybeAccount)
   );
 }
 

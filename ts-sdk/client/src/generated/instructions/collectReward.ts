@@ -31,9 +31,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const COLLECT_REWARD_DISCRIMINATOR = new Uint8Array([
   70, 5, 132, 87, 86, 235, 177, 34,
@@ -41,7 +41,7 @@ export const COLLECT_REWARD_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectRewardDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_REWARD_DISCRIMINATOR,
+    COLLECT_REWARD_DISCRIMINATOR
   );
 }
 
@@ -55,7 +55,7 @@ export type CollectRewardInstruction<
   TAccountRewardVault extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -97,17 +97,17 @@ export type CollectRewardInstructionDataArgs = { rewardIndex: number };
 export function getCollectRewardInstructionDataEncoder(): FixedSizeEncoder<CollectRewardInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["rewardIndex", getU8Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['rewardIndex', getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: COLLECT_REWARD_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: COLLECT_REWARD_DISCRIMINATOR })
   );
 }
 
 export function getCollectRewardInstructionDataDecoder(): FixedSizeDecoder<CollectRewardInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["rewardIndex", getU8Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['rewardIndex', getU8Decoder()],
   ]);
 }
 
@@ -117,7 +117,7 @@ export function getCollectRewardInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectRewardInstructionDataEncoder(),
-    getCollectRewardInstructionDataDecoder(),
+    getCollectRewardInstructionDataDecoder()
   );
 }
 
@@ -137,7 +137,7 @@ export type CollectRewardInput<
   rewardOwnerAccount: Address<TAccountRewardOwnerAccount>;
   rewardVault: Address<TAccountRewardVault>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  rewardIndex: CollectRewardInstructionDataArgs["rewardIndex"];
+  rewardIndex: CollectRewardInstructionDataArgs['rewardIndex'];
 };
 
 export function getCollectRewardInstruction<
@@ -159,7 +159,7 @@ export function getCollectRewardInstruction<
     TAccountRewardVault,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): CollectRewardInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -203,10 +203,10 @@ export function getCollectRewardInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -218,7 +218,7 @@ export function getCollectRewardInstruction<
       getAccountMeta(accounts.tokenProgram),
     ],
     data: getCollectRewardInstructionDataEncoder().encode(
-      args as CollectRewardInstructionDataArgs,
+      args as CollectRewardInstructionDataArgs
     ),
     programAddress,
   } as CollectRewardInstruction<
@@ -256,11 +256,11 @@ export function parseCollectRewardInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCollectRewardInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 7) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

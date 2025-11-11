@@ -12,7 +12,7 @@ import {
 } from "@solana/spl-token";
 import type { Connection, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 import type BN from "bn.js";
 import invariant from "tiny-invariant";
 import { ZERO } from "../math";

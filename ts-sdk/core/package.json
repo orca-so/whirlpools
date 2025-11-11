@@ -17,14 +17,15 @@
   ],
   "scripts": {
     "build": "wasm-pack build --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
-    "test": "tsc --noEmit && vitest run tests",
     "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore",
     "deploy": "../../scripts/deploy-npm",
     "clean": "cargo clean && rimraf dist"
   },
+  "optionalDependencies": {
+    "@orca-so/whirlpools-rust-core": "workspace:*",
+    "@orca-so/whirlpools-client": "workspace:*"
+  },
   "devDependencies": {
-    "@orca-so/whirlpools-client": "*",
-    "@orca-so/whirlpools-rust-core": "*",
     "typescript": "^5.9.3",
     "wasm-pack": "^0.13.1"
   },

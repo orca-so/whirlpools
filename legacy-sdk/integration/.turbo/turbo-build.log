@@ -1,0 +1,752 @@
+
+[0m[2m[35m$[0m [2m[1manchor build[0m
+WARNING: Adding `solana-program` as a separate dependency might cause conflicts.
+To solve, remove the `solana-program` dependency and use the exported crate from `anchor-lang`.
+`use solana_program` becomes `use anchor_lang::solana_program`.
+Program name: `whirlpool`
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `custom-heap`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/lib.rs:34:1[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m34[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[program][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[33m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `custom-heap` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: `#[warn(unexpected_cfgs)]` on by default[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `custom-panic`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/lib.rs:34:1[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m34[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[program][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[33m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `custom-panic` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/close_bundled_position.rs:7:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/close_position.rs:8:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m8[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/close_position_with_token_extensions.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/collect_fees.rs:10:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/collect_protocol_fees.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/collect_reward.rs:10:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/delete_position_bundle.rs:8:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m8[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/idl_include.rs:10:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/increase_liquidity.rs:17:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m17[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_config.rs:6:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m6[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_dynamic_tick_array.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_fee_tier.rs:4:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_pool.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_position_bundle.rs:7:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_position_bundle_with_metadata.rs:9:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m9[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_reward.rs:6:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m6[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/initialize_tick_array.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/lock_position.rs:11:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m11[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/open_bundled_position.rs:9:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m9[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/open_position.rs:10:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/open_position_with_metadata.rs:13:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m13[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/open_position_with_token_extensions.rs:15:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m15[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/reset_position_range.rs:10:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_collect_protocol_fees_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_config_feature_flag.rs:6:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m6[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_default_fee_rate.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_default_protocol_fee_rate.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_fee_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_fee_rate.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_protocol_fee_rate.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_reward_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_reward_authority_by_super_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_reward_emissions.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/set_reward_emissions_super_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/swap.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/transfer_locked_position.rs:15:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m15[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/two_hop_swap.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/update_fees_and_rewards.rs:9:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m9[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/collect_fees.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/collect_protocol_fees.rs:7:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/collect_reward.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/increase_liquidity.rs:21:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m21[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/initialize_pool.rs:13:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m13[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/initialize_reward.rs:9:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m9[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/set_reward_emissions.rs:12:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/swap.rs:18:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m18[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/two_hop_swap.rs:18:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m18[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/delete_token_badge.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/initialize_config_extension.rs:4:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/initialize_token_badge.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/set_config_extension_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/set_token_badge_attribute.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/v2/set_token_badge_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/initialize_adaptive_fee_tier.rs:4:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/initialize_pool_with_adaptive_fee.rs:14:10[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m14[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/set_default_base_fee_rate.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/set_delegated_fee_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/set_fee_rate_by_delegated_fee_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/set_initialize_pool_authority.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/adaptive_fee/set_preset_adaptive_fee_constants.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/instructions/migrate_repurpose_reward_authority_space.rs:5:10[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[derive(Accounts)][0m
+[0m  [0m[0m[1m[38;5;12m|[0m[0m          [0m[0m[1m[33m^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/lib.rs:34:1[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m34[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[program][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[33m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `anchor-debug`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/lib.rs:34:1[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m34[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[program][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[33m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `anchor-debug` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: unexpected `cfg` condition value: `no-log-ix-name`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/lib.rs:34:1[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m34[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m#[program][0m
+[0m   [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[33m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: expected values for `feature` are: `cpi`, `default`, `devnet`, `idl-build`, `mainnet`, `no-entrypoint`, and `no-idl`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: consider adding `no-log-ix-name` as a feature in `Cargo.toml`[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration[0m
+[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[33mwarning[0m[0m[1m: use of deprecated method `anchor_lang::prelude::AccountInfo::<'a>::realloc`: Use AccountInfo::resize() instead[0m
+[0m   [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/manager/tick_array_manager.rs:206:29[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m206[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    tick_array_account_info.realloc(required_size, true)?;[0m
+[0m    [0m[0m[1m[38;5;12m|[0m[0m                             [0m[0m[1m[33m^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m    [0m[0m[1m[38;5;12m= [0m[0m[1mnote[0m[0m: `#[warn(deprecated)]` on by default[0m
+
+[0m[1m[33mwarning[0m[0m[1m: use of deprecated method `anchor_lang::prelude::AccountInfo::<'a>::realloc`: Use AccountInfo::resize() instead[0m
+[0m   [0m[0m[1m[38;5;12m--> [0m[0mprograms/whirlpool/src/manager/tick_array_manager.rs:213:29[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m213[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    tick_array_account_info.realloc(required_size, true)?;[0m
+[0m    [0m[0m[1m[38;5;12m|[0m[0m                             [0m[0m[1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `whirlpool` (lib) generated 73 warnings (5 duplicates)
+[1m[32m    Finished[0m `release` profile [optimized] target(s) in 1.10s
+[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 0.98s
+[1m[92m     Running[0m unittests src/lib.rs (/Users/macbookpro/code/rhiva/external/whirlpools/target/debug/deps/whirlpool-84f0840241f71a29)

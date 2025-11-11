@@ -38,11 +38,7 @@ impl Transfer<'_> {
         unsafe {
             invoke_signed_unchecked(
                 &instruction,
-                &[
-                    self.from.into(),
-                    self.to.into(),
-                    self.authority.into(),
-                ],
+                &[self.from.into(), self.to.into(), self.authority.into()],
                 signers,
             );
         }

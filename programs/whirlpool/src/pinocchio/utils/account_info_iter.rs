@@ -1,7 +1,7 @@
 use crate::pinocchio::{constants::address, errors::AnchorErrorCode, Result};
 use pinocchio::account_info::AccountInfo;
-use pinocchio::pubkey::Pubkey;
 use pinocchio::pubkey::pubkey_eq;
+use pinocchio::pubkey::Pubkey;
 
 /// Iterator wrapper for sequential account access with validation
 pub struct AccountIterator<'a> {

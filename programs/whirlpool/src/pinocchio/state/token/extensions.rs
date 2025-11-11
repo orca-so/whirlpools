@@ -1,10 +1,5 @@
-use crate::pinocchio::{
-    constants::address::TOKEN_2022_PROGRAM_ID,
-    state::{token::TokenProgramAccountWithExtensions, TokenProgramAccount},
-    Result,
-};
+use crate::pinocchio::Result;
 use arrayref::array_ref;
-use pinocchio::account_info::AccountInfo;
 use pinocchio::program_error::ProgramError;
 
 use super::super::{ByteBool, BytesU16, BytesU64, Pubkey};

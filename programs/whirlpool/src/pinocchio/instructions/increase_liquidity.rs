@@ -7,9 +7,7 @@ use crate::pinocchio::{
         },
         manager_tick_array_manager::pino_update_tick_array_accounts,
         util_shared::pino_verify_position_authority,
-        util_token::{
-            pino_transfer_from_owner_to_vault,
-        },
+        util_token::pino_transfer_from_owner_to_vault,
     },
     state::{
         token::MemoryMappedTokenAccount,
@@ -24,10 +22,7 @@ use crate::pinocchio::{
     },
     Result,
 };
-use crate::{
-    math::convert_to_liquidity_delta,
-    util::to_timestamp_u64,
-};
+use crate::{math::convert_to_liquidity_delta, util::to_timestamp_u64};
 use pinocchio::account_info::AccountInfo;
 use pinocchio::sysvars::{clock::Clock, Sysvar};
 

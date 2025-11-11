@@ -9,3 +9,4 @@ dist
 *.tgz
 node_modules
 target
+.env

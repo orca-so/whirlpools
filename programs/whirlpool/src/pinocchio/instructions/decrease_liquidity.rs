@@ -1,31 +1,28 @@
 use crate::pinocchio::{
-    Result, errors::WhirlpoolErrorCode, ported::{
+    errors::WhirlpoolErrorCode,
+    ported::{
         manager_liquidity_manager::{
             pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
             pino_sync_modify_liquidity_values,
         },
         manager_tick_array_manager::pino_update_tick_array_accounts,
-        util_remaining_accounts_utils::pino_parse_remaining_accounts,
         util_shared::{pino_is_locked_position, pino_verify_position_authority},
-        util_token::{
-            pino_transfer_from_vault_to_owner,
-        },
-    }, state::{
+        util_token::pino_transfer_from_vault_to_owner,
+    },
+    state::{
         token::MemoryMappedTokenAccount,
         whirlpool::{
-            MemoryMappedPosition, MemoryMappedWhirlpool, tick_array::loader::TickArraysMut
+            tick_array::loader::TickArraysMut, MemoryMappedPosition, MemoryMappedWhirlpool,
         },
-    }, utils::{
+    },
+    utils::{
         account_info_iter::AccountIterator,
         account_load::{load_account_mut, load_token_program_account},
         verify::{verify_address, verify_constraint},
-    }
+    },
+    Result,
 };
-use crate::{
-    constants::transfer_memo,
-    math::convert_to_liquidity_delta,
-    util::{to_timestamp_u64, AccountsType},
-};
+use crate::{math::convert_to_liquidity_delta, util::to_timestamp_u64};
 use pinocchio::account_info::AccountInfo;
 use pinocchio::sysvars::{clock::Clock, Sysvar};
 
@@ -145,12 +142,12 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     )?;
 
     pino_transfer_from_vault_to_owner(
-      &whirlpool,
-      whirlpool_info,
-      token_vault_b_info,
-      token_owner_account_b_info,
-      token_program_info,
-      delta_b,
+        &whirlpool,
+        whirlpool_info,
+        token_vault_b_info,
+        token_owner_account_b_info,
+        token_program_info,
+        delta_b,
     )?;
 
     /*

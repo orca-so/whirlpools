@@ -200,10 +200,10 @@ impl Default for RepositionLiquidityV2InstructionData {
                   pub new_tick_lower_index: i32,
                 pub new_tick_upper_index: i32,
                 pub new_liquidity_amount: u128,
-                pub token_min_a: u64,
-                pub token_min_b: u64,
-                pub token_max_a: u64,
-                pub token_max_b: u64,
+                pub existing_range_token_min_a: u64,
+                pub existing_range_token_min_b: u64,
+                pub new_range_token_max_a: u64,
+                pub new_range_token_max_b: u64,
                 pub remaining_accounts_info: Option<RemainingAccountsInfo>,
       }
 
@@ -261,10 +261,10 @@ pub struct RepositionLiquidityV2Builder {
                         new_tick_lower_index: Option<i32>,
                 new_tick_upper_index: Option<i32>,
                 new_liquidity_amount: Option<u128>,
-                token_min_a: Option<u64>,
-                token_min_b: Option<u64>,
-                token_max_a: Option<u64>,
-                token_max_b: Option<u64>,
+                existing_range_token_min_a: Option<u64>,
+                existing_range_token_min_b: Option<u64>,
+                new_range_token_max_a: Option<u64>,
+                new_range_token_max_b: Option<u64>,
                 remaining_accounts_info: Option<RemainingAccountsInfo>,
         __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
@@ -386,23 +386,23 @@ impl RepositionLiquidityV2Builder {
         self
       }
                 #[inline(always)]
-      pub fn token_min_a(&mut self, token_min_a: u64) -> &mut Self {
-        self.token_min_a = Some(token_min_a);
+      pub fn existing_range_token_min_a(&mut self, existing_range_token_min_a: u64) -> &mut Self {
+        self.existing_range_token_min_a = Some(existing_range_token_min_a);
         self
       }
                 #[inline(always)]
-      pub fn token_min_b(&mut self, token_min_b: u64) -> &mut Self {
-        self.token_min_b = Some(token_min_b);
+      pub fn existing_range_token_min_b(&mut self, existing_range_token_min_b: u64) -> &mut Self {
+        self.existing_range_token_min_b = Some(existing_range_token_min_b);
         self
       }
                 #[inline(always)]
-      pub fn token_max_a(&mut self, token_max_a: u64) -> &mut Self {
-        self.token_max_a = Some(token_max_a);
+      pub fn new_range_token_max_a(&mut self, new_range_token_max_a: u64) -> &mut Self {
+        self.new_range_token_max_a = Some(new_range_token_max_a);
         self
       }
                 #[inline(always)]
-      pub fn token_max_b(&mut self, token_max_b: u64) -> &mut Self {
-        self.token_max_b = Some(token_max_b);
+      pub fn new_range_token_max_b(&mut self, new_range_token_max_b: u64) -> &mut Self {
+        self.new_range_token_max_b = Some(new_range_token_max_b);
         self
       }
                 /// `[optional argument]`
@@ -450,10 +450,10 @@ impl RepositionLiquidityV2Builder {
                                                               new_tick_lower_index: self.new_tick_lower_index.clone().expect("new_tick_lower_index is not set"),
                                                                   new_tick_upper_index: self.new_tick_upper_index.clone().expect("new_tick_upper_index is not set"),
                                                                   new_liquidity_amount: self.new_liquidity_amount.clone().expect("new_liquidity_amount is not set"),
-                                                                  token_min_a: self.token_min_a.clone().expect("token_min_a is not set"),
-                                                                  token_min_b: self.token_min_b.clone().expect("token_min_b is not set"),
-                                                                  token_max_a: self.token_max_a.clone().expect("token_max_a is not set"),
-                                                                  token_max_b: self.token_max_b.clone().expect("token_max_b is not set"),
+                                                                  existing_range_token_min_a: self.existing_range_token_min_a.clone().expect("existing_range_token_min_a is not set"),
+                                                                  existing_range_token_min_b: self.existing_range_token_min_b.clone().expect("existing_range_token_min_b is not set"),
+                                                                  new_range_token_max_a: self.new_range_token_max_a.clone().expect("new_range_token_max_a is not set"),
+                                                                  new_range_token_max_b: self.new_range_token_max_b.clone().expect("new_range_token_max_b is not set"),
                                                                   remaining_accounts_info: self.remaining_accounts_info.clone(),
                                     };
     
@@ -815,10 +815,10 @@ impl<'a, 'b> RepositionLiquidityV2CpiBuilder<'a, 'b> {
                                             new_tick_lower_index: None,
                                 new_tick_upper_index: None,
                                 new_liquidity_amount: None,
-                                token_min_a: None,
-                                token_min_b: None,
-                                token_max_a: None,
-                                token_max_b: None,
+                                existing_range_token_min_a: None,
+                                existing_range_token_min_b: None,
+                                new_range_token_max_a: None,
+                                new_range_token_max_b: None,
                                 remaining_accounts_info: None,
                     __remaining_accounts: Vec::new(),
     });
@@ -935,23 +935,23 @@ impl<'a, 'b> RepositionLiquidityV2CpiBuilder<'a, 'b> {
         self
       }
                 #[inline(always)]
-      pub fn token_min_a(&mut self, token_min_a: u64) -> &mut Self {
-        self.instruction.token_min_a = Some(token_min_a);
+      pub fn existing_range_token_min_a(&mut self, existing_range_token_min_a: u64) -> &mut Self {
+        self.instruction.existing_range_token_min_a = Some(existing_range_token_min_a);
         self
       }
                 #[inline(always)]
-      pub fn token_min_b(&mut self, token_min_b: u64) -> &mut Self {
-        self.instruction.token_min_b = Some(token_min_b);
+      pub fn existing_range_token_min_b(&mut self, existing_range_token_min_b: u64) -> &mut Self {
+        self.instruction.existing_range_token_min_b = Some(existing_range_token_min_b);
         self
       }
                 #[inline(always)]
-      pub fn token_max_a(&mut self, token_max_a: u64) -> &mut Self {
-        self.instruction.token_max_a = Some(token_max_a);
+      pub fn new_range_token_max_a(&mut self, new_range_token_max_a: u64) -> &mut Self {
+        self.instruction.new_range_token_max_a = Some(new_range_token_max_a);
         self
       }
                 #[inline(always)]
-      pub fn token_max_b(&mut self, token_max_b: u64) -> &mut Self {
-        self.instruction.token_max_b = Some(token_max_b);
+      pub fn new_range_token_max_b(&mut self, new_range_token_max_b: u64) -> &mut Self {
+        self.instruction.new_range_token_max_b = Some(new_range_token_max_b);
         self
       }
                 /// `[optional argument]`
@@ -986,10 +986,10 @@ impl<'a, 'b> RepositionLiquidityV2CpiBuilder<'a, 'b> {
                                                               new_tick_lower_index: self.instruction.new_tick_lower_index.clone().expect("new_tick_lower_index is not set"),
                                                                   new_tick_upper_index: self.instruction.new_tick_upper_index.clone().expect("new_tick_upper_index is not set"),
                                                                   new_liquidity_amount: self.instruction.new_liquidity_amount.clone().expect("new_liquidity_amount is not set"),
-                                                                  token_min_a: self.instruction.token_min_a.clone().expect("token_min_a is not set"),
-                                                                  token_min_b: self.instruction.token_min_b.clone().expect("token_min_b is not set"),
-                                                                  token_max_a: self.instruction.token_max_a.clone().expect("token_max_a is not set"),
-                                                                  token_max_b: self.instruction.token_max_b.clone().expect("token_max_b is not set"),
+                                                                  existing_range_token_min_a: self.instruction.existing_range_token_min_a.clone().expect("existing_range_token_min_a is not set"),
+                                                                  existing_range_token_min_b: self.instruction.existing_range_token_min_b.clone().expect("existing_range_token_min_b is not set"),
+                                                                  new_range_token_max_a: self.instruction.new_range_token_max_a.clone().expect("new_range_token_max_a is not set"),
+                                                                  new_range_token_max_b: self.instruction.new_range_token_max_b.clone().expect("new_range_token_max_b is not set"),
                                                                   remaining_accounts_info: self.instruction.remaining_accounts_info.clone(),
                                     };
         let instruction = RepositionLiquidityV2Cpi {
@@ -1063,10 +1063,10 @@ struct RepositionLiquidityV2CpiBuilderInstruction<'a, 'b> {
                         new_tick_lower_index: Option<i32>,
                 new_tick_upper_index: Option<i32>,
                 new_liquidity_amount: Option<u128>,
-                token_min_a: Option<u64>,
-                token_min_b: Option<u64>,
-                token_max_a: Option<u64>,
-                token_max_b: Option<u64>,
+                existing_range_token_min_a: Option<u64>,
+                existing_range_token_min_b: Option<u64>,
+                new_range_token_max_a: Option<u64>,
+                new_range_token_max_b: Option<u64>,
                 remaining_accounts_info: Option<RemainingAccountsInfo>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,

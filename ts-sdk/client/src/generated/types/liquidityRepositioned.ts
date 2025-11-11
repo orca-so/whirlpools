@@ -10,6 +10,8 @@ import {
   combineCodec,
   getAddressDecoder,
   getAddressEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getI32Decoder,
   getI32Encoder,
   getStructDecoder,
@@ -27,47 +29,65 @@ import {
 export type LiquidityRepositioned = {
   whirlpool: Address;
   position: Address;
-  oldTickLowerIndex: number;
-  oldTickUpperIndex: number;
-  newTickLowerIndex: number;
-  newTickUpperIndex: number;
-  oldLiquidity: bigint;
-  newLiquidity: bigint;
-  oldTokenAAmount: bigint;
-  oldTokenBAmount: bigint;
-  newTokenAAmount: bigint;
-  newTokenBAmount: bigint;
+  existingRangeTickLowerIndex: number;
+  existingRangeTickUpperIndex: number;
+  newRangeTickLowerIndex: number;
+  newRangeTickUpperIndex: number;
+  existingRangeLiquidity: bigint;
+  newRangeLiquidity: bigint;
+  existingRangeTokenAAmount: bigint;
+  existingRangeTokenBAmount: bigint;
+  newRangeTokenAAmount: bigint;
+  newRangeTokenBAmount: bigint;
+  tokenATransferAmount: bigint;
+  tokenATransferFee: bigint;
+  isTokenATransferFromUser: boolean;
+  tokenBTransferAmount: bigint;
+  tokenBTransferFee: bigint;
+  isTokenBTransferFromUser: boolean;
 };
 
 export type LiquidityRepositionedArgs = {
   whirlpool: Address;
   position: Address;
-  oldTickLowerIndex: number;
-  oldTickUpperIndex: number;
-  newTickLowerIndex: number;
-  newTickUpperIndex: number;
-  oldLiquidity: number | bigint;
-  newLiquidity: number | bigint;
-  oldTokenAAmount: number | bigint;
-  oldTokenBAmount: number | bigint;
-  newTokenAAmount: number | bigint;
-  newTokenBAmount: number | bigint;
+  existingRangeTickLowerIndex: number;
+  existingRangeTickUpperIndex: number;
+  newRangeTickLowerIndex: number;
+  newRangeTickUpperIndex: number;
+  existingRangeLiquidity: number | bigint;
+  newRangeLiquidity: number | bigint;
+  existingRangeTokenAAmount: number | bigint;
+  existingRangeTokenBAmount: number | bigint;
+  newRangeTokenAAmount: number | bigint;
+  newRangeTokenBAmount: number | bigint;
+  tokenATransferAmount: number | bigint;
+  tokenATransferFee: number | bigint;
+  isTokenATransferFromUser: boolean;
+  tokenBTransferAmount: number | bigint;
+  tokenBTransferFee: number | bigint;
+  isTokenBTransferFromUser: boolean;
 };
 
 export function getLiquidityRepositionedEncoder(): FixedSizeEncoder<LiquidityRepositionedArgs> {
   return getStructEncoder([
     ["whirlpool", getAddressEncoder()],
     ["position", getAddressEncoder()],
-    ["oldTickLowerIndex", getI32Encoder()],
-    ["oldTickUpperIndex", getI32Encoder()],
-    ["newTickLowerIndex", getI32Encoder()],
-    ["newTickUpperIndex", getI32Encoder()],
-    ["oldLiquidity", getU128Encoder()],
-    ["newLiquidity", getU128Encoder()],
-    ["oldTokenAAmount", getU64Encoder()],
-    ["oldTokenBAmount", getU64Encoder()],
-    ["newTokenAAmount", getU64Encoder()],
-    ["newTokenBAmount", getU64Encoder()],
+    ["existingRangeTickLowerIndex", getI32Encoder()],
+    ["existingRangeTickUpperIndex", getI32Encoder()],
+    ["newRangeTickLowerIndex", getI32Encoder()],
+    ["newRangeTickUpperIndex", getI32Encoder()],
+    ["existingRangeLiquidity", getU128Encoder()],
+    ["newRangeLiquidity", getU128Encoder()],
+    ["existingRangeTokenAAmount", getU64Encoder()],
+    ["existingRangeTokenBAmount", getU64Encoder()],
+    ["newRangeTokenAAmount", getU64Encoder()],
+    ["newRangeTokenBAmount", getU64Encoder()],
+    ["tokenATransferAmount", getU64Encoder()],
+    ["tokenATransferFee", getU64Encoder()],
+    ["isTokenATransferFromUser", getBooleanEncoder()],
+    ["tokenBTransferAmount", getU64Encoder()],
+    ["tokenBTransferFee", getU64Encoder()],
+    ["isTokenBTransferFromUser", getBooleanEncoder()],
   ]);
 }
 
@@ -75,16 +95,22 @@ export function getLiquidityRepositionedDecoder(): FixedSizeDecoder<LiquidityRep
   return getStructDecoder([
     ["whirlpool", getAddressDecoder()],
     ["position", getAddressDecoder()],
-    ["oldTickLowerIndex", getI32Decoder()],
-    ["oldTickUpperIndex", getI32Decoder()],
-    ["newTickLowerIndex", getI32Decoder()],
-    ["newTickUpperIndex", getI32Decoder()],
-    ["oldLiquidity", getU128Decoder()],
-    ["newLiquidity", getU128Decoder()],
-    ["oldTokenAAmount", getU64Decoder()],
-    ["oldTokenBAmount", getU64Decoder()],
-    ["newTokenAAmount", getU64Decoder()],
-    ["newTokenBAmount", getU64Decoder()],
+    ["existingRangeTickLowerIndex", getI32Decoder()],
+    ["existingRangeTickUpperIndex", getI32Decoder()],
+    ["newRangeTickLowerIndex", getI32Decoder()],
+    ["newRangeTickUpperIndex", getI32Decoder()],
+    ["existingRangeLiquidity", getU128Decoder()],
+    ["newRangeLiquidity", getU128Decoder()],
+    ["existingRangeTokenAAmount", getU64Decoder()],
+    ["existingRangeTokenBAmount", getU64Decoder()],
+    ["newRangeTokenAAmount", getU64Decoder()],
+    ["newRangeTokenBAmount", getU64Decoder()],
+    ["tokenATransferAmount", getU64Decoder()],
+    ["tokenATransferFee", getU64Decoder()],
+    ["isTokenATransferFromUser", getBooleanDecoder()],
+    ["tokenBTransferAmount", getU64Decoder()],
+    ["tokenBTransferFee", getU64Decoder()],
+    ["isTokenBTransferFromUser", getBooleanDecoder()],
   ]);
 }
 

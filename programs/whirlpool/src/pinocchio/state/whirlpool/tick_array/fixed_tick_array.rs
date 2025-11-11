@@ -64,11 +64,6 @@ impl TickArray for MemoryMappedFixedTickArray {
             }
         };
 
-        // TODO: needed ?
-        if tick_offset < 0 {
-            return Err(crate::errors::ErrorCode::TickNotFound.into());
-        }
-
         self.ticks[tick_offset as usize].update(update);
 
         Ok(())

@@ -1195,7 +1195,7 @@ pub mod whirlpool {
         )
     }
 
-    /// An atomic that repositions liquidity for a position through the following steps:
+    /// An atomic instruction that repositions liquidity for a position through the following steps:
     /// - Withdraws liquidity from the current position range
     /// - Resets the position to a new tick range
     /// - Adds liquidity to the new position range

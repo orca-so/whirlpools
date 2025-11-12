@@ -22,7 +22,10 @@ import {
   warpClock,
   ZERO_BN,
 } from "../../../utils";
-import { initTickArray } from "../../../utils/init-utils";
+import {
+  initTickArray,
+  initTickArrayIfNeeded,
+} from "../../../utils/init-utils";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 
@@ -1232,21 +1235,3 @@ describe("reposition_v2", () => {
     });
   });
 });
-
-async function initTickArrayIfNeeded(
-  ctx: WhirlpoolContext,
-  whirlpool: anchor.web3.PublicKey,
-  startTick: number,
-) {
-  const tickArrayPda = PDAUtil.getTickArray(
-    ctx.program.programId,
-    whirlpool,
-    startTick,
-  ).publicKey;
-
-  const tickArrayAccount = await ctx.connection.getAccountInfo(tickArrayPda);
-  if (tickArrayAccount !== null) {
-    return;
-  }
-  await initTickArray(ctx, whirlpool, startTick);
-}

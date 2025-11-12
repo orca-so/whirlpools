@@ -108,42 +108,6 @@ pub fn pino_calculate_transfer_fee_included_amount(
     })
 }
 
-pub fn pino_calculate_transfer_fee_excluded_amount(
-    token_mint_info: &AccountInfo,
-    transfer_fee_included_amount: u64,
-) -> Result<TransferFeeExcludedAmount> {
-    if transfer_fee_included_amount == 0 {
-        return Ok(TransferFeeExcludedAmount {
-            amount: 0,
-            transfer_fee: 0,
-        });
-    }
-
-    let token_mint =
-        load_token_program_account_unchecked::<MemoryMappedTokenMint>(token_mint_info)?;
-    let token_mint_extensions = parse_token_extensions(token_mint.extensions_tlv_data())?;
-
-    if let Some(epoch_transfer_fee) = pino_get_epoch_transfer_fee(&token_mint_extensions)? {
-        let transfer_fee = epoch_transfer_fee
-            .calculate_fee(transfer_fee_included_amount)
-            .ok_or(WhirlpoolErrorCode::TransferFeeCalculationError)?;
-        let transfer_fee_excluded_amount =
-            transfer_fee_included_amount
-                .checked_sub(transfer_fee)
-                .ok_or(WhirlpoolErrorCode::TransferFeeCalculationError)?;
-
-        return Ok(TransferFeeExcludedAmount {
-            amount: transfer_fee_excluded_amount,
-            transfer_fee,
-        });
-    }
-
-    Ok(TransferFeeExcludedAmount {
-        amount: transfer_fee_included_amount,
-        transfer_fee: 0,
-    })
-}
-
 fn pino_get_epoch_transfer_fee(token_extensions: &TokenExtensions) -> Result<Option<TransferFee>> {
     match token_extensions.transfer_fee_config {
         None => Ok(None),

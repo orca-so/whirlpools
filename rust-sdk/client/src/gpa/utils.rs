@@ -10,21 +10,6 @@ use solana_client::{
 
 use crate::{generated::shared::DecodedAccount, WHIRLPOOL_ID};
 
-#[cfg(feature = "solana-v1")]
-pub(crate) fn rpc_program_accounts_config(filters: Vec<RpcFilterType>) -> RpcProgramAccountsConfig {
-    RpcProgramAccountsConfig {
-        filters: Some(filters),
-        account_config: RpcAccountInfoConfig {
-            encoding: Some(UiAccountEncoding::Base64),
-            data_slice: None,
-            commitment: None,
-            min_context_slot: None,
-        },
-        with_context: None,
-    }
-}
-
-#[cfg(not(feature = "solana-v1"))]
 pub(crate) fn rpc_program_accounts_config(filters: Vec<RpcFilterType>) -> RpcProgramAccountsConfig {
     RpcProgramAccountsConfig {
         filters: Some(filters),

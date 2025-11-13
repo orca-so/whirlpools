@@ -10,12 +10,6 @@ updates:
         applies-to: version-updates
         patterns:
           - "@docusaurus/*"  
-      solana-v1:
-        applies-to: version-updates
-        patterns:
-          - "@solana/web3.js"
-          - "@solana/spl-token"
-          - "@coral-xyz/*"
       solana-v2-core:
         applies-to: version-updates
         patterns:

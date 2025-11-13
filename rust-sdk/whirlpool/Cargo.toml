@@ -13,7 +13,6 @@ edition = "2021"
 
 [features]
 default = []
-solana-v1 = ["orca_whirlpools_client/solana-v1"]
 
 [dependencies]
 solana-client = { version = "^3" }

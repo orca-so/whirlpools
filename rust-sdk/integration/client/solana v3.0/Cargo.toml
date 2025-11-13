@@ -1,10 +1,10 @@
 [package]
-name = "orca_whirlpools_client_integration_solana_v2_1"
+name = "orca_whirlpools_client_integration_solana_v2_2"
 edition = "2021"
 
 [lib]
 path = "../../lib.rs"
 
 [dependencies]
-solana-program = { version = "~2.1.13" }
+solana-program = { version = "~3.0.0" }
 orca_whirlpools_client = { path = "../../../client" }

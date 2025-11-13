@@ -1,6 +1,7 @@
 mod constants;
 mod cpi;
 mod errors;
+mod events;
 mod ported;
 mod state;
 mod utils;

@@ -38,6 +38,8 @@ import {
 } from "../../utils/litesvm";
 
 type LiquidityDecreasedEvent = {
+  whirlpool: anchor.web3.PublicKey,
+  position: anchor.web3.PublicKey,
   liquidity: anchor.BN;
   tokenAAmount: anchor.BN;
   tokenBAmount: anchor.BN;
@@ -1650,6 +1652,8 @@ describe("decrease_liquidity", () => {
 
     // Type assertion after null check
     const event = observedEvent as LiquidityDecreasedEvent;
+    assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+    assert.ok(event.position.equals(positions[0].publicKey));
     assert.ok(event.liquidity.eq(removalQuote.liquidityAmount));
     assert.ok(event.tokenAAmount.gte(removalQuote.tokenMinA));
     assert.ok(event.tokenBAmount.gte(removalQuote.tokenMinB));

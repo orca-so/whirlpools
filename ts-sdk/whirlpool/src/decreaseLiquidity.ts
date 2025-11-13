@@ -171,7 +171,7 @@ export async function decreaseLiquidityInstructions(
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionSigner = FUNDER,
+  authority: TransactionSigner<string> = FUNDER,
 ): Promise<DecreaseLiquidityInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -316,7 +316,7 @@ export async function closePositionInstructions(
   >,
   positionMintAddress: Address,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionSigner = FUNDER,
+  authority: TransactionSigner<string> = FUNDER,
 ): Promise<ClosePositionInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,

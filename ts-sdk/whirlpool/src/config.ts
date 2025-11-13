@@ -84,13 +84,13 @@ export const SPLASH_POOL_TICK_SPACING = 32896;
 /**
  * The default funder for transactions. No explicit funder specified.
  */
-export const DEFAULT_FUNDER: TransactionSigner =
+export const DEFAULT_FUNDER: TransactionSigner<string> =
   createNoopSigner(DEFAULT_ADDRESS);
 
 /**
  * The currently selected funder for transactions.
  */
-export let FUNDER: TransactionSigner = DEFAULT_FUNDER;
+export let FUNDER: TransactionSigner<string> = DEFAULT_FUNDER;
 
 /**
  * Sets the default funder for transactions.
@@ -98,7 +98,7 @@ export let FUNDER: TransactionSigner = DEFAULT_FUNDER;
  * @param {TransactionSigner | Address | null} funder - The funder to be set as default, either as an address or a transaction signer.
  */
 export function setDefaultFunder(
-  funder: TransactionSigner | Address | null,
+  funder: TransactionSigner<string> | Address | null,
 ): void {
   if (typeof funder === "string") {
     FUNDER = createNoopSigner(funder);

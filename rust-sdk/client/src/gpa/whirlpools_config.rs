@@ -4,7 +4,7 @@ use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_filter::{Memcmp, RpcFilterType},
 };
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 use super::fetch_decoded_program_accounts;
 use crate::{generated::shared::DecodedAccount, WhirlpoolsConfig, WHIRLPOOLS_CONFIG_DISCRIMINATOR};

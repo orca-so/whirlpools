@@ -2,7 +2,7 @@ use crate::fee_config::{FeeConfig, JitoFeeStrategy, JitoPercentile};
 use serde::Deserialize;
 use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
-use solana_program::system_instruction;
+use solana_system_interface::instruction::transfer;
 use std::str::FromStr;
 
 // Jito tip receiver addresses
@@ -35,7 +35,7 @@ pub fn create_tip_instruction(lamports: u64, payer: &Pubkey) -> Instruction {
     let random_index = Pubkey::new_unique().to_bytes()[0] as usize % JITO_TIP_ADDRESSES.len();
     let jito_address_str = JITO_TIP_ADDRESSES[random_index];
     let jito_pubkey = Pubkey::from_str(jito_address_str).expect("Invalid pubkey string");
-    system_instruction::transfer(payer, &jito_pubkey, lamports)
+    transfer(payer, &jito_pubkey, lamports)
 }
 
 /// Calculate and return Jito tip instruction if enabled
@@ -129,7 +129,10 @@ mod tests {
         let payer = Pubkey::new_unique();
         let instruction = create_tip_instruction(1000, &payer);
 
-        assert_eq!(instruction.program_id, solana_program::system_program::id());
+        assert_eq!(
+            instruction.program_id,
+            solana_system_interface::program::id()
+        );
         assert_eq!(instruction.accounts[0].pubkey, payer);
         assert!(JITO_TIP_ADDRESSES.contains(&instruction.accounts[1].pubkey.to_string().as_str()));
     }

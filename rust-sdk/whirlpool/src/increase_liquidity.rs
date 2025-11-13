@@ -12,13 +12,14 @@ use orca_whirlpools_core::{
     increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
     order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote, TransferFee,
 };
+use solana_account::Account;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::account::Account;
-use solana_sdk::program_pack::Pack;
-use solana_sdk::signer::Signer;
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
-use spl_associated_token_account::get_associated_token_address_with_program_id;
-use spl_token_2022::state::Mint;
+use solana_instruction::Instruction;
+use solana_keypair::{Keypair, Signer};
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
+use spl_token_2022_interface::state::Mint;
 
 use crate::{get_rent, SPLASH_POOL_TICK_SPACING};
 use crate::{
@@ -142,7 +143,7 @@ pub struct IncreaseLiquidityInstruction {
 ///     WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 /// use crate::utils::load_wallet;
 ///
@@ -259,7 +260,7 @@ pub async fn increase_liquidity_instructions(
             whirlpool: position.whirlpool,
             token_program_a: mint_a_info.owner,
             token_program_b: mint_b_info.owner,
-            memo_program: spl_memo::ID,
+            memo_program: spl_memo_interface::v3::ID,
             position_authority: authority,
             position: position_address,
             position_token_account: position_token_account_address,
@@ -313,7 +314,13 @@ pub struct OpenPositionInstruction {
     pub initialization_cost: u64,
 }
 
-async fn internal_open_position(
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct OpenPositionParams {
+    pub with_token_metadata_extension: bool,
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn internal_open_position_with_params(
     rpc: &RpcClient,
     pool_address: Pubkey,
     whirlpool: Whirlpool,
@@ -324,6 +331,7 @@ async fn internal_open_position(
     mint_b_info: &Account,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
+    open_position_params: OpenPositionParams,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     let slippage_tolerance_bps =
@@ -374,8 +382,11 @@ async fn internal_open_position(
         get_tick_array_start_tick_index(upper_initializable_tick_index, whirlpool.tick_spacing);
 
     let position_address = get_position_address(&position_mint)?.0;
-    let position_token_account_address =
-        get_associated_token_address_with_program_id(&funder, &position_mint, &spl_token_2022::ID);
+    let position_token_account_address = get_associated_token_address_with_program_id(
+        &funder,
+        &position_mint,
+        &spl_token_2022_interface::ID,
+    );
     let lower_tick_array_address = get_tick_array_address(&pool_address, lower_tick_start_index)?.0;
     let upper_tick_array_address = get_tick_array_address(&pool_address, upper_tick_start_index)?.0;
 
@@ -402,7 +413,7 @@ async fn internal_open_position(
                 whirlpool: pool_address,
                 funder,
                 tick_array: lower_tick_array_address,
-                system_program: solana_sdk::system_program::id(),
+                system_program: solana_system_interface::program::id(),
             }
             .instruction(InitializeDynamicTickArrayInstructionArgs {
                 start_tick_index: lower_tick_start_index,
@@ -418,7 +429,7 @@ async fn internal_open_position(
                 whirlpool: pool_address,
                 funder,
                 tick_array: upper_tick_array_address,
-                system_program: solana_sdk::system_program::id(),
+                system_program: solana_system_interface::program::id(),
             }
             .instruction(InitializeDynamicTickArrayInstructionArgs {
                 start_tick_index: upper_tick_start_index,
@@ -445,15 +456,15 @@ async fn internal_open_position(
             position_mint,
             position_token_account: position_token_account_address,
             whirlpool: pool_address,
-            token2022_program: spl_token_2022::ID,
-            system_program: solana_sdk::system_program::id(),
-            associated_token_program: spl_associated_token_account::ID,
+            token2022_program: spl_token_2022_interface::ID,
+            system_program: solana_system_interface::program::id(),
+            associated_token_program: spl_associated_token_account_interface::program::id(),
             metadata_update_auth: Pubkey::from_str("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")?,
         }
         .instruction(OpenPositionWithTokenExtensionsInstructionArgs {
             tick_lower_index: lower_initializable_tick_index,
             tick_upper_index: upper_initializable_tick_index,
-            with_token_metadata_extension: true,
+            with_token_metadata_extension: open_position_params.with_token_metadata_extension,
         }),
     );
 
@@ -462,7 +473,7 @@ async fn internal_open_position(
             whirlpool: pool_address,
             token_program_a: mint_a_info.owner,
             token_program_b: mint_b_info.owner,
-            memo_program: spl_memo::ID,
+            memo_program: spl_memo_interface::v3::ID,
             position_authority: funder,
             position: position_address,
             position_token_account: position_token_account_address,
@@ -527,7 +538,8 @@ async fn internal_open_position(
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
+/// use solana_keypair::Keypair;
+/// use solana_pubkey::Pubkey;
 /// use orca_whirlpools::{open_full_range_position_instructions, IncreaseLiquidityParam};
 /// use std::str::FromStr;
 ///
@@ -552,12 +564,13 @@ async fn internal_open_position(
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
-pub async fn open_full_range_position_instructions(
+pub async fn open_full_range_position_instructions_with_params(
     rpc: &RpcClient,
     pool_address: Pubkey,
     param: IncreaseLiquidityParam,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
+    open_position_params: OpenPositionParams,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
@@ -571,7 +584,7 @@ pub async fn open_full_range_position_instructions(
     let mint_b_info = mint_infos[1]
         .as_ref()
         .ok_or("Token B mint info not found")?;
-    internal_open_position(
+    internal_open_position_with_params(
         rpc,
         pool_address,
         whirlpool,
@@ -582,6 +595,27 @@ pub async fn open_full_range_position_instructions(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
+        open_position_params,
+    )
+    .await
+}
+
+pub async fn open_full_range_position_instructions(
+    rpc: &RpcClient,
+    pool_address: Pubkey,
+    param: IncreaseLiquidityParam,
+    slippage_tolerance_bps: Option<u16>,
+    funder: Option<Pubkey>,
+) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    open_full_range_position_instructions_with_params(
+        rpc,
+        pool_address,
+        param,
+        slippage_tolerance_bps,
+        funder,
+        OpenPositionParams {
+            with_token_metadata_extension: true,
+        },
     )
     .await
 }
@@ -624,7 +658,8 @@ pub async fn open_full_range_position_instructions(
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
+/// use solana_keypair::Keypair;
+/// use solana_pubkey::Pubkey;
 /// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam};
 /// use std::str::FromStr;
 ///
@@ -653,7 +688,7 @@ pub async fn open_full_range_position_instructions(
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
-pub async fn open_position_instructions(
+pub async fn open_position_instructions_with_params(
     rpc: &RpcClient,
     pool_address: Pubkey,
     lower_price: f64,
@@ -661,6 +696,7 @@ pub async fn open_position_instructions(
     param: IncreaseLiquidityParam,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
+    open_position_params: OpenPositionParams,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     if lower_price <= 0.0 || upper_price <= 0.0 {
         return Err("Floating price must be greater than 0.0".into());
@@ -688,7 +724,7 @@ pub async fn open_position_instructions(
     let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b);
     let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b);
 
-    internal_open_position(
+    internal_open_position_with_params(
         rpc,
         pool_address,
         whirlpool,
@@ -699,6 +735,31 @@ pub async fn open_position_instructions(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
+        open_position_params,
+    )
+    .await
+}
+
+pub async fn open_position_instructions(
+    rpc: &RpcClient,
+    pool_address: Pubkey,
+    lower_price: f64,
+    upper_price: f64,
+    param: IncreaseLiquidityParam,
+    slippage_tolerance_bps: Option<u16>,
+    funder: Option<Pubkey>,
+) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    open_position_instructions_with_params(
+        rpc,
+        pool_address,
+        lower_price,
+        upper_price,
+        param,
+        slippage_tolerance_bps,
+        funder,
+        OpenPositionParams {
+            with_token_metadata_extension: true,
+        },
     )
     .await
 }
@@ -711,17 +772,15 @@ mod tests {
     use orca_whirlpools_client::{get_position_address, Position};
     use rstest::rstest;
     use serial_test::serial;
+    use solana_keypair::{Keypair, Signer};
+    use solana_program_pack::Pack;
     use solana_program_test::tokio;
-    use solana_sdk::{
-        program_pack::Pack,
-        pubkey::Pubkey,
-        signer::{keypair::Keypair, Signer},
-    };
-    use spl_token::state::Account as TokenAccount;
-    use spl_token_2022::{
+    use solana_pubkey::Pubkey;
+    use spl_token_2022_interface::{
         extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
         ID as TOKEN_2022_PROGRAM_ID,
     };
+    use spl_token_interface::state::Account as TokenAccount;
 
     use crate::{
         increase_liquidity_instructions, open_position_instructions,
@@ -886,7 +945,7 @@ mod tests {
     #[serial]
     fn test_increase_liquidity_cases(
         #[case] pool_name: &str,
-        #[case] position_name: &str,
+        #[case] _position_name: &str,
         #[case] lower_tick: i32,
         #[case] upper_tick: i32,
     ) {
@@ -898,8 +957,8 @@ mod tests {
             let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
             let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
-            let pubkey_a = minted.get(mint_a_key).unwrap();
-            let pubkey_b = minted.get(mint_b_key).unwrap();
+            let _pubkey_a = minted.get(mint_a_key).unwrap();
+            let _pubkey_b = minted.get(mint_b_key).unwrap();
             let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
             let pubkey_a = *minted.get(mint_a_key).unwrap();
             let pubkey_b = *minted.get(mint_b_key).unwrap();
@@ -961,7 +1020,7 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         let minted = setup_all_mints(&ctx).await?;
-        let user_atas = setup_all_atas(&ctx, &minted).await?;
+        let _user_atas = setup_all_atas(&ctx, &minted).await?;
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
@@ -969,7 +1028,7 @@ mod tests {
 
         let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
-        use solana_sdk::pubkey::Pubkey;
+        use solana_pubkey::Pubkey;
         let param = IncreaseLiquidityParam::Liquidity(100_000);
         let res = increase_liquidity_instructions(
             &ctx.rpc,
@@ -999,7 +1058,7 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         let minted = setup_all_mints(&ctx).await?;
-        let user_atas = setup_all_atas(&ctx, &minted).await?;
+        let _user_atas = setup_all_atas(&ctx, &minted).await?;
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
@@ -1033,7 +1092,7 @@ mod tests {
         crate::set_enforce_token_balance_check(true)?;
 
         let minted = setup_all_mints(&ctx).await?;
-        let user_atas = setup_all_atas(&ctx, &minted).await?;
+        let _user_atas = setup_all_atas(&ctx, &minted).await?;
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
@@ -1073,13 +1132,13 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         let minted = setup_all_mints(&ctx).await?;
-        let user_atas = setup_all_atas(&ctx, &minted).await?;
+        let _user_atas = setup_all_atas(&ctx, &minted).await?;
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
         let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
 
-        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let _position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
         // Attempt
         let lower_price = 0.0; // if price is 0.0, open_position_instructions will be failed
@@ -1114,13 +1173,13 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         let minted = setup_all_mints(&ctx).await?;
-        let user_atas = setup_all_atas(&ctx, &minted).await?;
+        let _user_atas = setup_all_atas(&ctx, &minted).await?;
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
         let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
 
-        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let _position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
         // Attempt
         let upper_price = 0.0; // if price is 0.0, open_position_instructions will be failed

@@ -1,16 +1,12 @@
 use std::error::Error;
 
-use solana_sdk::{
-    program_pack::Pack,
-    pubkey::Pubkey,
-    signer::Signer,
-    system_instruction::{create_account, transfer},
-};
-use spl_associated_token_account::{
-    get_associated_token_address_with_program_id,
-    instruction::create_associated_token_account_idempotent,
-};
-use spl_token::{
+use solana_keypair::Signer;
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use solana_system_interface::instruction::{create_account, transfer};
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
+use spl_associated_token_account_interface::instruction::create_associated_token_account_idempotent;
+use spl_token_interface::{
     instruction::{initialize_mint2, mint_to, sync_native},
     native_mint,
     state::Mint,

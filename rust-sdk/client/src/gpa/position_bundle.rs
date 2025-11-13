@@ -3,7 +3,7 @@ use std::error::Error;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::Memcmp;
 use solana_client::rpc_filter::RpcFilterType;
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 use crate::POSITION_BUNDLE_DISCRIMINATOR;
 use crate::{generated::shared::DecodedAccount, PositionBundle};

@@ -1,22 +1,23 @@
 use orca_whirlpools_core::TransferFee;
+use solana_account::Account as SolanaAccount;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::account::Account as SolanaAccount;
-use solana_sdk::hash::hashv;
-use solana_sdk::program_error::ProgramError;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
-use solana_sdk::system_instruction::{create_account, create_account_with_seed, transfer};
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
-use spl_associated_token_account::{
-    get_associated_token_address_with_program_id, instruction::create_associated_token_account,
+use solana_instruction::Instruction;
+use solana_keypair::{Keypair, Signer};
+use solana_program_error::ProgramError;
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use solana_sha256_hasher::hashv;
+use solana_system_interface::instruction::{create_account, create_account_with_seed, transfer};
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
+use spl_associated_token_account_interface::instruction::create_associated_token_account;
+use spl_token_2022_interface::extension::transfer_fee::TransferFeeConfig;
+use spl_token_2022_interface::extension::{
+    BaseStateWithExtensions, ExtensionType, StateWithExtensions,
 };
-use spl_token::instruction::{close_account, initialize_account3, sync_native};
-use spl_token::solana_program::program_pack::Pack;
-use spl_token::{native_mint, ID as TOKEN_PROGRAM_ID};
-use spl_token_2022::extension::transfer_fee::TransferFeeConfig;
-use spl_token_2022::extension::{BaseStateWithExtensions, ExtensionType, StateWithExtensions};
-use spl_token_2022::state::{Account, Mint};
-use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
+use spl_token_2022_interface::state::{Account, Mint};
+use spl_token_2022_interface::ID as TOKEN_2022_PROGRAM_ID;
+use spl_token_interface::instruction::{close_account, initialize_account3, sync_native};
+use spl_token_interface::{native_mint, ID as TOKEN_PROGRAM_ID};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, error::Error};
 
@@ -53,7 +54,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
     let native_mint_wrapping_strategy = *NATIVE_MINT_WRAPPING_STRATEGY.try_lock()?;
     let native_mint_index = mint_addresses
         .iter()
-        .position(|&x| x == spl_token::native_mint::ID);
+        .position(|&x| x == spl_token_interface::native_mint::ID);
     let has_native_mint = native_mint_index.is_some();
 
     let maybe_mint_account_infos = rpc.get_multiple_accounts(&mint_addresses).await?;
@@ -310,7 +311,7 @@ pub(crate) fn get_current_transfer_fee(
 /// # Example
 ///
 /// ```rust
-/// use solana_program::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use orca_whirlpools_sdk::order_mints;
 /// use std::str::FromStr;
 ///

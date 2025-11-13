@@ -2,17 +2,20 @@ use std::error::Error;
 
 use orca_whirlpools_client::{get_position_address, Position, Whirlpool};
 use serial_test::serial;
+use solana_keypair::Signer;
+use solana_program_pack::Pack;
 use solana_program_test::tokio::{self};
-use solana_sdk::{program_pack::Pack, pubkey::Pubkey, signer::Signer};
-use spl_token_2022::state::Account;
+use solana_pubkey::Pubkey;
+use spl_token_2022_interface::state::Account;
 
 use crate::{
     close_position_instructions, create_concentrated_liquidity_pool_instructions,
     create_splash_pool_instructions, decrease_liquidity_instructions,
     harvest_position_instructions, increase_liquidity_instructions,
-    open_full_range_position_instructions, swap_instructions,
+    open_full_range_position_instructions_with_params, swap_instructions,
     tests::{setup_ata_with_amount, setup_mint_with_decimals, RpcContext},
-    DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING,
+    DecreaseLiquidityParam, IncreaseLiquidityParam, OpenPositionParams, SwapQuote, SwapType,
+    SPLASH_POOL_TICK_SPACING,
 };
 
 struct TestContext {
@@ -99,12 +102,15 @@ impl TestContext {
         let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
         let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
 
-        let position = open_full_range_position_instructions(
+        let position = open_full_range_position_instructions_with_params(
             &self.ctx.rpc,
             pool,
             IncreaseLiquidityParam::Liquidity(1000000000),
             None,
             Some(self.ctx.signer.pubkey()),
+            OpenPositionParams {
+                with_token_metadata_extension: false,
+            },
         )
         .await?;
 

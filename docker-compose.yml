@@ -189,7 +189,7 @@ services:
 
   test-program:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.85.0
     working_dir: /usr/src/whirlpools
     command: >
       cargo test -p whirlpool
@@ -225,7 +225,7 @@ services:
 
   test-ts-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.85.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -250,7 +250,7 @@ services:
 
   test-rust-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.85.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "cp legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so target/deploy/
@@ -267,7 +267,7 @@ services:
       - ./:/usr/src/whirlpools
 
   test-integration:
-    image: rust:1.84.0
+    image: rust:1.85.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -320,7 +320,7 @@ services:
 
   lint:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.85.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -

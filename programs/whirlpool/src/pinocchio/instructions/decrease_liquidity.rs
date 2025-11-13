@@ -1,5 +1,6 @@
 use crate::pinocchio::{
     errors::WhirlpoolErrorCode,
+    events::Event,
     ported::{
         manager_liquidity_manager::{
             pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
@@ -150,19 +151,18 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         delta_b,
     )?;
 
-    /*
-    emit!(LiquidityDecreased {
-        whirlpool: ctx.accounts.whirlpool.key(),
-        position: ctx.accounts.position.key(),
-        tick_lower_index: ctx.accounts.position.tick_lower_index,
-        tick_upper_index: ctx.accounts.position.tick_upper_index,
-        liquidity: liquidity_amount,
+    Event::LiquidityDecreased {
+        whirlpool: whirlpool_info.key(),
+        position: position_info.key(),
+        tick_lower_index: position.tick_lower_index(),
+        tick_upper_index: position.tick_upper_index(),
+        liquidity: data.liquidity_amount,
         token_a_amount: delta_a,
         token_b_amount: delta_b,
-        token_a_transfer_fee: transfer_fee_excluded_delta_a.transfer_fee,
-        token_b_transfer_fee: transfer_fee_excluded_delta_b.transfer_fee,
-    });
-    */
+        token_a_transfer_fee: 0,
+        token_b_transfer_fee: 0,
+    }
+    .emit()?;
 
     Ok(())
 }

@@ -253,7 +253,10 @@ services:
     image: rust:1.85.0
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "cp legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so target/deploy/
+      sh -c "apt-get update
+      && DEBIAN_FRONTEND=noninteractive apt-get install -y pkg-config libudev-dev
+      && rm -rf /var/lib/apt/lists/*
+      && cp legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so target/deploy/
       && cargo test --quiet --manifest-path rust-sdk/macros/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/core/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/client/Cargo.toml --lib

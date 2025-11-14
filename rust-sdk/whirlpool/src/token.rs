@@ -390,7 +390,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_no_tokens() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let result = prepare_token_accounts_instructions(&ctx.rpc, ctx.signer.pubkey(), vec![])
             .await
             .unwrap();
@@ -405,7 +405,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_token_without_balance() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
 
         let ata = get_associated_token_address_with_program_id(
@@ -453,7 +453,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_token_without_balance_multiple_with_te() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint0 = setup_mint(&ctx).await.unwrap();
         let mint1 = setup_mint_te(&ctx, &[]).await.unwrap();
 
@@ -511,7 +511,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_token_account_with_balance() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let amount = 1_000_000u64;
 
         // Create a mint
@@ -547,7 +547,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_insufficient_balance_check_not_enforced() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         // Create a mint and token account with small balance
         let mint = setup_mint(&ctx).await.unwrap();
@@ -572,7 +572,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_insufficient_balance_check_enforced() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_enforce_token_balance_check(true).unwrap();
 
         // Create a mint and token account with small balance
@@ -603,7 +603,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_nonexistent_token_account_balance_check_not_enforced() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         // Create a mint but no token account
         let mint = setup_mint(&ctx).await.unwrap();
@@ -624,7 +624,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_nonexistent_token_account_balance_check_enforced() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_enforce_token_balance_check(true).unwrap();
 
         // Create a mint but no token account
@@ -651,7 +651,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_existing_token_account() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         // Create a mint and token account using token.rs helpers
         let mint = setup_mint(&ctx).await.unwrap();
@@ -686,7 +686,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_native_mint_wrapping_none() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::None).unwrap();
 
         let ata = get_associated_token_address_with_program_id(
@@ -734,7 +734,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_native_mint_wrapping_ata() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Ata).unwrap();
 
         let ata = get_associated_token_address_with_program_id(
@@ -791,7 +791,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_native_mint_wrapping_keypair() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Keypair).unwrap();
         let amount = 1_000_000u64;
 
@@ -850,7 +850,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_native_mint_wrapping_seed() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Seed).unwrap();
 
         let amount = 1_000_000u64;
@@ -906,7 +906,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_native_token_balance() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let amount = 1_000_000_000; // 1 SOL
 
         // Setup native token (wSOL) account with balance using helper function
@@ -926,7 +926,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_token_2022_extensions() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         // Create Token-2022 mint with transfer fee
         let mint_te = setup_mint_te_fee(&ctx).await?;
@@ -953,7 +953,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_multiple_token_types() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         // Set native mint wrapping strategy to ATA
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Ata).unwrap();

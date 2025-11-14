@@ -650,7 +650,7 @@ mod tests {
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_keypair::{Keypair, Signer};
     use solana_program_pack::Pack;
-    use solana_program_test::tokio;
+
     use solana_pubkey::Pubkey;
     use spl_token_2022_interface::{
         extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
@@ -843,7 +843,7 @@ mod tests {
     ) {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
-            let ctx = RpcContext::new().await;
+            let ctx = RpcContext::new();
 
             let minted = setup_all_mints(&ctx).await.unwrap();
             let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
@@ -932,7 +932,7 @@ mod tests {
         #[case] lower_tick: i32,
         #[case] upper_tick: i32,
     ) -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let minted = setup_all_mints(&ctx).await?;
         let user_atas = setup_all_atas(&ctx, &minted).await?;
 
@@ -1058,7 +1058,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_close_position_fails_if_missing_mint() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         let bogus_mint = Pubkey::new_unique();
 

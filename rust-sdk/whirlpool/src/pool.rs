@@ -390,7 +390,6 @@ mod tests {
         setup_ata_with_amount, setup_mint_with_decimals, setup_whirlpool, RpcContext,
     };
     use serial_test::serial;
-    use solana_program_test::tokio;
 
     struct TestContext {
         ctx: RpcContext,
@@ -402,7 +401,7 @@ mod tests {
 
     impl TestContext {
         async fn new() -> Result<Self, Box<dyn Error>> {
-            let ctx = RpcContext::new().await;
+            let ctx = RpcContext::new();
             let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
             let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
 
@@ -498,7 +497,6 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports getProgramAccounts"]
     async fn test_fetch_all_pools_for_pair() {
         let test_ctx = TestContext::new().await.unwrap();
 

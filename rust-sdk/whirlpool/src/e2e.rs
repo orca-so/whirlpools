@@ -1,21 +1,19 @@
 use std::error::Error;
 
 use orca_whirlpools_client::{get_position_address, Position, Whirlpool};
-use serial_test::serial;
 use solana_keypair::Signer;
 use solana_program_pack::Pack;
-use solana_program_test::tokio::{self};
 use solana_pubkey::Pubkey;
 use spl_token_2022_interface::state::Account;
+use tokio::{self};
 
 use crate::{
     close_position_instructions, create_concentrated_liquidity_pool_instructions,
     create_splash_pool_instructions, decrease_liquidity_instructions,
     harvest_position_instructions, increase_liquidity_instructions,
-    open_full_range_position_instructions_with_params, swap_instructions,
+    open_full_range_position_instructions, swap_instructions,
     tests::{setup_ata_with_amount, setup_mint_with_decimals, RpcContext},
-    DecreaseLiquidityParam, IncreaseLiquidityParam, OpenPositionParams, SwapQuote, SwapType,
-    SPLASH_POOL_TICK_SPACING,
+    DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING,
 };
 
 struct TestContext {
@@ -28,7 +26,7 @@ struct TestContext {
 
 impl TestContext {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         let ata_a = setup_ata_with_amount(&ctx, mint_a, 500_000_000_000).await?;
@@ -102,15 +100,12 @@ impl TestContext {
         let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
         let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
 
-        let position = open_full_range_position_instructions_with_params(
+        let position = open_full_range_position_instructions(
             &self.ctx.rpc,
             pool,
             IncreaseLiquidityParam::Liquidity(1000000000),
             None,
             Some(self.ctx.signer.pubkey()),
-            OpenPositionParams {
-                with_token_metadata_extension: false,
-            },
         )
         .await?;
 
@@ -524,7 +519,6 @@ impl TestContext {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_splash_pool() {
     let ctx = TestContext::new().await.unwrap();
     let pool = ctx.init_splash_pool().await.unwrap();
@@ -544,7 +538,6 @@ async fn test_splash_pool() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_concentrated_liquidity_pool() {
     let ctx = TestContext::new().await.unwrap();
     let pool = ctx.init_concentrated_liquidity_pool().await.unwrap();

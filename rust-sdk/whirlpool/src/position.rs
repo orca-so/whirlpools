@@ -314,14 +314,13 @@ mod tests {
     };
     use serial_test::serial;
     use solana_keypair::Signer;
-    use solana_program_test::tokio;
+
     use std::error::Error;
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports gpa"]
     async fn test_fetch_positions_for_owner_no_positions() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
         assert!(
@@ -333,9 +332,8 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports gpa"]
     async fn test_fetch_positions_for_owner_with_position() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
@@ -348,7 +346,8 @@ mod tests {
         let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) Add a position bundle, optionally with multiple bundled positions
-        let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+        let _position_bundle_pubkey =
+            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()])).await?;
 
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
@@ -359,22 +358,27 @@ mod tests {
             "Did not find all positions for the owner (expected normal, te_position, bundle)"
         );
 
-        // Existing checks remain...
-        match &positions[0] {
-            PositionOrBundle::Position(pos) => {
-                assert_eq!(pos.address, normal_position_pubkey);
+        // Find the normal position in the results (order is not deterministic)
+        let normal_position = positions.iter().find_map(|p| match p {
+            PositionOrBundle::Position(pos) if pos.data.position_mint == normal_position_pubkey => {
+                Some(pos)
             }
-            _ => panic!("Expected a single position, but found a bundle!"),
-        }
+            _ => None,
+        });
+
+        assert!(
+            normal_position.is_some(),
+            "Expected to find the normal position with mint {}",
+            normal_position_pubkey
+        );
 
         Ok(())
     }
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports gpa"]
     async fn test_fetch_positions_in_whirlpool() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
@@ -387,7 +391,8 @@ mod tests {
         let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) position bundle
-        let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+        let _position_bundle_pubkey =
+            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()])).await?;
 
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
 

@@ -323,7 +323,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_error_if_no_funder() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
 
@@ -336,7 +336,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_error_if_tokens_not_ordered() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
 
@@ -356,7 +356,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
         let price = 10.0;
@@ -407,7 +407,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool_with_one_te_token() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -458,7 +458,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool_with_two_te_tokens() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -509,7 +509,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool_with_transfer_fee() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
         let price = 10.0;
@@ -560,7 +560,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
         let price = 10.0;
@@ -612,7 +612,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_one_te_token() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -664,7 +664,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_two_te_tokens() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -716,7 +716,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_transfer_fee() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
         let price = 10.0;
@@ -768,7 +768,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_scaled_ui_amount() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_sua = setup_mint_te_sua(&ctx).await.unwrap();
         let price = 10.0;

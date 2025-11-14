@@ -314,13 +314,8 @@ pub struct OpenPositionInstruction {
     pub initialization_cost: u64,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct OpenPositionParams {
-    pub with_token_metadata_extension: bool,
-}
-
 #[allow(clippy::too_many_arguments)]
-async fn internal_open_position_with_params(
+async fn internal_open_position(
     rpc: &RpcClient,
     pool_address: Pubkey,
     whirlpool: Whirlpool,
@@ -331,7 +326,6 @@ async fn internal_open_position_with_params(
     mint_b_info: &Account,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
-    open_position_params: OpenPositionParams,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     let slippage_tolerance_bps =
@@ -464,7 +458,7 @@ async fn internal_open_position_with_params(
         .instruction(OpenPositionWithTokenExtensionsInstructionArgs {
             tick_lower_index: lower_initializable_tick_index,
             tick_upper_index: upper_initializable_tick_index,
-            with_token_metadata_extension: open_position_params.with_token_metadata_extension,
+            with_token_metadata_extension: true,
         }),
     );
 
@@ -564,13 +558,12 @@ async fn internal_open_position_with_params(
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
-pub async fn open_full_range_position_instructions_with_params(
+pub async fn open_full_range_position_instructions(
     rpc: &RpcClient,
     pool_address: Pubkey,
     param: IncreaseLiquidityParam,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
-    open_position_params: OpenPositionParams,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
@@ -584,7 +577,7 @@ pub async fn open_full_range_position_instructions_with_params(
     let mint_b_info = mint_infos[1]
         .as_ref()
         .ok_or("Token B mint info not found")?;
-    internal_open_position_with_params(
+    internal_open_position(
         rpc,
         pool_address,
         whirlpool,
@@ -595,27 +588,6 @@ pub async fn open_full_range_position_instructions_with_params(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
-        open_position_params,
-    )
-    .await
-}
-
-pub async fn open_full_range_position_instructions(
-    rpc: &RpcClient,
-    pool_address: Pubkey,
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: Option<u16>,
-    funder: Option<Pubkey>,
-) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    open_full_range_position_instructions_with_params(
-        rpc,
-        pool_address,
-        param,
-        slippage_tolerance_bps,
-        funder,
-        OpenPositionParams {
-            with_token_metadata_extension: true,
-        },
     )
     .await
 }
@@ -688,7 +660,7 @@ pub async fn open_full_range_position_instructions(
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
-pub async fn open_position_instructions_with_params(
+pub async fn open_position_instructions(
     rpc: &RpcClient,
     pool_address: Pubkey,
     lower_price: f64,
@@ -696,7 +668,6 @@ pub async fn open_position_instructions_with_params(
     param: IncreaseLiquidityParam,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
-    open_position_params: OpenPositionParams,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     if lower_price <= 0.0 || upper_price <= 0.0 {
         return Err("Floating price must be greater than 0.0".into());
@@ -724,7 +695,7 @@ pub async fn open_position_instructions_with_params(
     let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b);
     let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b);
 
-    internal_open_position_with_params(
+    internal_open_position(
         rpc,
         pool_address,
         whirlpool,
@@ -735,35 +706,9 @@ pub async fn open_position_instructions_with_params(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
-        open_position_params,
     )
     .await
 }
-
-pub async fn open_position_instructions(
-    rpc: &RpcClient,
-    pool_address: Pubkey,
-    lower_price: f64,
-    upper_price: f64,
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: Option<u16>,
-    funder: Option<Pubkey>,
-) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    open_position_instructions_with_params(
-        rpc,
-        pool_address,
-        lower_price,
-        upper_price,
-        param,
-        slippage_tolerance_bps,
-        funder,
-        OpenPositionParams {
-            with_token_metadata_extension: true,
-        },
-    )
-    .await
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -774,7 +719,7 @@ mod tests {
     use serial_test::serial;
     use solana_keypair::{Keypair, Signer};
     use solana_program_pack::Pack;
-    use solana_program_test::tokio;
+
     use solana_pubkey::Pubkey;
     use spl_token_2022_interface::{
         extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
@@ -951,7 +896,7 @@ mod tests {
     ) {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
-            let ctx = RpcContext::new().await;
+            let ctx = RpcContext::new();
 
             let minted = setup_all_mints(&ctx).await.unwrap();
             let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
@@ -1017,7 +962,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_increase_liquidity_fails_if_authority_is_default() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         let minted = setup_all_mints(&ctx).await?;
         let _user_atas = setup_all_atas(&ctx, &minted).await?;
@@ -1055,7 +1000,7 @@ mod tests {
     #[serial]
     async fn test_increase_liquidity_succeeds_if_deposit_exceeds_user_balance_when_balance_check_not_enforced(
     ) -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         let minted = setup_all_mints(&ctx).await?;
         let _user_atas = setup_all_atas(&ctx, &minted).await?;
@@ -1088,7 +1033,7 @@ mod tests {
     #[serial]
     async fn test_increase_liquidity_fails_if_deposit_exceeds_user_balance_when_balance_check_enforced(
     ) -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         crate::set_enforce_token_balance_check(true)?;
 
         let minted = setup_all_mints(&ctx).await?;
@@ -1129,7 +1074,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_open_position_fails_if_lower_price_is_zero() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         let minted = setup_all_mints(&ctx).await?;
         let _user_atas = setup_all_atas(&ctx, &minted).await?;
@@ -1170,7 +1115,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_open_position_fails_if_upper_price_is_zero() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
 
         let minted = setup_all_mints(&ctx).await?;
         let _user_atas = setup_all_atas(&ctx, &minted).await?;

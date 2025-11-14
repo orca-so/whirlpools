@@ -45,8 +45,12 @@ bs58 = { version = "^0.5.1", default-features = false }
 
 [dev-dependencies]
 serial_test = { version = "^3.1" }
-solana-program-test = { version = "^3" }
+litesvm = { version = "^0.8" }
+litesvm-token = "0.8.1"
 solana-version = { version = "^3" }
+solana-clock = { version = "^3" }
+solana-sysvar = { version = "^3" }
+agave-feature-set = { version = "^3.0" }
 async-trait = { version = "^0.1" }
 base64 = { version = "^0.20" }
 toml = { version = "^0.7" }

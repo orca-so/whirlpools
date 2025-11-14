@@ -1,5 +1,17 @@
 # @orca-so/whirlpools-example-ts-next
 
+## 0.1.3
+
+### Patch Changes
+
+- [#1076](https://github.com/orca-so/whirlpools/pull/1076) [`743e758`](https://github.com/orca-so/whirlpools/commit/743e758740622475691866ca34d571799880fdd3) Thanks [@boosik-sol](https://github.com/boosik-sol)! - Added Next.js example demonstrating browser wallet integration with swap functionality.
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update to Anchor 0.32.1
+
+- Updated dependencies [[`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278), [`cb68301`](https://github.com/orca-so/whirlpools/commit/cb68301efabc5d24b6a9b88ed73d5d2d140cf18d), [`743e758`](https://github.com/orca-so/whirlpools/commit/743e758740622475691866ca34d571799880fdd3), [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278)]:
+  - @orca-so/tx-sender@2.0.0
+  - @orca-so/whirlpools@5.0.0
+
 ## 0.1.2
 
 ### Patch Changes

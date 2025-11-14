@@ -1,5 +1,48 @@
 # @orca-so/tx-sender
 
+## 2.0.0
+
+### Major Changes
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update dependencies to support contract upgrade to Anchor 0.29->0.31.1 and Solana Program 1.17->2.1
+
+- [#1076](https://github.com/orca-so/whirlpools/pull/1076) [`743e758`](https://github.com/orca-so/whirlpools/commit/743e758740622475691866ca34d571799880fdd3) Thanks [@boosik-sol](https://github.com/boosik-sol)! - Improve browser wallet compatibility and add configurable transaction sending strategy
+
+  **Browser Wallet Support:**
+  - `buildTransaction` now accepts `KeyPairSigner | NoopSigner` and automatically detects signer type
+  - Performs partial signing for NoopSigner (browser wallets), full signing for KeyPairSigner (Node.js)
+  - `sendTransaction` now accepts `(FullySignedTransaction | Transaction) & TransactionWithLifetime` to support both workflows
+
+  **Configurable RPC Usage:**
+  - Added `pollIntervalMs` (default: 0) and `resendOnPoll` (default: true) options to `setRpc()`
+  - Allows control over confirmation polling frequency and transaction resending behavior
+  - Default settings optimized for premium RPCs; public RPC users can configure conservative settings
+
+  **Breaking Changes:**
+  - `buildTransaction` no longer accepts `Address` string parameter. Must pass `KeyPairSigner | NoopSigner` instance to ensure same object is used for both instruction building and transaction building (required by Solana's `@solana/kit` identity checks).
+
+  **Migration:**
+
+  ```typescript
+  // Before
+  await buildTransaction(instructions, "7Td...zzc");
+
+  // After
+  const noopSigner = createNoopSigner(address("7Td...zzc"));
+  const { instructions } = await swapInstructions(
+    rpc,
+    params,
+    pool,
+    100,
+    noopSigner,
+  );
+  await buildTransaction(instructions, noopSigner);
+  ```
+
+### Patch Changes
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update to Anchor 0.32.1
+
 ## 1.0.2
 
 ### Patch Changes

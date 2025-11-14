@@ -9,7 +9,7 @@ NODE_VERSION="22"
 YARN_VERSION="4.6.0"
 SOLANA_VERSION="v2.2.1"
 ANCHOR_VERSION="v0.32.1"
-RUST_VERSION_FOR_PROJECT="1.85.0"
+RUST_VERSION_FOR_PROJECT="1.86.0"
 
 # Resolve repo root from this script's directory
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"

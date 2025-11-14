@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use serde_json::from_value;
-use solana_account_decoder::{UiAccountData, UiAccountEncoding};
+use solana_account_decoder::UiAccountData;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
@@ -8,7 +8,8 @@ use solana_sysvar_id::SysvarId;
 use std::{error::Error, str::FromStr};
 
 #[cfg(test)]
-use base64;
+#[cfg(test)]
+use solana_account_decoder::UiAccountEncoding;
 
 #[derive(Debug, Clone)]
 pub struct ParsedTokenAccount {

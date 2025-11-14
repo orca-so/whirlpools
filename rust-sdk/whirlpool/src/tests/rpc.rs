@@ -480,7 +480,8 @@ fn send(svm: &mut LiteSVM, method: &str, params: &[Value]) -> Result<Value, Box<
                 .filter_map(|(pubkey, account)| {
                     let account_clone: Account = account.clone().into();
                     if account_clone.data.len() >= SPL_TOKEN_ACCOUNT_OWNER_OFFSET {
-                        let account_owner_bytes = &account_clone.data[SPL_TOKEN_ACCOUNT_OWNER_OFFSET..64];
+                        let account_owner_bytes =
+                            &account_clone.data[SPL_TOKEN_ACCOUNT_OWNER_OFFSET..64];
                         if account_owner_bytes == owner.to_bytes() {
                             return Some((*pubkey, account_clone));
                         }

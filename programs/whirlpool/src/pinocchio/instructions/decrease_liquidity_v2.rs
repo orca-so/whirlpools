@@ -1,6 +1,5 @@
 use crate::pinocchio::{
-    errors::WhirlpoolErrorCode,
-    ported::{
+    Result, errors::WhirlpoolErrorCode, events::Event, ported::{
         manager_liquidity_manager::{
             pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
             pino_sync_modify_liquidity_values,
@@ -11,19 +10,16 @@ use crate::pinocchio::{
         util_token::{
             pino_calculate_transfer_fee_excluded_amount, pino_transfer_from_vault_to_owner_v2,
         },
-    },
-    state::{
+    }, state::{
         token::MemoryMappedTokenAccount,
         whirlpool::{
-            tick_array::loader::TickArraysMut, MemoryMappedPosition, MemoryMappedWhirlpool,
+            MemoryMappedPosition, MemoryMappedWhirlpool, tick_array::loader::TickArraysMut
         },
-    },
-    utils::{
+    }, utils::{
         account_info_iter::AccountIterator,
         account_load::{load_account_mut, load_token_program_account},
         verify::{verify_address, verify_constraint},
-    },
-    Result,
+    }
 };
 use crate::{
     constants::transfer_memo,
@@ -198,19 +194,18 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
 
-    /*
-    emit!(LiquidityDecreased {
-        whirlpool: ctx.accounts.whirlpool.key(),
-        position: ctx.accounts.position.key(),
-        tick_lower_index: ctx.accounts.position.tick_lower_index,
-        tick_upper_index: ctx.accounts.position.tick_upper_index,
-        liquidity: liquidity_amount,
+    Event::LiquidityDecreased {
+        whirlpool: whirlpool_info.key(),
+        position: position_info.key(),
+        tick_lower_index: position.tick_lower_index(),
+        tick_upper_index: position.tick_upper_index(),
+        liquidity: data.liquidity_amount,
         token_a_amount: delta_a,
         token_b_amount: delta_b,
         token_a_transfer_fee: transfer_fee_excluded_delta_a.transfer_fee,
         token_b_transfer_fee: transfer_fee_excluded_delta_b.transfer_fee,
-    });
-    */
+    }
+    .emit()?;
 
     Ok(())
 }

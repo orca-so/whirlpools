@@ -43,6 +43,8 @@ import {
 } from "../../utils/litesvm";
 
 type LiquidityIncreasedEvent = {
+  whirlpool: anchor.web3.PublicKey,
+  position: anchor.web3.PublicKey,
   liquidity: anchor.BN;
   tokenAAmount: anchor.BN;
   tokenBAmount: anchor.BN;
@@ -1789,14 +1791,16 @@ describe("increase_liquidity", () => {
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
     assert.ok(observedEvent);
-    const ev = observedEvent as LiquidityIncreasedEvent;
-    assert.ok(ev.liquidity.eq(liquidityAmount));
-    assert.ok(ev.tokenAAmount.eq(tokenAmount.tokenA));
-    assert.ok(ev.tokenBAmount.eq(tokenAmount.tokenB));
-    assert.ok(ev.tickLowerIndex === tickLowerIndex);
-    assert.ok(ev.tickUpperIndex === tickUpperIndex);
-    assert.ok(ev.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
-    assert.ok(ev.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+    const event = observedEvent as LiquidityIncreasedEvent;
+    assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+    assert.ok(event.position.equals(positions[0].publicKey));
+    assert.ok(event.liquidity.eq(liquidityAmount));
+    assert.ok(event.tokenAAmount.eq(tokenAmount.tokenA));
+    assert.ok(event.tokenBAmount.eq(tokenAmount.tokenB));
+    assert.ok(event.tickLowerIndex === tickLowerIndex);
+    assert.ok(event.tickUpperIndex === tickUpperIndex);
+    assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
+    assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
 
     ctx.program.removeEventListener(listener);
   });

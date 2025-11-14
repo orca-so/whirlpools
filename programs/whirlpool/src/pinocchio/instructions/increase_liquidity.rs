@@ -1,6 +1,5 @@
 use crate::pinocchio::{
-    errors::WhirlpoolErrorCode,
-    ported::{
+    Result, errors::WhirlpoolErrorCode, events::Event, ported::{
         manager_liquidity_manager::{
             pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
             pino_sync_modify_liquidity_values,
@@ -8,19 +7,16 @@ use crate::pinocchio::{
         manager_tick_array_manager::pino_update_tick_array_accounts,
         util_shared::pino_verify_position_authority,
         util_token::pino_transfer_from_owner_to_vault,
-    },
-    state::{
+    }, state::{
         token::MemoryMappedTokenAccount,
         whirlpool::{
-            tick_array::loader::TickArraysMut, MemoryMappedPosition, MemoryMappedWhirlpool,
+            MemoryMappedPosition, MemoryMappedWhirlpool, tick_array::loader::TickArraysMut
         },
-    },
-    utils::{
+    }, utils::{
         account_info_iter::AccountIterator,
         account_load::{load_account_mut, load_token_program_account},
         verify::{verify_address, verify_constraint},
-    },
-    Result,
+    }
 };
 use crate::{math::convert_to_liquidity_delta, util::to_timestamp_u64};
 use pinocchio::account_info::AccountInfo;
@@ -150,21 +146,18 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         delta_b,
     )?;
 
-    /*
-    emit!(LiquidityIncreased {
-        whirlpool: ctx.accounts.whirlpool.key(),
-        position: ctx.accounts.position.key(),
-        tick_lower_index: ctx.accounts.position.tick_lower_index,
-        tick_upper_index: ctx.accounts.position.tick_upper_index,
-        liquidity: liquidity_amount,
-        token_a_amount: transfer_fee_included_delta_a.amount,
-        token_b_amount: transfer_fee_included_delta_b.amount,
-        token_a_transfer_fee: transfer_fee_included_delta_a.transfer_fee,
-        token_b_transfer_fee: transfer_fee_included_delta_b.transfer_fee,
-    });
-
-    Ok(())
-    */
+    Event::LiquidityIncreased {
+        whirlpool: whirlpool_info.key(),
+        position: position_info.key(),
+        tick_lower_index: position.tick_lower_index(),
+        tick_upper_index: position.tick_upper_index(),
+        liquidity: data.liquidity_amount,
+        token_a_amount: delta_a,
+        token_b_amount: delta_b,
+        token_a_transfer_fee: 0,
+        token_b_transfer_fee: 0,
+    }
+    .emit()?;
 
     Ok(())
 }

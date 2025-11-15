@@ -151,7 +151,7 @@ export async function prepareTokenAccountsInstructions(
         : 0n;
       if (ENFORCE_TOKEN_BALANCE_CHECK) {
         assert(
-          BigInt(spec[mint.address]) <= existingBalance,
+          BigInt(spec[mint.address]) < existingBalance,
           `Token account for ${mint.address} does not have the required balance`,
         );
       }

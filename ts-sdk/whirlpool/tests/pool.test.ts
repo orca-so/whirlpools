@@ -73,15 +73,21 @@ describe("Fetch Pool", () => {
     assert.strictEqual(pool.whirlpoolsConfig, WHIRLPOOLS_CONFIG_ADDRESS);
   });
 
-  // TODO: Enable this test once solana-bankrun exposes getProgramAccounts
-  it.skip("Should be able to fetch all pools for a pair", async () => {
+  it("Should be able to fetch all pools for a pair", async () => {
     const pools = await fetchWhirlpoolsByTokenPair(rpc, mintA, mintB);
     assert.strictEqual(pools.length, 3);
-    assert.strictEqual(pools[0].initialized, true);
-    assert.strictEqual(pools[0].tickSpacing, 64);
-    assert.strictEqual(pools[1].initialized, true);
-    assert.strictEqual(pools[1].tickSpacing, SPLASH_POOL_TICK_SPACING);
-    assert.strictEqual(pools[2].initialized, false);
-    assert.strictEqual(pools[2].tickSpacing, 128);
+
+    // Check that we have all expected tick spacings
+    const tickSpacings = pools.map((p) => p.tickSpacing);
+    assert.ok(tickSpacings.includes(64));
+    assert.ok(tickSpacings.includes(SPLASH_POOL_TICK_SPACING));
+    assert.ok(tickSpacings.includes(128));
+
+    // Check initialized states
+    const initializedPools = pools.filter((p) => p.initialized);
+    const uninitializedPools = pools.filter((p) => !p.initialized);
+    assert.strictEqual(initializedPools.length, 2);
+    assert.strictEqual(uninitializedPools.length, 1);
+    assert.strictEqual(uninitializedPools[0].tickSpacing, 128);
   });
 });

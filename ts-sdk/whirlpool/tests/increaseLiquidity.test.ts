@@ -1,17 +1,21 @@
-import { describe, it, beforeAll } from "vitest";
-import { increaseLiquidityInstructions } from "../src/increaseLiquidity";
-import { rpc, signer, sendTransaction } from "./utils/mockRpc";
-import { setupMint, setupAta } from "./utils/token";
 import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token-2022";
 import type { Address } from "@solana/kit";
 import assert from "assert";
+import { beforeAll, describe, it } from "vitest";
+import {
+  DEFAULT_FUNDER,
+  setDefaultFunder,
+  setEnforceTokenBalanceCheck,
+} from "../src/config";
+import { increaseLiquidityInstructions } from "../src/increaseLiquidity";
+import { rpc, sendTransaction, signer } from "./utils/mockRpc";
 import {
   setupPosition,
   setupTEPosition,
   setupWhirlpool,
 } from "./utils/program";
-import { DEFAULT_FUNDER, setDefaultFunder } from "../src/config";
+import { setupAta, setupMint } from "./utils/token";
 import {
   setupAtaTE,
   setupMintTE,
@@ -132,7 +136,7 @@ describe("Increase Liquidity Instructions", () => {
     const liquidity = 100_000n;
     setDefaultFunder(DEFAULT_FUNDER);
     await assert.rejects(
-      increaseLiquidityInstructions(rpc, positions.entries().next().value, {
+      increaseLiquidityInstructions(rpc, positions.entries().next().value![1], {
         liquidity,
       }),
     );
@@ -141,10 +145,12 @@ describe("Increase Liquidity Instructions", () => {
 
   it("Should throw error increase liquidity amount by token is equal or greater than the token balance", async () => {
     const tokenAAmount = 1_000_000n;
+    setEnforceTokenBalanceCheck(true);
     await assert.rejects(
-      increaseLiquidityInstructions(rpc, positions.entries().next().value, {
+      increaseLiquidityInstructions(rpc, positions.entries().next().value![1], {
         tokenA: tokenAAmount,
       }),
     );
+    setEnforceTokenBalanceCheck(false);
   });
 });

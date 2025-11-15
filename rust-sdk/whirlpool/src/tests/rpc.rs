@@ -55,9 +55,10 @@ impl RpcContext {
     pub fn new() -> Self {
         let signer = Keypair::new();
 
-        // Use default feature set instead of all_enabled() to avoid SIMD-0219 stricter ABI constraints
-        // SIMD-0219 deprecated the realloc pattern where accounts are created small and expanded
-        // during initialization.
+        // Use the default feature set instead of `all_enabled()` to avoid an issue when trying to realloc
+        // inside `open_position_with_token_extensions` instruction where the realloc fails. The suspected
+        // problematic feature is `stricter_abi_and_runtime_constraints`, but deactivating it doesn't
+        // resolve the issue.
         let mut svm = LiteSVM::new()
             .with_feature_set(FeatureSet::default())
             .with_default_programs();

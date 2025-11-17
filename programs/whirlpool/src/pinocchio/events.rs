@@ -45,10 +45,10 @@ pub enum Event<'a> {
         new_range_token_b_amount: u64,
         token_a_transfer_amount: u64,
         token_a_transfer_fee: u64,
-        is_token_a_transfer_from_user: bool,
+        is_token_a_transfer_from_owner: bool,
         token_b_transfer_amount: u64,
         token_b_transfer_fee: u64,
-        is_token_b_transfer_from_user: bool,
+        is_token_b_transfer_from_owner: bool,
     },
 }
 

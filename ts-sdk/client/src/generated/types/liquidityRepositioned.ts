@@ -41,10 +41,10 @@ export type LiquidityRepositioned = {
   newRangeTokenBAmount: bigint;
   tokenATransferAmount: bigint;
   tokenATransferFee: bigint;
-  isTokenATransferFromUser: boolean;
+  isTokenATransferFromOwner: boolean;
   tokenBTransferAmount: bigint;
   tokenBTransferFee: bigint;
-  isTokenBTransferFromUser: boolean;
+  isTokenBTransferFromOwner: boolean;
 };
 
 export type LiquidityRepositionedArgs = {
@@ -62,10 +62,10 @@ export type LiquidityRepositionedArgs = {
   newRangeTokenBAmount: number | bigint;
   tokenATransferAmount: number | bigint;
   tokenATransferFee: number | bigint;
-  isTokenATransferFromUser: boolean;
+  isTokenATransferFromOwner: boolean;
   tokenBTransferAmount: number | bigint;
   tokenBTransferFee: number | bigint;
-  isTokenBTransferFromUser: boolean;
+  isTokenBTransferFromOwner: boolean;
 };
 
 export function getLiquidityRepositionedEncoder(): FixedSizeEncoder<LiquidityRepositionedArgs> {
@@ -84,10 +84,10 @@ export function getLiquidityRepositionedEncoder(): FixedSizeEncoder<LiquidityRep
     ["newRangeTokenBAmount", getU64Encoder()],
     ["tokenATransferAmount", getU64Encoder()],
     ["tokenATransferFee", getU64Encoder()],
-    ["isTokenATransferFromUser", getBooleanEncoder()],
+    ["isTokenATransferFromOwner", getBooleanEncoder()],
     ["tokenBTransferAmount", getU64Encoder()],
     ["tokenBTransferFee", getU64Encoder()],
-    ["isTokenBTransferFromUser", getBooleanEncoder()],
+    ["isTokenBTransferFromOwner", getBooleanEncoder()],
   ]);
 }
 
@@ -107,10 +107,10 @@ export function getLiquidityRepositionedDecoder(): FixedSizeDecoder<LiquidityRep
     ["newRangeTokenBAmount", getU64Decoder()],
     ["tokenATransferAmount", getU64Decoder()],
     ["tokenATransferFee", getU64Decoder()],
-    ["isTokenATransferFromUser", getBooleanDecoder()],
+    ["isTokenATransferFromOwner", getBooleanDecoder()],
     ["tokenBTransferAmount", getU64Decoder()],
     ["tokenBTransferFee", getU64Decoder()],
-    ["isTokenBTransferFromUser", getBooleanDecoder()],
+    ["isTokenBTransferFromOwner", getBooleanDecoder()],
   ]);
 }
 

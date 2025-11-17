@@ -197,7 +197,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
             timestamp,
         )?;
 
-    let (token_a_delta, is_token_a_transfer_from_user) = calculate_token_delta(
+    let (token_a_delta, is_token_a_transfer_from_owner) = calculate_token_delta(
         existing_range_token_a_decrease_amount,
         new_range_token_a_increase_amount,
     );
@@ -205,11 +205,11 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_mint_a_info,
         token_a_delta,
         new_range_token_a_increase_amount,
-        is_token_a_transfer_from_user,
+        is_token_a_transfer_from_owner,
         new_range_token_max_a,
     )?;
 
-    let (token_b_delta, is_token_b_transfer_from_user) = calculate_token_delta(
+    let (token_b_delta, is_token_b_transfer_from_owner) = calculate_token_delta(
         existing_range_token_b_decrease_amount,
         new_range_token_b_increase_amount,
     );
@@ -217,7 +217,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_mint_b_info,
         token_b_delta,
         new_range_token_b_increase_amount,
-        is_token_b_transfer_from_user,
+        is_token_b_transfer_from_owner,
         new_range_token_max_b,
     )?;
 
@@ -242,7 +242,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_program_a_info,
         &remaining_accounts.transfer_hook_a,
         token_a_transfer_amount,
-        is_token_a_transfer_from_user,
+        is_token_a_transfer_from_owner,
         token_mint_b_info,
         token_vault_b_info,
         token_owner_account_b_info,
@@ -250,7 +250,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         &remaining_accounts.transfer_hook_b,
         memo_program_info,
         token_b_transfer_amount,
-        is_token_b_transfer_from_user,
+        is_token_b_transfer_from_owner,
     )?;
 
     Event::LiquidityRepositioned {
@@ -268,10 +268,10 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         new_range_token_b_amount: new_range_token_b_increase_amount,
         token_a_transfer_amount,
         token_a_transfer_fee,
-        is_token_a_transfer_from_user,
+        is_token_a_transfer_from_owner,
         token_b_transfer_amount,
         token_b_transfer_fee,
-        is_token_b_transfer_from_user,
+        is_token_b_transfer_from_owner,
     }
     .emit()?;
 
@@ -458,7 +458,7 @@ fn execute_token_delta_transfers(
     token_program_a: &AccountInfo,
     transfer_hook_a_accounts: &Option<Vec<&AccountInfo>>,
     token_a_delta: u64,
-    is_token_a_transfer_from_user: bool,
+    is_token_a_transfer_from_owner: bool,
     token_mint_b: &AccountInfo,
     token_vault_b: &AccountInfo,
     token_owner_account_b: &AccountInfo,
@@ -466,9 +466,9 @@ fn execute_token_delta_transfers(
     transfer_hook_b_accounts: &Option<Vec<&AccountInfo>>,
     memo_program: &AccountInfo,
     token_b_delta: u64,
-    is_token_b_transfer_from_user: bool,
+    is_token_b_transfer_from_owner: bool,
 ) -> Result<()> {
-    if !is_token_a_transfer_from_user {
+    if !is_token_a_transfer_from_owner {
         pino_transfer_from_vault_to_owner_v2(
             whirlpool,
             whirlpool_info,
@@ -494,7 +494,7 @@ fn execute_token_delta_transfers(
         )?;
     }
 
-    if !is_token_b_transfer_from_user {
+    if !is_token_b_transfer_from_owner {
         pino_transfer_from_vault_to_owner_v2(
             whirlpool,
             whirlpool_info,
@@ -527,10 +527,10 @@ fn calculate_net_transfer_amount_and_fee(
     token_mint_info: &AccountInfo,
     token_delta: u64,
     new_range_token_increase_amount: u64,
-    is_transfer_from_user: bool,
+    is_transfer_from_owner: bool,
     token_max: u64,
 ) -> Result<(u64, u64)> {
-    if !is_transfer_from_user {
+    if !is_transfer_from_owner {
         return Ok((token_delta, 0));
     }
 

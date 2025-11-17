@@ -1195,14 +1195,14 @@ describe("reposition_v2", () => {
           // the 40/60 -> 60/40 reposition results in the following transfers:
           // token a: user -> pool
           // token b: pool -> user
-          assert.equal(event.isTokenATransferFromUser, true);
+          assert.equal(event.isTokenATransferFromOwner, true);
           assert.ok(
             tokenTraits.tokenTraitA.hasTransferFeeExtension
               ? event.tokenATransferFee.gt(ZERO_BN)
               : event.tokenATransferFee.eq(ZERO_BN),
           );
 
-          assert.equal(event.isTokenBTransferFromUser, false);
+          assert.equal(event.isTokenBTransferFromOwner, false);
           assert.ok(event.tokenBTransferFee.eq(ZERO_BN));
 
           await sleep(100);

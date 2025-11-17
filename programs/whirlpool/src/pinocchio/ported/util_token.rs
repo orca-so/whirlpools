@@ -1,7 +1,9 @@
 use crate::pinocchio::{
+    constants::address::OPTIONAL_NON_ZERO_PUBKEY_NONE,
     cpi::{
-        memo_build_memo::BuildMemo, token_transfer::Transfer,
-        token_transfer_checked::TransferChecked,
+        memo_build_memo::BuildMemo,
+        token_transfer::Transfer,
+        token_transfer_checked::{TransferChecked, TransferCheckedWithHook},
     },
     errors::WhirlpoolErrorCode,
     state::{
@@ -18,9 +20,8 @@ use crate::util::{TransferFeeExcludedAmount, TransferFeeIncludedAmount};
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
     TransferFee, MAX_FEE_BASIS_POINTS,
 };
-use pinocchio::account_info::AccountInfo;
-use pinocchio::pubkey::Pubkey;
 use pinocchio::sysvars::{clock::Clock, Sysvar};
+use pinocchio::{account_info::AccountInfo, pubkey::pubkey_eq};
 
 pub fn pino_calculate_transfer_fee_excluded_amount(
     token_mint_info: &AccountInfo,
@@ -172,40 +173,22 @@ pub fn pino_transfer_from_owner_to_vault_v2(
     // The vault doesn't have MemoTransfer extension, so we don't need to use memo_program here
 
     // TransferHook extension
-    if let Some(hook_program_id) = pino_get_transfer_hook_program_id(&token_mint_extensions) {
-        // TODO: implement transfer with TransferHook CPI
-        unimplemented!()
-        /*
-        solana_program::log::sol_log_compute_units();
-        let mut account_infos = vec![
-            // owner to vault
-            token_owner_account.to_account_info(), // from (owner account)
-            token_mint.to_account_info(),          // mint
-            token_vault.to_account_info(),         // to (vault account)
-            authority.to_account_info(),           // authority (owner)
-        ];
-        solana_program::log::sol_log_compute_units();
-
-        let transfer_hook_accounts = transfer_hook_accounts
+    if pino_is_transfer_hook_enabled(&token_mint_extensions) {
+        let transfer_hook_accounts = transfer_hook_account_infos
             .as_deref()
-            .ok_or(ErrorCode::NoExtraAccountsForTransferHook)?;
+            .ok_or(WhirlpoolErrorCode::NoExtraAccountsForTransferHook)?;
 
-        spl_transfer_hook_interface::onchain::add_extra_accounts_for_execute_cpi(
-            &mut instruction,
-            &mut account_infos,
-            &hook_program_id,
-            // owner to vault
-            token_owner_account.to_account_info(), // from (owner account)
-            token_mint.to_account_info(),          // mint
-            token_vault.to_account_info(),         // to (vault account)
-            authority.to_account_info(),           // authority (owner)
-            amount,
+        TransferCheckedWithHook {
+            program: token_program_info,
+            from: token_owner_account_info,
+            mint: token_mint_info,
+            to: token_vault_info,
+            authority: authority_info,
             transfer_hook_accounts,
-        )?;
-        solana_program::log::sol_log_compute_units();
-        solana_program::program::invoke_signed(&instruction, &account_infos, &[])?;
-        solana_program::log::sol_log_compute_units();
-        */
+            amount,
+            decimals,
+        }
+        .invoke_signed(&[])?;
     } else {
         TransferChecked {
             program: token_program_info,
@@ -261,61 +244,35 @@ pub fn pino_transfer_from_vault_to_owner_v2(
     // MemoTransfer extension
     let token_owner_account =
         load_token_program_account::<MemoryMappedTokenAccount>(token_owner_account_info)?;
-    let token_owner_account_exteensions =
+    let token_owner_account_extensions =
         parse_token_extensions(token_owner_account.extensions_tlv_data())?;
-    if pino_is_transfer_memo_required(&token_owner_account_exteensions) {
+    if pino_is_transfer_memo_required(&token_owner_account_extensions) {
         BuildMemo {
             program: memo_program_info,
             memo,
         }
         .invoke_signed(&[])?;
     }
-    drop(token_owner_account_exteensions);
+    drop(token_owner_account_extensions);
     drop(token_owner_account);
 
     // TransferHook extension
-    if let Some(hook_program_id) = pino_get_transfer_hook_program_id(&token_mint_extensions) {
-        // TODO: implement transfer with TransferHook CPI
-        unimplemented!()
-
-        /*
-        let mut instruction = spl_token_2022::instruction::transfer_checked(
-            token_program.key,
-            // vault to owner
-            &token_vault_info.key(),         // from (vault account)
-            &token_mint_info.key(),          // mint
-            &token_owner_account_info.key(), // to (owner account)
-            &whirlpool.key(),           // authority (pool)
-            &[],
-            amount,
-            token_mint_info.decimals,
-        )?;
-
-        let mut account_infos = vec![
-            // vault to owner
-            token_vault_info.to_account_info(),         // from (vault account)
-            token_mint_info.to_account_info(),          // mint
-            token_owner_account_info.to_account_info(), // to (owner account)
-            whirlpool.to_account_info(),           // authority (pool)
-        ];
-
-        let transfer_hook_accounts = transfer_hook_accounts
+    if pino_is_transfer_hook_enabled(&token_mint_extensions) {
+        let transfer_hook_accounts = transfer_hook_account_infos
             .as_deref()
-            .ok_or(ErrorCode::NoExtraAccountsForTransferHook)?;
+            .ok_or(WhirlpoolErrorCode::NoExtraAccountsForTransferHook)?;
 
-        spl_transfer_hook_interface::onchain::add_extra_accounts_for_execute_cpi(
-            &mut instruction,
-            &mut account_infos,
-            &hook_program_id,
-            // vault to owner
-            token_vault_info.to_account_info(), // from (vault account)
-            token_mint_info.to_account_info(),  // mint
-            token_owner_account_info.to_account_info(), // to (owner account)
-            whirlpool.to_account_info(),   // authority (pool)
-            amount,
+        TransferCheckedWithHook {
+            program: token_program_info,
+            from: token_vault_info,
+            mint: token_mint_info,
+            to: token_owner_account_info,
+            authority: whirlpool_info,
             transfer_hook_accounts,
-        )?;
-        */
+            amount,
+            decimals,
+        }
+        .invoke_signed(&[whirlpool.seeds().as_ref().into()])?;
     } else {
         TransferChecked {
             program: token_program_info,
@@ -332,12 +289,10 @@ pub fn pino_transfer_from_vault_to_owner_v2(
     Ok(())
 }
 
-fn pino_get_transfer_hook_program_id<'a>(
-    token_extensions: &'a TokenExtensions,
-) -> Option<&'a Pubkey> {
+fn pino_is_transfer_hook_enabled(token_extensions: &TokenExtensions) -> bool {
     match token_extensions.transfer_hook {
-        None => None,
-        Some(hook) => Some(hook.program_id()),
+        None => false,
+        Some(hook) => !pubkey_eq(hook.program_id(), &OPTIONAL_NON_ZERO_PUBKEY_NONE),
     }
 }
 
@@ -366,7 +321,7 @@ pub fn pino_transfer_from_owner_to_vault(
     Ok(())
 }
 
-pub fn pino_transfer_from_vault_to_owner<'info>(
+pub fn pino_transfer_from_vault_to_owner(
     whirlpool: &MemoryMappedWhirlpool,
     whirlpool_info: &AccountInfo,
     token_vault_info: &AccountInfo,

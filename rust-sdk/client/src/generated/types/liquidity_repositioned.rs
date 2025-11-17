@@ -28,10 +28,10 @@ pub new_range_token_a_amount: u64,
 pub new_range_token_b_amount: u64,
 pub token_a_transfer_amount: u64,
 pub token_a_transfer_fee: u64,
-pub is_token_a_transfer_from_user: bool,
+pub is_token_a_transfer_from_owner: bool,
 pub token_b_transfer_amount: u64,
 pub token_b_transfer_fee: u64,
-pub is_token_b_transfer_from_user: bool,
+pub is_token_b_transfer_from_owner: bool,
 }
 
 

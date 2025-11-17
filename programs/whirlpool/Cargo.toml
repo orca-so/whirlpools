@@ -34,7 +34,6 @@ num_enum = { version = "=0.7.4" }
 bitflags = { version = "=2.8.0" }
 borsh = { version = "=0.10.4" }
 arrayvec = { version = "=0.7.6" }
-base58 = { version = "=0.2" }
 
 [dev-dependencies]
 proptest = "=1.5.0"

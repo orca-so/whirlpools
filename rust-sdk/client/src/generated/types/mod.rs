@@ -21,6 +21,7 @@
   pub(crate) mod r#position_reward_info;
   pub(crate) mod r#remaining_accounts_info;
   pub(crate) mod r#remaining_accounts_slice;
+  pub(crate) mod r#reposition_liquidity_method;
   pub(crate) mod r#tick;
   pub(crate) mod r#token_badge_attribute;
   pub(crate) mod r#traded;
@@ -42,6 +43,7 @@
   pub use self::r#position_reward_info::*;
   pub use self::r#remaining_accounts_info::*;
   pub use self::r#remaining_accounts_slice::*;
+  pub use self::r#reposition_liquidity_method::*;
   pub use self::r#tick::*;
   pub use self::r#token_badge_attribute::*;
   pub use self::r#traded::*;

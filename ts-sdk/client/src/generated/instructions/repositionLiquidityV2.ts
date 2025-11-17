@@ -18,10 +18,6 @@ import {
   getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU128Decoder,
-  getU128Encoder,
-  getU64Decoder,
-  getU64Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -46,8 +42,12 @@ import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 import {
   getRemainingAccountsInfoDecoder,
   getRemainingAccountsInfoEncoder,
+  getRepositionLiquidityMethodDecoder,
+  getRepositionLiquidityMethodEncoder,
   type RemainingAccountsInfo,
   type RemainingAccountsInfoArgs,
+  type RepositionLiquidityMethod,
+  type RepositionLiquidityMethodArgs,
 } from "../types";
 
 export const REPOSITION_LIQUIDITY_V2_DISCRIMINATOR = new Uint8Array([
@@ -157,22 +157,14 @@ export type RepositionLiquidityV2InstructionData = {
   discriminator: ReadonlyUint8Array;
   newTickLowerIndex: number;
   newTickUpperIndex: number;
-  newLiquidityAmount: bigint;
-  existingRangeTokenMinA: bigint;
-  existingRangeTokenMinB: bigint;
-  newRangeTokenMaxA: bigint;
-  newRangeTokenMaxB: bigint;
+  method: RepositionLiquidityMethod;
   remainingAccountsInfo: Option<RemainingAccountsInfo>;
 };
 
 export type RepositionLiquidityV2InstructionDataArgs = {
   newTickLowerIndex: number;
   newTickUpperIndex: number;
-  newLiquidityAmount: number | bigint;
-  existingRangeTokenMinA: number | bigint;
-  existingRangeTokenMinB: number | bigint;
-  newRangeTokenMaxA: number | bigint;
-  newRangeTokenMaxB: number | bigint;
+  method: RepositionLiquidityMethodArgs;
   remainingAccountsInfo: OptionOrNullable<RemainingAccountsInfoArgs>;
 };
 
@@ -182,11 +174,7 @@ export function getRepositionLiquidityV2InstructionDataEncoder(): Encoder<Reposi
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["newTickLowerIndex", getI32Encoder()],
       ["newTickUpperIndex", getI32Encoder()],
-      ["newLiquidityAmount", getU128Encoder()],
-      ["existingRangeTokenMinA", getU64Encoder()],
-      ["existingRangeTokenMinB", getU64Encoder()],
-      ["newRangeTokenMaxA", getU64Encoder()],
-      ["newRangeTokenMaxB", getU64Encoder()],
+      ["method", getRepositionLiquidityMethodEncoder()],
       [
         "remainingAccountsInfo",
         getOptionEncoder(getRemainingAccountsInfoEncoder()),
@@ -204,11 +192,7 @@ export function getRepositionLiquidityV2InstructionDataDecoder(): Decoder<Reposi
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["newTickLowerIndex", getI32Decoder()],
     ["newTickUpperIndex", getI32Decoder()],
-    ["newLiquidityAmount", getU128Decoder()],
-    ["existingRangeTokenMinA", getU64Decoder()],
-    ["existingRangeTokenMinB", getU64Decoder()],
-    ["newRangeTokenMaxA", getU64Decoder()],
-    ["newRangeTokenMaxB", getU64Decoder()],
+    ["method", getRepositionLiquidityMethodDecoder()],
     [
       "remainingAccountsInfo",
       getOptionDecoder(getRemainingAccountsInfoDecoder()),
@@ -268,11 +252,7 @@ export type RepositionLiquidityV2Input<
   systemProgram?: Address<TAccountSystemProgram>;
   newTickLowerIndex: RepositionLiquidityV2InstructionDataArgs["newTickLowerIndex"];
   newTickUpperIndex: RepositionLiquidityV2InstructionDataArgs["newTickUpperIndex"];
-  newLiquidityAmount: RepositionLiquidityV2InstructionDataArgs["newLiquidityAmount"];
-  existingRangeTokenMinA: RepositionLiquidityV2InstructionDataArgs["existingRangeTokenMinA"];
-  existingRangeTokenMinB: RepositionLiquidityV2InstructionDataArgs["existingRangeTokenMinB"];
-  newRangeTokenMaxA: RepositionLiquidityV2InstructionDataArgs["newRangeTokenMaxA"];
-  newRangeTokenMaxB: RepositionLiquidityV2InstructionDataArgs["newRangeTokenMaxB"];
+  method: RepositionLiquidityV2InstructionDataArgs["method"];
   remainingAccountsInfo: RepositionLiquidityV2InstructionDataArgs["remainingAccountsInfo"];
 };
 

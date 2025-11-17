@@ -186,10 +186,10 @@ describe("reposition_v2", () => {
               newTickLowerIndex: repositionTickLower,
               newTickUpperIndex: repositionTickUpper,
               newLiquidityAmount: initialLiquidity,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              tokenMaxA: new BN(500_000),
-              tokenMaxB: new BN(500_000),
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
               whirlpool: whirlpoolPda.publicKey,
               tokenProgramA: tokenProgramA,
               tokenProgramB: tokenProgramB,
@@ -286,10 +286,10 @@ describe("reposition_v2", () => {
               newTickLowerIndex: newTickLower,
               newTickUpperIndex: newTickUpper,
               newLiquidityAmount: initialLiquidity,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              tokenMaxA: new BN(500_000),
-              tokenMaxB: new BN(500_000),
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
               whirlpool: whirlpoolPda.publicKey,
               tokenProgramA: tokenProgramA,
               tokenProgramB: tokenProgramB,
@@ -377,10 +377,10 @@ describe("reposition_v2", () => {
               newTickLowerIndex: newTickLower,
               newTickUpperIndex: newTickUpper,
               newLiquidityAmount: repositionLiquidityAmount,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              tokenMaxA: new BN(500_000),
-              tokenMaxB: new BN(500_000),
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
               whirlpool: whirlpoolPda.publicKey,
               tokenProgramA: tokenProgramA,
               tokenProgramB: tokenProgramB,
@@ -502,10 +502,10 @@ describe("reposition_v2", () => {
               newTickLowerIndex: newTickLower,
               newTickUpperIndex: newTickUpper,
               newLiquidityAmount: initialLiquidity,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              tokenMaxA: new BN(500_000),
-              tokenMaxB: new BN(500_000),
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
               whirlpool: whirlpoolPda.publicKey,
               tokenProgramA: tokenProgramA,
               tokenProgramB: tokenProgramB,
@@ -602,10 +602,10 @@ describe("reposition_v2", () => {
               newTickLowerIndex: newTickLower,
               newTickUpperIndex: newTickUpper,
               newLiquidityAmount: initialLiquidity,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              tokenMaxA: new BN(500_000),
-              tokenMaxB: new BN(500_000),
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
               whirlpool: whirlpoolPda.publicKey,
               tokenProgramA: tokenProgramA,
               tokenProgramB: tokenProgramB,
@@ -677,10 +677,10 @@ describe("reposition_v2", () => {
                 newTickLowerIndex: initialTickLower,
                 newTickUpperIndex: initialTickUpper,
                 newLiquidityAmount: initialLiquidity,
-                tokenMinA: ZERO_BN,
-                tokenMinB: ZERO_BN,
-                tokenMaxA: new BN(500_000),
-                tokenMaxB: new BN(500_000),
+                existingRangeTokenMinA: ZERO_BN,
+                existingRangeTokenMinB: ZERO_BN,
+                newRangeTokenMaxA: new BN(500_000),
+                newRangeTokenMaxB: new BN(500_000),
                 whirlpool: whirlpoolPda.publicKey,
                 tokenProgramA: tokenProgramA,
                 tokenProgramB: tokenProgramB,
@@ -772,10 +772,10 @@ describe("reposition_v2", () => {
                 newTickLowerIndex: newTickLower,
                 newTickUpperIndex: newTickUpper,
                 newLiquidityAmount: initialLiquidity,
-                tokenMinA: ZERO_BN,
-                tokenMinB: ZERO_BN,
-                tokenMaxA: new BN(500_000),
-                tokenMaxB: new BN(500_000),
+                existingRangeTokenMinA: ZERO_BN,
+                existingRangeTokenMinB: ZERO_BN,
+                newRangeTokenMaxA: new BN(500_000),
+                newRangeTokenMaxB: new BN(500_000),
                 whirlpool: whirlpoolPda.publicKey,
                 tokenProgramA: tokenProgramA,
                 tokenProgramB: tokenProgramB,
@@ -868,10 +868,10 @@ describe("reposition_v2", () => {
                 newTickLowerIndex: newTickLower,
                 newTickUpperIndex: newTickUpper,
                 newLiquidityAmount: initialLiquidity,
-                tokenMinA: ZERO_BN,
-                tokenMinB: ZERO_BN,
-                tokenMaxA: new BN(100_000),
-                tokenMaxB: new BN(100_000),
+                existingRangeTokenMinA: ZERO_BN,
+                existingRangeTokenMinB: ZERO_BN,
+                newRangeTokenMaxA: new BN(100_000),
+                newRangeTokenMaxB: new BN(100_000),
                 whirlpool: whirlpoolPda.publicKey,
                 tokenProgramA: tokenProgramA,
                 tokenProgramB: tokenProgramB,
@@ -900,7 +900,7 @@ describe("reposition_v2", () => {
           const currTick = 0;
           const initialTickLower = -768;
           const initialTickUpper = 512;
-          const initialLiquidityAmount = new BN(10_000_000);
+          const initialLiquidity = new BN(10_000_000);
           // New position: 60:40 ratio, opposite of initial position
           const newTickLower = -512;
           const newTickUpper = 768;
@@ -913,7 +913,7 @@ describe("reposition_v2", () => {
               {
                 tickLowerIndex: initialTickLower,
                 tickUpperIndex: initialTickUpper,
-                liquidityAmount: initialLiquidityAmount,
+                liquidityAmount: initialLiquidity,
               },
             ],
             initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
@@ -1118,11 +1118,11 @@ describe("reposition_v2", () => {
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
               newTickLowerIndex: newTickLower,
               newTickUpperIndex: newTickUpper,
-              newLiquidityAmount: initialLiquidityAmount,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              tokenMaxA: new BN(500_000),
-              tokenMaxB: new BN(500_000),
+              newLiquidityAmount: initialLiquidity,
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
               whirlpool: whirlpoolPda.publicKey,
               tokenProgramA: tokenProgramA,
               tokenProgramB: tokenProgramB,
@@ -1213,7 +1213,7 @@ describe("reposition_v2", () => {
           );
           assert.equal(positionAfter?.tickLowerIndex, newTickLower);
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
-          assert.ok(positionAfter?.liquidity.eq(initialLiquidityAmount));
+          assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
           assert.ok(positionAfter?.feeOwedA.eq(positionAfterSwaps!.feeOwedA));
           assert.notEqual(
             positionAfter?.feeGrowthCheckpointA,
@@ -1241,7 +1241,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1295,11 +1295,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: poolInitInfo.tokenProgramA,
             tokenProgramB: poolInitInfo.tokenProgramB,
@@ -1327,7 +1327,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1381,11 +1381,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: poolInitInfo.tokenProgramA,
             tokenProgramB: poolInitInfo.tokenProgramB,
@@ -1413,7 +1413,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1464,11 +1464,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID, // invalid
             tokenProgramB: poolInitInfo.tokenProgramB,
@@ -1496,7 +1496,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1547,11 +1547,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: TEST_TOKEN_PROGRAM_ID, // invalid
             tokenProgramB: poolInitInfo.tokenProgramB,
@@ -1632,10 +1632,10 @@ describe("reposition_v2", () => {
             newTickLowerIndex: repositionTickLower,
             newTickUpperIndex: repositionTickUpper,
             newLiquidityAmount: initialLiquidity,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: METADATA_PROGRAM_ADDRESS, // invalid
             tokenProgramB: poolInitInfo.tokenProgramB,
@@ -1663,7 +1663,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1714,11 +1714,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: poolInitInfo.tokenProgramA,
             tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID, // invalid
@@ -1746,7 +1746,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1797,11 +1797,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: poolInitInfo.tokenProgramA,
             tokenProgramB: TEST_TOKEN_PROGRAM_ID, // invalid
@@ -1829,7 +1829,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1880,11 +1880,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: poolInitInfo.tokenProgramA,
             tokenProgramB: METADATA_PROGRAM_ADDRESS, // invalid
@@ -1912,7 +1912,7 @@ describe("reposition_v2", () => {
       const currTick = 0;
       const initialTickLower = -768;
       const initialTickUpper = 512;
-      const initialLiquidityAmount = new BN(10_000_000);
+      const initialLiquidity = new BN(10_000_000);
       const newTickLower = -512;
       const newTickUpper = 768;
       const tickSpacing = TickSpacing.Standard;
@@ -1963,11 +1963,11 @@ describe("reposition_v2", () => {
           WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
             newTickLowerIndex: newTickLower,
             newTickUpperIndex: newTickUpper,
-            newLiquidityAmount: initialLiquidityAmount,
-            tokenMinA: ZERO_BN,
-            tokenMinB: ZERO_BN,
-            tokenMaxA: new BN(500_000),
-            tokenMaxB: new BN(500_000),
+            newLiquidityAmount: initialLiquidity,
+            existingRangeTokenMinA: ZERO_BN,
+            existingRangeTokenMinB: ZERO_BN,
+            newRangeTokenMaxA: new BN(500_000),
+            newRangeTokenMaxB: new BN(500_000),
             whirlpool: whirlpoolPda.publicKey,
             tokenProgramA: poolInitInfo.tokenProgramA,
             tokenProgramB: poolInitInfo.tokenProgramB,

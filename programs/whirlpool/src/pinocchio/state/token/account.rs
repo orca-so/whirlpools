@@ -3,6 +3,7 @@ use crate::pinocchio::state::TokenProgramAccount;
 use super::super::{BytesU64, COption, Pubkey};
 
 #[repr(u8)]
+#[allow(dead_code)]
 pub enum AccountState {
     Uninitialized,
     Initialized,

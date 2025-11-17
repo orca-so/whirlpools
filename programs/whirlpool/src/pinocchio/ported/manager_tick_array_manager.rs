@@ -105,12 +105,12 @@ const TICK_INITIALIZATION_SIZE: usize =
 
 fn pino_increase_tick_array_size(tick_array_info: &AccountInfo) -> Result<()> {
     let required_size = tick_array_info.data_len() + TICK_INITIALIZATION_SIZE;
-    tick_array_info.realloc(required_size, true)?;
+    tick_array_info.resize(required_size)?;
     Ok(())
 }
 
 fn pino_decrease_tick_array_size(tick_array_info: &AccountInfo) -> Result<()> {
     let required_size = tick_array_info.data_len() - TICK_INITIALIZATION_SIZE;
-    tick_array_info.realloc(required_size, true)?;
+    tick_array_info.resize(required_size)?;
     Ok(())
 }

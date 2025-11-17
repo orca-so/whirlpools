@@ -22,6 +22,7 @@ export * from "./positionOpened";
 export * from "./positionRewardInfo";
 export * from "./remainingAccountsInfo";
 export * from "./remainingAccountsSlice";
+export * from "./repositionLiquidityMethod";
 export * from "./tick";
 export * from "./tokenBadgeAttribute";
 export * from "./traded";

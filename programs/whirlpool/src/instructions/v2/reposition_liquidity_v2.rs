@@ -67,3 +67,14 @@ pub struct RepositionLiquidityV2<'info> {
 
     pub system_program: Program<'info, System>,
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Eq, PartialEq)]
+pub enum RepositionLiquidityMethod {
+    ByLiquidity {
+        new_liquidity_amount: u128,
+        existing_range_token_min_a: u64,
+        existing_range_token_min_b: u64,
+        new_range_token_max_a: u64,
+        new_range_token_max_b: u64,
+    },
+}

@@ -1223,15 +1223,12 @@ pub mod whirlpool {
     /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
     ///                        the tick-spacing in this pool.
     /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
+    #[allow(unused_variables)]
     pub fn reposition_liquidity_v2<'info>(
         ctx: Context<'_, '_, '_, 'info, RepositionLiquidityV2<'info>>,
         new_tick_lower_index: i32,
         new_tick_upper_index: i32,
-        new_liquidity_amount: u128,
-        existing_range_token_min_a: u64,
-        existing_range_token_min_b: u64,
-        new_range_token_max_a: u64,
-        new_range_token_max_b: u64,
+        method: RepositionLiquidityMethod,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         // pinocchio implementation should be used

@@ -1,5 +1,6 @@
 use crate::{
     constants::transfer_memo,
+    instructions::RepositionLiquidityMethod,
     math::convert_to_liquidity_delta,
     pinocchio::{
         errors::WhirlpoolErrorCode,
@@ -43,7 +44,29 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     use anchor_lang::AnchorDeserialize;
     let data = crate::instruction::RepositionLiquidityV2::try_from_slice(&data[8..])?;
 
-    if data.new_liquidity_amount == 0 {
+    let (
+        new_liquidity_amount,
+        existing_range_token_min_a,
+        existing_range_token_min_b,
+        new_range_token_max_a,
+        new_range_token_max_b,
+    ) = match data.method {
+        RepositionLiquidityMethod::ByLiquidity {
+            new_liquidity_amount,
+            existing_range_token_min_a,
+            existing_range_token_min_b,
+            new_range_token_max_a,
+            new_range_token_max_b,
+        } => (
+            new_liquidity_amount,
+            existing_range_token_min_a,
+            existing_range_token_min_b,
+            new_range_token_max_a,
+            new_range_token_max_b,
+        ),
+    };
+
+    if new_liquidity_amount == 0 {
         Err(WhirlpoolErrorCode::LiquidityZero)?;
     }
 
@@ -144,7 +167,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_mint_a_info,
         existing_range_token_a_decrease_amount,
     )?;
-    if transfer_fee_excluded_amount_a.amount < data.existing_range_token_min_a {
+    if transfer_fee_excluded_amount_a.amount < existing_range_token_min_a {
         return Err(WhirlpoolErrorCode::TokenMinSubceeded.into());
     }
 
@@ -152,7 +175,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_mint_b_info,
         existing_range_token_b_decrease_amount,
     )?;
-    if transfer_fee_excluded_amount_b.amount < data.existing_range_token_min_b {
+    if transfer_fee_excluded_amount_b.amount < existing_range_token_min_b {
         return Err(WhirlpoolErrorCode::TokenMinSubceeded.into());
     }
 
@@ -170,7 +193,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
             position_account_info,
             new_tick_array_lower_info,
             new_tick_array_upper_info,
-            data.new_liquidity_amount,
+            new_liquidity_amount,
             timestamp,
         )?;
 
@@ -183,7 +206,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_a_delta,
         new_range_token_a_increase_amount,
         is_token_a_transfer_from_user,
-        data.new_range_token_max_a,
+        new_range_token_max_a,
     )?;
 
     let (token_b_delta, is_token_b_transfer_from_user) = calculate_token_delta(
@@ -195,7 +218,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_b_delta,
         new_range_token_b_increase_amount,
         is_token_b_transfer_from_user,
-        data.new_range_token_max_b,
+        new_range_token_max_b,
     )?;
 
     // After increase_liquidity, the new position range will have new growth checkpoints,
@@ -238,7 +261,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         new_range_tick_lower_index: data.new_tick_lower_index,
         new_range_tick_upper_index: data.new_tick_upper_index,
         existing_range_liquidity,
-        new_range_liquidity: data.new_liquidity_amount,
+        new_range_liquidity: new_liquidity_amount,
         existing_range_token_a_amount: existing_range_token_a_decrease_amount,
         existing_range_token_b_amount: existing_range_token_b_decrease_amount,
         new_range_token_a_amount: new_range_token_a_increase_amount,

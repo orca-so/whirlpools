@@ -43,8 +43,8 @@ import {
 } from "../../utils/litesvm";
 
 type LiquidityIncreasedEvent = {
-  whirlpool: anchor.web3.PublicKey,
-  position: anchor.web3.PublicKey,
+  whirlpool: anchor.web3.PublicKey;
+  position: anchor.web3.PublicKey;
   liquidity: anchor.BN;
   tokenAAmount: anchor.BN;
   tokenBAmount: anchor.BN;

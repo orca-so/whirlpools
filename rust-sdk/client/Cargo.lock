@@ -2654,7 +2654,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "5.0.1"
+version = "6.0.0"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.4",
@@ -4268,9 +4268,9 @@ dependencies = [
 
 [[package]]
 name = "solana-instruction"
-version = "2.3.0"
+version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47298e2ce82876b64f71e9d13a46bc4b9056194e7f9937ad3084385befa50885"
+checksum = "bab5682934bd1f65f8d2c16f21cb532526fcc1a09f796e2cacdb091eee5774ad"
 dependencies = [
  "bincode",
  "borsh 1.5.5",
@@ -4279,6 +4279,7 @@ dependencies = [
  "num-traits",
  "serde",
  "serde_derive",
+ "serde_json",
  "solana-define-syscall",
  "solana-pubkey",
  "wasm-bindgen",

@@ -253,7 +253,6 @@ pub fn pino_transfer_from_vault_to_owner_v2(
         }
         .invoke_signed(&[])?;
     }
-    drop(token_owner_account_extensions);
     drop(token_owner_account);
 
     // TransferHook extension

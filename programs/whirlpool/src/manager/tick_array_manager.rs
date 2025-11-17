@@ -213,14 +213,14 @@ fn transfer_rent_to_position<'info>(
 fn increase_tick_array_size(tick_array_account: &AccountInfo) -> Result<()> {
     let tick_array_account_info = tick_array_account.to_account_info();
     let required_size = tick_array_account_info.data_len() + TICK_INITIALIZATION_SIZE;
-    tick_array_account_info.realloc(required_size, true)?;
+    tick_array_account_info.resize(required_size)?;
     Ok(())
 }
 
 fn decrease_tick_array_size(tick_array_account: &AccountInfo) -> Result<()> {
     let tick_array_account_info = tick_array_account.to_account_info();
     let required_size = tick_array_account_info.data_len() - TICK_INITIALIZATION_SIZE;
-    tick_array_account_info.realloc(required_size, true)?;
+    tick_array_account_info.resize(required_size)?;
     Ok(())
 }
 

@@ -1,5 +1,6 @@
 pub mod position;
 pub mod tick_array;
+#[allow(clippy::module_inception)]
 pub mod whirlpool;
 
 pub use position::*;

@@ -370,10 +370,20 @@ fn send(svm: &mut LiteSVM, method: &str, params: &[Value]) -> Result<Value, Box<
             })?
         }
         "getProgramAccounts" => {
+            // https://solana.com/docs/rpc/http/getprogramaccounts
+            // Params per RPC spec:
+            // [0] programId (base-58 pubkey string)
+            // [1] optional config object (filters, encoding, context, etc.)
             let program_id_str = params[0].as_str().unwrap_or_default();
             let program_id = Pubkey::from_str(program_id_str)?;
             let config = &params[1];
             let encoding = get_encoding(config);
+
+            // Check if withContext is requested
+            let with_context = config
+                .get("withContext")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
 
             let filters = config
                 .get("filters")
@@ -413,11 +423,18 @@ fn send(svm: &mut LiteSVM, method: &str, params: &[Value]) -> Result<Value, Box<
                         };
 
                         if filter_bytes.is_empty() {
+                            println!("{} filtered bytes are empty", address);
                             passes_filters = false;
                             break;
                         }
 
                         if account.data.len() < offset + filter_bytes.len() {
+                            println!(
+                                "{} account data filtered bytes {} too short for offset {}",
+                                address,
+                                filter_bytes.len(),
+                                offset
+                            );
                             passes_filters = false;
                             break;
                         }
@@ -425,6 +442,10 @@ fn send(svm: &mut LiteSVM, method: &str, params: &[Value]) -> Result<Value, Box<
                         if &account.data[offset..offset + filter_bytes.len()]
                             != filter_bytes.as_slice()
                         {
+                            println!(
+                                "{} account data filtered bytes mismatch at offset {}",
+                                address, offset
+                            );
                             passes_filters = false;
                             break;
                         }
@@ -439,64 +460,113 @@ fn send(svm: &mut LiteSVM, method: &str, params: &[Value]) -> Result<Value, Box<
                 }
 
                 if passes_filters {
-                    let account_value = to_wire_account(&address, Some(account), encoding)?;
                     result.push(to_value(serde_json::json!({
                         "pubkey": address.to_string(),
-                        "account": account_value
+                        "account": to_wire_account(&address, Some(account), encoding)?
                     }))?);
                 }
             }
 
-            to_value(result)?
+            // Return with or without context based on the withContext parameter
+            if with_context {
+                to_value(Response {
+                    context: RpcResponseContext {
+                        slot,
+                        api_version: None,
+                    },
+                    value: result,
+                })?
+            } else {
+                to_value(result)?
+            }
         }
         "getTokenAccountsByOwner" => {
+            // https://solana.com/docs/rpc/http/gettokenaccountsbyowner
+            // Params per RPC spec:
+            // [0] owner (base-58 pubkey string)
+            // [1] filter config (object with either `mint` or `programId`)
+            // [2] optional config object (encoding, commitment, etc.)
             let owner_str = params[0].as_str().unwrap_or_default();
             let owner = Pubkey::from_str(owner_str)?;
             let filter_config = &params[1];
-            let encoding_config = if params.len() > 2 {
-                &params[2]
-            } else {
-                &Value::Null
-            };
+            let encoding_config = params.get(2).unwrap_or(&Value::Null);
             let encoding = get_encoding(encoding_config);
 
-            let program_ids = if let Some(program_id_str) =
-                filter_config.get("programId").and_then(|p| p.as_str())
-            {
-                vec![Pubkey::from_str(program_id_str)?]
-            } else if filter_config.get("mint").is_some() {
-                // If filtering by mint, we still need to check token programs
-                // For now, we'll return empty since mint filtering is more complex
-                vec![]
-            } else {
-                return Err("Invalid filter for getTokenAccountsByOwner".into());
-            };
+            // Extract either programId or mint filter, then validate the provided filters are mutually exclusive
+            let filter_by_program_id = filter_config
+                .get("programId")
+                .and_then(|p| p.as_str())
+                .and_then(|p| Pubkey::from_str(p).ok());
 
+            let filter_by_mint = filter_config
+                .get("mint")
+                .and_then(|m| m.as_str())
+                .and_then(|m| Pubkey::from_str(m).ok());
+
+            match (filter_by_program_id, filter_by_mint) {
+                (None, None) => {
+                    return Err(
+                        "getTokenAccountsByOwner requires either 'programId' or 'mint' filter"
+                            .into(),
+                    );
+                }
+                (Some(_), Some(_)) => {
+                    return Err(
+                        "getTokenAccountsByOwner accepts only one of 'programId' or 'mint', not both"
+                            .into(),
+                    );
+                }
+                _ => {}
+            }
+
+            const SPL_TOKEN_ACCOUNT_LEN: usize = 165;
+            const SPL_TOKEN_ACCOUNT_MINT_OFFSET: usize = 0;
             const SPL_TOKEN_ACCOUNT_OWNER_OFFSET: usize = 32;
+
             let accounts_db = svm.accounts_db();
             let token_accounts: Vec<(Pubkey, Account)> = accounts_db
                 .inner
                 .iter()
-                .filter(|(_, account)| program_ids.contains(account.owner()))
                 .filter_map(|(pubkey, account)| {
                     let account_clone: Account = account.clone().into();
-                    if account_clone.data.len() >= SPL_TOKEN_ACCOUNT_OWNER_OFFSET {
-                        let account_owner_bytes =
-                            &account_clone.data[SPL_TOKEN_ACCOUNT_OWNER_OFFSET..64];
-                        if account_owner_bytes == owner.to_bytes() {
-                            return Some((*pubkey, account_clone));
+
+                    // Filter by program ownership if specified
+                    if let Some(program_id) = filter_by_program_id {
+                        if account_clone.owner != program_id {
+                            return None;
                         }
                     }
-                    None
+
+                    // Verify account has minimum required size for SPL token account
+                    if account_clone.data.len() < SPL_TOKEN_ACCOUNT_LEN {
+                        return None;
+                    }
+
+                    // Check if owner matches
+                    let account_owner_bytes = &account_clone.data[SPL_TOKEN_ACCOUNT_OWNER_OFFSET
+                        ..SPL_TOKEN_ACCOUNT_OWNER_OFFSET + solana_pubkey::PUBKEY_BYTES];
+                    if account_owner_bytes != owner.to_bytes() {
+                        return None;
+                    }
+
+                    // Filter by mint if specified
+                    if let Some(mint) = filter_by_mint {
+                        let account_mint_bytes = &account_clone.data[SPL_TOKEN_ACCOUNT_MINT_OFFSET
+                            ..SPL_TOKEN_ACCOUNT_MINT_OFFSET + solana_pubkey::PUBKEY_BYTES];
+                        if account_mint_bytes != mint.to_bytes() {
+                            return None;
+                        }
+                    }
+
+                    Some((*pubkey, account_clone))
                 })
                 .collect();
 
             let mut result = Vec::new();
             for (address, account) in token_accounts {
-                let account_value = to_wire_account(&address, Some(account), encoding)?;
                 result.push(to_value(serde_json::json!({
                     "pubkey": address.to_string(),
-                    "account": account_value
+                    "account": to_wire_account(&address, Some(account), encoding)?
                 }))?);
             }
 

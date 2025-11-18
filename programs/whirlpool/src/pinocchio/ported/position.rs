@@ -1,9 +1,5 @@
 use crate::manager::tick_array_manager::get_tick_rent_amount;
-use crate::pinocchio::{
-    cpi::system_transfer::SystemTransfer,
-    errors::{AnchorErrorCode, WhirlpoolErrorCode},
-    Result,
-};
+use crate::pinocchio::{cpi::system_transfer::SystemTransfer, errors::WhirlpoolErrorCode, Result};
 use crate::state::Position;
 use pinocchio::{
     account_info::AccountInfo,
@@ -15,10 +11,6 @@ pub fn pino_ensure_position_has_enough_rent_for_ticks(
     position_info: &AccountInfo,
     system_program_info: &AccountInfo,
 ) -> Result<()> {
-    if !funder_info.is_signer() {
-        return Err(AnchorErrorCode::AccountNotSigner.into());
-    }
-
     let rent = Rent::get()?;
     let position_rent_required = rent.minimum_balance(Position::LEN);
     let tick_rent_amount = get_tick_rent_amount()?;

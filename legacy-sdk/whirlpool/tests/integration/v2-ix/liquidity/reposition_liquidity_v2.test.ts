@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { MathUtil, U64_MAX } from "@orca-so/common-sdk";
+import { calculateFee } from "@solana/spl-token";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -29,6 +30,27 @@ import { initTickArrayIfNeeded } from "../../../utils/init-utils";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../../utils/v2/token-2022";
+
+interface LiquidityRepositionedEventData {
+  whirlpool: anchor.web3.PublicKey;
+  position: anchor.web3.PublicKey;
+  existingRangeTickLowerIndex: number;
+  existingRangeTickUpperIndex: number;
+  newRangeTickLowerIndex: number;
+  newRangeTickUpperIndex: number;
+  existingRangeLiquidity: BN;
+  newRangeLiquidity: BN;
+  existingRangeTokenAAmount: BN;
+  existingRangeTokenBAmount: BN;
+  newRangeTokenAAmount: BN;
+  newRangeTokenBAmount: BN;
+  tokenATransferAmount: BN;
+  tokenATransferFee: BN;
+  isTokenATransferFromOwner: boolean;
+  tokenBTransferAmount: BN;
+  tokenBTransferFee: BN;
+  isTokenBTransferFromOwner: boolean;
+}
 
 describe("reposition_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -217,6 +239,130 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickLowerIndex, repositionTickLower);
           assert.equal(positionAfter?.tickUpperIndex, repositionTickUpper);
           assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
+
+          // Assert existing and new tick arrays
+          assert.equal(
+            positions[0].tickArrayLower.toString(),
+            positions[0].tickArrayUpper.toString(),
+            "existing lower tick array should be the same as the new lower tick array",
+          );
+          assert.ok(
+            newTickArrayLower.publicKey.toString() !==
+              newTickArrayUpper.publicKey.toString(),
+            "new lower tick array should be different from the new upper tick array",
+          );
+        });
+
+        it("reposition: 1-sided position below price to 1-sided above price", async () => {
+          // Initial position: 1-sided position below price (only token B)
+          const currTick = 0;
+          const initialTickLower = -1920;
+          const initialTickUpper = -1280;
+          const initialLiquidity = new BN(1_000_000);
+          // New position: 1-sided position above price
+          const newTickLower = 1280;
+          const newTickUpper = 1920;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing: TickSpacing.Standard,
+            positions: [
+              {
+                tickLowerIndex: initialTickLower,
+                tickUpperIndex: initialTickUpper,
+                liquidityAmount: initialLiquidity,
+              },
+            ],
+            initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
+          });
+
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenProgramA,
+              tokenProgramB,
+              tokenMintA,
+              tokenMintB,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tickSpacing,
+            },
+            positions,
+            tokenAccountA,
+            tokenAccountB,
+          } = fixture.getInfos();
+
+          const newTickArrayLower = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          const newTickArrayUpper = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+              newTickLowerIndex: newTickLower,
+              newTickUpperIndex: newTickUpper,
+              newLiquidityAmount: initialLiquidity,
+              existingRangeTokenMinA: ZERO_BN,
+              existingRangeTokenMinB: ZERO_BN,
+              newRangeTokenMaxA: new BN(500_000),
+              newRangeTokenMaxB: new BN(500_000),
+              whirlpool: whirlpoolPda.publicKey,
+              tokenProgramA: tokenProgramA,
+              tokenProgramB: tokenProgramB,
+              positionAuthority: provider.wallet.publicKey,
+              funder: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA: tokenMintA,
+              tokenMintB: tokenMintB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              existingTickArrayLower: positions[0].tickArrayLower,
+              existingTickArrayUpper: positions[0].tickArrayUpper,
+              newTickArrayLower: newTickArrayLower.publicKey,
+              newTickArrayUpper: newTickArrayUpper.publicKey,
+            }),
+          ).buildAndExecute();
+
+          const positionAfter = await fetcher.getPosition(
+            positions[0].publicKey,
+            IGNORE_CACHE,
+          );
+          assert.equal(positionAfter?.tickLowerIndex, newTickLower);
+          assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
+          assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
+
+          // Assert existing and new tick arrays are different
+          assert.ok(
+            positions[0].tickArrayLower.toString() !==
+              newTickArrayLower.publicKey.toString(),
+            "existing lower tick array should be different from the new lower tick array",
+          );
+          assert.ok(
+            positions[0].tickArrayUpper.toString() !==
+              newTickArrayUpper.publicKey.toString(),
+            "existing upper tick array should be different from the new upper tick array",
+          );
         });
 
         it("reposition: 1-sided position below price to 50:50 ratio", async () => {
@@ -317,6 +463,18 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickLowerIndex, newTickLower);
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
           assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
+
+          // Assert existing and new tick arrays
+          assert.equal(
+            positions[0].tickArrayLower.toString(),
+            positions[0].tickArrayUpper.toString(),
+            "existing lower tick array should be the same as the new lower tick array",
+          );
+          assert.ok(
+            newTickArrayLower.publicKey.toString() !==
+              newTickArrayUpper.publicKey.toString(),
+            "new lower tick array should be different from the new upper tick array",
+          );
         });
 
         it("reposition: tighten position width", async () => {
@@ -432,6 +590,16 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickLowerIndex, newTickLower);
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
           assert.ok(positionAfter?.liquidity.eq(repositionLiquidityAmount));
+
+          // Assert existing and new tick arrays are the same
+          assert.equal(
+            positions[0].tickArrayLower.toString(),
+            newTickArrayLower.publicKey.toString(),
+          );
+          assert.equal(
+            positions[0].tickArrayUpper.toString(),
+            newTickArrayUpper.publicKey.toString(),
+          );
         });
 
         it("reposition: widen position width", async () => {
@@ -533,6 +701,16 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickLowerIndex, newTickLower);
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
           assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
+
+          // Assert existing and new tick arrays are the same
+          assert.equal(
+            positions[0].tickArrayLower.toString(),
+            newTickArrayLower.publicKey.toString(),
+          );
+          assert.equal(
+            positions[0].tickArrayUpper.toString(),
+            newTickArrayUpper.publicKey.toString(),
+          );
         });
 
         it("reposition: dual-sided to 1-sided above price", async () => {
@@ -633,6 +811,18 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickLowerIndex, newTickLower);
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
           assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
+
+          // Assert existing and new tick arrays
+          assert.ok(
+            positions[0].tickArrayLower.toString() !=
+              positions[0].tickArrayUpper.toString(),
+            "existing lower tick array should be the same as the new lower tick array",
+          );
+          assert.equal(
+            newTickArrayLower.publicKey.toString(),
+            newTickArrayUpper.publicKey.toString(),
+            "new lower tick array should be the same as the new upper tick array",
+          );
         });
 
         it("fails to reposition liquidity with same range", async () => {
@@ -1170,7 +1360,8 @@ describe("reposition_v2", () => {
             "Expected 1 Liquidity Repositioned event",
           );
 
-          const event = liquidityRepositionedEvents[0].data;
+          const event = liquidityRepositionedEvents[0]
+            .data as LiquidityRepositionedEventData;
           assert.equal(
             event.whirlpool.toBase58(),
             whirlpoolPda.publicKey.toBase58(),
@@ -1192,18 +1383,64 @@ describe("reposition_v2", () => {
             "Token B amount should change",
           );
 
-          // the 40/60 -> 60/40 reposition results in the following transfers:
-          // token a: user -> pool
-          // token b: pool -> user
+          const assertTokenTransferFee = (
+            tokenTrait: TokenTrait,
+            transferAmount: BN,
+            transferFee: BN,
+          ) => {
+            if (!tokenTrait.hasTransferFeeExtension) {
+              assert.ok(transferFee.eq(ZERO_BN));
+              return;
+            }
+
+            if (transferAmount.isZero()) {
+              assert.ok(transferFee.eq(ZERO_BN));
+              return;
+            }
+
+            const transferFeeBasisPoints =
+              tokenTrait.transferFeeInitialBps ?? 0;
+            const maximumFee =
+              tokenTrait.transferFeeInitialMax ?? BigInt(U64_MAX.toString());
+
+            const expectedFee = new BN(
+              calculateFee(
+                {
+                  epoch: BigInt(0),
+                  transferFeeBasisPoints,
+                  maximumFee,
+                },
+                BigInt(transferAmount.toString()),
+              ).toString(),
+            );
+
+            assert.ok(
+              transferFee.eq(expectedFee),
+              `expected transfer fee ${expectedFee.toString()} for amount ${transferAmount.toString()}, received ${transferFee.toString()}`,
+            );
+          };
+
+          /**
+           * the 40/60 -> 60/40 reposition results in the following transfers:
+           * token a: user -> pool
+           * token b: pool -> user
+           *
+           * if the token has a transfer fee extension, the associated transfer
+           * in either direction should have a non-zero associated transfer fee
+           */
           assert.equal(event.isTokenATransferFromOwner, true);
-          assert.ok(
-            tokenTraits.tokenTraitA.hasTransferFeeExtension
-              ? event.tokenATransferFee.gt(ZERO_BN)
-              : event.tokenATransferFee.eq(ZERO_BN),
+          assertTokenTransferFee(
+            tokenTraits.tokenTraitA,
+            event.tokenATransferAmount,
+            event.tokenATransferFee,
           );
 
           assert.equal(event.isTokenBTransferFromOwner, false);
-          assert.ok(event.tokenBTransferFee.eq(ZERO_BN));
+          assertTokenTransferFee(
+            tokenTraits.tokenTraitB,
+            event.tokenBTransferAmount,
+            event.tokenBTransferFee,
+          );
 
           await sleep(100);
 
@@ -1231,6 +1468,24 @@ describe("reposition_v2", () => {
               ),
             );
           });
+
+          // Assert lower and upper tick arrays for the same range are different, lower and upper for the different ranges are the same
+          assert.ok(
+            positions[0].tickArrayLower.toString() !==
+              positions[0].tickArrayUpper.toString(),
+          );
+          assert.equal(
+            positions[0].tickArrayLower.toString(),
+            newTickArrayLower.publicKey.toString(),
+          );
+          assert.ok(
+            newTickArrayLower.publicKey.toString() !==
+              newTickArrayUpper.publicKey.toString(),
+          );
+          assert.equal(
+            positions[0].tickArrayUpper.toString(),
+            newTickArrayUpper.publicKey.toString(),
+          );
         });
       });
     });

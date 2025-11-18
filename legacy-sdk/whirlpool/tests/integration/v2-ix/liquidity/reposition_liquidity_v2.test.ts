@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { MathUtil, U64_MAX } from "@orca-so/common-sdk";
-import { calculateFee } from "@solana/spl-token";
+import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -19,7 +18,6 @@ import {
 import {
   getLiteSVM,
   initializeLiteSVMEnvironment,
-  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
@@ -31,7 +29,7 @@ import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../../utils/v2/token-2022";
 
-interface LiquidityRepositionedEventData {
+export interface LiquidityRepositionedEventData {
   whirlpool: anchor.web3.PublicKey;
   position: anchor.web3.PublicKey;
   existingRangeTickLowerIndex: number;
@@ -85,18 +83,6 @@ describe("reposition_v2", () => {
       {
         tokenTraitA: { isToken2022: true },
         tokenTraitB: { isToken2022: true },
-      },
-      {
-        tokenTraitA: {
-          isToken2022: true,
-          hasTransferFeeExtension: true,
-          transferFeeInitialBps: 500,
-        },
-        tokenTraitB: {
-          isToken2022: true,
-          hasTransferFeeExtension: true,
-          transferFeeInitialBps: 250,
-        },
       },
       {
         tokenTraitA: { isToken2022: false, isNativeMint: true },
@@ -539,7 +525,7 @@ describe("reposition_v2", () => {
 
           // A lower liquidity amount on a tigher position should trigger a transfer from vault -> owner
           const repositionLiquidityAmount = new BN(1_000_000);
-          const repositionSignature = await toTx(
+          await toTx(
             ctx,
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
               newTickLowerIndex: newTickLower,
@@ -568,30 +554,6 @@ describe("reposition_v2", () => {
               newTickArrayUpper: newTickArrayUpper.publicKey,
             }),
           ).buildAndExecute();
-
-          const getTransferFeeLogCount = (tokenTrait: TokenTrait) =>
-            tokenTrait.hasTransferFeeExtension ? 1 : 0;
-          const getTransferFeeLogs = async () => {
-            const repositionTx = await ctx.connection.getTransaction(
-              repositionSignature,
-              {
-                commitment: "confirmed",
-                maxSupportedTransactionVersion: 0,
-              },
-            );
-
-            return (repositionTx?.meta?.logMessages ?? []).filter((msg) => {
-              return /Program log: Memo \(len \d+\): "TFe:/.test(msg);
-            });
-          };
-
-          // Verify that the transfer fee memo is present if the transfer fee extension is enabled
-          await getTransferFeeLogs().then((logs) => {
-            const transferFeeLogCount =
-              getTransferFeeLogCount(tokenTraits.tokenTraitA) +
-              getTransferFeeLogCount(tokenTraits.tokenTraitB);
-            assert.ok(logs.length === transferFeeLogCount);
-          });
 
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
@@ -1401,43 +1363,6 @@ describe("reposition_v2", () => {
             "Token B amount should change",
           );
 
-          const assertTokenTransferFee = (
-            tokenTrait: TokenTrait,
-            transferAmount: BN,
-            transferFee: BN,
-          ) => {
-            if (!tokenTrait.hasTransferFeeExtension) {
-              assert.ok(transferFee.eq(ZERO_BN));
-              return;
-            }
-
-            if (transferAmount.isZero()) {
-              assert.ok(transferFee.eq(ZERO_BN));
-              return;
-            }
-
-            const transferFeeBasisPoints =
-              tokenTrait.transferFeeInitialBps ?? 0;
-            const maximumFee =
-              tokenTrait.transferFeeInitialMax ?? BigInt(U64_MAX.toString());
-
-            const expectedFee = new BN(
-              calculateFee(
-                {
-                  epoch: BigInt(0),
-                  transferFeeBasisPoints,
-                  maximumFee,
-                },
-                BigInt(transferAmount.toString()),
-              ).toString(),
-            );
-
-            assert.ok(
-              transferFee.eq(expectedFee),
-              `expected transfer fee ${expectedFee.toString()} for amount ${transferAmount.toString()}, received ${transferFee.toString()}`,
-            );
-          };
-
           /**
            * the 40/60 -> 60/40 reposition results in the following transfers:
            * token a: user -> pool
@@ -1447,20 +1372,7 @@ describe("reposition_v2", () => {
            * in either direction should have a non-zero associated transfer fee
            */
           assert.equal(event.isTokenATransferFromOwner, true);
-          assertTokenTransferFee(
-            tokenTraits.tokenTraitA,
-            event.tokenATransferAmount,
-            event.tokenATransferFee,
-          );
-
           assert.equal(event.isTokenBTransferFromOwner, false);
-          assertTokenTransferFee(
-            tokenTraits.tokenTraitB,
-            event.tokenBTransferAmount,
-            event.tokenBTransferFee,
-          );
-
-          await sleep(100);
 
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,

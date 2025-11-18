@@ -65,7 +65,10 @@ pub fn get_tick_rent_amount() -> Result<u64> {
         rent.exemption_threshold.to_bits(),
     ) {
         // floating point number operation is high cost, so we hardcode a precalculated value here
-        (112, 46980000u64, 4549597725964596257u64) => Ok(779520u64), // Solana
+        // see also: https://github.com/anza-xyz/solana-sdk/blob/5390fa973897e969c5adea858079c7de1fa67d07/rent/src/lib.rs#L55-L59
+        // - 3480u64 = 1_000_000_000 / 100 * 365 / (1024 * 1024)
+        // - 0x40_00_00_00_00_00_00_00u64 = 2.0f64 in u64 bits representation
+        (112, 3480u64, 0x40_00_00_00_00_00_00_00u64) => Ok(779520u64), // Solana
         _ => {
             let amount = ((TICK_INITIALIZATION_SIZE as u64 * rent.lamports_per_byte_year) as f64
                 * rent.exemption_threshold)

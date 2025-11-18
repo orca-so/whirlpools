@@ -107,14 +107,14 @@ pub fn check_is_usable_tick_and_get_offset(
 
     // manual division
     // 64, 32, 16, 8, 4, 2, 1
-    let mut dividor = tick_spacing_u32 * 64;
+    let mut divisor = tick_spacing_u32 * 64;
     let mut multiplier: isize = 64;
-    while dividor >= tick_spacing_u32 {
-        if remaining >= dividor {
-            remaining -= dividor;
+    while divisor >= tick_spacing_u32 {
+        if remaining >= divisor {
+            remaining -= divisor;
             offset += multiplier;
         }
-        dividor >>= 1;
+        divisor >>= 1;
         multiplier >>= 1;
     }
 

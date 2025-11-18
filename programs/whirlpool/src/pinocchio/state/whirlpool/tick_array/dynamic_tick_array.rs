@@ -30,15 +30,7 @@ impl TickArray for MemoryMappedDynamicTickArray {
     }
 
     fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
-        if !self.check_in_array_bounds(tick_index, tick_spacing) {
-            return Err(crate::errors::ErrorCode::TickNotFound.into());
-        }
-
-        let tick_offset = match super::check_is_usable_tick_and_get_offset(
-            tick_index,
-            tick_spacing,
-            self.start_tick_index(),
-        ) {
+        let tick_offset = match self.check_is_usable_tick_and_get_offset(tick_index, tick_spacing) {
             Some(offset) => offset,
             None => {
                 return Err(crate::errors::ErrorCode::TickNotFound.into());
@@ -61,15 +53,7 @@ impl TickArray for MemoryMappedDynamicTickArray {
         tick_spacing: u16,
         update: &TickUpdate,
     ) -> Result<()> {
-        if !self.check_in_array_bounds(tick_index, tick_spacing) {
-            return Err(crate::errors::ErrorCode::TickNotFound.into());
-        }
-
-        let tick_offset = match super::check_is_usable_tick_and_get_offset(
-            tick_index,
-            tick_spacing,
-            self.start_tick_index(),
-        ) {
+        let tick_offset = match self.check_is_usable_tick_and_get_offset(tick_index, tick_spacing) {
             Some(offset) => offset,
             None => {
                 return Err(crate::errors::ErrorCode::TickNotFound.into());
@@ -115,15 +99,11 @@ impl TickArray for MemoryMappedDynamicTickArray {
 }
 
 impl MemoryMappedDynamicTickArray {
-    fn byte_offset(&self, tick_offset: isize) -> Result<usize> {
-        if tick_offset < 0 {
-            return Err(crate::errors::ErrorCode::TickNotFound.into());
-        }
-
+    fn byte_offset(&self, tick_offset: usize) -> Result<usize> {
         let tick_bitmap = self.tick_bitmap();
         let mask = (1u128 << tick_offset) - 1;
         let initialized_ticks = (tick_bitmap & mask).count_ones() as usize;
-        let uninitialized_ticks = tick_offset as usize - initialized_ticks;
+        let uninitialized_ticks = tick_offset - initialized_ticks;
 
         let offset = initialized_ticks * DYNAMIC_TICK_INITIALIZED_LEN
             + uninitialized_ticks * DYNAMIC_TICK_UNINITIALIZED_LEN;
@@ -134,7 +114,7 @@ impl MemoryMappedDynamicTickArray {
         u128::from_le_bytes(self.tick_bitmap)
     }
 
-    fn update_tick_bitmap(&mut self, tick_offset: isize, initialized: bool) {
+    fn update_tick_bitmap(&mut self, tick_offset: usize, initialized: bool) {
         let mut tick_bitmap = self.tick_bitmap();
         if initialized {
             tick_bitmap |= 1 << tick_offset;

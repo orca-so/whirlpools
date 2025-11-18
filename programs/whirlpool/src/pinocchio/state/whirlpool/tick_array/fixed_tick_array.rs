@@ -25,22 +25,14 @@ impl TickArray for MemoryMappedFixedTickArray {
     }
 
     fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
-        if !self.check_in_array_bounds(tick_index, tick_spacing) {
-            return Err(crate::errors::ErrorCode::TickNotFound.into());
-        }
-
-        let tick_offset = match super::check_is_usable_tick_and_get_offset(
-            tick_index,
-            tick_spacing,
-            self.start_tick_index(),
-        ) {
+        let tick_offset = match self.check_is_usable_tick_and_get_offset(tick_index, tick_spacing) {
             Some(offset) => offset,
             None => {
                 return Err(crate::errors::ErrorCode::TickNotFound.into());
             }
         };
 
-        Ok(&self.ticks[tick_offset as usize])
+        Ok(&self.ticks[tick_offset])
     }
 
     fn update_tick(
@@ -49,22 +41,14 @@ impl TickArray for MemoryMappedFixedTickArray {
         tick_spacing: u16,
         update: &TickUpdate,
     ) -> Result<()> {
-        if !self.check_in_array_bounds(tick_index, tick_spacing) {
-            return Err(crate::errors::ErrorCode::TickNotFound.into());
-        }
-
-        let tick_offset = match super::check_is_usable_tick_and_get_offset(
-            tick_index,
-            tick_spacing,
-            self.start_tick_index(),
-        ) {
+        let tick_offset = match self.check_is_usable_tick_and_get_offset(tick_index, tick_spacing) {
             Some(offset) => offset,
             None => {
                 return Err(crate::errors::ErrorCode::TickNotFound.into());
             }
         };
 
-        self.ticks[tick_offset as usize].update(update);
+        self.ticks[tick_offset].update(update);
 
         Ok(())
     }

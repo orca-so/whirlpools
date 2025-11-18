@@ -102,8 +102,9 @@ impl MemoryMappedPosition {
         whirlpool: &MemoryMappedWhirlpool,
         new_tick_lower_index: i32,
         new_tick_upper_index: i32,
+        keep_owed: bool,
     ) -> Result<()> {
-        if !self.is_position_empty() {
+        if !self.is_position_empty(keep_owed) {
             return Err(ErrorCode::ClosePositionNotEmpty.into());
         }
 
@@ -133,21 +134,11 @@ impl MemoryMappedPosition {
         self.set_reward_infos(&update.reward_infos);
     }
 
-    pub fn update_reward_owed(&mut self, index: usize, amount_owed: u64) {
-        self.reward_infos[index].amount_owed = amount_owed.to_le_bytes();
-    }
+    fn is_position_empty(&self, keep_owed: bool) -> bool {
+        if keep_owed {
+            return self.liquidity() == 0;
+        }
 
-    pub fn update_fees_owed(&mut self, fees_owed_a: u64, fees_owed_b: u64) {
-        self.set_fee_owed_a(fees_owed_a);
-        self.set_fee_owed_b(fees_owed_b);
-    }
-
-    pub fn reset_fees_owed(&mut self) {
-        self.set_fee_owed_a(0);
-        self.set_fee_owed_b(0);
-    }
-
-    fn is_position_empty(&self) -> bool {
         let fees_not_owed = self.fee_owed_a() == 0 && self.fee_owed_b() == 0;
         let mut rewards_not_owed = true;
         for i in 0..NUM_REWARDS {

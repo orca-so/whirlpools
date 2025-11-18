@@ -54,6 +54,44 @@ pub trait TickArray {
         self.in_search_range(tick_index, tick_spacing, false)
     }
 
+    // Note: this function must not be used in get_next_init_tick_index because in that case,
+    // offset can be -1 (b to a direction and shifted case)
+    fn check_is_usable_tick_and_get_offset(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+    ) -> Option<usize> {
+        if !self.check_in_array_bounds(tick_index, tick_spacing)
+            || check_is_out_of_bounds(tick_index)
+        {
+            return None;
+        }
+
+        let tick_spacing_u32 = tick_spacing as u32;
+
+        let mut remaining = (tick_index - self.start_tick_index()).unsigned_abs();
+        let mut offset: usize = 0;
+
+        // manual division
+        // 64, 32, 16, 8, 4, 2, 1
+        let mut divisor = tick_spacing_u32 * 64;
+        let mut multiplier: usize = 64;
+        while divisor >= tick_spacing_u32 {
+            if remaining >= divisor {
+                remaining -= divisor;
+                offset += multiplier;
+            }
+            divisor >>= 1;
+            multiplier >>= 1;
+        }
+
+        if remaining == 0 {
+            Some(offset)
+        } else {
+            None
+        }
+    }
+
     fn is_min_tick_array(&self) -> bool {
         self.start_tick_index() <= MIN_TICK_INDEX
     }
@@ -89,38 +127,4 @@ fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isiz
 
 pub fn check_is_out_of_bounds(tick_index: i32) -> bool {
     !(MIN_TICK_INDEX..=MAX_TICK_INDEX).contains(&tick_index)
-}
-
-pub fn check_is_usable_tick_and_get_offset(
-    tick_index: i32,
-    tick_spacing: u16,
-    start_tick_index: i32,
-) -> Option<isize> {
-    if check_is_out_of_bounds(tick_index) {
-        return None; // false;
-    }
-
-    let tick_spacing_u32 = tick_spacing as u32;
-
-    let mut remaining = (tick_index - start_tick_index).unsigned_abs();
-    let mut offset: isize = 0;
-
-    // manual division
-    // 64, 32, 16, 8, 4, 2, 1
-    let mut divisor = tick_spacing_u32 * 64;
-    let mut multiplier: isize = 64;
-    while divisor >= tick_spacing_u32 {
-        if remaining >= divisor {
-            remaining -= divisor;
-            offset += multiplier;
-        }
-        divisor >>= 1;
-        multiplier >>= 1;
-    }
-
-    if remaining == 0 {
-        Some(offset)
-    } else {
-        None
-    }
 }

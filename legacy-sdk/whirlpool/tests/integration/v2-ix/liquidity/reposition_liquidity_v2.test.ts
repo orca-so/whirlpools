@@ -256,12 +256,12 @@ describe("reposition_v2", () => {
         it("reposition: 1-sided position below price to 1-sided above price", async () => {
           // Initial position: 1-sided position below price (only token B)
           const currTick = 0;
-          const initialTickLower = -1920;
-          const initialTickUpper = -1280;
+          const initialTickLower = -11_392;
+          const initialTickUpper = -128;
           const initialLiquidity = new BN(1_000_000);
           // New position: 1-sided position above price
-          const newTickLower = 1280;
-          const newTickUpper = 1920;
+          const newTickLower = 128;
+          const newTickUpper = 11_392;
 
           const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
             ...tokenTraits,
@@ -352,7 +352,12 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
           assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
 
-          // Assert existing and new tick arrays are different
+          // Assert existing and new tick arrays are all different
+          assert.ok(
+            positions[0].tickArrayLower.toString() !==
+              positions[0].tickArrayUpper.toString(),
+            "existing lower and upper tick arrays should be different",
+          );
           assert.ok(
             positions[0].tickArrayLower.toString() !==
               newTickArrayLower.publicKey.toString(),
@@ -362,6 +367,11 @@ describe("reposition_v2", () => {
             positions[0].tickArrayUpper.toString() !==
               newTickArrayUpper.publicKey.toString(),
             "existing upper tick array should be different from the new upper tick array",
+          );
+          assert.ok(
+            newTickArrayLower.publicKey.toString() !==
+              newTickArrayUpper.publicKey.toString(),
+            "new lower and upper tick arrays should be different",
           );
         });
 
@@ -604,14 +614,14 @@ describe("reposition_v2", () => {
 
         it("reposition: widen position width", async () => {
           // Initial position: Narrow position with 50:50 ratio
-          const currTick = 0;
-          const initialTickLower = -640;
-          const initialTickUpper = 640;
+          const initialTickLower = -512;
+          const initialTickUpper = -256;
+          const currTick = (initialTickLower + initialTickUpper) / 2;
           const initialLiquidity = new BN(5_000_000);
 
           // New position: Wider range, still 50:50
-          const newTickLower = -1280;
-          const newTickUpper = 1280;
+          const newTickLower = -640;
+          const newTickUpper = -128;
 
           const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
             ...tokenTraits,
@@ -702,13 +712,21 @@ describe("reposition_v2", () => {
           assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
           assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
 
-          // Assert existing and new tick arrays are the same
+          // Assert existing and new tick arrays are all the same
+          assert.equal(
+            positions[0].tickArrayLower.toString(),
+            positions[0].tickArrayUpper.toString(),
+          );
           assert.equal(
             positions[0].tickArrayLower.toString(),
             newTickArrayLower.publicKey.toString(),
           );
           assert.equal(
             positions[0].tickArrayUpper.toString(),
+            newTickArrayUpper.publicKey.toString(),
+          );
+          assert.equal(
+            newTickArrayLower.publicKey.toString(),
             newTickArrayUpper.publicKey.toString(),
           );
         });

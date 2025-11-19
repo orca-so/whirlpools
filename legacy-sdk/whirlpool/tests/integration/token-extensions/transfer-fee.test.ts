@@ -10503,7 +10503,7 @@ describe("TokenExtension/TransferFee", () => {
       });
     });
 
-    it("reposition_liquidity_v2: with transfer fee", async () => {
+    it("reposition_liquidity_v2: with transfer fee (A: owner -> vault, B: vault -> owner)", async () => {
       const { poolInitInfo, tokenAccountA, tokenAccountB, positions } =
         fixture.getInfos();
 
@@ -10651,6 +10651,310 @@ describe("TokenExtension/TransferFee", () => {
         postOwnerAccountBalanceB
           .sub(preOwnerAccountBalanceB)
           .eq(tokenBQuote.amountWithoutFee.sub(tokenBQuote.fee)),
+      );
+    });
+
+    it("reposition_liquidity_v2: with transfer fee (A: vault -> owner, B: vault -> owner)", async () => {
+      const { poolInitInfo, tokenAccountA, tokenAccountB, positions } =
+        fixture.getInfos();
+
+      const transferFeeA = await getTransferFee(poolInitInfo.tokenMintA);
+      const transferFeeB = await getTransferFee(poolInitInfo.tokenMintB);
+      assert.equal(transferFeeA.transferFeeBasisPoints, 500); // 5%
+      assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
+
+      const newLiquidity = new BN(1_000_000);
+      const { tokenAQuote, tokenBQuote } = await repositionQuote(
+        ctx,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tokenMintB,
+        currTick,
+        initialLiquidity,
+        initialTickLower,
+        initialTickUpper,
+        newLiquidity,
+        newTickLower,
+        newTickUpper,
+      );
+
+      // transfer fee should be non zero
+      assert.ok(tokenAQuote.amountWithoutFee.gtn(0));
+      assert.ok(tokenBQuote.amountWithoutFee.gtn(0));
+      assert.ok(tokenAQuote.fee.gtn(0));
+      assert.ok(tokenBQuote.fee.gtn(0));
+
+      const preVaultBalanceA = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+        ),
+      );
+      const preVaultBalanceB = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+        ),
+      );
+      const preOwnerAccountBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const preOwnerAccountBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
+
+      const newTickArrayLower = PDAUtil.getTickArray(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickLower, poolInitInfo.tickSpacing),
+      );
+      await initTickArrayIfNeeded(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickLower, poolInitInfo.tickSpacing),
+      );
+
+      const newTickArrayUpper = PDAUtil.getTickArray(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickUpper, poolInitInfo.tickSpacing),
+      );
+      await initTickArrayIfNeeded(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickUpper, poolInitInfo.tickSpacing),
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+          newTickLowerIndex: newTickLower,
+          newTickUpperIndex: newTickUpper,
+          newLiquidityAmount: newLiquidity,
+          existingRangeTokenMinA: ZERO_BN,
+          existingRangeTokenMinB: ZERO_BN,
+          newRangeTokenMaxA: new BN(500_000),
+          newRangeTokenMaxB: new BN(500_000),
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          positionAuthority: provider.wallet.publicKey,
+          funder: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          existingTickArrayLower: positions[0].tickArrayLower,
+          existingTickArrayUpper: positions[0].tickArrayUpper,
+          newTickArrayLower: newTickArrayLower.publicKey,
+          newTickArrayUpper: newTickArrayUpper.publicKey,
+        }),
+      ).buildAndExecute();
+
+      const postVaultBalanceA = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+        ),
+      );
+      const postVaultBalanceB = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+        ),
+      );
+      const postOwnerAccountBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const postOwnerAccountBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
+
+      // token A transfers
+      assert.ok(!tokenAQuote.fromOwner);
+      // amount received by the vault is after the transfer fee is subtracted. owner must initiate transfer with more tokens.
+      assert.ok(
+        postVaultBalanceA
+          .sub(preVaultBalanceA)
+          .abs()
+          .eq(tokenAQuote.amountWithoutFee),
+      );
+      // owner post < pre, difference includes the transfer fee
+      assert.ok(
+        postOwnerAccountBalanceA
+          .sub(preOwnerAccountBalanceA)
+          .eq(tokenAQuote.amountWithoutFee.sub(tokenAQuote.fee)),
+      );
+
+      // token B transfers
+      assert.ok(!tokenBQuote.fromOwner);
+      // vault post < pre, raw amount sent by the vault includes the transfer fee, owner will receive less due to transfer fee
+      assert.ok(
+        postVaultBalanceB
+          .sub(preVaultBalanceB)
+          .abs()
+          .eq(tokenBQuote.amountWithoutFee),
+      );
+      // amount received by the owner is after the transfer fee is subtracted
+      assert.ok(
+        postOwnerAccountBalanceB
+          .sub(preOwnerAccountBalanceB)
+          .eq(tokenBQuote.amountWithoutFee.sub(tokenBQuote.fee)),
+      );
+    });
+
+    it("reposition_liquidity_v2: with transfer fee (A: owner -> vault, B: owner -> vault)", async () => {
+      const { poolInitInfo, tokenAccountA, tokenAccountB, positions } =
+        fixture.getInfos();
+
+      const transferFeeA = await getTransferFee(poolInitInfo.tokenMintA);
+      const transferFeeB = await getTransferFee(poolInitInfo.tokenMintB);
+      assert.equal(transferFeeA.transferFeeBasisPoints, 500); // 5%
+      assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
+
+      const newLiquidity = new BN(20_000_000);
+      const { tokenAQuote, tokenBQuote } = await repositionQuote(
+        ctx,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tokenMintB,
+        currTick,
+        initialLiquidity,
+        initialTickLower,
+        initialTickUpper,
+        newLiquidity,
+        newTickLower,
+        newTickUpper,
+      );
+
+      // transfer fee should be non zero
+      assert.ok(tokenAQuote.amountWithoutFee.gtn(0));
+      assert.ok(tokenBQuote.amountWithoutFee.gtn(0));
+      assert.ok(tokenAQuote.fee.gtn(0));
+      assert.ok(tokenBQuote.fee.gtn(0));
+
+      const preVaultBalanceA = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+        ),
+      );
+      const preVaultBalanceB = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+        ),
+      );
+      const preOwnerAccountBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const preOwnerAccountBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
+
+      const newTickArrayLower = PDAUtil.getTickArray(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickLower, poolInitInfo.tickSpacing),
+      );
+      await initTickArrayIfNeeded(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickLower, poolInitInfo.tickSpacing),
+      );
+
+      const newTickArrayUpper = PDAUtil.getTickArray(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickUpper, poolInitInfo.tickSpacing),
+      );
+      await initTickArrayIfNeeded(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickUpper, poolInitInfo.tickSpacing),
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+          newTickLowerIndex: newTickLower,
+          newTickUpperIndex: newTickUpper,
+          newLiquidityAmount: newLiquidity,
+          existingRangeTokenMinA: ZERO_BN,
+          existingRangeTokenMinB: ZERO_BN,
+          newRangeTokenMaxA: new BN(1_000_000),
+          newRangeTokenMaxB: new BN(1_000_000),
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          positionAuthority: provider.wallet.publicKey,
+          funder: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          existingTickArrayLower: positions[0].tickArrayLower,
+          existingTickArrayUpper: positions[0].tickArrayUpper,
+          newTickArrayLower: newTickArrayLower.publicKey,
+          newTickArrayUpper: newTickArrayUpper.publicKey,
+        }),
+      ).buildAndExecute();
+
+      const postVaultBalanceA = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+        ),
+      );
+      const postVaultBalanceB = new BN(
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+        ),
+      );
+      const postOwnerAccountBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const postOwnerAccountBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
+
+      // token A transfers
+      assert.ok(tokenAQuote.fromOwner);
+      // amount received by the vault is after the transfer fee is subtracted. owner must initiate transfer with more tokens.
+      assert.ok(
+        postVaultBalanceA
+          .sub(preVaultBalanceA)
+          .eq(tokenAQuote.amountWithoutFee),
+      );
+      // owner post < pre, difference includes the transfer fee
+      assert.ok(
+        postOwnerAccountBalanceA
+          .sub(preOwnerAccountBalanceA)
+          .abs()
+          .eq(tokenAQuote.amountWithoutFee.add(tokenAQuote.fee)),
+      );
+
+      // token B transfers
+      assert.ok(tokenBQuote.fromOwner);
+      // amount received by the vault is after the transfer fee is subtracted. owner must initiate transfer with more tokens.
+      assert.ok(
+        postVaultBalanceB
+          .sub(preVaultBalanceB)
+          .eq(tokenBQuote.amountWithoutFee),
+      );
+      // owner post < pre, difference includes the transfer fee
+      assert.ok(
+        postOwnerAccountBalanceB
+          .sub(preOwnerAccountBalanceB)
+          .abs()
+          .eq(tokenBQuote.amountWithoutFee.add(tokenBQuote.fee)),
       );
     });
 
@@ -11343,8 +11647,6 @@ describe("TokenExtension/TransferFee", () => {
       assert.equal(transferFeeA.transferFeeBasisPoints, 500); // 5%
       assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
 
-      // ==============================
-
       const existingRange = PoolUtil.getTokenAmountsFromLiquidity(
         initialLiquidity,
         PriceMath.tickIndexToSqrtPriceX64(currTick),
@@ -11385,8 +11687,6 @@ describe("TokenExtension/TransferFee", () => {
       assert.ok(tokenAQuote.fee.gtn(0));
       assert.ok(tokenBQuote.amountWithoutFee.isZero()); // out of range, all asset is in tokenB
       assert.ok(tokenBQuote.fee.isZero());
-
-      // ==============================
 
       const preVaultBalanceA = new BN(
         await getTokenBalance(

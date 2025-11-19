@@ -488,9 +488,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck"
-version = "1.22.0"
+version = "1.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b1fc10dbac614ebc03540c9dbd60e83887fda27794998c6528f1782047d540"
+checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
 dependencies = [
  "bytemuck_derive",
 ]

@@ -2,12 +2,11 @@ use orca_tx_sender::{
     build_and_send_transaction, get_rpc_client, set_jito_fee_strategy, set_priority_fee_strategy,
     set_rpc, JitoFeeStrategy, PriorityFeeStrategy,
 };
-use solana_sdk::{
-    address_lookup_table::{state::AddressLookupTable, AddressLookupTableAccount},
-    commitment_config::CommitmentLevel,
-    pubkey::Pubkey,
-    signature::Signer,
-};
+use solana_address_lookup_table_interface::state::AddressLookupTable;
+use solana_commitment_config::CommitmentLevel;
+use solana_keypair::Signer;
+use solana_message::AddressLookupTableAccount;
+use solana_pubkey::Pubkey;
 use std::env;
 use std::error::Error;
 use std::str::FromStr;

@@ -5,9 +5,9 @@ use orca_whirlpools_client::{
     get_position_bundle_address, DecodedAccount, Position, PositionBundle, PositionFilter,
 };
 use orca_whirlpools_core::POSITION_BUNDLE_SIZE;
+use solana_account::Account;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
-use solana_sdk::account::Account;
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 use crate::utils::batch_get_multiple_accounts;
 use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
@@ -120,7 +120,7 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 ///     fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -141,13 +141,16 @@ pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
-    let token_accounts =
-        get_token_accounts_for_owner(rpc, owner, TokenAccountsFilter::ProgramId(spl_token::ID))
-            .await?;
+    let token_accounts = get_token_accounts_for_owner(
+        rpc,
+        owner,
+        TokenAccountsFilter::ProgramId(spl_token_interface::ID),
+    )
+    .await?;
     let token_extension_accounts = get_token_accounts_for_owner(
         rpc,
         owner,
-        TokenAccountsFilter::ProgramId(spl_token_2022::ID),
+        TokenAccountsFilter::ProgramId(spl_token_2022_interface::ID),
     )
     .await?;
 
@@ -277,7 +280,7 @@ pub async fn fetch_positions_for_owner(
 ///     fetch_positions_in_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -310,15 +313,14 @@ mod tests {
         setup_te_position, setup_whirlpool, RpcContext,
     };
     use serial_test::serial;
-    use solana_program_test::tokio;
-    use solana_sdk::signer::Signer;
+    use solana_keypair::Signer;
+
     use std::error::Error;
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports gpa"]
     async fn test_fetch_positions_for_owner_no_positions() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
         assert!(
@@ -330,9 +332,8 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports gpa"]
     async fn test_fetch_positions_for_owner_with_position() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
@@ -342,10 +343,11 @@ mod tests {
         let normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
 
         // 1) Add a te_position (uses token-2022)
-        let te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
+        let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) Add a position bundle, optionally with multiple bundled positions
-        let position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+        let _position_bundle_pubkey =
+            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()])).await?;
 
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
@@ -356,22 +358,27 @@ mod tests {
             "Did not find all positions for the owner (expected normal, te_position, bundle)"
         );
 
-        // Existing checks remain...
-        match &positions[0] {
-            PositionOrBundle::Position(pos) => {
-                assert_eq!(pos.address, normal_position_pubkey);
+        // Find the normal position in the results (order is not deterministic)
+        let normal_position = positions.iter().find_map(|p| match p {
+            PositionOrBundle::Position(pos) if pos.data.position_mint == normal_position_pubkey => {
+                Some(pos)
             }
-            _ => panic!("Expected a single position, but found a bundle!"),
-        }
+            _ => None,
+        });
+
+        assert!(
+            normal_position.is_some(),
+            "Expected to find the normal position with mint {}",
+            normal_position_pubkey
+        );
 
         Ok(())
     }
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports gpa"]
     async fn test_fetch_positions_in_whirlpool() -> Result<(), Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
@@ -384,7 +391,8 @@ mod tests {
         let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) position bundle
-        let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+        let _position_bundle_pubkey =
+            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()])).await?;
 
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
 

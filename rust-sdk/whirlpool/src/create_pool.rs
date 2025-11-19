@@ -15,14 +15,13 @@ use orca_whirlpools_core::{
     sqrt_price_to_tick_index,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_program::rent::Rent;
-use solana_program::system_program;
-use solana_program::sysvar::SysvarId;
-use solana_program::{instruction::Instruction, pubkey::Pubkey};
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
-use spl_token_2022::extension::StateWithExtensions;
-use spl_token_2022::state::Mint;
+use solana_instruction::Instruction;
+use solana_keypair::{Keypair, Signer};
+use solana_pubkey::Pubkey;
+use solana_rent::Rent;
+use solana_sysvar_id::SysvarId;
+use spl_token_2022_interface::extension::StateWithExtensions;
+use spl_token_2022_interface::state::Mint;
 
 use crate::token::order_mints;
 use crate::{
@@ -77,7 +76,8 @@ pub struct CreatePoolInstructions {
 ///     create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
+/// use solana_keypair::{Keypair, Signer};
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -155,7 +155,8 @@ pub async fn create_splash_pool_instructions(
 ///     WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
+/// use solana_keypair::{Keypair, Signer};
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -252,7 +253,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
             fee_tier,
             token_program_a,
             token_program_b,
-            system_program: system_program::id(),
+            system_program: solana_system_interface::program::id(),
             rent: Rent::id(),
         }
         .instruction(InitializePoolV2InstructionArgs {
@@ -284,7 +285,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
                 whirlpool: pool_address,
                 tick_array: tick_array_address.0,
                 funder,
-                system_program: system_program::id(),
+                system_program: solana_system_interface::program::id(),
             }
             .instruction(InitializeDynamicTickArrayInstructionArgs {
                 start_tick_index,
@@ -322,7 +323,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_error_if_no_funder() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
 
@@ -335,7 +336,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_error_if_tokens_not_ordered() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
 
@@ -355,7 +356,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
         let price = 10.0;
@@ -406,7 +407,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool_with_one_te_token() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -457,7 +458,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool_with_two_te_tokens() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -508,7 +509,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_splash_pool_with_transfer_fee() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
         let price = 10.0;
@@ -559,7 +560,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
         let price = 10.0;
@@ -611,7 +612,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_one_te_token() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -663,7 +664,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_two_te_tokens() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
         let price = 10.0;
@@ -715,7 +716,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_transfer_fee() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
         let price = 10.0;
@@ -767,7 +768,7 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_create_concentrated_liquidity_pool_with_scaled_ui_amount() {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_sua = setup_mint_te_sua(&ctx).await.unwrap();
         let price = 10.0;

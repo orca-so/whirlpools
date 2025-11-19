@@ -1,10 +1,11 @@
 use std::error::Error;
 
 use orca_whirlpools_client::{get_position_address, Position, Whirlpool};
-use serial_test::serial;
-use solana_program_test::tokio::{self};
-use solana_sdk::{program_pack::Pack, pubkey::Pubkey, signer::Signer};
-use spl_token_2022::state::Account;
+use solana_keypair::Signer;
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use spl_token_2022_interface::state::Account;
+use tokio::{self};
 
 use crate::{
     close_position_instructions, create_concentrated_liquidity_pool_instructions,
@@ -25,7 +26,7 @@ struct TestContext {
 
 impl TestContext {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
-        let ctx = RpcContext::new().await;
+        let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         let ata_a = setup_ata_with_amount(&ctx, mint_a, 500_000_000_000).await?;
@@ -518,7 +519,6 @@ impl TestContext {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_splash_pool() {
     let ctx = TestContext::new().await.unwrap();
     let pool = ctx.init_splash_pool().await.unwrap();
@@ -538,7 +538,6 @@ async fn test_splash_pool() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_concentrated_liquidity_pool() {
     let ctx = TestContext::new().await.unwrap();
     let pool = ctx.init_concentrated_liquidity_pool().await.unwrap();

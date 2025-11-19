@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 use solana_cli_config::Config;
+use solana_instruction::AccountMeta;
+use solana_keypair::{read_keypair_file, Keypair};
 use solana_program::instruction::Instruction;
-use solana_sdk::instruction::AccountMeta;
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{read_keypair_file, Keypair};
+use solana_pubkey::Pubkey;
 use std::error::Error;
 
 /// Load a keypair from the Solana CLI config

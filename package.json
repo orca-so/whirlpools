@@ -6,7 +6,7 @@
   "scripts": {
     "build": "nx run-many --target build --projects",
     "start": "nx run-many --target start --projects",
-    "test": "nx run-many --target test --projects --exclude=@orca-so/whirlpools-sdk-integration,@orca-so/whirlpools-rust-integration",
+    "test": "nx run-many --target test --projects --exclude=@orca-so/whirlpools-sdk-integration",
     "deploy": "nx run-many --target deploy --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",

@@ -341,22 +341,22 @@ mod test_tick_index_from_sqrt_price {
     use crate::state::{MAX_TICK_INDEX, MIN_TICK_INDEX};
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_max() {
+    fn test_tick_index_from_sqrt_price_at_max() {
         let r = tick_index_from_sqrt_price(&MAX_SQRT_PRICE_X64);
         assert_eq!(&r, &MAX_TICK_INDEX);
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_min() {
+    fn test_tick_index_from_sqrt_price_at_min() {
         let r = tick_index_from_sqrt_price(&MIN_SQRT_PRICE_X64);
         assert_eq!(&r, &MIN_TICK_INDEX);
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_max_add_one() {
+    fn test_tick_index_from_sqrt_price_at_max_add_one() {
         let sqrt_price_x64_max_add_one = MAX_SQRT_PRICE_X64 + 1;
         let tick_from_max_add_one = tick_index_from_sqrt_price(&sqrt_price_x64_max_add_one);
-        let sqrt_price_x64_max = MAX_SQRT_PRICE_X64 + 1;
+        let sqrt_price_x64_max = MAX_SQRT_PRICE_X64;
         let tick_from_max = tick_index_from_sqrt_price(&sqrt_price_x64_max);
 
         // We don't care about accuracy over the limit. We just care about it's equality properties.
@@ -364,21 +364,21 @@ mod test_tick_index_from_sqrt_price {
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_min_add_one() {
+    fn test_tick_index_from_sqrt_price_at_min_add_one() {
         let sqrt_price_x64 = MIN_SQRT_PRICE_X64 + 1;
         let r = tick_index_from_sqrt_price(&sqrt_price_x64);
         assert_eq!(&r, &(MIN_TICK_INDEX));
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_max_sub_one() {
+    fn test_tick_index_from_sqrt_price_at_max_sub_one() {
         let sqrt_price_x64 = MAX_SQRT_PRICE_X64 - 1;
         let r = tick_index_from_sqrt_price(&sqrt_price_x64);
         assert_eq!(&r, &(MAX_TICK_INDEX - 1));
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_min_sub_one() {
+    fn test_tick_index_from_sqrt_price_at_min_sub_one() {
         let sqrt_price_x64_min_sub_one = MIN_SQRT_PRICE_X64 - 1;
         let tick_from_min_sub_one = tick_index_from_sqrt_price(&sqrt_price_x64_min_sub_one);
         let sqrt_price_x64_min = MIN_SQRT_PRICE_X64 + 1;
@@ -389,21 +389,21 @@ mod test_tick_index_from_sqrt_price {
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_one() {
+    fn test_tick_index_from_sqrt_price_at_one() {
         let sqrt_price_x64: u128 = u64::MAX as u128 + 1;
         let r = tick_index_from_sqrt_price(&sqrt_price_x64);
         assert_eq!(r, 0);
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_one_add_one() {
+    fn test_tick_index_from_sqrt_price_at_one_add_one() {
         let sqrt_price_x64: u128 = u64::MAX as u128 + 2;
         let r = tick_index_from_sqrt_price(&sqrt_price_x64);
         assert_eq!(r, 0);
     }
 
     #[test]
-    fn test_sqrt_price_from_tick_index_at_one_sub_one() {
+    fn test_tick_index_from_sqrt_price_at_one_sub_one() {
         let sqrt_price_x64: u128 = u64::MAX.into();
         let r = tick_index_from_sqrt_price(&sqrt_price_x64);
         assert_eq!(r, -1);

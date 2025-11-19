@@ -12,7 +12,9 @@ use crate::{
             },
             manager_tick_array_manager::pino_update_tick_array_accounts,
             position::pino_ensure_position_has_enough_rent_for_ticks,
-            util_remaining_accounts_utils::pino_parse_remaining_accounts,
+            util_remaining_accounts_utils::{
+                pino_parse_remaining_accounts, PinoParsedRemainingAccounts,
+            },
             util_shared::{pino_is_locked_position, pino_verify_position_authority},
             util_token::{
                 pino_calculate_transfer_fee_excluded_amount,
@@ -128,7 +130,12 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     let remaining_accounts = pino_parse_remaining_accounts(
         remaining_accounts,
         &data.remaining_accounts_info,
-        &[AccountsType::TransferHookA, AccountsType::TransferHookB],
+        &[
+            AccountsType::TransferHookADeposit,
+            AccountsType::TransferHookBDeposit,
+            AccountsType::TransferHookAWithdrawal,
+            AccountsType::TransferHookBWithdrawal,
+        ],
     )?;
 
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
@@ -214,16 +221,15 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         token_vault_a_info,
         token_owner_account_a_info,
         token_program_a_info,
-        &remaining_accounts.transfer_hook_a,
         token_a_transfer_amount,
         is_token_a_transfer_from_owner,
         token_mint_b_info,
         token_vault_b_info,
         token_owner_account_b_info,
         token_program_b_info,
-        &remaining_accounts.transfer_hook_b,
         token_b_transfer_amount,
         is_token_b_transfer_from_owner,
+        &remaining_accounts,
         memo_program_info,
     )?;
 
@@ -404,16 +410,15 @@ fn execute_token_delta_transfers(
     token_vault_a: &AccountInfo,
     token_owner_account_a: &AccountInfo,
     token_program_a: &AccountInfo,
-    transfer_hook_a_accounts: &Option<Vec<&AccountInfo>>,
     token_a_delta: u64,
     is_token_a_transfer_from_owner: bool,
     token_mint_b: &AccountInfo,
     token_vault_b: &AccountInfo,
     token_owner_account_b: &AccountInfo,
     token_program_b: &AccountInfo,
-    transfer_hook_b_accounts: &Option<Vec<&AccountInfo>>,
     token_b_delta: u64,
     is_token_b_transfer_from_owner: bool,
+    remaining_accounts: &PinoParsedRemainingAccounts,
     memo_program: &AccountInfo,
 ) -> Result<()> {
     if is_token_a_transfer_from_owner {
@@ -424,7 +429,7 @@ fn execute_token_delta_transfers(
             token_vault_a,
             token_program_a,
             memo_program,
-            transfer_hook_a_accounts,
+            &remaining_accounts.transfer_hook_a_deposit,
             token_a_delta,
         )?;
     } else {
@@ -436,7 +441,7 @@ fn execute_token_delta_transfers(
             token_owner_account_a,
             token_program_a,
             memo_program,
-            transfer_hook_a_accounts,
+            &remaining_accounts.transfer_hook_a_withdrawal,
             token_a_delta,
             transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
         )?;
@@ -450,7 +455,7 @@ fn execute_token_delta_transfers(
             token_vault_b,
             token_program_b,
             memo_program,
-            transfer_hook_b_accounts,
+            &remaining_accounts.transfer_hook_b_deposit,
             token_b_delta,
         )?;
     } else {
@@ -462,7 +467,7 @@ fn execute_token_delta_transfers(
             token_owner_account_b,
             token_program_b,
             memo_program,
-            transfer_hook_b_accounts,
+            &remaining_accounts.transfer_hook_b_withdrawal,
             token_b_delta,
             transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
         )?;

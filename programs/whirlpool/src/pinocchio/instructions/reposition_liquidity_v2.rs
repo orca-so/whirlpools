@@ -7,8 +7,8 @@ use crate::{
         events::Event,
         ported::{
             manager_liquidity_manager::{
-                pino_calculate_fee_and_reward_growths, pino_calculate_liquidity_token_deltas,
-                pino_calculate_modify_liquidity, pino_sync_modify_liquidity_values,
+                pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
+                pino_sync_modify_liquidity_values,
             },
             manager_tick_array_manager::pino_update_tick_array_accounts,
             position::pino_ensure_position_has_enough_rent_for_ticks,
@@ -23,8 +23,7 @@ use crate::{
         state::{
             token::MemoryMappedTokenAccount,
             whirlpool::{
-                tick_array::{loader::TickArraysMut, NUM_REWARDS},
-                MemoryMappedPosition, MemoryMappedWhirlpool,
+                tick_array::loader::TickArraysMut, MemoryMappedPosition, MemoryMappedWhirlpool,
             },
         },
         utils::{
@@ -140,9 +139,6 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     let mut existing_range_token_a_decrease_amount = 0u64;
     let mut existing_range_token_b_decrease_amount = 0u64;
-    let mut fees_owed_a = 0u64;
-    let mut fees_owed_b = 0u64;
-    let mut reward_owed = [0u64; NUM_REWARDS];
 
     decrease_liquidity_from_existing_range(
         whirlpool_info.key(),
@@ -154,9 +150,6 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         timestamp,
         &mut existing_range_token_a_decrease_amount,
         &mut existing_range_token_b_decrease_amount,
-        &mut fees_owed_a,
-        &mut fees_owed_b,
-        &mut reward_owed,
     )?;
 
     // Even though there is no token transfer at this point, we use the transfer fee excluded amount
@@ -269,9 +262,6 @@ fn decrease_liquidity_from_existing_range(
     timestamp: u64,
     token_a_amount_out: &mut u64,
     token_b_amount_out: &mut u64,
-    fees_owed_a_out: &mut u64,
-    fees_owed_b_out: &mut u64,
-    reward_owed_out: &mut [u64; NUM_REWARDS],
 ) -> Result<()> {
     let position_existing_range_liquidity = position.liquidity();
 
@@ -279,15 +269,6 @@ fn decrease_liquidity_from_existing_range(
     if position_existing_range_liquidity == 0 {
         *token_a_amount_out = 0;
         *token_b_amount_out = 0;
-        *fees_owed_a_out = position.fee_owed_a();
-        *fees_owed_b_out = position.fee_owed_b();
-        position
-            .reward_infos()
-            .iter()
-            .enumerate()
-            .for_each(|(index, info)| {
-                reward_owed_out[index] = info.amount_owed();
-            });
         return Ok(());
     }
 
@@ -298,14 +279,6 @@ fn decrease_liquidity_from_existing_range(
     )?;
 
     let (lower_tick_array, upper_tick_array) = tick_arrays.deref();
-    let (position_update, _whirlpool_reward_growths) = pino_calculate_fee_and_reward_growths(
-        whirlpool,
-        position,
-        lower_tick_array,
-        upper_tick_array,
-        timestamp,
-    )?;
-
     let liquidity_delta = convert_to_liquidity_delta(position_existing_range_liquidity, false)?;
     let modify_liquidity_update = pino_calculate_modify_liquidity(
         whirlpool,
@@ -346,9 +319,6 @@ fn decrease_liquidity_from_existing_range(
 
     *token_a_amount_out = token_a_delta;
     *token_b_amount_out = token_b_delta;
-    *fees_owed_a_out = position_update.fee_owed_a;
-    *fees_owed_b_out = position_update.fee_owed_b;
-    *reward_owed_out = position_update.reward_infos.map(|info| info.amount_owed);
 
     Ok(())
 }

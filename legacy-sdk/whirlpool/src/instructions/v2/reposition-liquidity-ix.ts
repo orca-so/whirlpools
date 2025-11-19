@@ -31,8 +31,10 @@ import {
  * @param tokenOwnerAccountB - PublicKey for the token B account that will be withdrawed from.
  * @param tokenVaultA - PublicKey for the tokenA vault for this whirlpool.
  * @param tokenVaultB - PublicKey for the tokenB vault for this whirlpool.
- * @param tokenTransferHookAccountsA - Optional array of token transfer hook accounts for token A.
- * @param tokenTransferHookAccountsB - Optional array of token transfer hook accounts for token B.
+ * @param tokenTransferHookDepositAccountsA - Optional array of token transfer hook deposit accounts for token A
+ * @param tokenTransferHookDepositAccountsB - Optional array of token transfer hook deposit accounts for token B.
+ * @param tokenTransferHookWithdrawalAccountsA - Optional array of token transfer hook withdrawal accounts for token A.
+ * @param tokenTransferHookWithdrawalAccountsB - Optional array of token transfer hook withdrawal accounts for token B.
  * @param existingTickArrayLower - PublicKey for the tick-array account that hosts the tick at the existing lower tick index.
  * @param existingTickArrayUpper - PublicKey for the tick-array account that hosts the tick at the existing upper tick index.
  * @param newTickArrayLower - PublicKey for the tick-array account that hosts the tick at the new lower tick index.
@@ -55,8 +57,10 @@ export type RepositionLiquidityV2Params = {
   tokenOwnerAccountB: PublicKey;
   tokenVaultA: PublicKey;
   tokenVaultB: PublicKey;
-  tokenTransferHookAccountsA?: AccountMeta[];
-  tokenTransferHookAccountsB?: AccountMeta[];
+  tokenTransferHookDepositAccountsA?: AccountMeta[];
+  tokenTransferHookDepositAccountsB?: AccountMeta[];
+  tokenTransferHookWithdrawalAccountsA?: AccountMeta[];
+  tokenTransferHookWithdrawalAccountsB?: AccountMeta[];
   existingTickArrayLower: PublicKey;
   existingTickArrayUpper: PublicKey;
   newTickArrayLower: PublicKey;
@@ -127,8 +131,10 @@ export function repositionLiquidityV2Ix(
   const {
     newTickLowerIndex,
     newTickUpperIndex,
-    tokenTransferHookAccountsA,
-    tokenTransferHookAccountsB,
+    tokenTransferHookDepositAccountsA,
+    tokenTransferHookDepositAccountsB,
+    tokenTransferHookWithdrawalAccountsA,
+    tokenTransferHookWithdrawalAccountsB,
     whirlpool,
     tokenProgramA,
     tokenProgramB,
@@ -153,8 +159,22 @@ export function repositionLiquidityV2Ix(
 
   const [remainingAccountsInfo, remainingAccounts] =
     new RemainingAccountsBuilder()
-      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
-      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      .addSlice(
+        RemainingAccountsType.TransferHookADeposit,
+        tokenTransferHookDepositAccountsA,
+      )
+      .addSlice(
+        RemainingAccountsType.TransferHookBDeposit,
+        tokenTransferHookDepositAccountsB,
+      )
+      .addSlice(
+        RemainingAccountsType.TransferHookAWithdrawal,
+        tokenTransferHookWithdrawalAccountsA,
+      )
+      .addSlice(
+        RemainingAccountsType.TransferHookBWithdrawal,
+        tokenTransferHookWithdrawalAccountsB,
+      )
       .build();
 
   const ix = program.instruction.repositionLiquidityV2(

@@ -3705,8 +3705,14 @@ describe("TokenExtension/TransferHook", () => {
           existingTickArrayUpper: positions[0].tickArrayUpper,
           newTickArrayLower: newTickArrayLower.publicKey,
           newTickArrayUpper: newTickArrayUpper.publicKey,
-          tokenTransferHookAccountsA: vaultToOwnerTokenTransferHookAccountsA,
-          tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB,
+          tokenTransferHookDepositAccountsA:
+            ownerToVaultTokenTransferHookAccountsA,
+          tokenTransferHookDepositAccountsB:
+            ownerToVaultTokenTransferHookAccountsB,
+          tokenTransferHookWithdrawalAccountsA:
+            vaultToOwnerTokenTransferHookAccountsA,
+          tokenTransferHookWithdrawalAccountsB:
+            vaultToOwnerTokenTransferHookAccountsB,
         }),
       )
         .prependInstruction(useMaxCU())
@@ -3806,8 +3812,14 @@ describe("TokenExtension/TransferHook", () => {
           existingTickArrayUpper: positions[0].tickArrayUpper,
           newTickArrayLower: newTickArrayLower.publicKey,
           newTickArrayUpper: newTickArrayUpper.publicKey,
-          tokenTransferHookAccountsA: ownerToVaultTokenTransferHookAccountsA,
-          tokenTransferHookAccountsB: ownerToVaultTokenTransferHookAccountsB,
+          tokenTransferHookDepositAccountsA:
+            ownerToVaultTokenTransferHookAccountsA,
+          tokenTransferHookDepositAccountsB:
+            ownerToVaultTokenTransferHookAccountsB,
+          tokenTransferHookWithdrawalAccountsA:
+            vaultToOwnerTokenTransferHookAccountsA,
+          tokenTransferHookWithdrawalAccountsB:
+            vaultToOwnerTokenTransferHookAccountsB,
         }),
       )
         .prependInstruction(useMaxCU())
@@ -3918,8 +3930,14 @@ describe("TokenExtension/TransferHook", () => {
           existingTickArrayUpper: positions[0].tickArrayUpper,
           newTickArrayLower: newTickArrayLower.publicKey,
           newTickArrayUpper: newTickArrayUpper.publicKey,
-          tokenTransferHookAccountsA: ownerToVaultTokenTransferHookAccountsA,
-          tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB,
+          tokenTransferHookDepositAccountsA:
+            ownerToVaultTokenTransferHookAccountsA,
+          tokenTransferHookDepositAccountsB:
+            ownerToVaultTokenTransferHookAccountsB,
+          tokenTransferHookWithdrawalAccountsA:
+            vaultToOwnerTokenTransferHookAccountsA,
+          tokenTransferHookWithdrawalAccountsB:
+            vaultToOwnerTokenTransferHookAccountsB,
         }),
       )
         .prependInstruction(useMaxCU())
@@ -3948,7 +3966,7 @@ describe("TokenExtension/TransferHook", () => {
       assert.equal(postCounterB, preCounterB);
     });
 
-    it("reposition_liquidity_v2: [Fail] with transfer hook, but no extra accounts provided for A", async () => {
+    it("reposition_liquidity_v2: [Fail] with transfer hook, but no extra accounts provided for A deposit", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
 
@@ -4002,8 +4020,13 @@ describe("TokenExtension/TransferHook", () => {
             existingTickArrayUpper: positions[0].tickArrayUpper,
             newTickArrayLower: newTickArrayLower.publicKey,
             newTickArrayUpper: newTickArrayUpper.publicKey,
-            tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
-            tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB, // TransferHook
+            tokenTransferHookDepositAccountsA: undefined, // TransferHook (not provided)
+            tokenTransferHookDepositAccountsB:
+              ownerToVaultTokenTransferHookAccountsB,
+            tokenTransferHookWithdrawalAccountsA:
+              vaultToOwnerTokenTransferHookAccountsA,
+            tokenTransferHookWithdrawalAccountsB:
+              vaultToOwnerTokenTransferHookAccountsB,
           }),
         )
           .prependInstruction(useMaxCU())
@@ -4012,7 +4035,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("reposition_liquidity_v2: [Fail] with transfer hook, but no extra accounts provided for B", async () => {
+    it("reposition_liquidity_v2: [Fail] with transfer hook, but no extra accounts provided for B withdrawal", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
 
@@ -4066,8 +4089,13 @@ describe("TokenExtension/TransferHook", () => {
             existingTickArrayUpper: positions[0].tickArrayUpper,
             newTickArrayLower: newTickArrayLower.publicKey,
             newTickArrayUpper: newTickArrayUpper.publicKey,
-            tokenTransferHookAccountsA: ownerToVaultTokenTransferHookAccountsA, // TransferHook
-            tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
+            tokenTransferHookDepositAccountsA:
+              ownerToVaultTokenTransferHookAccountsA,
+            tokenTransferHookDepositAccountsB:
+              ownerToVaultTokenTransferHookAccountsB,
+            tokenTransferHookWithdrawalAccountsA:
+              vaultToOwnerTokenTransferHookAccountsA,
+            tokenTransferHookWithdrawalAccountsB: undefined, // TransferHook (not provided)
           }),
         )
           .prependInstruction(useMaxCU())
@@ -4076,7 +4104,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(counter)", async () => {
+    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A deposit is insufficient(counter)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
 
@@ -4134,8 +4162,14 @@ describe("TokenExtension/TransferHook", () => {
             existingTickArrayUpper: positions[0].tickArrayUpper,
             newTickArrayLower: newTickArrayLower.publicKey,
             newTickArrayUpper: newTickArrayUpper.publicKey,
-            tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
-            tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB,
+            tokenTransferHookDepositAccountsA:
+              insufficientTransferHookAccountsA,
+            tokenTransferHookDepositAccountsB:
+              ownerToVaultTokenTransferHookAccountsB,
+            tokenTransferHookWithdrawalAccountsA:
+              vaultToOwnerTokenTransferHookAccountsA,
+            tokenTransferHookWithdrawalAccountsB:
+              vaultToOwnerTokenTransferHookAccountsB,
           }),
         )
           .prependInstruction(useMaxCU())
@@ -4146,7 +4180,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(account_order_verifier)", async () => {
+    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A deposit is insufficient(account_order_verifier)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
 
@@ -4209,8 +4243,14 @@ describe("TokenExtension/TransferHook", () => {
             existingTickArrayUpper: positions[0].tickArrayUpper,
             newTickArrayLower: newTickArrayLower.publicKey,
             newTickArrayUpper: newTickArrayUpper.publicKey,
-            tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
-            tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB,
+            tokenTransferHookDepositAccountsA:
+              insufficientTransferHookAccountsA,
+            tokenTransferHookDepositAccountsB:
+              ownerToVaultTokenTransferHookAccountsB,
+            tokenTransferHookWithdrawalAccountsA:
+              vaultToOwnerTokenTransferHookAccountsA,
+            tokenTransferHookWithdrawalAccountsB:
+              vaultToOwnerTokenTransferHookAccountsB,
           }),
         )
           .prependInstruction(useMaxCU())
@@ -4221,7 +4261,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(ExtraAccountMetas)", async () => {
+    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A deposit is insufficient(ExtraAccountMetas)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
 
@@ -4280,8 +4320,14 @@ describe("TokenExtension/TransferHook", () => {
             existingTickArrayUpper: positions[0].tickArrayUpper,
             newTickArrayLower: newTickArrayLower.publicKey,
             newTickArrayUpper: newTickArrayUpper.publicKey,
-            tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
-            tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB,
+            tokenTransferHookDepositAccountsA:
+              insufficientTransferHookAccountsA,
+            tokenTransferHookDepositAccountsB:
+              ownerToVaultTokenTransferHookAccountsB,
+            tokenTransferHookWithdrawalAccountsA:
+              vaultToOwnerTokenTransferHookAccountsA,
+            tokenTransferHookWithdrawalAccountsB:
+              vaultToOwnerTokenTransferHookAccountsB,
           }),
         )
           .prependInstruction(useMaxCU())
@@ -4290,7 +4336,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
+    it("reposition_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A deposit is insufficient(HookProgram)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
 
@@ -4348,8 +4394,14 @@ describe("TokenExtension/TransferHook", () => {
             existingTickArrayUpper: positions[0].tickArrayUpper,
             newTickArrayLower: newTickArrayLower.publicKey,
             newTickArrayUpper: newTickArrayUpper.publicKey,
-            tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
-            tokenTransferHookAccountsB: vaultToOwnerTokenTransferHookAccountsB,
+            tokenTransferHookDepositAccountsA:
+              insufficientTransferHookAccountsA,
+            tokenTransferHookDepositAccountsB:
+              ownerToVaultTokenTransferHookAccountsB,
+            tokenTransferHookWithdrawalAccountsA:
+              vaultToOwnerTokenTransferHookAccountsA,
+            tokenTransferHookWithdrawalAccountsB:
+              vaultToOwnerTokenTransferHookAccountsB,
           }),
         )
           .prependInstruction(useMaxCU())

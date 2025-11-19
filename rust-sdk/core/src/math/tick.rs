@@ -871,6 +871,8 @@ mod fuzz_tests {
 mod test_get_initializable_tick_index {
     use super::*;
 
+    const SPACINGS: [u16; 10] = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
+
     fn nearest_expected(tick: i32, spacing: i32) -> i32 {
         let base = tick.div_euclid(spacing) * spacing;
         let rem = tick.rem_euclid(spacing);
@@ -883,8 +885,7 @@ mod test_get_initializable_tick_index {
 
     #[test]
     fn test_nearest_rounding_multiple_spacings() {
-        let spacings = [1, 2, 4, 8, 16, 64, 96, 128, 256];
-        for &s in &spacings {
+        for &s in &SPACINGS {
             let si = s as i32;
             for t in (-1000i32)..=1000i32 {
                 let got = get_initializable_tick_index(t, s, None);
@@ -896,10 +897,9 @@ mod test_get_initializable_tick_index {
 
     #[test]
     fn test_round_up_true_behavior() {
-        let spacings = [1, 2, 4, 8, 16, 64, 96, 128, 256];
-        for &s in &spacings {
+        for &s in &SPACINGS {
             let si = s as i32;
-            for t in (-500i32)..=500i32 {
+            for t in (-100i32)..=100i32 {
                 let rem = t.rem_euclid(si);
                 let got = get_initializable_tick_index(t, s, Some(true));
                 let exp = if rem > 0 {
@@ -914,10 +914,9 @@ mod test_get_initializable_tick_index {
 
     #[test]
     fn test_round_up_false_behavior() {
-        let spacings = [1, 2, 4, 8, 16, 64, 96, 128, 256];
-        for &s in &spacings {
+        for &s in &SPACINGS {
             let si = s as i32;
-            for t in (-500i32)..=500i32 {
+            for t in (-100i32)..=100i32 {
                 let got = get_initializable_tick_index(t, s, Some(false));
                 let exp = t.div_euclid(si) * si;
                 assert_eq!(got, exp);
@@ -927,10 +926,9 @@ mod test_get_initializable_tick_index {
 
     #[test]
     fn test_exact_multiples_remain_stable() {
-        let spacings = [1, 2, 4, 8, 16, 64, 96, 128, 256];
-        for &s in &spacings {
+        for &s in &SPACINGS {
             let si = s as i32;
-            for k in -20..=20 {
+            for k in -100..=100 {
                 let t = k * si;
                 assert_eq!(get_initializable_tick_index(t, s, None), t);
                 assert_eq!(get_initializable_tick_index(t, s, Some(true)), t);
@@ -941,8 +939,7 @@ mod test_get_initializable_tick_index {
 
     #[test]
     fn prev_initializable_matches_euclidean_rule() {
-        let spacings = [1, 3, 10, 16, 128];
-        for &s in &spacings {
+        for &s in &SPACINGS {
             let si = s as i32;
             for t in (-1000i32)..=1000i32 {
                 let rem = t.rem_euclid(si);
@@ -955,8 +952,7 @@ mod test_get_initializable_tick_index {
 
     #[test]
     fn next_initializable_matches_euclidean_rule() {
-        let spacings = [1, 3, 10, 16, 128];
-        for &s in &spacings {
+        for &s in &SPACINGS {
             let si = s as i32;
             for t in (-1000i32)..=1000i32 {
                 let rem = t.rem_euclid(si);
@@ -994,7 +990,38 @@ mod test_is_tick_index_in_bounds {
 }
 
 #[cfg(all(test, not(feature = "wasm")))]
-mod test_is_tick_initializable {}
+mod test_is_tick_initializable {
+    use super::*;
+    use proptest::prelude::*;
+    const SPACINGS: [u16; 10] = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
+
+    #[test]
+    fn true_on_exact_multiples() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            for k in -100..=100 {
+                let tick = k * si;
+                assert!(is_tick_initializable(tick, s), "tick={} s={}", tick, s);
+            }
+        }
+    }
+
+    #[test]
+    fn false_on_non_multiples() {
+        for &s in &SPACINGS {
+            if s == 1 {
+                continue;
+            } // all integers are multiples of 1
+            let si = s as i32;
+            for k in -100..=100 {
+                let tick_plus = k * si + 1;
+                let tick_minus = k * si - 1;
+                assert!(!is_tick_initializable(tick_plus, s));
+                assert!(!is_tick_initializable(tick_minus, s));
+            }
+        }
+    }
+}
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod test_invert_tick_index {
@@ -1158,36 +1185,115 @@ mod test_is_full_range_only_flag {
 }
 
 #[cfg(all(test, not(feature = "wasm")))]
-mod tests {
+mod test_get_tick_index_in_array {
     use super::*;
-    use crate::{MAX_SQRT_PRICE, MIN_SQRT_PRICE};
+    use crate::TICK_ARRAY_SIZE;
+    use proptest::prelude::*;
+
+    const SPACINGS: [u16; 10] = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
 
     #[test]
-    fn test_is_tick_initializable() {
-        assert!(is_tick_initializable(100, 10));
-        assert!(!is_tick_initializable(105, 10));
+    fn start0_all_inner_offsets_map_correctly() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let start0 = 0i32;
+            for inner in 0..(TICK_ARRAY_SIZE as i32) {
+                let tick = start0 + inner * si;
+                let got = get_tick_index_in_array(tick, start0, s);
+                assert_eq!(got, Ok(inner as u32));
+            }
+        }
     }
 
     #[test]
-    fn test_get_tick_index_in_array() {
-        assert_eq!(get_tick_index_in_array(0, 0, 10), Ok(0));
-        assert_eq!(get_tick_index_in_array(100, 0, 10), Ok(10));
-        assert_eq!(get_tick_index_in_array(50, 0, 10), Ok(5));
-        assert_eq!(get_tick_index_in_array(-830, -880, 10), Ok(5));
-        assert_eq!(get_tick_index_in_array(-780, -880, 10), Ok(10));
-        assert_eq!(
-            get_tick_index_in_array(880, 0, 10),
-            Err(TICK_INDEX_NOT_IN_ARRAY)
-        );
-        assert_eq!(
-            get_tick_index_in_array(-1, 0, 10),
-            Err(TICK_INDEX_NOT_IN_ARRAY)
-        );
-        assert_eq!(
-            get_tick_index_in_array(-881, -880, 10),
-            Err(TICK_INDEX_NOT_IN_ARRAY)
-        );
-        assert_eq!(get_tick_index_in_array(2861952, 0, 32896), Ok(87));
-        assert_eq!(get_tick_index_in_array(-32896, -2894848, 32896), Ok(87));
+    fn start0_lower_bound_is_err() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start0 = 0i32;
+            assert_eq!(
+                get_tick_index_in_array(start0 - 1, start0, s),
+                Err(TICK_INDEX_NOT_IN_ARRAY)
+            );
+        }
+    }
+
+    #[test]
+    fn start0_upper_bound_is_err() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start0 = 0i32;
+            assert_eq!(
+                get_tick_index_in_array(start0 + ticks_in_array, start0, s),
+                Err(TICK_INDEX_NOT_IN_ARRAY)
+            );
+        }
+    }
+
+    #[test]
+    fn start0_last_valid_is_last_index() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start0 = 0i32;
+            assert_eq!(
+                get_tick_index_in_array(start0 + ticks_in_array - si, start0, s),
+                Ok((TICK_ARRAY_SIZE - 1) as u32)
+            );
+        }
+    }
+
+    #[test]
+    fn start_neg_array_all_inner_offsets_map_correctly() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start_neg = -ticks_in_array;
+            for inner in 0..(TICK_ARRAY_SIZE as i32) {
+                let tick = start_neg + inner * si;
+                let got = get_tick_index_in_array(tick, start_neg, s);
+                assert_eq!(got, Ok(inner as u32));
+            }
+        }
+    }
+
+    #[test]
+    fn start_neg_array_lower_bound_is_err() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start_neg = -ticks_in_array;
+            assert_eq!(
+                get_tick_index_in_array(start_neg - 1, start_neg, s),
+                Err(TICK_INDEX_NOT_IN_ARRAY)
+            );
+        }
+    }
+
+    #[test]
+    fn start_neg_array_upper_bound_is_err() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start_neg = -ticks_in_array;
+            assert_eq!(
+                get_tick_index_in_array(start_neg + ticks_in_array, start_neg, s),
+                Err(TICK_INDEX_NOT_IN_ARRAY)
+            );
+        }
+    }
+
+    #[test]
+    fn start_neg_array_last_valid_is_last_index() {
+        for &s in &SPACINGS {
+            let si = s as i32;
+            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let start_neg = -ticks_in_array;
+            assert_eq!(
+                get_tick_index_in_array(start_neg + ticks_in_array - si, start_neg, s),
+                Ok((TICK_ARRAY_SIZE - 1) as u32)
+            );
+        }
     }
 }

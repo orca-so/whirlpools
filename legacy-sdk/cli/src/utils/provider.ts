@@ -16,7 +16,10 @@ let walletPath = process.env.ANCHOR_WALLET ?? "";
 let rpcUrl = process.env.ANCHOR_PROVIDER_URL ?? "";
 
 if (existsSync(configPath)) {
-  const configFile = readFileSync(`${process.env.HOME}/.config/solana/cli/config.yml`, { encoding: "utf-8" });
+  const configFile = readFileSync(
+    `${process.env.HOME}/.config/solana/cli/config.yml`,
+    { encoding: "utf-8" },
+  );
   const config = parse(configFile);
 
   if (walletPath === "") {
@@ -44,14 +47,14 @@ if (isAbsolute(walletPath)) {
     signTransaction: nodeWallet.signTransaction,
     signAllTransactions: nodeWallet.signAllTransactions,
     noSign: false,
-  }
+  };
 } else {
   wallet = {
     publicKey: new PublicKey(walletPath),
     signTransaction: async (x) => x,
     signAllTransactions: async (x) => x,
     noSign: true,
-  }
+  };
 }
 
 export const provider = new AnchorProvider(connection, wallet);

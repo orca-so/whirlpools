@@ -18,7 +18,7 @@ const pda = PDAUtil.getPositionBundle(
 const positionBundleTokenAccount = getAssociatedTokenAddressSync(
   positionBundleMintKeypair.publicKey,
   ctx.wallet.publicKey,
-  true
+  true,
 );
 
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);

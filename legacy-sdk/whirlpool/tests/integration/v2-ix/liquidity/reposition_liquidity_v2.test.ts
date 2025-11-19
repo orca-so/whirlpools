@@ -805,6 +805,197 @@ describe("reposition_v2", () => {
           );
         });
 
+        it("fails to reposition liquidity with zero liquidity", async () => {
+          // Initial position: 50:50 position straddling current price
+          const currTick = 0;
+          const initialTickLower = -640;
+          const initialTickUpper = 640;
+          const initialLiquidity = new BN(5_000_000);
+
+          const newTickLower = -512;
+          const newTickUpper = 768;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing: TickSpacing.Standard,
+            positions: [
+              {
+                tickLowerIndex: initialTickLower,
+                tickUpperIndex: initialTickUpper,
+                liquidityAmount: initialLiquidity,
+              },
+            ],
+            initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
+          });
+
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenProgramA,
+              tokenProgramB,
+              tokenMintA,
+              tokenMintB,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tickSpacing,
+            },
+            positions,
+            tokenAccountA,
+            tokenAccountB,
+          } = fixture.getInfos();
+
+          const newTickArrayLower = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          const newTickArrayUpper = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+                newTickLowerIndex: initialTickLower,
+                newTickUpperIndex: initialTickUpper,
+                newLiquidityAmount: ZERO_BN,
+                existingRangeTokenMinA: ZERO_BN,
+                existingRangeTokenMinB: ZERO_BN,
+                newRangeTokenMaxA: new BN(500_000),
+                newRangeTokenMaxB: new BN(500_000),
+                whirlpool: whirlpoolPda.publicKey,
+                tokenProgramA: tokenProgramA,
+                tokenProgramB: tokenProgramB,
+                positionAuthority: provider.wallet.publicKey,
+                funder: provider.wallet.publicKey,
+                position: positions[0].publicKey,
+                positionTokenAccount: positions[0].tokenAccount,
+                tokenMintA: tokenMintA,
+                tokenMintB: tokenMintB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultA: tokenVaultAKeypair.publicKey,
+                tokenVaultB: tokenVaultBKeypair.publicKey,
+                existingTickArrayLower: positions[0].tickArrayLower,
+                existingTickArrayUpper: positions[0].tickArrayUpper,
+                newTickArrayLower: newTickArrayLower.publicKey,
+                newTickArrayUpper: newTickArrayUpper.publicKey,
+              }),
+            ).buildAndExecute(),
+            (err) => /.*LiquidityZero|0x177c.*/i.test(String(err)),
+          );
+        });
+
+        it("fails to reposition liquidity with liquidity too high", async () => {
+          // Initial position: 50:50 position straddling current price
+          const currTick = 0;
+          const initialTickLower = -640;
+          const initialTickUpper = 640;
+          const initialLiquidity = new BN(5_000_000);
+
+          const newTickLower = -512;
+          const newTickUpper = 768;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing: TickSpacing.Standard,
+            positions: [
+              {
+                tickLowerIndex: initialTickLower,
+                tickUpperIndex: initialTickUpper,
+                liquidityAmount: initialLiquidity,
+              },
+            ],
+            initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
+          });
+
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenProgramA,
+              tokenProgramB,
+              tokenMintA,
+              tokenMintB,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tickSpacing,
+            },
+            positions,
+            tokenAccountA,
+            tokenAccountB,
+          } = fixture.getInfos();
+
+          const newTickArrayLower = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          const newTickArrayUpper = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          const newLiquidityExceedsMax = new BN((1n << 127n).toString());
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+                newTickLowerIndex: newTickLower,
+                newTickUpperIndex: newTickUpper,
+                newLiquidityAmount: newLiquidityExceedsMax,
+                existingRangeTokenMinA: ZERO_BN,
+                existingRangeTokenMinB: ZERO_BN,
+                newRangeTokenMaxA: new BN(500_000),
+                newRangeTokenMaxB: new BN(500_000),
+                whirlpool: whirlpoolPda.publicKey,
+                tokenProgramA: tokenProgramA,
+                tokenProgramB: tokenProgramB,
+                positionAuthority: provider.wallet.publicKey,
+                funder: provider.wallet.publicKey,
+                position: positions[0].publicKey,
+                positionTokenAccount: positions[0].tokenAccount,
+                tokenMintA: tokenMintA,
+                tokenMintB: tokenMintB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultA: tokenVaultAKeypair.publicKey,
+                tokenVaultB: tokenVaultBKeypair.publicKey,
+                existingTickArrayLower: positions[0].tickArrayLower,
+                existingTickArrayUpper: positions[0].tickArrayUpper,
+                newTickArrayLower: newTickArrayLower.publicKey,
+                newTickArrayUpper: newTickArrayUpper.publicKey,
+              }),
+            ).buildAndExecute(),
+            (err) => /.*LiquidityTooHigh|0x177d.*/i.test(String(err)),
+          );
+        });
+
         it("fails to reposition liquidity with same range", async () => {
           // Initial position: 50:50 position straddling current price
           const currTick = 0;
@@ -1062,6 +1253,102 @@ describe("reposition_v2", () => {
               }),
             ).buildAndExecute(),
             (err) => /.*TokenMaxExceeded|0x1781.*/i.test(String(err)),
+          );
+        });
+
+        it("fails to widen position width with token min subceeded", async () => {
+          // Initial position: Narrow position with 50:50 ratio
+          const currTick = 0;
+          const initialTickLower = -640;
+          const initialTickUpper = 640;
+          const initialLiquidity = new BN(5_000_000);
+
+          // New position: Wider range, still 50:50
+          const newTickLower = -1280;
+          const newTickUpper = 1280;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing: TickSpacing.Standard,
+            positions: [
+              {
+                tickLowerIndex: initialTickLower,
+                tickUpperIndex: initialTickUpper,
+                liquidityAmount: initialLiquidity,
+              },
+            ],
+            initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
+          });
+
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenProgramA,
+              tokenProgramB,
+              tokenMintA,
+              tokenMintB,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tickSpacing,
+            },
+            positions,
+            tokenAccountA,
+            tokenAccountB,
+          } = fixture.getInfos();
+
+          const newTickArrayLower = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          const newTickArrayUpper = PDAUtil.getTickArray(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+          );
+          await initTickArrayIfNeeded(
+            ctx,
+            whirlpoolPda.publicKey,
+            TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+          );
+
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+                newTickLowerIndex: newTickLower,
+                newTickUpperIndex: newTickUpper,
+                newLiquidityAmount: initialLiquidity,
+                existingRangeTokenMinA: new BN(1_000_000),
+                existingRangeTokenMinB: new BN(1_000_000),
+                newRangeTokenMaxA: new BN(100_000),
+                newRangeTokenMaxB: new BN(100_000),
+                whirlpool: whirlpoolPda.publicKey,
+                tokenProgramA: tokenProgramA,
+                tokenProgramB: tokenProgramB,
+                positionAuthority: provider.wallet.publicKey,
+                funder: provider.wallet.publicKey,
+                position: positions[0].publicKey,
+                positionTokenAccount: positions[0].tokenAccount,
+                tokenMintA: tokenMintA,
+                tokenMintB: tokenMintB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultA: tokenVaultAKeypair.publicKey,
+                tokenVaultB: tokenVaultBKeypair.publicKey,
+                existingTickArrayLower: positions[0].tickArrayLower,
+                existingTickArrayUpper: positions[0].tickArrayUpper,
+                newTickArrayLower: newTickArrayLower.publicKey,
+                newTickArrayUpper: newTickArrayUpper.publicKey,
+              }),
+            ).buildAndExecute(),
+            (err) => /.*TokenMinSubceeded|0x1782.*/i.test(String(err)),
           );
         });
 

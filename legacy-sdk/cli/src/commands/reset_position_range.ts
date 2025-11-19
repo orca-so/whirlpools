@@ -8,7 +8,7 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 import Decimal from "decimal.js";
@@ -262,7 +262,7 @@ builder.addInstruction(
     positionTokenAccount: getAssociatedTokenAddressSync(
       position.positionMint,
       ctx.wallet.publicKey,
-      undefined,
+      true,
       positionMint.tokenProgram,
     ),
     whirlpool: whirlpoolPubkey,
@@ -270,7 +270,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -296,7 +296,7 @@ pool 3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt
 position 9MtyLDRJK5fBvLozLqzfFdiSgXiH2QBLVDPcDEYJUrRC
 position lowerPrice(Index) 0.0000000000000000544947 (-443584) --> 500.991 (-6912)
 position upperPrice(Index) 18350300000000000000000 (443584) --> 804.455 (-2176)
-lowerTickArray GsCSnitrDbtw5m8UzPsmwb3Tr3R3DYmpz4WzhTriWri (initialized) 
+lowerTickArray GsCSnitrDbtw5m8UzPsmwb3Tr3R3DYmpz4WzhTriWri (initialized)
 upperTickArray 3rC87MFCC7VKpkhAR5gp2zMBjHr46jRajvMHxCBF8MWr (initialized)
 
 if the above is OK, enter YES

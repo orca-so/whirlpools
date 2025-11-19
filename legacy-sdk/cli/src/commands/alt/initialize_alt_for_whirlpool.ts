@@ -10,7 +10,7 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import type { MintWithTokenProgram } from "@orca-so/common-sdk";
-import { sendTransaction } from "../../utils/transaction_sender";
+import { processTransaction } from "../../utils/transaction_sender";
 import { ctx } from "../../utils/provider";
 import { promptText } from "../../utils/prompt";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -136,7 +136,7 @@ builder.addInstruction({
   signers: [],
 });
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info(`ALT initialized: ${alt.toBase58()}`);
   console.info("Entries:");

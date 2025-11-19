@@ -98,7 +98,7 @@ impl AdaptiveFeeConstants {
         // tick_group_size validation
         if tick_group_size == 0
             || tick_group_size > tick_spacing
-            || tick_spacing % tick_group_size != 0
+            || !tick_spacing.is_multiple_of(tick_group_size)
         {
             return false;
         }

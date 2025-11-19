@@ -4462,6 +4462,7 @@ __metadata:
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.4.0"
     vitest: "npm:^3.2.4"
+    yaml: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
 

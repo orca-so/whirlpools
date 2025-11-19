@@ -8,7 +8,7 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptText, promptConfirm } from "../utils/prompt";
 
@@ -260,7 +260,7 @@ if (!feeTierInfo.useAdaptiveFee) {
   );
 }
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info("whirlpool address:", pda.publicKey.toBase58());
 }

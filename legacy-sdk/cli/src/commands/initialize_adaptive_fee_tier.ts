@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -134,7 +134,7 @@ builder.addInstruction(
   }),
 );
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info("adaptiveFeeTier address:", pda.publicKey.toBase58());
 }
@@ -159,19 +159,19 @@ adaptive fee constants...
 ✔ maxVolatilityAccumulator … 100000
 ✔ tickGroupSize … 64
 ✔ majorSwapThresholdTicks … 64
-setting... 
-        whirlpoolsConfig GZm8MpN6HdxjfNJsojW2vYhrYHKxBA83GNmhnq1wb2QS 
-        feeTierIndex 1025 
-        tickSpacing 64 
-        defaultBaseFeeRatePer1000000 3000 
-        initializePoolAuthority 11111111111111111111111111111111 
-        delegatedFeeAuthority 11111111111111111111111111111111 
-        filterPeriod 30 
-        decayPeriod 600 
-        reductionFactorPer10000 5000 
-        adaptiveFeeControlFactorPer100000 40000 
-        maxVolatilityAccumulator 100000 
-        tickGroupSize 64 
+setting...
+        whirlpoolsConfig GZm8MpN6HdxjfNJsojW2vYhrYHKxBA83GNmhnq1wb2QS
+        feeTierIndex 1025
+        tickSpacing 64
+        defaultBaseFeeRatePer1000000 3000
+        initializePoolAuthority 11111111111111111111111111111111
+        delegatedFeeAuthority 11111111111111111111111111111111
+        filterPeriod 30
+        decayPeriod 600
+        reductionFactorPer10000 5000
+        adaptiveFeeControlFactorPer100000 40000
+        maxVolatilityAccumulator 100000
+        tickGroupSize 64
         majorSwapThresholdTicks 64
 ✔ if the above is OK, enter YES › Yes
 estimatedComputeUnits: 112542

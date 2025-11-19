@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import type { TokenBadgeAttributeData } from "@orca-so/whirlpools-sdk";
 import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -99,7 +99,7 @@ for (const attribute of attributeDataArray) {
   );
 }
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info("tokenBadge address:", pda.publicKey.toBase58());
 }
@@ -117,9 +117,9 @@ if you want to initialize TokenBadge WITH RequireNonTransferablePosition attribu
 
 >>>>> NOTICE: Whirlpools initialized with this TokenBadge will force NON-TRANSFERABLE position <<<<<
 
-setting... 
-        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR 
-        tokenMint 7mg4AksSu95yHiB5MzKt2M8MERH676gHWLJexAGUJQD1 
+setting...
+        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
+        tokenMint 7mg4AksSu95yHiB5MzKt2M8MERH676gHWLJexAGUJQD1
         attributes to be set atomically:
                  {"requireNonTransferablePosition":[true]}
 ✔ if the above is OK, enter YES › Yes

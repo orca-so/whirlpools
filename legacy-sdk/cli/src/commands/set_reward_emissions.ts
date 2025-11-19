@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolIx, PoolUtil } from "@orca-so/whirlpools-sdk";
 import { DecimalUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 import BN from "bn.js";
@@ -181,7 +181,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -191,17 +191,17 @@ set reward emissions...
 ✔ whirlpoolPubkey … EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4
 pool EgxU92G34jw6QDG9RuTX9StFg1PmHuDqkRKAE5kVEiZ4
 initialized rewards:
-[0]: mint Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6 
-     tokenProgram TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA 
-     vault 6w8WRF1beG5yUc3Fvic8ncZfvJxZ2qVVd11PqFRNGkyF 
-     vaultAmount 509996915.457082 
-     authority 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo (current wallet) 
+[0]: mint Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6
+     tokenProgram TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+     vault 6w8WRF1beG5yUc3Fvic8ncZfvJxZ2qVVd11PqFRNGkyF
+     vaultAmount 509996915.457082
+     authority 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo (current wallet)
      currentEmissions 999999.9072 per week (1.653439 per second)
-[1]: mint Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa 
-     tokenProgram TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA 
-     vault 3dsun5fdUuQdcT4RuW7xjYy9UP7a2szQNPmqBjEpGtYv 
-     vaultAmount 5099969.154558917 
-     authority 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo (current wallet) 
+[1]: mint Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa
+     tokenProgram TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+     vault 3dsun5fdUuQdcT4RuW7xjYy9UP7a2szQNPmqBjEpGtYv
+     vaultAmount 5099969.154558917
+     authority 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo (current wallet)
      currentEmissions 9999.9996768 per week (0.016534391 per second)
 ✔ rewardIndex … 0
 vault amount: 509996915.457082

@@ -6,7 +6,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptText } from "../utils/prompt";
 
@@ -47,6 +47,7 @@ if (positionMint.tokenProgram.equals(TOKEN_PROGRAM_ID)) {
       positionTokenAccount: getAssociatedTokenAddressSync(
         position.positionMint,
         ctx.wallet.publicKey,
+        true,
       ),
       positionMint: position.positionMint,
       receiver: ctx.wallet.publicKey,
@@ -60,7 +61,7 @@ if (positionMint.tokenProgram.equals(TOKEN_PROGRAM_ID)) {
       positionTokenAccount: getAssociatedTokenAddressSync(
         position.positionMint,
         ctx.wallet.publicKey,
-        undefined,
+        true,
         TOKEN_2022_PROGRAM_ID,
       ),
       positionMint: position.positionMint,
@@ -69,7 +70,7 @@ if (positionMint.tokenProgram.equals(TOKEN_PROGRAM_ID)) {
   );
 }
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 

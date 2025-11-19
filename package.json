@@ -30,5 +30,8 @@
     "examples/ts-sdk/*",
     "examples/rust-sdk/*",
     "docs/*"
-  ]
+  ],
+  "dependencies": {
+    "yaml": "^2.8.1"
+  }
 }

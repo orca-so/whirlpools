@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -73,7 +73,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -85,8 +85,8 @@ set RewardEmissionsSuperAuthority...
 ✔ whirlpoolsConfigPubkey … FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
 ✔ newRewardEmissionsSuperAuthorityPubkey … 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo
 ✔ newRewardEmissionsSuperAuthorityPubkeyAgain … 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo
-setting... 
-        rewardEmissionsSuperAuthority 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5 
+setting...
+        rewardEmissionsSuperAuthority 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5
         newRewardEmissionsSuperAuthority 3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo
 
 if the above is OK, enter YES

@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -76,7 +76,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -88,9 +88,9 @@ wallet 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5
 set InitializePoolAuthority...
 ✔ adaptiveFeeTierPubkey … 2hxdzpVtm4ZHr8anmQJ5NsaMMtajXiEGyHy92ubZEfAN
 ✔ newInitializePoolAuthorityPubkey … 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5
-setting... 
-        adaptiveFeeTier 2hxdzpVtm4ZHr8anmQJ5NsaMMtajXiEGyHy92ubZEfAN 
-        initializePoolAuthority r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6 (Permissioned) 
+setting...
+        adaptiveFeeTier 2hxdzpVtm4ZHr8anmQJ5NsaMMtajXiEGyHy92ubZEfAN
+        initializePoolAuthority r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6 (Permissioned)
         newInitializePoolAuthority 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5 (Permissioned)
 
 if the above is OK, enter YES
@@ -111,9 +111,9 @@ wallet 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5
 set InitializePoolAuthority...
 ✔ adaptiveFeeTierPubkey … 2hxdzpVtm4ZHr8anmQJ5NsaMMtajXiEGyHy92ubZEfAN
 ✔ newInitializePoolAuthorityPubkey … 11111111111111111111111111111111
-setting... 
-        adaptiveFeeTier 2hxdzpVtm4ZHr8anmQJ5NsaMMtajXiEGyHy92ubZEfAN 
-        initializePoolAuthority 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5 (Permissioned) 
+setting...
+        adaptiveFeeTier 2hxdzpVtm4ZHr8anmQJ5NsaMMtajXiEGyHy92ubZEfAN
+        initializePoolAuthority 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5 (Permissioned)
         newInitializePoolAuthority 11111111111111111111111111111111 (Permission-LESS)
 
 if the above is OK, enter YES

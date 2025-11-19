@@ -12,7 +12,6 @@ import {
 import Decimal from "decimal.js";
 import base58 from "bs58";
 import { promptConfirm, promptText } from "./prompt";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 export async function processTransaction(
   builder: TransactionBuilder,

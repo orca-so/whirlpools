@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust
 
+## 5.0.2
+
+### Patch Changes
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update to Anchor 0.32.1
+
 ## 5.0.1
 
 ### Patch Changes

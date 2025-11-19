@@ -1,5 +1,19 @@
 # @orca-so/whirlpools-program
 
+## 0.7.0
+
+### Minor Changes
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Upgrade to Anchor 0.31.1 and Solana Program 2.1.0, add support for token-2022 program, and update SPL dependencies to their latest versions
+
+### Patch Changes
+
+- [#1094](https://github.com/orca-so/whirlpools/pull/1094) [`99363f9`](https://github.com/orca-so/whirlpools/commit/99363f9f01b97fdf31ecbd47d2066df6818f1960) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add unit tests to validate account discriminators
+
+- [#1120](https://github.com/orca-so/whirlpools/pull/1120) [`def0d40`](https://github.com/orca-so/whirlpools/commit/def0d4041b7effc436dcd6442fdd1662743fb604) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Improve repository setup
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update to Anchor 0.32.1
+
 ## 0.6.1
 
 ### Patch Changes

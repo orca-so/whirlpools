@@ -1,5 +1,15 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.6
+
+### Patch Changes
+
+- [#1153](https://github.com/orca-so/whirlpools/pull/1153) [`3c0f9a2`](https://github.com/orca-so/whirlpools/commit/3c0f9a228608b3670440eb67e2d41e18608aa4ac) Thanks [@calintje](https://github.com/calintje)! - Update protocol fees
+
+- [#1110](https://github.com/orca-so/whirlpools/pull/1110) [`5d59eef`](https://github.com/orca-so/whirlpools/commit/5d59eef6b86337546b31dfe725cd00914798ff65) Thanks [@rohaan-sahu](https://github.com/rohaan-sahu)! - Fix trade example
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update to Anchor 0.32.1
+
 ## 0.2.5
 
 ## 0.2.4

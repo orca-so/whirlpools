@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/common-sdk",
-  "version": "0.6.11",
+  "version": "0.7.0",
   "description": "Common Typescript components across Orca",
   "repository": "https://github.com/orca-so/orca-sdks",
   "author": "Orca Foundation",

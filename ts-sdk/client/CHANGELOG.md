@@ -1,5 +1,17 @@
 # @orca-so/whirlpools-client
 
+## 5.0.0
+
+### Major Changes
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update dependencies to support contract upgrade to Anchor 0.29->0.31.1 and Solana Program 1.17->2.1
+
+### Patch Changes
+
+- [#1090](https://github.com/orca-so/whirlpools/pull/1090) [`cb68301`](https://github.com/orca-so/whirlpools/commit/cb68301efabc5d24b6a9b88ed73d5d2d140cf18d) Thanks [@calintje](https://github.com/calintje)! - Update deps
+
+- [#1142](https://github.com/orca-so/whirlpools/pull/1142) [`3edef23`](https://github.com/orca-so/whirlpools/commit/3edef232f5e688082e6780a129689ef94d44d278) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update to Anchor 0.32.1
+
 ## 4.0.1
 
 ### Patch Changes

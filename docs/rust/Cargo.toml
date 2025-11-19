@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_docs"
-version = "0.2.5"
+version = "0.2.6"
 publish = false
 edition = "2021"
 

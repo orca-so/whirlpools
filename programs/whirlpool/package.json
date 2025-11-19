@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-program",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "scripts": {
     "build": "anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",

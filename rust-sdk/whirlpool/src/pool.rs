@@ -7,9 +7,10 @@ use orca_whirlpools_client::{
 
 use orca_whirlpools_core::sqrt_price_to_price;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_program::pubkey::Pubkey;
-use solana_sdk::{program_error::ProgramError, program_pack::Pack};
-use spl_token::state::Mint;
+use solana_program_error::ProgramError;
+use solana_program_pack::Pack;
+use solana_pubkey::Pubkey;
+use spl_token_interface::state::Mint;
 
 use crate::{token::order_mints, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
@@ -76,6 +77,7 @@ impl InitializedPool {
 ///
 /// This enum provides a unified way to describe both initialized and uninitialized pools,
 /// encapsulating their specific data structures.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum PoolInfo {
     /// Represents a pool that has been initialized and contains its current state and price.
@@ -117,7 +119,7 @@ pub enum PoolInfo {
 ///     fetch_splash_pool, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -175,7 +177,7 @@ pub async fn fetch_splash_pool(
 ///     WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -288,7 +290,7 @@ pub async fn fetch_concentrated_liquidity_pool(
 ///     fetch_whirlpools_by_token_pair, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
@@ -388,7 +390,6 @@ mod tests {
         setup_ata_with_amount, setup_mint_with_decimals, setup_whirlpool, RpcContext,
     };
     use serial_test::serial;
-    use solana_program_test::tokio;
 
     struct TestContext {
         ctx: RpcContext,
@@ -400,7 +401,7 @@ mod tests {
 
     impl TestContext {
         async fn new() -> Result<Self, Box<dyn Error>> {
-            let ctx = RpcContext::new().await;
+            let ctx = RpcContext::new();
             let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
             let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
 
@@ -496,7 +497,6 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    #[ignore = "Skipped until solana-bankrun supports getProgramAccounts"]
     async fn test_fetch_all_pools_for_pair() {
         let test_ctx = TestContext::new().await.unwrap();
 

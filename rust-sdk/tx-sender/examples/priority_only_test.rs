@@ -2,9 +2,9 @@ use orca_tx_sender::{
     build_and_send_transaction, get_rpc_client, set_jito_fee_strategy, set_priority_fee_strategy,
     set_rpc, JitoFeeStrategy, Percentile, PriorityFeeStrategy,
 };
-use solana_sdk::commitment_config::CommitmentLevel;
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signer;
+use solana_commitment_config::CommitmentLevel;
+use solana_keypair::Signer;
+use solana_pubkey::Pubkey;
 use std::env;
 use std::error::Error;
 use std::str::FromStr;

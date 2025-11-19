@@ -1,5 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::account_info::AccountInfo;
+use solana_account_info::AccountInfo;
 
 use crate::{
     DynamicTick, DynamicTickArray, DynamicTickData, FixedTickArray, Tick,
@@ -244,8 +244,8 @@ impl anchor_lang::AccountSerialize for TickArray {
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for TickArray {
-    fn owner() -> solana_sdk::pubkey::Pubkey {
-        crate::WHIRLPOOL_ID
+    fn owner() -> anchor_lang::prelude::Pubkey {
+        anchor_lang::prelude::Pubkey::from(crate::WHIRLPOOL_ID.to_bytes())
     }
 }
 

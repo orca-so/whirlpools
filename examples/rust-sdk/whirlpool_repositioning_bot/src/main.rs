@@ -11,7 +11,7 @@ use orca_whirlpools::{set_funder, set_whirlpools_config_address, WhirlpoolsConfi
 use orca_whirlpools_client::get_position_address;
 use position_manager::run_position_manager;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use std::env;
 use std::str::FromStr;
 use tokio::time::{sleep, Duration};

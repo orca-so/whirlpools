@@ -13,7 +13,7 @@ services:
 
   yarn-install:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -28,7 +28,7 @@ services:
 
   build-ts-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -53,7 +53,7 @@ services:
 
   build-legacy-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -75,7 +75,7 @@ services:
 
   build-rust-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "rustup component add clippy rustfmt
@@ -95,14 +95,13 @@ services:
 
   build-integration:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
-      && yarn workspace @orca-so/whirlpools-integration build
-      && yarn workspace @orca-so/whirlpools-rust-integration build"
+      && yarn workspace @orca-so/whirlpools-integration build"
     profiles: [build]
     depends_on:
       build-rust-sdk:
@@ -116,7 +115,7 @@ services:
 
   build-docs:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -141,7 +140,7 @@ services:
 
   build-examples:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -189,7 +188,7 @@ services:
 
   test-program:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       cargo test -p whirlpool
@@ -225,7 +224,7 @@ services:
 
   test-ts-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -250,10 +249,13 @@ services:
 
   test-rust-sdk:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "cp legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so target/deploy/
+      sh -c "apt-get update
+      && DEBIAN_FRONTEND=noninteractive apt-get install -y pkg-config libudev-dev
+      && rm -rf /var/lib/apt/lists/*
+      && cp legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so target/deploy/
       && cargo test --quiet --manifest-path rust-sdk/macros/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/core/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/client/Cargo.toml --lib
@@ -267,14 +269,13 @@ services:
       - ./:/usr/src/whirlpools
 
   test-integration:
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
-      && yarn workspace @orca-so/whirlpools-integration test
-      && yarn workspace @orca-so/whirlpools-rust-integration test"
+      && yarn workspace @orca-so/whirlpools-integration test"
     profiles: [test-integration]
     depends_on:
       build-rust-sdk:
@@ -320,7 +321,7 @@ services:
 
   lint:
     platform: linux/amd64
-    image: rust:1.84.0
+    image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -

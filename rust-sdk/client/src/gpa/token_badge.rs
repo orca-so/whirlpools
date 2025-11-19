@@ -2,7 +2,7 @@ use std::error::Error;
 
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::{Memcmp, RpcFilterType};
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 use super::fetch_decoded_program_accounts;
 use crate::TOKEN_BADGE_DISCRIMINATOR;

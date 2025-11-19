@@ -1,6 +1,6 @@
 use std::{env::set_var, error::Error, fs::read_to_string, path::PathBuf, str::FromStr};
 
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use toml::Table;
 
 pub fn anchor_programs(path: &str) -> Result<Vec<(String, Pubkey)>, Box<dyn Error>> {

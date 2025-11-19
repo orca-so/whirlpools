@@ -2,13 +2,13 @@ use crate::fee_config::{FeeConfig, Percentile, PriorityFeeStrategy};
 use crate::rpc_config::RpcConfig;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSimulateTransactionConfig;
-use solana_program::instruction::Instruction;
-use solana_program::pubkey::Pubkey;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::Instruction;
+use solana_message::AddressLookupTableAccount;
+use solana_message::{v0::Message, VersionedMessage};
+use solana_pubkey::Pubkey;
 use solana_rpc_client_api::response::RpcPrioritizationFee;
-use solana_sdk::address_lookup_table::AddressLookupTableAccount;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
-use solana_sdk::message::{v0::Message, VersionedMessage};
-use solana_sdk::transaction::VersionedTransaction;
+use solana_transaction::versioned::VersionedTransaction;
 
 /// Compute unit limit strategy to apply when building a transaction.
 /// - Dynamic: Estimate compute units by simulating the transaction.
@@ -49,7 +49,7 @@ pub async fn estimate_compute_units(
 
     let transaction = VersionedTransaction {
         signatures: vec![
-            solana_sdk::signature::Signature::default();
+            solana_signature::Signature::default();
             message.header.num_required_signatures.into()
         ],
         message: VersionedMessage::V0(message),

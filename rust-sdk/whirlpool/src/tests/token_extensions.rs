@@ -1,9 +1,9 @@
-use solana_sdk::{pubkey::Pubkey, signer::Signer, system_instruction};
-use spl_associated_token_account::{
-    get_associated_token_address_with_program_id,
-    instruction::create_associated_token_account_idempotent,
-};
-use spl_token_2022::{
+use solana_keypair::Signer;
+use solana_pubkey::Pubkey;
+use solana_system_interface::instruction::create_account;
+use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
+use spl_associated_token_account_interface::instruction::create_associated_token_account_idempotent;
+use spl_token_2022_interface::{
     extension::{
         transfer_fee::instruction::{initialize_transfer_fee_config, set_transfer_fee},
         ExtensionType,
@@ -35,7 +35,7 @@ pub async fn setup_mint_te(
         .get_minimum_balance_for_rent_exemption(space)
         .await?;
 
-    instructions.push(system_instruction::create_account(
+    instructions.push(create_account(
         &ctx.signer.pubkey(),
         &mint.pubkey(),
         rent,
@@ -58,7 +58,7 @@ pub async fn setup_mint_te(
 
         if extension == &ExtensionType::ScaledUiAmount {
             instructions.push(
-                spl_token_2022::extension::scaled_ui_amount::instruction::initialize(
+                spl_token_2022_interface::extension::scaled_ui_amount::instruction::initialize(
                     &TOKEN_2022_PROGRAM_ID,
                     &mint.pubkey(),
                     None,

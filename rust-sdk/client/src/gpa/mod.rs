@@ -27,7 +27,7 @@ pub use position::*;
 pub use position_bundle::*;
 pub use tick_array::*;
 pub use token_badge::*;
-pub use utils::*;
+pub(crate) use utils::*;
 pub use whirlpool::*;
 pub use whirlpools_config::*;
 pub use whirlpools_config_extension::*;

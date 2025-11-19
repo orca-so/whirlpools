@@ -228,23 +228,23 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      && apt-get update && apt-get install -y nodejs python3 build-essential
+      && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
-      && rm -rf node_modules
-      && rm -f yarn.lock
-      && yarn install
       && yarn workspace @orca-so/whirlpools-client test
       && yarn workspace @orca-so/whirlpools-core test
-      && yarn workspace @orca-so/tx-sender test
-      && yarn workspace @orca-so/whirlpools test"
+      && yarn workspace @orca-so/tx-sender test"
     profiles: [test]
     depends_on:
       build-solana-program:
+        condition: service_completed_successfully
+      yarn-install:
         condition: service_completed_successfully
       build-ts-sdk:
         condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
+      - node_modules:/usr/src/whirlpools/node_modules
+      - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-rust-sdk:
     platform: linux/amd64

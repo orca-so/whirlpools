@@ -7,8 +7,15 @@ import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import type { Wallet } from "@coral-xyz/anchor/dist/cjs/provider";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 
-// export ANCHOR_PROVIDER_URL=http://localhost:8899
-// export ANCHOR_WALLET=~/.config/solana/id.json
+/*
+ * Normal (sign + send):
+ * export ANCHOR_PROVIDER_URL=http://localhost:8899
+ * export ANCHOR_WALLET=~/.config/solana/id.json
+ *
+ * Export (print unsigned tx):
+ * export ANCHOR_PROVIDER_URL=http://localhost:8899
+ * export ANCHOR_WALLET=<YOUR_PUBLIC_KEY>
+ */
 
 const configPath = `${process.env.HOME}/.config/solana/cli/config.yml`;
 

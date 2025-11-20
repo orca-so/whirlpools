@@ -36,7 +36,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: solana-programs-${{ github.run_id }}
-          path: .
+          path: target
+      - name: Verify artifacts
+        run: |
+          ls -la target/deploy/
+          ls -la target/idl/
       - name: Build non-program packages
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
@@ -50,7 +54,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: solana-programs-${{ github.run_id }}
-          path: .
+          path: target
+      - name: Verify artifacts
+        run: |
+          ls -la target/deploy/
+          ls -la target/idl/
       - name: Run tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 

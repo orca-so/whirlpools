@@ -188,6 +188,7 @@ services:
       && node --version
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install
+      && yarn add litesvm-linux-x64-gnu
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-integration test"

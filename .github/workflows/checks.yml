@@ -63,7 +63,7 @@ jobs:
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
   test-whirlpools-program:
-    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     needs: build-program
     steps:
       - name: Checkout repository

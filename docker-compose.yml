@@ -16,6 +16,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apk add --no-cache nodejs npm curl
+      && npm install -g corepack
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install --mode=skip-build"
     profiles: [build, test, lint]
@@ -29,6 +30,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apk add --no-cache nodejs npm curl
+      && npm install -g corepack
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && rustup target add wasm32-unknown-unknown
       && yarn workspace @orca-so/whirlpools-client build
@@ -50,6 +52,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apk add --no-cache nodejs npm curl
+      && npm install -g corepack
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
@@ -199,6 +202,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apk add --no-cache nodejs npm curl
+      && npm install -g corepack
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-client test
       && yarn workspace @orca-so/whirlpools-core test
@@ -286,6 +290,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apk add --no-cache nodejs npm curl
+      && npm install -g corepack
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && rustup component add clippy rustfmt
       && yarn workspace @orca-so/whirlpools-lint lint

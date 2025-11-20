@@ -2,7 +2,6 @@ name: whirlpools
 
 services:
   build-solana-program:
-    platform: linux/amd64
     image: solanafoundation/anchor:v0.32.1
     working_dir: /usr/src/whirlpools
     command: >

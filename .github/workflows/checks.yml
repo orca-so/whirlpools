@@ -22,7 +22,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - uses: docker/setup-qemu-action@v3
       - name: Run tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 

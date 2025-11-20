@@ -44,7 +44,6 @@
   "devDependencies": {
     "@solana/kit": "^5.0.0",
     "litesvm": "^0.3.3",
-    "litesvm-linux-x64-gnu": "^0.3.3",
     "tsup": "^8.4.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

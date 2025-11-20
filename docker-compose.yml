@@ -7,6 +7,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
+    profiles: [build-program]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -191,9 +192,6 @@ services:
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-integration test"
     profiles: [test-whirlpools-program]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules

@@ -14,8 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Build all packages
-        run: docker compose build-solana-program
+      - name: Build Solana program
+        run: docker compose run build-solana-program
       - name: Upload Solana program artifacts
         uses: actions/upload-artifact@v4
         with:

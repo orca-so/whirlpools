@@ -9,23 +9,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-program:
     runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
       - name: Build all packages
-        run: docker compose --profile build up --quiet-pull --abort-on-container-failure
+        run: docker compose build-solana-program
       - name: Upload Solana program artifacts
         uses: actions/upload-artifact@v4
         with:
           name: solana-programs-${{ github.run_id }}
-          path: target/deploy/*.so
+          path: |
+            target/deploy/*.so
+            target/idl/*.json
+            target/types/*.ts
           retention-days: 1
 
-  test:
-    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
-    needs: build
+  build:
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    needs: build-program
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -33,7 +36,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: solana-programs-${{ github.run_id }}
-          path: target/deploy/
+          path: .
+      - name: Build non-program packages
+        run: docker compose --profile build up --quiet-pull --abort-on-container-failure
+
+  test:
+    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
+    needs: build-program
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Download Solana program artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: solana-programs-${{ github.run_id }}
+          path: .
       - name: Run tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 

@@ -7,7 +7,6 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
-    profiles: [build, test-whirlpools-program, test]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -59,8 +58,6 @@ services:
       && yarn workspace @orca-so/whirlpools-sdk-cli build"
     profiles: [build]
     depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
       yarn-install:
         condition: service_completed_successfully
     volumes:
@@ -81,9 +78,6 @@ services:
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
     profiles: [build]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -156,8 +150,6 @@ services:
     command: >
       echo "Build Completed"
     depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
       yarn-install:
         condition: service_completed_successfully
       build-rust-sdk:
@@ -182,9 +174,6 @@ services:
     command: >
       cargo test -p whirlpool
     profiles: [test]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
 

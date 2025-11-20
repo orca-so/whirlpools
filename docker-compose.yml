@@ -18,7 +18,7 @@ services:
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
-      && yarn install"
+      && yarn install --mode=skip-build"
     profiles: [build, test, lint]
     volumes:
       - ./:/usr/src/whirlpools
@@ -206,7 +206,8 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-client test
       && yarn workspace @orca-so/whirlpools-core test
-      && yarn workspace @orca-so/tx-sender test"
+      && yarn workspace @orca-so/tx-sender test
+      && yarn workspace @orca-so/whirlpools test"
     profiles: [test]
     depends_on:
       yarn-install:

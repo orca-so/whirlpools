@@ -46,6 +46,7 @@ jobs:
 
   test:
     runs-on: blacksmith-8vcpu-ubuntu-2404
+    needs: build-program
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

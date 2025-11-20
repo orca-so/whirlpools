@@ -92,11 +92,14 @@ jobs:
           corepack prepare yarn@4.6.0 --activate
       - name: Install dependencies
         run: yarn install --immutable
+      - name: Build whirlpools-core without wasm-opt
+        run: |
+          yarn workspace @orca-so/whirlpools-core exec wasm-pack build --dev --out-dir ./dist/nodejs --target nodejs
+          yarn workspace @orca-so/whirlpools-core exec wasm-pack build --dev --out-dir ./dist/browser --target browser
       - name: Build TypeScript SDK packages
         run: |
           yarn workspace @orca-so/common-sdk build
           yarn workspace @orca-so/whirlpools-client build
-          yarn workspace @orca-so/whirlpools-core build
           yarn workspace @orca-so/tx-sender build
           yarn workspace @orca-so/whirlpools build
       - name: Run whirlpools tests

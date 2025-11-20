@@ -63,22 +63,37 @@ jobs:
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
   test-whirlpools-program:
-    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
+    runs-on: macos-latest
     needs: build-program
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
       - name: Download Solana program artifacts
         uses: actions/download-artifact@v4
         with:
           name: solana-programs-${{ github.run_id }}
           path: target
-      - name: Clean stale volumes
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Prepare Yarn
         run: |
-          docker volume rm -f whirlpools_node_modules || true
-          docker volume rm -f whirlpools_yarn_cache || true
-      - name: Run tests
-        run: docker compose --profile test-whirlpools-program up --quiet-pull --abort-on-container-failure
+          corepack enable
+          corepack prepare yarn@4.6.0 --activate
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run integration tests
+        run: |
+          yarn workspace @orca-so/common-sdk build
+          yarn workspace @orca-so/whirlpools-sdk build
+          yarn workspace @orca-so/whirlpools-sdk-integration test
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404

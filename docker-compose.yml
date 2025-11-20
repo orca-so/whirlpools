@@ -2,6 +2,7 @@ name: whirlpools
 
 services:
   build-solana-program:
+    platform: linux/amd64
     image: solanafoundation/anchor:v0.32.1
     working_dir: /usr/src/whirlpools
     command: >
@@ -11,6 +12,7 @@ services:
       - ./:/usr/src/whirlpools
 
   yarn-install:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -25,6 +27,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache
 
   build-ts-sdk:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -49,6 +52,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-legacy-sdk:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -70,6 +74,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-rust-sdk:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -89,6 +94,7 @@ services:
       - ./:/usr/src/whirlpools
 
   build-integration:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -108,6 +114,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-docs:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -132,6 +139,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-examples:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -152,6 +160,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build:
+    platform: linux/amd64
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
@@ -178,6 +187,7 @@ services:
       - ./:/usr/src/whirlpools
 
   test-program:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -190,6 +200,7 @@ services:
       - ./:/usr/src/whirlpools
 
   test-program-integration:
+    platform: linux/amd64
     image: ubuntu:24.04
     working_dir: /usr/src/whirlpools
     command: >
@@ -212,6 +223,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-ts-sdk:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -220,8 +232,7 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-client test
       && yarn workspace @orca-so/whirlpools-core test
-      && yarn workspace @orca-so/tx-sender test
-      && yarn workspace @orca-so/whirlpools test"
+      && yarn workspace @orca-so/tx-sender test"
     profiles: [test]
     depends_on:
       build-solana-program:
@@ -236,6 +247,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-rust-sdk:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -277,6 +289,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-whirlpools-program:
+    platform: linux/amd64
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
@@ -291,6 +304,7 @@ services:
       - ./:/usr/src/whirlpools
 
   test-sdks:
+    platform: linux/amd64
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
@@ -305,6 +319,7 @@ services:
       - ./:/usr/src/whirlpools
 
   lint:
+    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >

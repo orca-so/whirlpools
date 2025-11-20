@@ -160,19 +160,19 @@ export function repositionLiquidityV2Ix(
   const [remainingAccountsInfo, remainingAccounts] =
     new RemainingAccountsBuilder()
       .addSlice(
-        RemainingAccountsType.TransferHookADeposit,
+        RemainingAccountsType.TransferHookDepositA,
         tokenTransferHookDepositAccountsA,
       )
       .addSlice(
-        RemainingAccountsType.TransferHookBDeposit,
+        RemainingAccountsType.TransferHookDepositB,
         tokenTransferHookDepositAccountsB,
       )
       .addSlice(
-        RemainingAccountsType.TransferHookAWithdrawal,
+        RemainingAccountsType.TransferHookWithdrawalA,
         tokenTransferHookWithdrawalAccountsA,
       )
       .addSlice(
-        RemainingAccountsType.TransferHookBWithdrawal,
+        RemainingAccountsType.TransferHookWithdrawalB,
         tokenTransferHookWithdrawalAccountsB,
       )
       .build();

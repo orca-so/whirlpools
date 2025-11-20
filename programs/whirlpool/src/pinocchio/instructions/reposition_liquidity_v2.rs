@@ -131,10 +131,10 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         remaining_accounts,
         &data.remaining_accounts_info,
         &[
-            AccountsType::TransferHookADeposit,
-            AccountsType::TransferHookBDeposit,
-            AccountsType::TransferHookAWithdrawal,
-            AccountsType::TransferHookBWithdrawal,
+            AccountsType::TransferHookDepositA,
+            AccountsType::TransferHookDepositB,
+            AccountsType::TransferHookWithdrawalA,
+            AccountsType::TransferHookWithdrawalB,
         ],
     )?;
 
@@ -429,7 +429,7 @@ fn execute_token_delta_transfers(
             token_vault_a,
             token_program_a,
             memo_program,
-            &remaining_accounts.transfer_hook_a_deposit,
+            &remaining_accounts.transfer_hook_deposit_a,
             token_a_delta,
         )?;
     } else {
@@ -441,7 +441,7 @@ fn execute_token_delta_transfers(
             token_owner_account_a,
             token_program_a,
             memo_program,
-            &remaining_accounts.transfer_hook_a_withdrawal,
+            &remaining_accounts.transfer_hook_withdrawal_a,
             token_a_delta,
             transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
         )?;
@@ -455,7 +455,7 @@ fn execute_token_delta_transfers(
             token_vault_b,
             token_program_b,
             memo_program,
-            &remaining_accounts.transfer_hook_b_deposit,
+            &remaining_accounts.transfer_hook_deposit_b,
             token_b_delta,
         )?;
     } else {
@@ -467,7 +467,7 @@ fn execute_token_delta_transfers(
             token_owner_account_b,
             token_program_b,
             memo_program,
-            &remaining_accounts.transfer_hook_b_withdrawal,
+            &remaining_accounts.transfer_hook_withdrawal_b,
             token_b_delta,
             transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
         )?;

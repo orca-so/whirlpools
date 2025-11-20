@@ -12,10 +12,10 @@ export enum RemainingAccountsType {
   SupplementalTickArrays = "supplementalTickArrays",
   SupplementalTickArraysOne = "supplementalTickArraysOne",
   SupplementalTickArraysTwo = "supplementalTickArraysTwo",
-  TransferHookADeposit = "transferHookADeposit",
-  TransferHookBDeposit = "transferHookBDeposit",
-  TransferHookAWithdrawal = "transferHookAWithdrawal",
-  TransferHookBWithdrawal = "transferHookBWithdrawal",
+  TransferHookDepositA = "transferHookDepositA",
+  TransferHookDepositB = "transferHookDepositB",
+  TransferHookWithdrawalA = "transferHookWithdrawalA",
+  TransferHookWithdrawalB = "transferHookWithdrawalB",
 }
 
 type RemainingAccountsAnchorType =
@@ -28,10 +28,10 @@ type RemainingAccountsAnchorType =
   | { supplementalTickArrays: object }
   | { supplementalTickArraysOne: object }
   | { supplementalTickArraysTwo: object }
-  | { TransferHookADeposit: object }
-  | { TransferHookBDeposit: object }
-  | { TransferHookAWithdrawal: object }
-  | { TransferHookBWithdrawal: object };
+  | { TransferHookDepositA: object }
+  | { TransferHookDepositB: object }
+  | { TransferHookWithdrawalA: object }
+  | { TransferHookWithdrawalB: object };
 
 export type RemainingAccountsSliceData = {
   accountsType: RemainingAccountsAnchorType;

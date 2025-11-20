@@ -14,10 +14,10 @@ pub struct PinoParsedRemainingAccounts<'a> {
     pub supplemental_tick_arrays: Option<Vec<&'a AccountInfo>>,
     pub supplemental_tick_arrays_one: Option<Vec<&'a AccountInfo>>,
     pub supplemental_tick_arrays_two: Option<Vec<&'a AccountInfo>>,
-    pub transfer_hook_a_deposit: Option<Vec<&'a AccountInfo>>,
-    pub transfer_hook_b_deposit: Option<Vec<&'a AccountInfo>>,
-    pub transfer_hook_a_withdrawal: Option<Vec<&'a AccountInfo>>,
-    pub transfer_hook_b_withdrawal: Option<Vec<&'a AccountInfo>>,
+    pub transfer_hook_deposit_a: Option<Vec<&'a AccountInfo>>,
+    pub transfer_hook_deposit_b: Option<Vec<&'a AccountInfo>>,
+    pub transfer_hook_withdrawal_a: Option<Vec<&'a AccountInfo>>,
+    pub transfer_hook_withdrawal_b: Option<Vec<&'a AccountInfo>>,
 }
 
 pub fn pino_parse_remaining_accounts<'a>(
@@ -127,35 +127,35 @@ pub fn pino_parse_remaining_accounts<'a>(
                 }
                 parsed_remaining_accounts.supplemental_tick_arrays_two = Some(accounts);
             }
-            AccountsType::TransferHookADeposit => {
-                if parsed_remaining_accounts.transfer_hook_a_deposit.is_some() {
+            AccountsType::TransferHookDepositA => {
+                if parsed_remaining_accounts.transfer_hook_deposit_a.is_some() {
                     return Err(WhirlpoolErrorCode::RemainingAccountsDuplicatedAccountsType.into());
                 }
-                parsed_remaining_accounts.transfer_hook_a_deposit = Some(accounts);
+                parsed_remaining_accounts.transfer_hook_deposit_a = Some(accounts);
             }
-            AccountsType::TransferHookBDeposit => {
-                if parsed_remaining_accounts.transfer_hook_b_deposit.is_some() {
+            AccountsType::TransferHookDepositB => {
+                if parsed_remaining_accounts.transfer_hook_deposit_b.is_some() {
                     return Err(WhirlpoolErrorCode::RemainingAccountsDuplicatedAccountsType.into());
                 }
-                parsed_remaining_accounts.transfer_hook_b_deposit = Some(accounts);
+                parsed_remaining_accounts.transfer_hook_deposit_b = Some(accounts);
             }
-            AccountsType::TransferHookAWithdrawal => {
+            AccountsType::TransferHookWithdrawalA => {
                 if parsed_remaining_accounts
-                    .transfer_hook_a_withdrawal
+                    .transfer_hook_withdrawal_a
                     .is_some()
                 {
                     return Err(WhirlpoolErrorCode::RemainingAccountsDuplicatedAccountsType.into());
                 }
-                parsed_remaining_accounts.transfer_hook_a_withdrawal = Some(accounts);
+                parsed_remaining_accounts.transfer_hook_withdrawal_a = Some(accounts);
             }
-            AccountsType::TransferHookBWithdrawal => {
+            AccountsType::TransferHookWithdrawalB => {
                 if parsed_remaining_accounts
-                    .transfer_hook_b_withdrawal
+                    .transfer_hook_withdrawal_b
                     .is_some()
                 {
                     return Err(WhirlpoolErrorCode::RemainingAccountsDuplicatedAccountsType.into());
                 }
-                parsed_remaining_accounts.transfer_hook_b_withdrawal = Some(accounts);
+                parsed_remaining_accounts.transfer_hook_withdrawal_b = Some(accounts);
             }
         }
     }

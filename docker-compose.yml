@@ -44,7 +44,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
-      - node_modules:/usr/src/whirlpools/node_modules:ro
+      - node_modules:/usr/src/whirlpools/node_modules
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-legacy-sdk:

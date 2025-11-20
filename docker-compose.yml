@@ -12,11 +12,10 @@ services:
       - ./:/usr/src/whirlpools
 
   yarn-install:
-    image: rust:1.86.0
+    image: rust:1.86.0-alpine
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      && apt-get update && apt-get install -y nodejs
+      sh -c "apk add --no-cache nodejs npm curl
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install --mode=skip-build"
     profiles: [build, test, lint]
@@ -26,11 +25,10 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache
 
   build-ts-sdk:
-    image: rust:1.86.0
+    image: rust:1.86.0-alpine
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      && apt-get update && apt-get install -y nodejs
+      sh -c "apk add --no-cache nodejs npm curl
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && rustup target add wasm32-unknown-unknown
       && yarn workspace @orca-so/whirlpools-client build
@@ -48,11 +46,10 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-legacy-sdk:
-    image: rust:1.86.0
+    image: rust:1.86.0-alpine
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      && apt-get update && apt-get install -y nodejs
+      sh -c "apk add --no-cache nodejs npm curl
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
@@ -198,11 +195,10 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-ts-sdk:
-    image: rust:1.86.0
+    image: rust:1.86.0-alpine
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      && apt-get update && apt-get install -y nodejs
+      sh -c "apk add --no-cache nodejs npm curl
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-client test
       && yarn workspace @orca-so/whirlpools-core test
@@ -286,11 +282,10 @@ services:
       - ./:/usr/src/whirlpools
 
   lint:
-    image: rust:1.86.0
+    image: rust:1.86.0-alpine
     working_dir: /usr/src/whirlpools
     command: >
-      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      && apt-get update && apt-get install -y nodejs
+      sh -c "apk add --no-cache nodejs npm curl
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && rustup component add clippy rustfmt
       && yarn workspace @orca-so/whirlpools-lint lint

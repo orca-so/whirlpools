@@ -4572,6 +4572,7 @@ __metadata:
     "@solana/kit": "npm:^5.0.0"
     "@solana/sysvars": "npm:^5.0.0"
     litesvm: "npm:^0.3.3"
+    litesvm-linux-x64-gnu: "npm:^0.3.3"
     tsup: "npm:^8.4.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^3.2.4"
@@ -12495,9 +12496,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"litesvm-linux-x64-gnu@npm:0.3.3":
+"litesvm-linux-x64-gnu@npm:0.3.3, litesvm-linux-x64-gnu@npm:^0.3.3":
   version: 0.3.3
   resolution: "litesvm-linux-x64-gnu@npm:0.3.3"
+  checksum: 10c0/c331031bf5391c25ffa4fe437a211a4d11269ad2e6daebb70abc6effb58748d7ec30d0f5c7a3b0cc579524e69e071376476736b63dbbff03f358e7fb7633234a
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard

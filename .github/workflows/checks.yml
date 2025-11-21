@@ -37,10 +37,6 @@ jobs:
         with:
           name: solana-programs-${{ github.run_id }}
           path: target
-      - name: Verify artifacts
-        run: |
-          ls -la target/deploy/
-          ls -la target/idl/
       - name: Clean stale volumes
         run: |
           docker volume rm -f whirlpools_node_modules || true
@@ -48,7 +44,7 @@ jobs:
       - name: Build non-program packages
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
-  test:
+  test-sdks:
     runs-on: blacksmith-8vcpu-ubuntu-2404-arm
     needs: build-program
     steps:
@@ -59,10 +55,6 @@ jobs:
         with:
           name: solana-programs-${{ github.run_id }}
           path: target
-      - name: Verify artifacts
-        run: |
-          ls -la target/deploy/
-          ls -la target/idl/
       - name: Clean stale volumes
         run: |
           docker volume rm -f whirlpools_node_modules || true
@@ -70,40 +62,23 @@ jobs:
       - name: Run tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 
-  # test-whirlpools-ts-sdk:
-  #   runs-on: macos-latest
-  #   needs: build-program
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v5
-  #     - name: Download Solana program artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: solana-programs-${{ github.run_id }}
-  #         path: target
-  #     - name: Set up Node 22
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: yarn
-  #     - name: Prepare Yarn
-  #       run: |
-  #         corepack enable
-  #         corepack prepare yarn@4.6.0 --activate
-  #     - name: Install dependencies
-  #       run: yarn install --immutable
-  #     - name: Build whirlpools-core without wasm-opt
-  #       run: |
-  #         yarn workspace @orca-so/whirlpools-core exec wasm-pack build --dev --out-dir ./dist/nodejs --target nodejs
-  #         yarn workspace @orca-so/whirlpools-core exec wasm-pack build --dev --out-dir ./dist/browser --target browser
-  #     - name: Build TypeScript SDK packages
-  #       run: |
-  #         yarn workspace @orca-so/common-sdk build
-  #         yarn workspace @orca-so/whirlpools-client build
-  #         yarn workspace @orca-so/tx-sender build
-  #         yarn workspace @orca-so/whirlpools build
-  #     - name: Run whirlpools tests
-  #       run: yarn workspace @orca-so/whirlpools test
+  test-whirlpools-program:
+    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
+    needs: build-program
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Download Solana program artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: solana-programs-${{ github.run_id }}
+          path: target
+      - name: Clean stale volumes
+        run: |
+          docker volume rm -f whirlpools_node_modules || true
+          docker volume rm -f whirlpools_yarn_cache || true
+      - name: Run tests
+        run: docker compose --profile test-whirlpools-program up --quiet-pull --abort-on-container-failure
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404

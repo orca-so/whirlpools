@@ -49,7 +49,7 @@ jobs:
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
   test:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
     needs: build-program
     steps:
       - name: Checkout repository

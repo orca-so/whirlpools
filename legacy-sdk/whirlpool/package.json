@@ -17,12 +17,12 @@
   },
   "devDependencies": {
     "@coral-xyz/anchor": "~0.32.1",
+    "@jshiohaha/litesvm": "^0.3.4",
     "@orca-so/whirlpools-program": "*",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "@types/bn.js": "~5.1.6",
     "@types/jest": "^30.0.0",
-    "litesvm": "^0.3.3",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },

@@ -42,7 +42,7 @@
     "@solana/kit": "^5.0.0"
   },
   "devDependencies": {
-    "@jshiohaha/litesvm": "^0.3.3",
+    "@jshiohaha/litesvm": "^0.3.4",
     "@solana/kit": "^5.0.0",
     "tsup": "^8.4.0",
     "typescript": "^5.9.3",

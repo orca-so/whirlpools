@@ -22,7 +22,11 @@ import {
 import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import assert from "assert";
 import { randomUUID } from "crypto";
-import { FailedTransactionMetadata, FeatureSet, LiteSVM } from "litesvm";
+import {
+  FailedTransactionMetadata,
+  FeatureSet,
+  LiteSVM,
+} from "@jshiohaha/litesvm";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { LOCALNET_ADMIN_KEYPAIR_0, LOCALNET_ADMIN_KEYPAIR_1 } from "./admin";
 import { getNextKeypair } from "./keypair";
@@ -46,7 +50,7 @@ let _testContext: LiteSVM | null = null;
 export async function getTestContext(): Promise<LiteSVM> {
   if (_testContext == null) {
     _testContext = new LiteSVM()
-      .withFeatureSet(FeatureSet.allEnabled())
+      .withFeatureSet(new FeatureSet())
       .withDefaultPrograms();
 
     // Airdrop SOL to test accounts

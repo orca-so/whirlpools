@@ -5,7 +5,7 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
-import { LiteSVM, Clock } from "litesvm";
+import { LiteSVM, Clock, FeatureSet } from "@jshiohaha/litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
 import * as path from "path";
@@ -190,7 +190,9 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   _nextListenerId = 1;
   _transactionHistory.clear();
   // Create a new LiteSVM instance with standard functionality
-  _litesvm = new LiteSVM();
+  _litesvm = new LiteSVM()
+    .withFeatureSet(new FeatureSet())
+    .withDefaultPrograms();
   // Set the clock to current time to match Date.now() used in tests
   const currentTimeInSeconds = BigInt(Math.floor(Date.now() / 1000));
   const currentClock = _litesvm.getClock();

@@ -37,19 +37,11 @@ jobs:
         with:
           name: solana-programs-${{ github.run_id }}
           path: target
-      - name: Verify artifacts
-        run: |
-          ls -la target/deploy/
-          ls -la target/idl/
-      - name: Clean stale volumes
-        run: |
-          docker volume rm -f whirlpools_node_modules || true
-          docker volume rm -f whirlpools_yarn_cache || true
       - name: Build non-program packages
         run: docker compose --profile build up --quiet-pull --abort-on-container-failure
 
   test:
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
     needs: build-program
     steps:
       - name: Checkout repository
@@ -59,14 +51,6 @@ jobs:
         with:
           name: solana-programs-${{ github.run_id }}
           path: target
-      - name: Verify artifacts
-        run: |
-          ls -la target/deploy/
-          ls -la target/idl/
-      - name: Clean stale volumes
-        run: |
-          docker volume rm -f whirlpools_node_modules || true
-          docker volume rm -f whirlpools_yarn_cache || true
       - name: Run tests
         run: docker compose --profile test up --quiet-pull --abort-on-container-failure
 

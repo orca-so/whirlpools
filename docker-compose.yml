@@ -174,7 +174,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       cargo test -p whirlpool
-    profiles: [test]
+    profiles: [test, test-whirlpools-program]
     volumes:
       - ./:/usr/src/whirlpools
 

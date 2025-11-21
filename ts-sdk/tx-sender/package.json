@@ -34,7 +34,8 @@
     "@solana-program/system": "^0.10.0"
   },
   "peerDependencies": {
-    "@solana/kit": "^5.0.0"
+    "@solana/kit": "^5.0.0",
+    "@solana/rpc": "^5.0.0"
   },
   "devDependencies": {
     "@solana/kit": "^5.0.0",

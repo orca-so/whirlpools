@@ -191,7 +191,7 @@ services:
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-integration test"
-    profiles: [test-whirlpools-program, test]
+    profiles: [test-whirlpools-program]
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules

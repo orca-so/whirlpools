@@ -3896,13 +3896,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jshiohaha/litesvm@npm:^0.3.5":
-  version: 0.3.5
-  resolution: "@jshiohaha/litesvm@npm:0.3.5"
+"@jshiohaha/litesvm@npm:^0.3.4":
+  version: 0.3.4
+  resolution: "@jshiohaha/litesvm@npm:0.3.4"
   dependencies:
     "@solana/web3.js": "npm:^1.98.4"
     fastestsmallesttextencoderdecoder: "npm:^1.0.22"
-  checksum: 10c0/41dbb2f8d25164acf7fc424edc1ec1d32ac6098279ed767ac600dec3f25b2367f6f98a4ad9d968f84ae95e90c4bf2f74f40783ca966af7aea2ae12da60b6db2e
+  checksum: 10c0/737e64cb614026a34209dd428663a335025fe55590a3630f8b4480312daec803c8f1cb58295b3bf6e3b3796b96d21a1e5c40c9658c791f893fc89e248a9a8e5f
   languageName: node
   linkType: hard
 
@@ -4551,7 +4551,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-sdk@workspace:legacy-sdk/whirlpool"
   dependencies:
     "@coral-xyz/anchor": "npm:~0.32.1"
-    "@jshiohaha/litesvm": "npm:^0.3.5"
+    "@jshiohaha/litesvm": "npm:^0.3.4"
     "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/spl-token": "npm:^0.4.14"
@@ -4573,7 +4573,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools@workspace:ts-sdk/whirlpool"
   dependencies:
-    "@jshiohaha/litesvm": "npm:^0.3.5"
+    "@jshiohaha/litesvm": "npm:^0.3.4"
     "@orca-so/tx-sender": "npm:*"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"

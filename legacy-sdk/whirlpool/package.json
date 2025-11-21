@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@coral-xyz/anchor": "~0.32.1",
-    "@jshiohaha/litesvm": "^0.3.5",
+    "@jshiohaha/litesvm": "^0.3.4",
     "@orca-so/whirlpools-program": "*",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",

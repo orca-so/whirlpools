@@ -17,7 +17,7 @@
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.7",
     "@types/node": "^24.9.1",
-    "nx": "^20.7.2",
+    "nx": "^22.0.4",
     "rimraf": "^6.0.1",
     "tsup": "^8.4.0",
     "vitest": "^3.2.4"

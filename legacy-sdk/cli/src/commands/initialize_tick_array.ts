@@ -10,7 +10,7 @@ import {
 import type { PDA } from "@orca-so/common-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import type Decimal from "decimal.js";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -164,7 +164,7 @@ while (true) {
     }),
   );
 
-  const landed = await sendTransaction(builder);
+  const landed = await processTransaction(builder);
   if (landed) {
     console.info("initialized tickArray address:", tickArrayPubkey.toBase58());
   }

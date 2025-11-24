@@ -1,7 +1,7 @@
 import { Keypair } from "@solana/web3.js";
 import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
@@ -18,6 +18,7 @@ const pda = PDAUtil.getPositionBundle(
 const positionBundleTokenAccount = getAssociatedTokenAddressSync(
   positionBundleMintKeypair.publicKey,
   ctx.wallet.publicKey,
+  true,
 );
 
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
@@ -31,7 +32,7 @@ builder.addInstruction(
   }),
 );
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info("positionBundle address:", pda.publicKey.toBase58());
 }

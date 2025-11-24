@@ -4523,6 +4523,7 @@ __metadata:
     prompts: "npm:^2.4.2"
     tsx: "npm:^4.19.3"
     typescript: "npm:^5.9.3"
+    yaml: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
 

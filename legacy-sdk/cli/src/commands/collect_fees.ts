@@ -8,7 +8,7 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { DecimalUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { TokenExtensionUtil } from "@orca-so/whirlpools-sdk/dist/utils/public/token-extension-util";
 import { ctx } from "../utils/provider";
 import { promptText } from "../utils/prompt";
@@ -98,13 +98,13 @@ const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 const tokenOwnerAccountA = getAssociatedTokenAddressSync(
   tokenMintAPubkey,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   mintA.tokenProgram,
 );
 const tokenOwnerAccountB = getAssociatedTokenAddressSync(
   tokenMintBPubkey,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   mintB.tokenProgram,
 );
 
@@ -128,7 +128,7 @@ builder.addInstruction(
     positionTokenAccount: getAssociatedTokenAddressSync(
       position.positionMint,
       ctx.wallet.publicKey,
-      undefined,
+      true,
       positionMint.tokenProgram,
     ),
     tokenOwnerAccountA,
@@ -157,7 +157,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 

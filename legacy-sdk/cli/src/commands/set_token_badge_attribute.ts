@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import type { TokenBadgeAttributeData } from "@orca-so/whirlpools-sdk";
 import { IGNORE_CACHE, PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptChoice, promptConfirm, promptText } from "../utils/prompt";
 
@@ -119,7 +119,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -133,12 +133,12 @@ current attributes:
          attributeRequireNonTransferablePosition : true
 ✔ attribute › attributeRequireNonTransferablePosition
 ✔ new value for attributeRequireNonTransferablePosition (current: true) › false
-setting... 
-        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR 
-        tokenMint Hy5ZLF26P3bjfVtrt4qDQCn6HGhS5izb5SNv7P9qmgcG 
-        tokenBadge 7a4fzdEMe2p22Wo72ZiisaiZ7UZLd4NSUSYphvJpbDGs 
-        attribute attributeRequireNonTransferablePosition 
-        current value true 
+setting...
+        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
+        tokenMint Hy5ZLF26P3bjfVtrt4qDQCn6HGhS5izb5SNv7P9qmgcG
+        tokenBadge 7a4fzdEMe2p22Wo72ZiisaiZ7UZLd4NSUSYphvJpbDGs
+        attribute attributeRequireNonTransferablePosition
+        current value true
         new value false
 ✔ If the above is OK, enter YES › Yes
 estimatedComputeUnits: 106249

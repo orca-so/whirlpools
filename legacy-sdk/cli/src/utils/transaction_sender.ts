@@ -13,7 +13,34 @@ import Decimal from "decimal.js";
 import base58 from "bs58";
 import { promptConfirm, promptText } from "./prompt";
 
-export async function sendTransaction(
+export async function processTransaction(
+  builder: TransactionBuilder,
+  defaultPriorityFeeInLamports?: number,
+  alts?: AddressLookupTableAccount[],
+): Promise<boolean> {
+  if ("noSign" in builder.wallet && builder.wallet.noSign) {
+    return exportTransaction(builder, alts);
+  } else {
+    return sendTransaction(builder, defaultPriorityFeeInLamports, alts);
+  }
+}
+
+async function exportTransaction(
+  builder: TransactionBuilder,
+  alts?: AddressLookupTableAccount[],
+): Promise<boolean> {
+  const payload = await builder.build({
+    maxSupportedTransactionVersion: 0,
+    lookupTableAccounts: alts,
+  });
+  const serialized = payload.transaction.serialize();
+  const b58 = base58.encode(serialized);
+  console.info("Please paste the following transaction to your wallet:");
+  console.info(b58);
+  return false;
+}
+
+async function sendTransaction(
   builder: TransactionBuilder,
   defaultPriorityFeeInLamports?: number,
   alts?: AddressLookupTableAccount[],

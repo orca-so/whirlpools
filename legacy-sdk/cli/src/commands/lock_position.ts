@@ -10,7 +10,7 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -79,7 +79,7 @@ builder.addInstruction(
     positionTokenAccount: getAssociatedTokenAddressSync(
       position.positionMint,
       ctx.wallet.publicKey,
-      undefined,
+      true,
       positionMint.tokenProgram,
     ),
     whirlpool: whirlpoolPubkey,
@@ -90,7 +90,7 @@ builder.addInstruction(
   }),
 );
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info("lockConfig address:", lockConfigPda.publicKey.toBase58());
 }

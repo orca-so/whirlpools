@@ -4,15 +4,20 @@ yarn
 ```
 
 # Set your RPC and wallet
-```bash
-export ANCHOR_PROVIDER_URL=<RPC URL>
-export ANCHOR_WALLET=<WALLET JSON PATH>
-```
+The CLI supports two tx processing modes:
 
-Example:
+1. Normal (sign + send):
+Set `ANCHOR_WALLET` to the path of a local keypair file. In this mode, the CLI signs the transaction with that keypair and submits it to the network.
 ```bash
 export ANCHOR_PROVIDER_URL=http://localhost:8899
 export ANCHOR_WALLET=~/.config/solana/id.json
+```
+
+2. Export (print unsigned tx):
+Set `ANCHOR_WALLET` to a public key string instead of a keypair path. The CLI will not sign the transaction; it will output a base58-encoded unsigned transaction that you can copy into an external wallet for signing and submission.
+```bash
+export ANCHOR_PROVIDER_URL=http://localhost:8899
+export ANCHOR_WALLET=<YOUR_PUBLIC_KEY>
 ```
 
 # Supported commands

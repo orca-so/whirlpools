@@ -5,7 +5,7 @@ use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     CoreError, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
-    NUMBER_DOWN_CAST_ERROR, TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128,
+    TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128,
 };
 
 const LOG_B_2_X32: i128 = 59543866431248i128;
@@ -320,18 +320,9 @@ pub fn get_tick_index_in_array(
 }
 
 // Private functions
-
-fn u256_to_u128_checked(value: &U256) -> Result<u128, CoreError> {
-    if *value.high() != U256::ZERO {
-        Err(NUMBER_DOWN_CAST_ERROR)
-    } else {
-        Ok(value.as_u128())
-    }
-}
-
 fn mul_shift_96(n0: u128, n1: u128) -> u128 {
     let mul: U256 = (<U256>::from(n0) * <U256>::from(n1)) >> 96;
-    u256_to_u128_checked(&mul).unwrap()
+    mul.try_into().unwrap()
 }
 
 fn get_sqrt_price_positive_tick(tick: i32) -> u128 {
@@ -537,7 +528,7 @@ mod test_tick_index_to_sqrt_price {
     use crate::{MAX_SQRT_PRICE, MAX_TICK_INDEX, MIN_SQRT_PRICE, MIN_TICK_INDEX};
 
     #[test]
-    #[should_panic(expected = "Unable to down cast number")]
+    #[should_panic(expected = "TryFromIntError(())")]
     fn test_tick_exceed_max() {
         let sqrt_price_from_max_tick_add_one = tick_index_to_sqrt_price(MAX_TICK_INDEX + 1);
         let sqrt_price_from_max_tick = tick_index_to_sqrt_price(MAX_TICK_INDEX);

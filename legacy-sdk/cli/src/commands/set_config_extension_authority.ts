@@ -8,16 +8,26 @@ import { promptConfirm, promptText } from "../utils/prompt";
 console.info("set FeeAuthority...");
 
 const whirlpoolsConfigPubkeyStr = await promptText("whirlpoolsConfigPubkey");
-const newConfigExtensionAuthorityPubkeyStr = await promptText("newConfigExtensionAuthorityPubkey");
+const newConfigExtensionAuthorityPubkeyStr = await promptText(
+  "newConfigExtensionAuthorityPubkey",
+);
 const newConfigExtensionAuthorityPubkeyAgainStr = await promptText(
   "newFeeAuthorityPubkeyAgain",
 );
 
 const whirlpoolsConfigPubkey = new PublicKey(whirlpoolsConfigPubkeyStr);
-const newConfigExtensionAuthorityPubkey = new PublicKey(newConfigExtensionAuthorityPubkeyStr);
-const newConfigExtensionAuthorityPubkeyAgain = new PublicKey(newConfigExtensionAuthorityPubkeyAgainStr);
+const newConfigExtensionAuthorityPubkey = new PublicKey(
+  newConfigExtensionAuthorityPubkeyStr,
+);
+const newConfigExtensionAuthorityPubkeyAgain = new PublicKey(
+  newConfigExtensionAuthorityPubkeyAgainStr,
+);
 
-if (!newConfigExtensionAuthorityPubkey.equals(newConfigExtensionAuthorityPubkeyAgain)) {
+if (
+  !newConfigExtensionAuthorityPubkey.equals(
+    newConfigExtensionAuthorityPubkeyAgain,
+  )
+) {
   throw new Error(
     "newConfigExtensionAuthorityPubkey and newConfigExtensionAuthorityPubkeyAgain must be the same",
   );
@@ -28,8 +38,13 @@ if (!whirlpoolsConfig) {
   throw new Error("whirlpoolsConfig not found");
 }
 
-const whirlpoolsConfigExtensionPda = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigPubkey);
-const whirlpoolsConfigExtension = await ctx.fetcher.getConfigExtension(whirlpoolsConfigExtensionPda.publicKey);
+const whirlpoolsConfigExtensionPda = PDAUtil.getConfigExtension(
+  ctx.program.programId,
+  whirlpoolsConfigPubkey,
+);
+const whirlpoolsConfigExtension = await ctx.fetcher.getConfigExtension(
+  whirlpoolsConfigExtensionPda.publicKey,
+);
 if (!whirlpoolsConfigExtension) {
   throw new Error("whirlpoolsConfigExtension not found");
 }
@@ -61,7 +76,8 @@ builder.addInstruction(
   WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
     whirlpoolsConfig: whirlpoolsConfigPubkey,
     whirlpoolsConfigExtension: whirlpoolsConfigExtensionPda.publicKey,
-    configExtensionAuthority: whirlpoolsConfigExtension.configExtensionAuthority,
+    configExtensionAuthority:
+      whirlpoolsConfigExtension.configExtensionAuthority,
     newConfigExtensionAuthority: newConfigExtensionAuthorityPubkey,
   }),
 );

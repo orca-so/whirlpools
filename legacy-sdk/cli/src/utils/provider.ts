@@ -18,7 +18,10 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 
 const configPath = `${process.env.HOME}/.config/solana/cli/config.yml`;
 
-let walletPath = (process.env.ANCHOR_WALLET ?? "").replace("~/", `${process.env.HOME}/`);
+let walletPath = (process.env.ANCHOR_WALLET ?? "").replace(
+  "~/",
+  `${process.env.HOME}/`,
+);
 let rpcUrl = process.env.ANCHOR_PROVIDER_URL ?? "";
 
 if (existsSync(configPath)) {

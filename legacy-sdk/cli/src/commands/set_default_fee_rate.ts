@@ -26,7 +26,11 @@ if (!whirlpoolsConfig.feeAuthority.equals(ctx.wallet.publicKey)) {
   );
 }
 
-const feeTierPda = PDAUtil.getFeeTier(ctx.program.programId, whirlpoolsConfigPubkey, tickSpacing);
+const feeTierPda = PDAUtil.getFeeTier(
+  ctx.program.programId,
+  whirlpoolsConfigPubkey,
+  tickSpacing,
+);
 const feeTier = await ctx.fetcher.getFeeTier(feeTierPda.publicKey);
 if (!feeTier) {
   throw new Error("feeTier not found");

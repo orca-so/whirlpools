@@ -38,3 +38,4 @@ tsify = { version = "^0.4", features = ["js"], optional = true }
 [dev-dependencies]
 approx = { version = "^0" }
 proptest = { version = "^1" }
+rstest = { version = "^0.26" }

@@ -1,20 +1,22 @@
-use anchor_lang::{prelude::*, system_program};
-use std::collections::VecDeque;
+//use anchor_lang::{prelude::*, system_program};
+
+
+use arrayvec::ArrayVec;
+use pinocchio::{account_info::AccountInfo, pubkey::{Pubkey, find_program_address, pubkey_eq}};
 
 use crate::{
-    math::floor_division,
-    state::{
-        FixedTickArray, Tick, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray,
-        TICK_ARRAY_SIZE,
-    },
-    util::SwapTickSequence,
+    math::floor_division, pinocchio::{constants::address::{SYSTEM_PROGRAM_ID, WHIRLPOOL_PROGRAM_ID}, state::whirlpool::{MemoryMappedWhirlpool, TICK_ARRAY_SIZE, TickArray, TickUpdate}}, state::Tick, util::SwapTickSequence
+};
+use crate::pinocchio::Result;
+use crate::pinocchio::errors::WhirlpoolErrorCode;
+use crate::pinocchio::state::whirlpool::tick_array::{
+    loader::{LoadedTickArrayMut, load_tick_array_mut}, zeroed_tick_array::MemoryMappedZeroedTickArray,
+    tick::MemoryMappedTick,
 };
 
-use crate::state::{load_tick_array_mut, LoadedTickArrayMut};
-
-pub(crate) enum ProxiedTickArray<'a> {
+pub enum ProxiedTickArray<'a> {
     Initialized(LoadedTickArrayMut<'a>),
-    Uninitialized(ZeroedTickArray),
+    Uninitialized(MemoryMappedZeroedTickArray),
 }
 
 impl<'a> ProxiedTickArray<'a> {
@@ -23,13 +25,15 @@ impl<'a> ProxiedTickArray<'a> {
     }
 
     pub fn new_uninitialized(start_tick_index: i32) -> Self {
-        ProxiedTickArray::Uninitialized(ZeroedTickArray::new(start_tick_index))
+        ProxiedTickArray::Uninitialized(MemoryMappedZeroedTickArray::new(start_tick_index))
     }
 
     pub fn start_tick_index(&self) -> i32 {
         self.as_ref().start_tick_index()
     }
 
+    // TODO: impl
+    /* 
     pub fn get_next_init_tick_index(
         &self,
         tick_index: i32,
@@ -39,8 +43,9 @@ impl<'a> ProxiedTickArray<'a> {
         self.as_ref()
             .get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
     }
+    */
 
-    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<Tick> {
+    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
         self.as_ref().get_tick(tick_index, tick_spacing)
     }
 
@@ -66,8 +71,8 @@ impl<'a> ProxiedTickArray<'a> {
     }
 }
 
-impl<'a> AsRef<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
-    fn as_ref(&self) -> &(dyn TickArrayType + 'a) {
+impl<'a> AsRef<dyn TickArray + 'a> for ProxiedTickArray<'a> {
+    fn as_ref(&self) -> &(dyn TickArray + 'a) {
         match self {
             ProxiedTickArray::Initialized(ref array) => &**array,
             ProxiedTickArray::Uninitialized(ref array) => array,
@@ -75,21 +80,23 @@ impl<'a> AsRef<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
     }
 }
 
-impl<'a> AsMut<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
-    fn as_mut(&mut self) -> &mut (dyn TickArrayType + 'a) {
+impl<'a> AsMut<dyn TickArray + 'a> for ProxiedTickArray<'a> {
+    fn as_mut(&mut self) -> &mut (dyn TickArray + 'a) {
         match self {
             ProxiedTickArray::Initialized(ref mut array) => &mut **array,
             ProxiedTickArray::Uninitialized(ref mut array) => array,
         }
     }
 }
-
+/* 
 pub struct SparseSwapTickSequenceBuilder<'info> {
     // AccountInfo ownership must be kept while using RefMut.
     // This is why try_from and build are separated and SparseSwapTickSequenceBuilder struct is used.
     tick_array_accounts: Vec<AccountInfo<'info>>,
 }
+    */
 
+    /* 
 impl<'info> SparseSwapTickSequenceBuilder<'info> {
     /// Create a new SparseSwapTickSequenceBuilder from the given tick array accounts.
     ///
@@ -176,35 +183,108 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
         ))
     }
 }
+    */
 
-fn maybe_load_tick_array<'a>(
-    account_info: &'a AccountInfo<'_>,
-    whirlpool: &Account<Whirlpool>,
+
+// TODO: rename
+const MAX_TRAVERSABLE_TICK_ARRAYS_LEN: usize = 3;
+const MAX_TICK_ARRAY_INFOS_LEN: usize = MAX_TRAVERSABLE_TICK_ARRAYS_LEN + crate::util::MAX_SUPPLEMENTAL_TICK_ARRAYS_LEN;
+
+fn build_sparse_swap_tick_sequence(
+    whirlpool_info: &AccountInfo,
+    whirlpool: &MemoryMappedWhirlpool,
+    a_to_b: bool,
+    tick_array_0_info: &AccountInfo,
+    tick_array_1_info: &AccountInfo,
+    tick_array_2_info: &AccountInfo,
+    supplemental_tick_arrays: &[AccountInfo],
+) -> Result<Vec<TickArraysMut>> {
+    let mut all_tick_array_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_INFOS_LEN> = ArrayVec::new();
+
+    all_tick_array_infos.push(tick_array_0_info);
+    all_tick_array_infos.push(tick_array_1_info);
+    all_tick_array_infos.push(tick_array_2_info);
+    all_tick_array_infos.extend(supplemental_tick_arrays.iter());
+
+    // dedup by key
+    all_tick_array_infos.sort_by_key(|info| info.key());
+    let mut tick_array_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_INFOS_LEN> = ArrayVec::new();
+    tick_array_infos.push(all_tick_array_infos[0]);
+    for info in all_tick_array_infos.iter().skip(1) {
+        if !pubkey_eq(info.key(), tick_array_infos.last().unwrap().key()) {
+            tick_array_infos.push(info);
+        }
+    }
+
+    let mut loaded_tick_arrays: ArrayVec<LoadedTickArrayMut, MAX_TRAVERSABLE_TICK_ARRAYS_LEN> = ArrayVec::new();
+    for tick_array_info in tick_array_infos.iter() {
+        if let Some(loaded_tick_array) =
+            pino_maybe_load_tick_array(tick_array_info, whirlpool_info.key())?
+        {
+            loaded_tick_arrays.push(loaded_tick_array);
+        }
+    }
+
+    let start_tick_indexes = pino_get_start_tick_indexes(whirlpool.tick_current_index(), whirlpool.tick_spacing(), a_to_b);
+    let mut required_tick_arrays: ArrayVec<ProxiedTickArray, 3> = ArrayVec::new();
+    for start_tick_index in start_tick_indexes.iter() {
+        let pos = loaded_tick_arrays
+            .iter()
+            .position(|tick_array| tick_array.start_tick_index() == *start_tick_index);
+        if let Some(pos) = pos {
+            let tick_array = loaded_tick_arrays.remove(pos);
+            required_tick_arrays.push(ProxiedTickArray::new_initialized(tick_array));
+            continue;
+        }
+
+        let tick_array_pda = pino_derive_tick_array_pda(whirlpool_info.key(), *start_tick_index);
+        let has_account_info = tick_array_infos
+            .iter()
+            .any(|account_info| pubkey_eq(account_info.key(), &tick_array_pda));
+        if has_account_info {
+            required_tick_arrays
+                .push(ProxiedTickArray::new_uninitialized(*start_tick_index));
+            continue;
+        }
+        break;
+    }
+
+    if required_tick_arrays.is_empty() {
+        return Err(WhirlpoolErrorCode::InvalidTickArraySequence.into());
+    }
+
+    Ok(SwapTickSequence::new_with_proxy(
+        required_tick_arrays.pop().unwrap(),
+        required_tick_arrays.pop(),
+        required_tick_arrays.pop(),
+    ))
+}
+
+fn pino_derive_tick_array_pda(whirlpool_key: &Pubkey, start_tick_index: i32) -> Pubkey {
+    find_program_address(
+    &[
+        b"tick_array",
+        whirlpool_key.as_ref(),
+        start_tick_index.to_string().as_bytes(),
+    ],
+    &WHIRLPOOL_PROGRAM_ID).0
+}
+
+fn pino_maybe_load_tick_array<'a>(
+    account_info: &'a AccountInfo,
+    whirlpool_key: &Pubkey,
 ) -> Result<Option<LoadedTickArrayMut<'a>>> {
-    if *account_info.owner == system_program::ID && account_info.data_is_empty() {
+    if account_info.is_owned_by(&SYSTEM_PROGRAM_ID) && account_info.data_is_empty() {
         return Ok(None);
     }
 
-    let tick_array = load_tick_array_mut(account_info, &whirlpool.key())?;
+    let tick_array = load_tick_array_mut(account_info, whirlpool_key)?;
     Ok(Some(tick_array))
 }
 
-fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) -> Pubkey {
-    Pubkey::find_program_address(
-        &[
-            b"tick_array",
-            whirlpool.key().as_ref(),
-            start_tick_index.to_string().as_bytes(),
-        ],
-        &FixedTickArray::owner(),
-    )
-    .0
-}
-
-fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i32> {
-    let tick_current_index = whirlpool.tick_current_index;
-    let tick_spacing_u16 = whirlpool.tick_spacing;
-    let tick_spacing_i32 = whirlpool.tick_spacing as i32;
+fn pino_get_start_tick_indexes(tick_current_index: i32, tick_spacing: u16, a_to_b: bool) -> ArrayVec<i32, MAX_TRAVERSABLE_TICK_ARRAYS_LEN> {
+    let tick_spacing_u16 = tick_spacing;
+    let tick_spacing_i32 = tick_spacing as i32;
     let ticks_in_array = TICK_ARRAY_SIZE * tick_spacing_i32;
 
     let start_tick_index_base = floor_division(tick_current_index, ticks_in_array) * ticks_in_array;
@@ -220,17 +300,18 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
         }
     };
 
-    let start_tick_indexes = offset
+    let mut start_tick_indexes = ArrayVec::new();
+    offset
         .iter()
-        .filter_map(|&o| {
+        .for_each(|&o| {
             let start_tick_index = start_tick_index_base + o * ticks_in_array;
+            // TODO: we should remove Tick::check_is_valid_start_tick because it uses division, but we can assure that
+            // start_tick_index is always one of multiples of tick_spacing * TICK_ARRAY_SIZE.
+            // So there is no need to check it using division here.
             if Tick::check_is_valid_start_tick(start_tick_index, tick_spacing_u16) {
-                Some(start_tick_index)
-            } else {
-                None
+                start_tick_indexes.push(start_tick_index);
             }
-        })
-        .collect::<Vec<i32>>();
+        });
 
     start_tick_indexes
 }

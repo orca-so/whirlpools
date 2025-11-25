@@ -2,6 +2,7 @@ use super::super::super::{ByteBool, BytesI128, BytesU128};
 use super::TickUpdate;
 use super::NUM_REWARDS;
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct MemoryMappedTick {
     initialized: ByteBool,
@@ -68,3 +69,35 @@ pub static STATIC_ZEROED_MEMORY_MAPPED_TICK: MemoryMappedTick = MemoryMappedTick
     fee_growth_outside_b: [0; 16],
     reward_growths_outside: [[0; 16]; NUM_REWARDS],
 };
+
+#[cfg(test)]
+impl MemoryMappedTick {
+    pub fn test_new(
+        initialized: bool,
+        liquidity_net: i128,
+        liquidity_gross: u128,
+        fee_growth_outside_a: u128,
+        fee_growth_outside_b: u128,
+        reward_growths_outside: [u128; NUM_REWARDS],
+    ) -> Self {
+        Self {
+            initialized: initialized as u8,
+            liquidity_net: liquidity_net.to_le_bytes(),
+            liquidity_gross: liquidity_gross.to_le_bytes(),
+            fee_growth_outside_a: fee_growth_outside_a.to_le_bytes(),
+            fee_growth_outside_b: fee_growth_outside_b.to_le_bytes(),
+            reward_growths_outside: [
+                reward_growths_outside[0].to_le_bytes(),
+                reward_growths_outside[1].to_le_bytes(),
+                reward_growths_outside[2].to_le_bytes(),
+            ],
+        }
+    }
+}
+
+#[cfg(test)]
+impl Default for MemoryMappedTick {
+    fn default() -> Self {
+        Self::test_new(false, 0, 0, 0, 0, [0; NUM_REWARDS])
+    }
+}

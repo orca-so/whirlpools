@@ -110,7 +110,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     Ok(())
 }
-
+/* 
 // TODO: rename
 const MAX_TICK_ARRAY_INFOS_LEN: usize = 3 + crate::util::MAX_SUPPLEMENTAL_TICK_ARRAYS_LEN;
 const MAX_LOADED_TICK_ARRAYS_LEN: usize = 3;
@@ -207,3 +207,4 @@ fn pino_maybe_load_tick_array<'a>(
     Ok(Some(tick_array))
 }
 
+*/

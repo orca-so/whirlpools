@@ -5,6 +5,7 @@ use pinocchio::program_error::ProgramError as PinocchioProgramError;
 pub use crate::errors::ErrorCode as WhirlpoolErrorCode;
 pub use anchor_lang::error::ErrorCode as AnchorErrorCode;
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum UnifiedError {
     Pinocchio(PinocchioProgramError),
     Anchor(AnchorError),

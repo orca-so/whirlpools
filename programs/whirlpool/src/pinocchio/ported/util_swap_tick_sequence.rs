@@ -1,9 +1,15 @@
+/* 
 use crate::errors::ErrorCode;
 use crate::state::*;
 use crate::util::ProxiedTickArray;
 use anchor_lang::prelude::*;
 
 use crate::state::LoadedTickArrayMut;
+*/
+
+use crate::{pinocchio::state::whirlpool::{TICK_ARRAY_SIZE, TickUpdate, tick_array::{loader::LoadedTickArrayMut, proxy::ProxiedTickArray, tick::MemoryMappedTick}}, state::{MAX_TICK_INDEX, MIN_TICK_INDEX}};
+use crate::pinocchio::Result;
+use crate::pinocchio::errors::WhirlpoolErrorCode;
 
 pub struct SwapTickSequence<'a> {
     pub(crate) arrays: Vec<ProxiedTickArray<'a>>,
@@ -49,11 +55,11 @@ impl<'a> SwapTickSequence<'a> {
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickArrayIndexOutofBounds` - The provided array-index is out of bounds
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn get_tick(&self, array_index: usize, tick_index: i32, tick_spacing: u16) -> Result<Tick> {
+    pub fn get_tick(&self, array_index: usize, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
         let array = self.arrays.get(array_index);
         match array {
             Some(array) => array.get_tick(tick_index, tick_spacing),
-            _ => Err(ErrorCode::TickArrayIndexOutofBounds.into()),
+            _ => Err(WhirlpoolErrorCode::TickArrayIndexOutofBounds.into()),
         }
     }
 
@@ -81,7 +87,7 @@ impl<'a> SwapTickSequence<'a> {
                 array.update_tick(tick_index, tick_spacing, update)?;
                 Ok(())
             }
-            _ => Err(ErrorCode::TickArrayIndexOutofBounds.into()),
+            _ => Err(WhirlpoolErrorCode::TickArrayIndexOutofBounds.into()),
         }
     }
 
@@ -94,7 +100,7 @@ impl<'a> SwapTickSequence<'a> {
         let array = self.arrays.get(array_index);
         match array {
             Some(array) => array.tick_offset(tick_index, tick_spacing),
-            _ => Err(ErrorCode::TickArrayIndexOutofBounds.into()),
+            _ => Err(WhirlpoolErrorCode::TickArrayIndexOutofBounds.into()),
         }
     }
 
@@ -127,7 +133,7 @@ impl<'a> SwapTickSequence<'a> {
             // If we get to the end of the array sequence and next_index is still not found, throw error
             let next_array = match self.arrays.get(array_index) {
                 Some(array) => array,
-                None => return Err(ErrorCode::TickArraySequenceInvalidIndex.into()),
+                None => return Err(WhirlpoolErrorCode::TickArraySequenceInvalidIndex.into()),
             };
 
             let next_index =
@@ -172,10 +178,10 @@ impl<'a> SwapTickSequence<'a> {
 
 #[cfg(test)]
 mod swap_tick_sequence_tests {
-    use crate::state::tick_array_builder::TickArrayBuilder;
-
     use super::*;
-    use std::cell::RefCell;
+
+    use crate::pinocchio::utils::tests::test_fixed_tick_array::TestMemoryMappedFixedTickArray;
+    use crate::state::Tick;
 
     const TS_8: u16 = 8;
     const TS_128: u16 = 128;
@@ -184,22 +190,8 @@ mod swap_tick_sequence_tests {
     fn build_tick_array(
         start_tick_index: i32,
         initialized_offsets: Vec<usize>,
-    ) -> RefCell<FixedTickArray> {
-        let mut builder = TickArrayBuilder::default()
-            .start_tick_index(start_tick_index)
-            .ticks([Tick::default(); TICK_ARRAY_SIZE_USIZE]);
-
-        for offset in initialized_offsets {
-            builder = builder.tick_with_offset(
-                Tick {
-                    initialized: true,
-                    ..Tick::default()
-                },
-                offset,
-            );
-        }
-
-        RefCell::new(builder.build())
+    ) -> TestMemoryMappedFixedTickArray {
+        TestMemoryMappedFixedTickArray::new(start_tick_index, initialized_offsets)
     }
 
     mod modify_ticks {
@@ -224,7 +216,7 @@ mod swap_tick_sequence_tests {
                     + init_tick_offset.1 * TS_128 as i32;
                 let result = swap_tick_sequence.get_tick(array_index, tick_index, TS_128);
                 assert!(result.is_ok());
-                assert!(result.unwrap().initialized);
+                assert!(result.unwrap().initialized());
 
                 let update_result = swap_tick_sequence.update_tick(
                     array_index,
@@ -240,7 +232,7 @@ mod swap_tick_sequence_tests {
                 let get_updated_result = swap_tick_sequence
                     .get_tick(array_index, tick_index, TS_128)
                     .unwrap();
-                let liq_net = get_updated_result.liquidity_net;
+                let liq_net = get_updated_result.liquidity_net();
                 assert_eq!(liq_net, 1500);
             }
         }
@@ -265,7 +257,7 @@ mod swap_tick_sequence_tests {
                     TS_128,
                 );
 
-                assert_eq!(result.unwrap_err(), ErrorCode::TickNotFound.into());
+                assert_eq!(result.unwrap_err(), WhirlpoolErrorCode::TickNotFound.into());
 
                 let update_result = swap_tick_sequence.update_tick(
                     uninitializable_search_tick.0,
@@ -277,7 +269,7 @@ mod swap_tick_sequence_tests {
                         ..Default::default()
                     },
                 );
-                assert_eq!(update_result.unwrap_err(), ErrorCode::TickNotFound.into());
+                assert_eq!(update_result.unwrap_err(), WhirlpoolErrorCode::TickNotFound.into());
             }
         }
 
@@ -301,7 +293,7 @@ mod swap_tick_sequence_tests {
                     TS_128,
                 );
 
-                assert!(!result.unwrap().initialized);
+                assert!(!result.unwrap().initialized());
 
                 let update_result = swap_tick_sequence.update_tick(
                     uninitializable_search_tick.0,
@@ -322,8 +314,8 @@ mod swap_tick_sequence_tests {
                         TS_128,
                     )
                     .unwrap();
-                assert!(get_updated_result.initialized);
-                let liq_net = get_updated_result.liquidity_net;
+                assert!(get_updated_result.initialized());
+                let liq_net = get_updated_result.liquidity_net();
                 assert_eq!(liq_net, 1500);
             }
         }
@@ -342,7 +334,7 @@ mod swap_tick_sequence_tests {
             let get_result = swap_tick_sequence.get_tick(3, 5000, TS_128);
             assert_eq!(
                 get_result.unwrap_err(),
-                ErrorCode::TickArrayIndexOutofBounds.into()
+                WhirlpoolErrorCode::TickArrayIndexOutofBounds.into()
             );
 
             let update_result = swap_tick_sequence.update_tick(
@@ -355,7 +347,7 @@ mod swap_tick_sequence_tests {
             );
             assert_eq!(
                 update_result.unwrap_err(),
-                ErrorCode::TickArrayIndexOutofBounds.into()
+                WhirlpoolErrorCode::TickArrayIndexOutofBounds.into()
             );
         }
     }
@@ -578,7 +570,7 @@ mod swap_tick_sequence_tests {
         let tick = swap_tick_sequence
             .get_tick(array_index, index, TS_128)
             .unwrap();
-        assert!(tick.initialized);
+        assert!(tick.initialized());
     }
 
     #[test]
@@ -620,7 +612,7 @@ mod swap_tick_sequence_tests {
             let tick = swap_tick_sequence
                 .get_tick(array_index, index, TS_128)
                 .unwrap();
-            assert_eq!(tick.initialized, expected.2);
+            assert_eq!(tick.initialized(), expected.2);
 
             // users on a_to_b search must manually decrement since a_to_b is inclusive of current-tick
             search_index = index - 1;
@@ -672,7 +664,7 @@ mod swap_tick_sequence_tests {
                 tick_initialized = swap_tick_sequence
                     .get_tick(array_index, index, TS_8)
                     .unwrap()
-                    .initialized;
+                    .initialized();
             };
             assert_eq!(tick_initialized, expected.2);
 
@@ -741,7 +733,7 @@ mod swap_tick_sequence_tests {
             let tick = swap_tick_sequence
                 .get_tick(array_index, index, TS_8)
                 .unwrap();
-            assert_eq!(tick.initialized, expected.2);
+            assert_eq!(tick.initialized(), expected.2);
 
             search_index = index - 1;
             curr_array_index = array_index;

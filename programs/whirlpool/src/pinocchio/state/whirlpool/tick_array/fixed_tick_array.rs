@@ -53,3 +53,57 @@ impl TickArray for MemoryMappedFixedTickArray {
         Ok(())
     }
 }
+/* 
+#[cfg(test)]
+impl Default for MemoryMappedFixedTickArray{
+    fn default() -> Self {
+        Self {
+            discriminator: [0u8; 8],
+            start_tick_index: 0i32.to_le_bytes(),
+            ticks: core::array::from_fn(|_| MemoryMappedTick::default()),
+            whirlpool: Pubkey::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tick_array_builder {
+    use super::*;
+
+    #[derive(Default)]
+    pub struct TickArrayBuilder(MemoryMappedFixedTickArray);
+
+    impl TickArrayBuilder {
+        pub fn start_tick_index(mut self, start_tick_index: i32) -> Self {
+            self.0.start_tick_index = start_tick_index.to_le_bytes();
+            self
+        }
+
+        pub fn whirlpool(mut self, whirlpool: Pubkey) -> Self {
+            self.0.whirlpool = whirlpool;
+            self
+        }
+
+        pub fn tick(mut self, tick: MemoryMappedTick, tick_index: i32, tick_spacing: u16) -> Self {
+            let offset = self.0.tick_offset(tick_index, tick_spacing).unwrap();
+            assert!(offset >= 0);
+            self.0.ticks[offset as usize] = tick;
+            self
+        }
+
+        pub fn tick_with_offset(mut self, tick: MemoryMappedTick, offset: usize) -> Self {
+            self.0.ticks[offset] = tick;
+            self
+        }
+
+        pub fn ticks(mut self, ticks: [MemoryMappedTick; TICK_ARRAY_SIZE_USIZE]) -> Self {
+            self.0.ticks = ticks;
+            self
+        }
+
+        pub fn build(self) -> MemoryMappedFixedTickArray {
+            self.0
+        }
+    }
+}
+*/

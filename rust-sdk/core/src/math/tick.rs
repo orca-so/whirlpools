@@ -5,7 +5,7 @@ use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     CoreError, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
-    TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128,
+    TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, TICK_INDEX_OUT_OF_BOUNDS, U128,
 };
 
 const LOG_B_2_X32: i128 = 59543866431248i128;
@@ -130,6 +130,7 @@ pub fn get_initializable_tick_index(
     tick_spacing: u16,
     round_up: Option<bool>,
 ) -> i32 {
+    check_tick_index_bounds(tick_index).unwrap(); // safe unwrap
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
     let result = tick_index.div_euclid(tick_spacing_i32) * tick_spacing_i32;
@@ -157,6 +158,7 @@ pub fn get_initializable_tick_index(
 /// - A i32 integer representing the previous initializable tick index
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
+    check_tick_index_bounds(tick_index).unwrap(); // safe unwrap
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
     if remainder == 0 {
@@ -176,6 +178,7 @@ pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> 
 /// - A i32 integer representing the next initializable tick index
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_next_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
+    check_tick_index_bounds(tick_index).unwrap(); // safe unwrap
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
     tick_index - remainder + tick_spacing_i32
@@ -194,6 +197,23 @@ pub fn is_tick_index_in_bounds(tick_index: i32) -> bool {
     tick_index <= MAX_TICK_INDEX && tick_index >= MIN_TICK_INDEX
 }
 
+/// Check if a tick index is within valid bounds and return an error if not.
+///
+/// # Parameters
+/// - `tick_index` - A i32 integer representing the tick integer
+///
+/// # Returns
+/// - `Ok(())` if the tick index is in bounds
+/// - `Err(TICK_INDEX_OUT_OF_BOUNDS)` if the tick index is out of bounds
+#[inline]
+fn check_tick_index_bounds(tick_index: i32) -> Result<(), CoreError> {
+    if is_tick_index_in_bounds(tick_index) {
+        Ok(())
+    } else {
+        Err(TICK_INDEX_OUT_OF_BOUNDS)
+    }
+}
+
 /// Check if a tick is initializable.
 /// A tick is initializable if it is divisible by the tick spacing.
 ///
@@ -205,6 +225,7 @@ pub fn is_tick_index_in_bounds(tick_index: i32) -> bool {
 /// - A boolean value indicating if the tick is initializable
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn is_tick_initializable(tick_index: i32, tick_spacing: u16) -> bool {
+    check_tick_index_bounds(tick_index).unwrap(); // safe unwrap
     let tick_spacing_i32 = tick_spacing as i32;
     tick_index % tick_spacing_i32 == 0
 }
@@ -919,7 +940,7 @@ mod test_get_initializable_tick_index {
     fn test_exact_multiples_remain_stable() {
         for &s in &SPACINGS {
             let si = s as i32;
-            for k in -100..=100 {
+            for k in -10..=10 {
                 let t = k * si;
                 assert_eq!(get_initializable_tick_index(t, s, None), t);
                 assert_eq!(get_initializable_tick_index(t, s, Some(true)), t);
@@ -952,6 +973,78 @@ mod test_get_initializable_tick_index {
                 assert_eq!(got, expected, "t={} s={}", t, s);
             }
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_get_initializable_panics_on_tick_below_min() {
+        get_initializable_tick_index(MIN_TICK_INDEX - 1, 64, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_get_initializable_panics_on_tick_above_max() {
+        get_initializable_tick_index(MAX_TICK_INDEX + 1, 64, None);
+    }
+
+    #[test]
+    fn test_get_initializable_accepts_min_tick() {
+        // Should not panic
+        let _ = get_initializable_tick_index(MIN_TICK_INDEX, 64, None);
+    }
+
+    #[test]
+    fn test_get_initializable_accepts_max_tick() {
+        // Should not panic
+        let _ = get_initializable_tick_index(MAX_TICK_INDEX, 64, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_prev_panics_on_tick_below_min() {
+        get_prev_initializable_tick_index(MIN_TICK_INDEX - 1, 64);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_prev_panics_on_tick_above_max() {
+        get_prev_initializable_tick_index(MAX_TICK_INDEX + 1, 64);
+    }
+
+    #[test]
+    fn test_prev_accepts_min_tick() {
+        // Should not panic
+        let _ = get_prev_initializable_tick_index(MIN_TICK_INDEX, 64);
+    }
+
+    #[test]
+    fn test_prev_accepts_max_tick() {
+        // Should not panic
+        let _ = get_prev_initializable_tick_index(MAX_TICK_INDEX, 64);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_next_panics_on_tick_below_min() {
+        get_next_initializable_tick_index(MIN_TICK_INDEX - 1, 64);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_next_panics_on_tick_above_max() {
+        get_next_initializable_tick_index(MAX_TICK_INDEX + 1, 64);
+    }
+
+    #[test]
+    fn test_next_accepts_min_tick() {
+        // Should not panic
+        let _ = get_next_initializable_tick_index(MIN_TICK_INDEX, 64);
+    }
+
+    #[test]
+    fn test_next_accepts_max_tick() {
+        // Should not panic
+        let _ = get_next_initializable_tick_index(MAX_TICK_INDEX, 64);
     }
 }
 
@@ -990,7 +1083,7 @@ mod test_is_tick_initializable {
     fn true_on_exact_multiples() {
         for &s in &SPACINGS {
             let si = s as i32;
-            for k in -100..=100 {
+            for k in -10..=10 {
                 let tick = k * si;
                 assert!(is_tick_initializable(tick, s), "tick={} s={}", tick, s);
             }
@@ -1004,13 +1097,37 @@ mod test_is_tick_initializable {
                 continue;
             } // all integers are multiples of 1
             let si = s as i32;
-            for k in -100..=100 {
+            for k in -10..=10 {
                 let tick_plus = k * si + 1;
                 let tick_minus = k * si - 1;
                 assert!(!is_tick_initializable(tick_plus, s));
                 assert!(!is_tick_initializable(tick_minus, s));
             }
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_is_tick_initializable_panics_on_tick_below_min() {
+        is_tick_initializable(MIN_TICK_INDEX - 1, 64);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tick index out of bounds")]
+    fn test_is_tick_initializable_panics_on_tick_above_max() {
+        is_tick_initializable(MAX_TICK_INDEX + 1, 64);
+    }
+
+    #[test]
+    fn test_is_tick_initializable_accepts_min_tick() {
+        // Should not panic
+        let _ = is_tick_initializable(MIN_TICK_INDEX, 64);
+    }
+
+    #[test]
+    fn test_is_tick_initializable_accepts_max_tick() {
+        // Should not panic
+        let _ = is_tick_initializable(MAX_TICK_INDEX, 64);
     }
 }
 

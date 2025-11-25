@@ -1,10 +1,9 @@
-import { AnchorProvider } from "@coral-xyz/anchor";
+import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import { WhirlpoolContext } from "@orca-so/whirlpools-sdk";
 import { existsSync, readFileSync } from "fs";
 import { parse } from "yaml";
 import { isAbsolute } from "path";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import type { Wallet } from "@coral-xyz/anchor/dist/cjs/provider";
+import type { Wallet as WalletType } from "@coral-xyz/anchor/dist/cjs/provider";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 
 /*
@@ -19,7 +18,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 
 const configPath = `${process.env.HOME}/.config/solana/cli/config.yml`;
 
-let walletPath = process.env.ANCHOR_WALLET ?? "";
+let walletPath = (process.env.ANCHOR_WALLET ?? "").replace("~/", `${process.env.HOME}/`);
 let rpcUrl = process.env.ANCHOR_PROVIDER_URL ?? "";
 
 if (existsSync(configPath)) {
@@ -44,17 +43,12 @@ if (walletPath === "" || rpcUrl === "") {
 
 const connection = new Connection(rpcUrl);
 
-let wallet: Wallet & { noSign: boolean };
+let wallet: WalletType & { noSign?: boolean };
 if (isAbsolute(walletPath)) {
   const json = readFileSync(walletPath, { encoding: "utf-8" });
   const bytes = new Uint8Array(JSON.parse(json));
-  const nodeWallet = new NodeWallet(Keypair.fromSecretKey(bytes));
-  wallet = {
-    publicKey: nodeWallet.publicKey,
-    signTransaction: nodeWallet.signTransaction,
-    signAllTransactions: nodeWallet.signAllTransactions,
-    noSign: false,
-  };
+  const keypair = Keypair.fromSecretKey(bytes);
+  wallet = new Wallet(keypair);
 } else {
   wallet = {
     publicKey: new PublicKey(walletPath),

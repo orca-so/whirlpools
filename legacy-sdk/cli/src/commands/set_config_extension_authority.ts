@@ -5,14 +5,14 @@ import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
-console.info("set FeeAuthority...");
+console.info("set ConfigExtensionAuthority...");
 
 const whirlpoolsConfigPubkeyStr = await promptText("whirlpoolsConfigPubkey");
 const newConfigExtensionAuthorityPubkeyStr = await promptText(
   "newConfigExtensionAuthorityPubkey",
 );
 const newConfigExtensionAuthorityPubkeyAgainStr = await promptText(
-  "newFeeAuthorityPubkeyAgain",
+  "newConfigExtensionAuthorityPubkeyAgain",
 );
 
 const whirlpoolsConfigPubkey = new PublicKey(whirlpoolsConfigPubkeyStr);
@@ -49,17 +49,21 @@ if (!whirlpoolsConfigExtension) {
   throw new Error("whirlpoolsConfigExtension not found");
 }
 
-if (!whirlpoolsConfig.feeAuthority.equals(ctx.wallet.publicKey)) {
+if (
+  !whirlpoolsConfigExtension.configExtensionAuthority.equals(
+    ctx.wallet.publicKey,
+  )
+) {
   throw new Error(
-    `the current wallet must be the fee authority(${whirlpoolsConfig.feeAuthority.toBase58()})`,
+    `the current wallet must be the config extension authority(${whirlpoolsConfigExtension.configExtensionAuthority.toBase58()})`,
   );
 }
 
 console.info(
   "setting...",
-  "\n\tfeeAuthority",
-  whirlpoolsConfig.feeAuthority.toBase58(),
-  "\n\tnewFeeAuthority",
+  "\n\tconfigExtensionAuthority",
+  whirlpoolsConfigExtension.configExtensionAuthority.toBase58(),
+  "\n\tnewConfigExtensionAuthority",
   newConfigExtensionAuthorityPubkey.toBase58(),
 );
 console.info("\nif the above is OK, enter YES");
@@ -90,7 +94,7 @@ SAMPLE EXECUTION LOG
 
 connection endpoint http://localhost:8899
 wallet 2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5
-set FeeAuthority...
+set ConfigExtensionAuthority...
 prompt: whirlpoolsConfigPubkey:  FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
 prompt: newConfigExtensionAuthorityPubkey:  3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo
 prompt: newConfigExtensionAuthorityPubkeyAgain:  3otH3AHWqkqgSVfKFkrxyDqd2vK6LcaqigHrFEmWcGuo

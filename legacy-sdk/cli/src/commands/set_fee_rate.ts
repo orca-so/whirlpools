@@ -40,6 +40,16 @@ builder.addInstruction(
   }),
 );
 
+console.info(
+  "setting...",
+  "\n\twhirlpoolsConfig",
+  whirlpoolsConfigPubkey.toBase58(),
+  "\n\twhirlpool",
+  whirlpoolPubkey.toBase58(),
+  "\n\tfeeRate",
+  `${feeRate / 10000}%`,
+);
+
 const landed = await processTransaction(builder);
 if (landed) {
   console.info("tx landed");

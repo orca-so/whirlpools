@@ -45,6 +45,16 @@ builder.addInstruction(
   }),
 );
 
+console.info(
+  "setting...",
+  "\n\twhirlpoolsConfig",
+  whirlpoolsConfigPubkey.toBase58(),
+  "\n\ttickSpacing",
+  tickSpacing,
+  "\n\tdefaultFeeRate",
+  `${feeRate / 10000}%`,
+);
+
 const landed = await processTransaction(builder);
 if (landed) {
   console.info("tx landed");

@@ -528,15 +528,6 @@ mod test_tick_index_to_sqrt_price {
     use crate::{MAX_SQRT_PRICE, MAX_TICK_INDEX, MIN_SQRT_PRICE, MIN_TICK_INDEX};
     use rstest::rstest;
 
-    // TODO: Uncomment this test when we have implemented the TODO in the mul_shift_96 function.
-    // #[test]
-    // #[should_panic(expected = "TryFromIntError(())")]
-    // fn test_tick_exceed_max() {
-    //     let sqrt_price_from_max_tick_add_one = tick_index_to_sqrt_price(MAX_TICK_INDEX + 1);
-    //     let sqrt_price_from_max_tick = tick_index_to_sqrt_price(MAX_TICK_INDEX);
-    //     assert!(sqrt_price_from_max_tick_add_one > sqrt_price_from_max_tick);
-    // }
-
     #[test]
     fn test_tick_below_min() {
         let sqrt_price_from_min_tick_sub_one = tick_index_to_sqrt_price(MIN_TICK_INDEX - 1);

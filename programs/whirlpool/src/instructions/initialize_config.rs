@@ -8,7 +8,7 @@ pub struct InitializeConfig<'info> {
     #[account(init, payer = funder, space = WhirlpoolsConfig::LEN)]
     pub config: Account<'info, WhirlpoolsConfig>,
 
-    #[account(mut, constraint = is_admin_key(funder.key))]
+    #[account(mut)]
     pub funder: Signer<'info>,
 
     pub system_program: Program<'info, System>,

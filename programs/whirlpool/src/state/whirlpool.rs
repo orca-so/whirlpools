@@ -119,7 +119,8 @@ impl Whirlpool {
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
-        whirlpools_config: &Account<WhirlpoolsConfig>,
+        // whirlpools_config: &Account<WhirlpoolsConfig>,
+        whirlpools_config: Pubkey,
         fee_tier_index: u16,
         bump: u8,
         tick_spacing: u16,
@@ -130,6 +131,8 @@ impl Whirlpool {
         token_mint_b: Pubkey,
         token_vault_b: Pubkey,
         control_flags: WhirlpoolControlFlags,
+        default_protocol_fee_rate: u16,
+        reward_emissions_super_authority: Pubkey,
     ) -> Result<()> {
         if token_mint_a.ge(&token_mint_b) {
             return Err(ErrorCode::InvalidTokenMintOrder.into());
@@ -151,7 +154,7 @@ impl Whirlpool {
         self.tick_spacing = tick_spacing;
 
         self.update_fee_rate(default_fee_rate)?;
-        self.update_protocol_fee_rate(whirlpools_config.default_protocol_fee_rate)?;
+        self.update_protocol_fee_rate(default_protocol_fee_rate)?;
 
         self.liquidity = 0;
         self.sqrt_price = sqrt_price;
@@ -168,11 +171,8 @@ impl Whirlpool {
         self.token_vault_b = token_vault_b;
         self.fee_growth_global_b = 0;
 
-        self.reward_infos[0] = WhirlpoolRewardInfo::new(
-            whirlpools_config
-                .reward_emissions_super_authority
-                .to_bytes(),
-        );
+        self.reward_infos[0] =
+            WhirlpoolRewardInfo::new(reward_emissions_super_authority.to_bytes());
         self.reward_infos[1] = WhirlpoolRewardInfo::new(
             WhirlpoolExtensionSegmentPrimary::new(control_flags).to_bytes(),
         );

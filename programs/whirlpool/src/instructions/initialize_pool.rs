@@ -68,7 +68,7 @@ pub fn handler(
     let bump = ctx.bumps.whirlpool;
 
     whirlpool.initialize(
-        whirlpools_config,
+        whirlpools_config.key(),
         fee_tier_index,
         bump,
         tick_spacing,
@@ -79,6 +79,8 @@ pub fn handler(
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
         WhirlpoolControlFlags::empty(),
+        whirlpools_config.default_protocol_fee_rate,
+        whirlpools_config.reward_emissions_super_authority,
     )?;
 
     emit!(PoolInitialized {

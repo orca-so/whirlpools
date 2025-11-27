@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::{self, AssociatedToken};
+use anchor_spl::token::spl_token;
 use anchor_spl::token_2022::spl_token_2022::extension::{
     BaseStateWithExtensions, StateWithExtensions,
 };
@@ -526,6 +527,90 @@ pub fn initialize_vault_token_account<'info>(
     }
 
     // initialize token account
+    invoke(
+        &spl_token_2022::instruction::initialize_account3(
+            token_program.key,
+            vault_token_account.key,
+            &vault_mint.key(),
+            &whirlpool.key(),
+        )?,
+        &[
+            token_program.to_account_info(),
+            vault_token_account.to_account_info(),
+            vault_mint.to_account_info(),
+            whirlpool.to_account_info(),
+        ],
+    )?;
+
+    Ok(())
+}
+
+// sale as above, optimized for compute units
+pub fn initialize_vault_token_account_optimized<'info>(
+    whirlpool: &Account<'info, Whirlpool>,
+    vault_token_account: &Signer<'info>,
+    vault_mint: &InterfaceAccount<'info, Mint>,
+    funder: &Signer<'info>,
+    token_program: &Interface<'info, TokenInterface>,
+    system_program: &Program<'info, System>,
+) -> Result<()> {
+    solana_program::log::sol_log("Debut initialize_vault_token_account_optimized");
+    let is_token_2022 = token_program.key() == spl_token_2022::ID;
+
+    // The size required for extensions that are mandatory on the TokenAccount side — based on the TokenExtensions enabled on the Mint —
+    // is automatically accounted for. For non-mandatory extensions, however, they must be explicitly added,
+    // so we specify ImmutableOwner explicitly.
+    let mut space = 165;
+
+    if is_token_2022 {
+        space = get_account_data_size(
+            CpiContext::new(
+                token_program.to_account_info(),
+                GetAccountDataSize {
+                    mint: vault_mint.to_account_info(),
+                },
+            ),
+            // Needless to say, the program will never attempt to change the owner of the vault.
+            // However, since the ImmutableOwner extension only increases the account size by 4 bytes, the overhead of always including it is negligible.
+            // On the other hand, it makes it easier to comply with cases where ImmutableOwner is required, and it adds a layer of safety from a security standpoint.
+            // Therefore, we'll include it by default going forward. (Vaults initialized after this change will have the ImmutableOwner extension.)
+            if is_token_2022 {
+                &[ExtensionType::ImmutableOwner]
+            } else {
+                &[]
+            },
+        )?;
+    }
+
+    let lamports = Rent::get()?.minimum_balance(space as usize);
+
+    // create account
+    safe_create_account(
+        system_program.to_account_info(),
+        funder.to_account_info(),
+        vault_token_account.to_account_info(),
+        &token_program.key(),
+        lamports,
+        space,
+        &[],
+    )?;
+
+    if is_token_2022 {
+        // initialize ImmutableOwner extension
+        invoke(
+            &spl_token_2022::instruction::initialize_immutable_owner(
+                token_program.key,
+                vault_token_account.key,
+            )?,
+            &[
+                token_program.to_account_info(),
+                vault_token_account.to_account_info(),
+            ],
+        )?;
+    }
+
+    // initialize token account
+
     invoke(
         &spl_token_2022::instruction::initialize_account3(
             token_program.key,

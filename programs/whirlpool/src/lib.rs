@@ -1014,8 +1014,23 @@ pub mod whirlpool {
         ctx: Context<InitializePoolV2>,
         tick_spacing: u16,
         initial_sqrt_price: u128,
+        step: u8,
     ) -> Result<()> {
-        instructions::v2::initialize_pool::handler(ctx, tick_spacing, initial_sqrt_price)
+        instructions::v2::initialize_pool::handler(ctx, tick_spacing, initial_sqrt_price, step)
+    }
+
+    pub fn initialize_pool_v2_step_1(
+        ctx: Context<InitializePoolV2Step1>,
+        tick_spacing: u16,
+        initial_sqrt_price: u128,
+        step: u8,
+    ) -> Result<()> {
+        instructions::v2::initialize_pool_step_1::handler(
+            ctx,
+            tick_spacing,
+            initial_sqrt_price,
+            step,
+        )
     }
 
     /// Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.

@@ -172,6 +172,13 @@ pub enum ErrorCode {
 
     #[msg("This whirlpool only supports open_position_with_token_extensions instruction")]
     PositionWithTokenExtensionsRequired, // 0x17b3 (6067)
+
+    #[msg("Account discriminator mismatch")]
+    AccountDiscriminatorMismatch, // 0x17b4 (6068)
+    #[msg("Account owned by wrong program")]
+    AccountOwnedByWrongProgram, // 0x17b5 (6069)
+    #[msg("Token badge mismatch")]
+    TokenBadgeMismatch, // 0x17b6 (6070)
 }
 
 impl From<TryFromIntError> for ErrorCode {

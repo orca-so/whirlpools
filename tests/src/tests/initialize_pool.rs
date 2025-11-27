@@ -16,7 +16,8 @@ use spl_token::ID as TOKEN_PROGRAM_ID;
 /*
 === tests created ===
 
-* test_count: happy path
+* optimization_test: current state
+* optimization_step_1_test: after optimization
 */
 
 fn setup_test() -> (

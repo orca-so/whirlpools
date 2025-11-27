@@ -545,7 +545,7 @@ pub fn initialize_vault_token_account<'info>(
     Ok(())
 }
 
-// sale as above, optimized for compute units
+// same as above, optimized for compute units
 pub fn initialize_vault_token_account_optimized<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     vault_token_account: &Signer<'info>,

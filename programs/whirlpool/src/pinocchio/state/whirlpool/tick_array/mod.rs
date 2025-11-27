@@ -30,8 +30,12 @@ pub trait TickArray {
     fn whirlpool(&self) -> &Pubkey;
     fn start_tick_index(&self) -> i32;
 
-    // TODO: if we implement swap feature using Pinocchio
-    // get_next_init_tick_index(
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>>;
 
     fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&tick::MemoryMappedTick>;
 
@@ -120,7 +124,7 @@ fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isiz
     let lhs = tick_index - start_tick_index;
     // rhs(tick_spacing) is always positive number (non zero)
     let rhs = tick_spacing as i32;
-    // TODO: remove / and %
+    // TODO: remove / and % (NOTICE: offset may be negative(-1) when "shift" is applied)
     let d = lhs / rhs;
     let r = lhs % rhs;
     let o = if r < 0 { d - 1 } else { d };

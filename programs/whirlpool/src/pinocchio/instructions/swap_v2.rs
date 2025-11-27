@@ -3,13 +3,9 @@ use crate::{pinocchio::{
         manager_liquidity_manager::{
             pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
             pino_sync_modify_liquidity_values,
-        },
-        manager_tick_array_manager::pino_update_tick_array_accounts,
-        util_remaining_accounts_utils::pino_parse_remaining_accounts,
-        util_shared::pino_verify_position_authority,
-        util_token::{
+        }, manager_tick_array_manager::pino_update_tick_array_accounts, util_remaining_accounts_utils::pino_parse_remaining_accounts, util_shared::pino_verify_position_authority, util_sparse_swap::SparseSwapTickSequenceBuilder, util_token::{
             pino_calculate_transfer_fee_included_amount, pino_transfer_from_owner_to_vault_v2,
-        },
+        }
     }, state::{
         token::MemoryMappedTokenAccount,
         whirlpool::{
@@ -94,15 +90,14 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         &[AccountsType::TransferHookA, AccountsType::TransferHookB, AccountsType::SupplementalTickArrays],
     )?;
 
-    let swap_tick_sequence = build_swap_tick_sequence(
-        whirlpool_info,
-        &whirlpool,
-        data.a_to_b,
-        tick_array_0_info,
-        tick_array_1_info,
-        tick_array_2_info,
+    let swap_tick_sequence_builder = SparseSwapTickSequenceBuilder::new(
+        &tick_array_0_info,
+        &tick_array_1_info,
+        &tick_array_2_info,
         &remaining_accounts.supplemental_tick_arrays,
-    )?;
+    );
+    let mut swap_tick_sequence = swap_tick_sequence_builder.try_build(whirlpool_info.key(), whirlpool.tick_current_index(), whirlpool.tick_spacing(), data.a_to_b)?;
+
 
 
 
@@ -110,101 +105,3 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     Ok(())
 }
-/* 
-// TODO: rename
-const MAX_TICK_ARRAY_INFOS_LEN: usize = 3 + crate::util::MAX_SUPPLEMENTAL_TICK_ARRAYS_LEN;
-const MAX_LOADED_TICK_ARRAYS_LEN: usize = 3;
-
-fn build_swap_tick_sequence(
-    whirlpool_info: &AccountInfo,
-    whirlpool: &MemoryMappedWhirlpool,
-    a_to_b: bool,
-    tick_array_0_info: &AccountInfo,
-    tick_array_1_info: &AccountInfo,
-    tick_array_2_info: &AccountInfo,
-    supplemental_tick_arrays: &[AccountInfo],
-) -> Result<Vec<TickArraysMut>> {
-    let mut all_tick_array_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_INFOS_LEN> = ArrayVec::new();
-
-    all_tick_array_infos.push(tick_array_0_info);
-    all_tick_array_infos.push(tick_array_1_info);
-    all_tick_array_infos.push(tick_array_2_info);
-    all_tick_array_infos.extend(supplemental_tick_arrays.iter());
-
-    // dedup by key
-    all_tick_array_infos.sort_by_key(|info| info.key());
-    let mut tick_array_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_INFOS_LEN> = ArrayVec::new();
-    tick_array_infos.push(all_tick_array_infos[0]);
-    for info in all_tick_array_infos.iter().skip(1) {
-        if !pubkey_eq(info.key(), tick_array_infos.last().unwrap().key()) {
-            tick_array_infos.push(info);
-        }
-    }
-
-    let mut loaded_tick_arrays: ArrayVec<LoadedTickArrayMut, MAX_LOADED_TICK_ARRAYS_LEN> = ArrayVec::new();
-    for tick_array_info in tick_array_infos.iter() {
-        if let Some(loaded_tick_array) =
-            pino_maybe_load_tick_array(tick_array_info, whirlpool_info.key())?
-        {
-            loaded_tick_arrays.push(loaded_tick_array);
-        }
-    }
-
-    let start_tick_indexes = get_start_tick_indexes(whirlpool.tick_current_index(), whirlpool.tick_spacing(), a_to_b);
-    let mut required_tick_arrays: ArrayVec<ProxiedTickArray, 3> = ArrayVec::new();
-    for start_tick_index in start_tick_indexes.iter() {
-        let pos = loaded_tick_arrays
-            .iter()
-            .position(|tick_array| tick_array.start_tick_index() == *start_tick_index);
-        if let Some(pos) = pos {
-            let tick_array = loaded_tick_arrays.remove(pos);
-            required_tick_arrays.push(ProxiedTickArray::new_initialized(tick_array));
-            continue;
-        }
-
-        let tick_array_pda = pino_derive_tick_array_pda(whirlpool_info.key(), *start_tick_index);
-        let has_account_info = tick_array_infos
-            .iter()
-            .any(|account_info| pubkey_eq(account_info.key(), &tick_array_pda));
-        if has_account_info {
-            required_tick_arrays
-                .push(ProxiedTickArray::new_uninitialized(*start_tick_index));
-            continue;
-        }
-        break;
-    }
-
-    if required_tick_arrays.is_empty() {
-        return Err(WhirlpoolErrorCode::InvalidTickArraySequence.into());
-    }
-
-    Ok(SwapTickSequence::new_with_proxy(
-        required_tick_arrays.pop().unwrap(),
-        required_tick_arrays.pop(),
-        required_tick_arrays.pop(),
-    ))
-}
-
-fn pino_derive_tick_array_pda(whirlpool_key: &Pubkey, start_tick_index: i32) -> Pubkey {
-    find_program_address(
-    &[
-        b"tick_array",
-        whirlpool_key.as_ref(),
-        start_tick_index.to_string().as_bytes(),
-    ],
-    &WHIRLPOOL_PROGRAM_ID).0
-}
-
-fn pino_maybe_load_tick_array<'a>(
-    account_info: &'a AccountInfo,
-    whirlpool_key: &Pubkey,
-) -> Result<Option<LoadedTickArrayMut<'a>>> {
-    if account_info.is_owned_by(&SYSTEM_PROGRAM_ID) && account_info.data_is_empty() {
-        return Ok(None);
-    }
-
-    let tick_array = load_tick_array_mut(account_info, whirlpool_key)?;
-    Ok(Some(tick_array))
-}
-
-*/

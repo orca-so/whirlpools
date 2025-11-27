@@ -30,11 +30,8 @@ impl<'a> ProxiedTickArray<'a> {
         tick_spacing: u16,
         a_to_b: bool,
     ) -> Result<Option<i32>> {
-        panic!("Not implemented yet");
-      /* 
         self.as_ref()
             .get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
-            */
     }
 
     pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {

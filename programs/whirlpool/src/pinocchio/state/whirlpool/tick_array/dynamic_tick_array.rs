@@ -1,6 +1,7 @@
 use super::super::super::{BytesI32, BytesU128, Pubkey};
 use super::{tick::MemoryMappedTick, TickArray, TickUpdate, TICK_ARRAY_SIZE_USIZE};
 use crate::pinocchio::Result;
+use crate::pinocchio::state::whirlpool::TICK_ARRAY_SIZE;
 
 const DYNAMIC_TICK_INITIALIZED_LEN: usize = 113;
 const DYNAMIC_TICK_UNINITIALIZED_LEN: usize = 1;
@@ -27,6 +28,46 @@ impl TickArray for MemoryMappedDynamicTickArray {
 
     fn whirlpool(&self) -> &Pubkey {
         &self.whirlpool
+    }
+
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
+            return Err(crate::errors::ErrorCode::InvalidTickArraySequence.into());
+        }
+
+        let mut curr_offset = match self.tick_offset(tick_index, tick_spacing) {
+            Ok(value) => value as i32,
+            Err(e) => return Err(e),
+        };
+
+        // For a_to_b searches, the search moves to the left. The next possible init-tick can be the 1st tick in the current offset
+        // For b_to_a searches, the search moves to the right. The next possible init-tick cannot be within the current offset
+        if !a_to_b {
+            curr_offset += 1;
+        }
+
+        let tick_bitmap = self.tick_bitmap();
+        while (0..TICK_ARRAY_SIZE).contains(&curr_offset) {
+            let initialized = Self::is_initialized_tick(&tick_bitmap, curr_offset as isize);
+            if initialized {
+                return Ok(Some(
+                    (curr_offset * tick_spacing as i32) + self.start_tick_index(),
+                ));
+            }
+
+            curr_offset = if a_to_b {
+                curr_offset - 1
+            } else {
+                curr_offset + 1
+            };
+        }
+
+        Ok(None)
     }
 
     fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
@@ -122,5 +163,10 @@ impl MemoryMappedDynamicTickArray {
             tick_bitmap &= !(1 << tick_offset);
         }
         self.tick_bitmap = tick_bitmap.to_le_bytes();
+    }
+
+    #[inline(always)]
+    fn is_initialized_tick(tick_bitmap: &u128, tick_offset: isize) -> bool {
+        (*tick_bitmap & (1 << tick_offset)) != 0
     }
 }

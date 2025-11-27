@@ -1,18 +1,10 @@
-/* 
-use crate::errors::ErrorCode;
-use crate::state::*;
-use crate::util::ProxiedTickArray;
-use anchor_lang::prelude::*;
-
-use crate::state::LoadedTickArrayMut;
-*/
-
+use arrayvec::ArrayVec;
 use crate::{pinocchio::state::whirlpool::{TICK_ARRAY_SIZE, TickUpdate, tick_array::{loader::LoadedTickArrayMut, proxy::ProxiedTickArray, tick::MemoryMappedTick}}, state::{MAX_TICK_INDEX, MIN_TICK_INDEX}};
 use crate::pinocchio::Result;
 use crate::pinocchio::errors::WhirlpoolErrorCode;
 
 pub struct SwapTickSequence<'a> {
-    pub(crate) arrays: Vec<ProxiedTickArray<'a>>,
+    pub(crate) arrays: ArrayVec<ProxiedTickArray<'a>, 3>,
 }
 
 impl<'a> SwapTickSequence<'a> {
@@ -33,15 +25,15 @@ impl<'a> SwapTickSequence<'a> {
         ta1: Option<ProxiedTickArray<'a>>,
         ta2: Option<ProxiedTickArray<'a>>,
     ) -> Self {
-        let mut vec = Vec::with_capacity(3);
-        vec.push(ta0);
+        let mut arrays = ArrayVec::new();
+        arrays.push(ta0);
         if let Some(ta1) = ta1 {
-            vec.push(ta1);
+            arrays.push(ta1);
         }
         if let Some(ta2) = ta2 {
-            vec.push(ta2);
+            arrays.push(ta2);
         }
-        Self { arrays: vec }
+        Self { arrays }
     }
 
     /// Get the Tick object at the given tick-index & tick-spacing

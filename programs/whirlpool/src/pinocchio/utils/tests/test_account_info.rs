@@ -65,3 +65,23 @@ impl TestAccountInfo {
     &mut self.bytes[DATA_OFFSET..]
   }
 }
+
+
+impl TestAccountInfo {
+  pub fn new_fixed_tick_array(
+    whirlpool_key: &Pubkey,
+    start_tick_index: i32,
+  ) -> Self {
+      use anchor_lang::Discriminator;
+
+      let mut test_account_info = TestAccountInfo::new(crate::state::FixedTickArray::LEN)
+        .owner(&crate::pinocchio::constants::address::WHIRLPOOL_PROGRAM_ID);
+
+      let data = test_account_info.data_mut();
+      data[0..8].copy_from_slice(crate::state::FixedTickArray::DISCRIMINATOR);
+      data[8..8 + 4].copy_from_slice(&start_tick_index.to_le_bytes());
+      data[9956..9956 + 32].copy_from_slice(whirlpool_key.as_slice());
+
+      test_account_info
+  }
+}

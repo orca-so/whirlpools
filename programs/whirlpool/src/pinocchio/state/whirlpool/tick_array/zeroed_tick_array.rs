@@ -29,6 +29,22 @@ impl TickArray for MemoryMappedZeroedTickArray {
         unreachable!()
     }
 
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
+            return Err(crate::errors::ErrorCode::InvalidTickArraySequence.into());
+        }
+
+        self.tick_offset(tick_index, tick_spacing)?;
+
+        // no initialized tick
+        Ok(None)
+    }
+
     fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
         match self.check_is_usable_tick_and_get_offset(tick_index, tick_spacing) {
             // always return the zeroed tick

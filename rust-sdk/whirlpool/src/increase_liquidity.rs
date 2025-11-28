@@ -341,13 +341,13 @@ async fn internal_open_position(
         tick_range.tick_lower_index,
         whirlpool.tick_spacing,
         Some(false),
-    );
+    )?;
 
     let upper_initializable_tick_index = get_initializable_tick_index(
         tick_range.tick_upper_index,
         whirlpool.tick_spacing,
         Some(true),
-    );
+    )?;
 
     let mut instructions: Vec<Instruction> = Vec::new();
     let mut non_refundable_rent: u64 = 0;

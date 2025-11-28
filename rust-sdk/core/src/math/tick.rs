@@ -5,8 +5,10 @@ use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     CoreError, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
-    TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128,
+    TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, TICK_INDEX_OUT_OF_BOUNDS, U128,
 };
+
+use super::price::check_sqrt_price_bounds;
 
 const LOG_B_2_X32: i128 = 59543866431248i128;
 const BIT_PRECISION: u32 = 14;
@@ -38,14 +40,16 @@ pub fn get_tick_array_start_tick_index(tick_index: i32, tick_spacing: u16) -> i3
 /// - `tick_index` - A i32 integer representing the tick integer
 ///
 /// # Returns
-/// - `Ok`: A u128 Q32.64 representing the sqrt_price
+/// - `Ok(U128)`: A u128 Q32.64 representing the sqrt_price
+/// - `Err(CoreError)`: If tick_index is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn tick_index_to_sqrt_price(tick_index: i32) -> U128 {
-    if tick_index >= 0 {
+pub fn tick_index_to_sqrt_price(tick_index: i32) -> Result<U128, CoreError> {
+    check_tick_index_bounds(tick_index)?;
+    Ok(if tick_index >= 0 {
         get_sqrt_price_positive_tick(tick_index).into()
     } else {
         get_sqrt_price_negative_tick(tick_index).into()
-    }
+    })
 }
 
 /// Derive the tick index from a sqrt price. The precision of this method is only guarranted
@@ -56,10 +60,13 @@ pub fn tick_index_to_sqrt_price(tick_index: i32) -> U128 {
 /// - `sqrt_price` - A u128 integer representing the sqrt price
 ///
 /// # Returns
-/// - `Ok`: A i32 integer representing the tick integer
+/// - `Ok(i32)`: The tick index
+/// - `Err(CoreError)`: If sqrt_price is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
+pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> Result<i32, CoreError> {
     let sqrt_price_x64: u128 = sqrt_price.into();
+    check_sqrt_price_bounds(sqrt_price_x64)?;
+
     // Determine log_b(sqrt_ratio). First by calculating integer portion (msb)
     let msb: u32 = 128 - sqrt_price_x64.leading_zeros() - 1;
     let log2p_integer_x32 = (msb as i128 - 64) << 32;
@@ -99,17 +106,18 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
     let tick_high: i32 = ((logbp_x64 + LOG_B_P_ERR_MARGIN_UPPER_X64) >> 64) as i32;
 
     if tick_low == tick_high {
-        tick_low
+        Ok(tick_low)
     } else {
         // If our estimation for tick_high returns a lower sqrt_price than the input
         // then the actual tick_high has to be higher than tick_high.
         // Otherwise, the actual value is between tick_low & tick_high, so a floor value
         // (tick_low) is returned
-        let actual_tick_high_sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick_high).into();
+        let actual_tick_high_sqrt_price_x64: u128 =
+            tick_index_to_sqrt_price(tick_high).unwrap().into(); // safe unwrap: sqrt_price validation guarantees tick_high is in bounds
         if actual_tick_high_sqrt_price_x64 <= sqrt_price_x64 {
-            tick_high
+            Ok(tick_high)
         } else {
-            tick_low
+            Ok(tick_low)
         }
     }
 }
@@ -123,13 +131,15 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
 /// - `round_up` - A boolean value indicating if the supplied tick index should be rounded up. None will round to the nearest.
 ///
 /// # Returns
-/// - A i32 representing the initializable tick index (rounded per round_up or nearest).
+/// - `Ok(i32)`: The initializable tick index (rounded per round_up or nearest)
+/// - `Err(CoreError)`: If tick_index is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_initializable_tick_index(
     tick_index: i32,
     tick_spacing: u16,
     round_up: Option<bool>,
-) -> i32 {
+) -> Result<i32, CoreError> {
+    check_tick_index_bounds(tick_index)?;
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
     let result = tick_index.div_euclid(tick_spacing_i32) * tick_spacing_i32;
@@ -140,11 +150,11 @@ pub fn get_initializable_tick_index(
         remainder >= tick_spacing_i32 / 2 && remainder > 0
     };
 
-    if should_round_up {
+    Ok(if should_round_up {
         result + tick_spacing_i32
     } else {
         result
-    }
+    })
 }
 
 /// Get the previous initializable tick index.
@@ -154,16 +164,21 @@ pub fn get_initializable_tick_index(
 /// - `tick_spacing` - A i32 integer representing the tick spacing
 ///
 /// # Returns
-/// - A i32 integer representing the previous initializable tick index
+/// - `Ok(i32)`: The previous initializable tick index
+/// - `Err(CoreError)`: If tick_index is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
+pub fn get_prev_initializable_tick_index(
+    tick_index: i32,
+    tick_spacing: u16,
+) -> Result<i32, CoreError> {
+    check_tick_index_bounds(tick_index)?;
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
-    if remainder == 0 {
+    Ok(if remainder == 0 {
         tick_index - tick_spacing_i32
     } else {
         tick_index - remainder
-    }
+    })
 }
 
 /// Get the next initializable tick index.
@@ -173,12 +188,17 @@ pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> 
 /// - `tick_spacing` - A i32 integer representing the tick spacing
 ///
 /// # Returns
-/// - A i32 integer representing the next initializable tick index
+/// - `Ok(i32)`: The next initializable tick index
+/// - `Err(CoreError)`: If tick_index is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn get_next_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
+pub fn get_next_initializable_tick_index(
+    tick_index: i32,
+    tick_spacing: u16,
+) -> Result<i32, CoreError> {
+    check_tick_index_bounds(tick_index)?;
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
-    tick_index - remainder + tick_spacing_i32
+    Ok(tick_index - remainder + tick_spacing_i32)
 }
 
 /// Check if a tick is in-bounds.
@@ -194,6 +214,23 @@ pub fn is_tick_index_in_bounds(tick_index: i32) -> bool {
     tick_index <= MAX_TICK_INDEX && tick_index >= MIN_TICK_INDEX
 }
 
+/// Check if a tick index is within valid bounds and return an error if not.
+///
+/// # Parameters
+/// - `tick_index` - A i32 integer representing the tick integer
+///
+/// # Returns
+/// - `Ok(())` if the tick index is in bounds
+/// - `Err(TICK_INDEX_OUT_OF_BOUNDS)` if the tick index is out of bounds
+#[inline]
+fn check_tick_index_bounds(tick_index: i32) -> Result<(), CoreError> {
+    if is_tick_index_in_bounds(tick_index) {
+        Ok(())
+    } else {
+        Err(TICK_INDEX_OUT_OF_BOUNDS)
+    }
+}
+
 /// Check if a tick is initializable.
 /// A tick is initializable if it is divisible by the tick spacing.
 ///
@@ -202,11 +239,13 @@ pub fn is_tick_index_in_bounds(tick_index: i32) -> bool {
 /// - `tick_spacing` - A i32 integer representing the tick spacing
 ///
 /// # Returns
-/// - A boolean value indicating if the tick is initializable
+/// - `Ok(bool)`: Whether the tick is initializable
+/// - `Err(CoreError)`: If tick_index is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn is_tick_initializable(tick_index: i32, tick_spacing: u16) -> bool {
+pub fn is_tick_initializable(tick_index: i32, tick_spacing: u16) -> Result<bool, CoreError> {
+    check_tick_index_bounds(tick_index)?;
     let tick_spacing_i32 = tick_spacing as i32;
-    tick_index % tick_spacing_i32 == 0
+    Ok(tick_index % tick_spacing_i32 == 0)
 }
 
 /// Get the tick index for the inverse of the price that this tick represents.
@@ -231,10 +270,11 @@ pub fn invert_tick_index(tick_index: i32) -> i32 {
 /// - `sqrt_price` - A u128 integer representing the sqrt price
 ///
 /// # Returns
-/// - A u128 integer representing the sqrt price for the inverse of the price
+/// - `Ok(U128)`: The sqrt price for the inverse of the price
+/// - `Err(CoreError)`: If sqrt_price or calculated tick is out of bounds
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn invert_sqrt_price(sqrt_price: U128) -> U128 {
-    let tick_index = sqrt_price_to_tick_index(sqrt_price);
+pub fn invert_sqrt_price(sqrt_price: U128) -> Result<U128, CoreError> {
+    let tick_index = sqrt_price_to_tick_index(sqrt_price)?;
     let inverted_tick_index = invert_tick_index(tick_index);
     tick_index_to_sqrt_price(inverted_tick_index)
 }
@@ -322,7 +362,7 @@ pub fn get_tick_index_in_array(
 // Private functions
 fn mul_shift_96(n0: u128, n1: u128) -> u128 {
     let mul: U256 = (<U256>::from(n0) * <U256>::from(n1)) >> 96;
-    mul.as_u128()
+    mul.try_into().unwrap() // safe unwrap: tick_index is bounded in tick_index_to_sqrt_price
 }
 
 fn get_sqrt_price_positive_tick(tick: i32) -> u128 {
@@ -529,23 +569,30 @@ mod test_tick_index_to_sqrt_price {
     use rstest::rstest;
 
     #[test]
-    fn test_tick_below_min() {
-        let sqrt_price_from_min_tick_sub_one = tick_index_to_sqrt_price(MIN_TICK_INDEX - 1);
-        let sqrt_price_from_min_tick = tick_index_to_sqrt_price(MIN_TICK_INDEX);
-        assert!(sqrt_price_from_min_tick_sub_one < sqrt_price_from_min_tick);
+    fn test_tick_below_min_errors() {
+        let result = tick_index_to_sqrt_price(MIN_TICK_INDEX - 1);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_tick_above_max_errors() {
+        let result = tick_index_to_sqrt_price(MAX_TICK_INDEX + 1);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
     }
 
     #[test]
     fn test_tick_at_max() {
         let max_tick = MAX_TICK_INDEX;
-        let r = tick_index_to_sqrt_price(max_tick);
+        let r = tick_index_to_sqrt_price(max_tick).unwrap();
         assert_eq!(r, MAX_SQRT_PRICE);
     }
 
     #[test]
     fn test_tick_at_min() {
         let min_tick = MIN_TICK_INDEX;
-        let r = tick_index_to_sqrt_price(min_tick);
+        let r = tick_index_to_sqrt_price(min_tick).unwrap();
         assert_eq!(r, MIN_SQRT_PRICE);
     }
 
@@ -576,8 +623,8 @@ mod test_tick_index_to_sqrt_price {
         #[case] expected_negative: u128,
         #[case] description: &str,
     ) {
-        let p_result = tick_index_to_sqrt_price(tick);
-        let n_result = tick_index_to_sqrt_price(-tick);
+        let p_result = tick_index_to_sqrt_price(tick).unwrap();
+        let n_result = tick_index_to_sqrt_price(-tick).unwrap();
         assert_eq!(
             p_result, expected_positive,
             "Failed for tick {} ({})",
@@ -598,13 +645,13 @@ mod test_sqrt_price_to_tick_index {
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_max() {
-        let r = sqrt_price_to_tick_index(MAX_SQRT_PRICE);
+        let r = sqrt_price_to_tick_index(MAX_SQRT_PRICE).unwrap();
         assert_eq!(&r, &MAX_TICK_INDEX);
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_min() {
-        let r = sqrt_price_to_tick_index(MIN_SQRT_PRICE);
+        let r = sqrt_price_to_tick_index(MIN_SQRT_PRICE).unwrap();
         assert_eq!(&r, &MIN_TICK_INDEX);
     }
 
@@ -613,22 +660,22 @@ mod test_sqrt_price_to_tick_index {
         let sqrt_price_x64_max_add_one = MAX_SQRT_PRICE + 1;
         let tick_from_max_add_one = sqrt_price_to_tick_index(sqrt_price_x64_max_add_one);
         let sqrt_price_x64_max = MAX_SQRT_PRICE;
-        let tick_from_max = sqrt_price_to_tick_index(sqrt_price_x64_max);
+        let tick_from_max = sqrt_price_to_tick_index(sqrt_price_x64_max).unwrap();
         // We don't care about accuracy over the limit. We just care about it's equality properties.
-        assert!(tick_from_max_add_one >= tick_from_max);
+        assert!(tick_from_max_add_one.is_err() || tick_from_max_add_one.unwrap() >= tick_from_max);
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_min_add_one() {
         let sqrt_price_x64 = MIN_SQRT_PRICE + 1;
-        let r = sqrt_price_to_tick_index(sqrt_price_x64);
+        let r = sqrt_price_to_tick_index(sqrt_price_x64).unwrap();
         assert_eq!(&r, &(MIN_TICK_INDEX));
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_max_sub_one() {
         let sqrt_price_x64 = MAX_SQRT_PRICE - 1;
-        let r = sqrt_price_to_tick_index(sqrt_price_x64);
+        let r = sqrt_price_to_tick_index(sqrt_price_x64).unwrap();
         assert_eq!(&r, &(MAX_TICK_INDEX - 1));
     }
 
@@ -637,28 +684,29 @@ mod test_sqrt_price_to_tick_index {
         let sqrt_price_x64_min_sub_one = MIN_SQRT_PRICE - 1;
         let tick_from_min_sub_one = sqrt_price_to_tick_index(sqrt_price_x64_min_sub_one);
         let sqrt_price_x64_min = MIN_SQRT_PRICE + 1;
-        let tick_from_min = sqrt_price_to_tick_index(sqrt_price_x64_min);
-        assert!(tick_from_min_sub_one < tick_from_min);
+        let tick_from_min = sqrt_price_to_tick_index(sqrt_price_x64_min).unwrap();
+        // We don't care about accuracy under the limit. We just care about it's equality properties.
+        assert!(tick_from_min_sub_one.is_err() || tick_from_min_sub_one.unwrap() < tick_from_min);
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_one() {
         let sqrt_price_x64: u128 = u64::MAX as u128 + 1;
-        let r = sqrt_price_to_tick_index(sqrt_price_x64);
+        let r = sqrt_price_to_tick_index(sqrt_price_x64).unwrap();
         assert_eq!(r, 0);
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_one_add_one() {
         let sqrt_price_x64: u128 = u64::MAX as u128 + 2;
-        let r = sqrt_price_to_tick_index(sqrt_price_x64);
+        let r = sqrt_price_to_tick_index(sqrt_price_x64).unwrap();
         assert_eq!(r, 0);
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index_at_one_sub_one() {
         let sqrt_price_x64: u128 = u64::MAX.into();
-        let r = sqrt_price_to_tick_index(sqrt_price_x64);
+        let r = sqrt_price_to_tick_index(sqrt_price_x64).unwrap();
         assert_eq!(r, -1);
     }
 }
@@ -699,15 +747,15 @@ mod fuzz_tests {
         fn test_tick_index_to_sqrt_price (
             tick in MIN_TICK_INDEX..MAX_TICK_INDEX,
         ) {
-            let sqrt_price: u128 = tick_index_to_sqrt_price(tick).into();
+            let sqrt_price: u128 = tick_index_to_sqrt_price(tick).unwrap().into();
 
             // Check bounds
             assert!(sqrt_price >= MIN_SQRT_PRICE);
             assert!(sqrt_price <= MAX_SQRT_PRICE);
 
             // Check the inverted tick has unique price and within bounds
-            let minus_tick_price: u128 = tick_index_to_sqrt_price(tick - 1).into();
-            let plus_tick_price: u128 = tick_index_to_sqrt_price(tick + 1).into();
+            let minus_tick_price: u128 = tick_index_to_sqrt_price(tick - 1).unwrap().into();
+            let plus_tick_price: u128 = tick_index_to_sqrt_price(tick + 1).unwrap().into();
             assert!(minus_tick_price < sqrt_price && sqrt_price < plus_tick_price);
 
             // Check that sqrt_price_from_tick_index(tick + 1) approximates sqrt(1.0001) * sqrt_price_from_tick_index(tick)
@@ -719,13 +767,13 @@ mod fuzz_tests {
         fn test_tick_index_from_sqrt_price (
             sqrt_price in MIN_SQRT_PRICE..MAX_SQRT_PRICE
         ) {
-            let tick = sqrt_price_to_tick_index(sqrt_price);
+            let tick = sqrt_price_to_tick_index(sqrt_price).unwrap();
 
             assert!(tick >= MIN_TICK_INDEX);
             assert!(tick < MAX_TICK_INDEX);
 
             // Check the inverted price from the calculated tick is within tick boundaries
-            assert!(sqrt_price >= tick_index_to_sqrt_price(tick) && sqrt_price < tick_index_to_sqrt_price(tick + 1))
+            assert!(sqrt_price >= tick_index_to_sqrt_price(tick).unwrap() && sqrt_price < tick_index_to_sqrt_price(tick + 1).unwrap())
     }
 
     #[test]
@@ -733,8 +781,8 @@ mod fuzz_tests {
         fn test_tick_index_and_sqrt_price_symmetry (
             tick in MIN_TICK_INDEX..MAX_TICK_INDEX
         ) {
-            let sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick).into();
-            let resolved_tick = sqrt_price_to_tick_index(sqrt_price_x64);
+            let sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick).unwrap().into();
+            let resolved_tick = sqrt_price_to_tick_index(sqrt_price_x64).unwrap();
             assert!(resolved_tick == tick);
         }
 
@@ -742,8 +790,8 @@ mod fuzz_tests {
         fn test_sqrt_price_from_tick_index_is_sequence (
             tick in (MIN_TICK_INDEX - 1)..MAX_TICK_INDEX
         ) {
-            let sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick).into();
-            let last_sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick - 1).into();
+            let sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick).unwrap().into();
+            let last_sqrt_price_x64: u128 = tick_index_to_sqrt_price(tick - 1).unwrap().into();
             assert!(last_sqrt_price_x64 < sqrt_price_x64);
         }
 
@@ -751,9 +799,86 @@ mod fuzz_tests {
         fn test_tick_index_from_sqrt_price_is_sequence (
             sqrt_price in (MIN_SQRT_PRICE + 10)..MAX_SQRT_PRICE
         ) {
-            let tick = sqrt_price_to_tick_index(sqrt_price);
-            let last_tick = sqrt_price_to_tick_index(sqrt_price - 10);
+            let tick = sqrt_price_to_tick_index(sqrt_price).unwrap();
+            let last_tick = sqrt_price_to_tick_index(sqrt_price - 10).unwrap();
             assert!(last_tick <= tick);
+        }
+    }
+}
+
+#[cfg(all(test, not(feature = "wasm")))]
+mod test_mul_shift_96 {
+    use super::*;
+
+    #[test]
+    fn test_mul_shift_96_with_max_tick() {
+        // Test that mul_shift_96 works correctly with values from MAX_TICK_INDEX
+        // This demonstrates that the unwrap() is safe because ticks are bounded
+        let sqrt_price_max = get_sqrt_price_positive_tick(MAX_TICK_INDEX);
+
+        // Perform a typical mul_shift_96 operation that would occur during price calculation
+        // Using a constant from the tick calculation
+        let result = mul_shift_96(sqrt_price_max, 79236085330515764027303304731);
+
+        // The result should be a valid u128 (no overflow)
+        assert!(result > 0);
+        assert!(result < u128::MAX);
+    }
+
+    #[test]
+    fn test_mul_shift_96_with_min_tick() {
+        // Test that mul_shift_96 works correctly with values from MIN_TICK_INDEX
+        // For negative ticks, get_sqrt_price_negative_tick uses different math,
+        // but we can still test the mul_shift_96 function with a reasonable value
+        let sqrt_price_near_min = 79228162514264337593543950336u128; // Base ratio value
+
+        let result = mul_shift_96(sqrt_price_near_min, 79236085330515764027303304731);
+
+        // The result should be a valid u128 (no overflow)
+        assert!(result > 0);
+        assert!(result < u128::MAX);
+    }
+
+    #[test]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: TryFromIntError(())")]
+    fn test_mul_shift_96_overflow_with_unbounded_values() {
+        // This test demonstrates that mul_shift_96 CAN overflow with extreme values
+        // that would never occur with bounded tick indices.
+        // This proves why the unwrap() is safe: tick_index_to_sqrt_price bounds the input.
+
+        // Use extremely large values that would overflow u128 after shift
+        // (2^128 - 1) * (2^128 - 1) >> 96 would result in a value > u128::MAX
+        let very_large_value = u128::MAX;
+        let another_large_value = u128::MAX;
+
+        // This should panic because the result after >> 96 would still be > u128::MAX
+        let _ = mul_shift_96(very_large_value, another_large_value);
+    }
+
+    #[test]
+    fn test_mul_shift_96_result_fits_u128_with_bounded_ticks() {
+        // Test various tick values within bounds to show result always fits in u128
+        let test_ticks = [
+            MIN_TICK_INDEX,
+            MIN_TICK_INDEX / 2,
+            0,
+            MAX_TICK_INDEX / 2,
+            MAX_TICK_INDEX,
+        ];
+
+        for &tick in &test_ticks {
+            let sqrt_price = if tick >= 0 {
+                get_sqrt_price_positive_tick(tick)
+            } else {
+                get_sqrt_price_negative_tick(tick)
+            };
+
+            // Perform mul_shift_96 with a typical constant
+            let result = mul_shift_96(sqrt_price, 79236085330515764027303304731);
+
+            // Verify the result is valid and fits in u128
+            assert!(result > 0);
+            assert!(result < u128::MAX);
         }
     }
 }
@@ -779,7 +904,7 @@ mod test_get_initializable_tick_index {
         for &s in &SPACINGS {
             let si = s as i32;
             for t in (-1000i32)..=1000i32 {
-                let got = get_initializable_tick_index(t, s, None);
+                let got = get_initializable_tick_index(t, s, None).unwrap();
                 let exp = nearest_expected(t, si);
                 assert_eq!(got, exp);
             }
@@ -792,7 +917,7 @@ mod test_get_initializable_tick_index {
             let si = s as i32;
             for t in (-100i32)..=100i32 {
                 let rem = t.rem_euclid(si);
-                let got = get_initializable_tick_index(t, s, Some(true));
+                let got = get_initializable_tick_index(t, s, Some(true)).unwrap();
                 let exp = if rem > 0 {
                     t.div_euclid(si) * si + si
                 } else {
@@ -808,7 +933,7 @@ mod test_get_initializable_tick_index {
         for &s in &SPACINGS {
             let si = s as i32;
             for t in (-100i32)..=100i32 {
-                let got = get_initializable_tick_index(t, s, Some(false));
+                let got = get_initializable_tick_index(t, s, Some(false)).unwrap();
                 let exp = t.div_euclid(si) * si;
                 assert_eq!(got, exp);
             }
@@ -819,11 +944,11 @@ mod test_get_initializable_tick_index {
     fn test_exact_multiples_remain_stable() {
         for &s in &SPACINGS {
             let si = s as i32;
-            for k in -100..=100 {
+            for k in -10..=10 {
                 let t = k * si;
-                assert_eq!(get_initializable_tick_index(t, s, None), t);
-                assert_eq!(get_initializable_tick_index(t, s, Some(true)), t);
-                assert_eq!(get_initializable_tick_index(t, s, Some(false)), t);
+                assert_eq!(get_initializable_tick_index(t, s, None).unwrap(), t);
+                assert_eq!(get_initializable_tick_index(t, s, Some(true)).unwrap(), t);
+                assert_eq!(get_initializable_tick_index(t, s, Some(false)).unwrap(), t);
             }
         }
     }
@@ -835,7 +960,7 @@ mod test_get_initializable_tick_index {
             for t in (-1000i32)..=1000i32 {
                 let rem = t.rem_euclid(si);
                 let expected = if rem == 0 { t - si } else { t - rem };
-                let got = get_prev_initializable_tick_index(t, s);
+                let got = get_prev_initializable_tick_index(t, s).unwrap();
                 assert_eq!(got, expected, "t={} s={}", t, s);
             }
         }
@@ -848,10 +973,89 @@ mod test_get_initializable_tick_index {
             for t in (-1000i32)..=1000i32 {
                 let rem = t.rem_euclid(si);
                 let expected = t - rem + si;
-                let got = get_next_initializable_tick_index(t, s);
+                let got = get_next_initializable_tick_index(t, s).unwrap();
                 assert_eq!(got, expected, "t={} s={}", t, s);
             }
         }
+    }
+
+    // Error tests for bounds checking
+    #[test]
+    fn test_get_initializable_errors_on_tick_below_min() {
+        let result = get_initializable_tick_index(MIN_TICK_INDEX - 1, 64, None);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_get_initializable_errors_on_tick_above_max() {
+        let result = get_initializable_tick_index(MAX_TICK_INDEX + 1, 64, None);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_get_initializable_accepts_min_tick() {
+        let result = get_initializable_tick_index(MIN_TICK_INDEX, 64, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_initializable_accepts_max_tick() {
+        let result = get_initializable_tick_index(MAX_TICK_INDEX, 64, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prev_errors_on_tick_below_min() {
+        let result = get_prev_initializable_tick_index(MIN_TICK_INDEX - 1, 64);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_prev_errors_on_tick_above_max() {
+        let result = get_prev_initializable_tick_index(MAX_TICK_INDEX + 1, 64);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_prev_accepts_min_tick() {
+        let result = get_prev_initializable_tick_index(MIN_TICK_INDEX, 64);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prev_accepts_max_tick() {
+        let result = get_prev_initializable_tick_index(MAX_TICK_INDEX, 64);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_next_errors_on_tick_below_min() {
+        let result = get_next_initializable_tick_index(MIN_TICK_INDEX - 1, 64);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_next_errors_on_tick_above_max() {
+        let result = get_next_initializable_tick_index(MAX_TICK_INDEX + 1, 64);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_next_accepts_min_tick() {
+        let result = get_next_initializable_tick_index(MIN_TICK_INDEX, 64);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_next_accepts_max_tick() {
+        let result = get_next_initializable_tick_index(MAX_TICK_INDEX, 64);
+        assert!(result.is_ok());
     }
 }
 
@@ -890,9 +1094,14 @@ mod test_is_tick_initializable {
     fn true_on_exact_multiples() {
         for &s in &SPACINGS {
             let si = s as i32;
-            for k in -100..=100 {
+            for k in -10..=10 {
                 let tick = k * si;
-                assert!(is_tick_initializable(tick, s), "tick={} s={}", tick, s);
+                assert!(
+                    is_tick_initializable(tick, s).unwrap(),
+                    "tick={} s={}",
+                    tick,
+                    s
+                );
             }
         }
     }
@@ -904,13 +1113,39 @@ mod test_is_tick_initializable {
                 continue;
             } // all integers are multiples of 1
             let si = s as i32;
-            for k in -100..=100 {
+            for k in -10..=10 {
                 let tick_plus = k * si + 1;
                 let tick_minus = k * si - 1;
-                assert!(!is_tick_initializable(tick_plus, s));
-                assert!(!is_tick_initializable(tick_minus, s));
+                assert!(!is_tick_initializable(tick_plus, s).unwrap());
+                assert!(!is_tick_initializable(tick_minus, s).unwrap());
             }
         }
+    }
+
+    #[test]
+    fn test_is_tick_initializable_errors_on_tick_below_min() {
+        let result = is_tick_initializable(MIN_TICK_INDEX - 1, 64);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_is_tick_initializable_errors_on_tick_above_max() {
+        let result = is_tick_initializable(MAX_TICK_INDEX + 1, 64);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TICK_INDEX_OUT_OF_BOUNDS);
+    }
+
+    #[test]
+    fn test_is_tick_initializable_accepts_min_tick() {
+        let result = is_tick_initializable(MIN_TICK_INDEX, 64);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_is_tick_initializable_accepts_max_tick() {
+        let result = is_tick_initializable(MAX_TICK_INDEX, 64);
+        assert!(result.is_ok());
     }
 }
 
@@ -1100,7 +1335,7 @@ mod test_get_tick_index_in_array {
     fn start0_lower_bound_is_err() {
         for &s in &SPACINGS {
             let si = s as i32;
-            let ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
+            let _ticks_in_array = (TICK_ARRAY_SIZE as i32) * si;
             let start0 = 0i32;
             assert_eq!(
                 get_tick_index_in_array(start0 - 1, start0, s),

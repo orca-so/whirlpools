@@ -140,9 +140,9 @@ pub async fn setup_position(
     let (tick_lower, tick_upper) = tick_range.unwrap_or((-100, 100));
 
     let lower_tick_index =
-        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, Some(false));
+        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, Some(false)).unwrap();
     let upper_tick_index =
-        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, Some(true));
+        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, Some(true)).unwrap();
 
     let lower_tick_array_start =
         get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing);
@@ -263,9 +263,9 @@ pub async fn setup_te_position(
 
     // Get initializable tick indexes
     let lower_tick_index =
-        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, None);
+        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, None).unwrap();
     let upper_tick_index =
-        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, None);
+        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, None).unwrap();
 
     let tick_arrays = [
         get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),

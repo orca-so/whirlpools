@@ -6,7 +6,7 @@ import {
   toTx,
 } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../../utils/transaction_sender";
+import { processTransaction } from "../../utils/transaction_sender";
 import { ctx } from "../../utils/provider";
 import { promptText } from "../../utils/prompt";
 
@@ -99,7 +99,7 @@ if (txs.length === 0) {
 
 const defaultPriorityFeeInLamports = 10_000; // 0.00001 SOL
 for (const tx of txs) {
-  const landed = await sendTransaction(tx, defaultPriorityFeeInLamports);
+  const landed = await processTransaction(tx, defaultPriorityFeeInLamports);
   if (!landed) {
     throw new Error("transaction failed");
   }

@@ -9,7 +9,7 @@ import {
 import type { WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import type { MintWithTokenProgram } from "@orca-so/common-sdk";
-import { sendTransaction } from "../../../utils/transaction_sender";
+import { processTransaction } from "../../../utils/transaction_sender";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
@@ -26,7 +26,7 @@ export async function sendTransactions(
   defaultPriorityFeeInLamports: number,
 ) {
   for (const tx of transactions) {
-    const landed = await sendTransaction(
+    const landed = await processTransaction(
       tx,
       defaultPriorityFeeInLamports,
       alts,

@@ -22,7 +22,7 @@ import {
 } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../../utils/transaction_sender";
+import { processTransaction } from "../../utils/transaction_sender";
 import Decimal from "decimal.js";
 import { ctx } from "../../utils/provider";
 import { promptConfirm, promptText } from "../../utils/prompt";
@@ -202,13 +202,13 @@ const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 const tokenOwnerAccountA = getAssociatedTokenAddressSync(
   tokenMintAPubkey,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   mintA.tokenProgram,
 );
 const tokenOwnerAccountB = getAssociatedTokenAddressSync(
   tokenMintBPubkey,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   mintB.tokenProgram,
 );
 const swapV2Params: SwapV2Params = {
@@ -260,7 +260,7 @@ if (quote.estimatedAmountIn.isZero() && quote.estimatedAmountOut.isZero()) {
   builder.addInstruction(WhirlpoolIx.swapV2Ix(ctx.program, swapV2Params));
 }
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   const postWhirlpool = await ctx.fetcher.getPool(
     whirlpoolPubkey,

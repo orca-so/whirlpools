@@ -15,7 +15,7 @@ import {
   TransactionBuilder,
 } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import Decimal from "decimal.js";
 import { calcDepositRatio } from "../utils/deposit_ratio";
 import BN from "bn.js";
@@ -123,7 +123,7 @@ const balanceA = await ctx.fetcher.getTokenInfo(
   getAssociatedTokenAddressSync(
     tokenMintAPubkey,
     ctx.wallet.publicKey,
-    undefined,
+    true,
     mintA.tokenProgram,
   ),
 );
@@ -131,7 +131,7 @@ const balanceB = await ctx.fetcher.getTokenInfo(
   getAssociatedTokenAddressSync(
     tokenMintBPubkey,
     ctx.wallet.publicKey,
-    undefined,
+    true,
     mintB.tokenProgram,
   ),
 );
@@ -221,13 +221,13 @@ const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 const tokenOwnerAccountA = getAssociatedTokenAddressSync(
   tokenMintAPubkey,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   mintA.tokenProgram,
 );
 const tokenOwnerAccountB = getAssociatedTokenAddressSync(
   tokenMintBPubkey,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   mintB.tokenProgram,
 );
 
@@ -243,7 +243,7 @@ builder.addInstruction(
     positionTokenAccount: getAssociatedTokenAddressSync(
       position.positionMint,
       ctx.wallet.publicKey,
-      undefined,
+      true,
       positionMint.tokenProgram,
     ),
     tickArrayLower: PDAUtil.getTickArrayFromTickIndex(
@@ -284,7 +284,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 

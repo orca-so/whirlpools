@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { resolveOrCreateATA, TransactionBuilder } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -34,7 +34,7 @@ if (!lockConfig) {
 const positionTokenAccountPubkey = getAssociatedTokenAddressSync(
   position.positionMint,
   ctx.wallet.publicKey,
-  undefined,
+  true,
   positionMint.tokenProgram,
 );
 const positionTokenAccount = await ctx.fetcher.getTokenInfo(
@@ -100,7 +100,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 

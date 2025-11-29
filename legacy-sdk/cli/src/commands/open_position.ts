@@ -11,7 +11,7 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import Decimal from "decimal.js";
 import { calcDepositRatio } from "../utils/deposit_ratio";
 import { ctx } from "../utils/provider";
@@ -231,7 +231,7 @@ if (withTokenExtensions) {
       positionTokenAccount: getAssociatedTokenAddressSync(
         positionMintKeypair.publicKey,
         ctx.wallet.publicKey,
-        undefined,
+        true,
         TOKEN_2022_PROGRAM_ID,
       ),
     }),
@@ -253,6 +253,7 @@ if (withTokenExtensions) {
     positionTokenAccount: getAssociatedTokenAddressSync(
       positionMintKeypair.publicKey,
       ctx.wallet.publicKey,
+      true,
     ),
     metadataPda,
   };
@@ -267,7 +268,7 @@ if (withTokenExtensions) {
 }
 builder.addSigner(positionMintKeypair);
 
-const landed = await sendTransaction(builder);
+const landed = await processTransaction(builder);
 if (landed) {
   console.info(
     "position mint address:",

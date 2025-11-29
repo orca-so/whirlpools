@@ -9,7 +9,7 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { DecimalUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { TokenExtensionUtil } from "@orca-so/whirlpools-sdk/dist/utils/public/token-extension-util";
 import { ctx } from "../utils/provider";
 import { promptText } from "../utils/prompt";
@@ -114,7 +114,7 @@ for (let i = 0; i < rewardMints.length; i++) {
   const rewardOwnerAccount = getAssociatedTokenAddressSync(
     rewardMintPubkeys[i],
     ctx.wallet.publicKey,
-    undefined,
+    true,
     rewardMints[i]?.tokenProgram,
   );
 
@@ -130,7 +130,7 @@ for (let i = 0; i < rewardMints.length; i++) {
       positionTokenAccount: getAssociatedTokenAddressSync(
         position.positionMint,
         ctx.wallet.publicKey,
-        undefined,
+        true,
         positionMint.tokenProgram,
       ),
       whirlpool: whirlpoolPubkey,
@@ -146,7 +146,7 @@ for (let i = 0; i < rewardMints.length; i++) {
   );
 }
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 

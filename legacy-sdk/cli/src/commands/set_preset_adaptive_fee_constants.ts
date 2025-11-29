@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { IGNORE_CACHE, PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 
@@ -153,7 +153,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -162,13 +162,13 @@ SAMPLE EXECUTION LOG
 set AdaptiveFeeConstants...
 ✔ whirlpoolsConfigPubkey … FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
 ✔ feeTierIndex … 1025
-current setting 
-        filterPeriod 30 
-        decayPeriod 600 
-        reductionFactorPer10000 5000 
-        adaptiveFeeControlFactorPer100000 40000 
-        maxVolatilityAccumulator 100000 
-        tickGroupSize 64 
+current setting
+        filterPeriod 30
+        decayPeriod 600
+        reductionFactorPer10000 5000
+        adaptiveFeeControlFactorPer100000 40000
+        maxVolatilityAccumulator 100000
+        tickGroupSize 64
         majorSwapThresholdTicks 64
 adaptive fee constants...
 ✔ filterPeriod … 60
@@ -178,19 +178,19 @@ adaptive fee constants...
 ✔ maxVolatilityAccumulator … 110000
 ✔ tickGroupSize … 32
 ✔ majorSwapThresholdTicks … 128
-setting... 
-        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR 
-        feeTierIndex 1025 
-        tickSpacing 64 
-        defaultBaseFeeRatePer1000000 3000 
-        initializePoolAuthority 11111111111111111111111111111111 
-        delegatedFeeAuthority 11111111111111111111111111111111 
-        filterPeriod 30  ->  60 
-        decayPeriod 600  ->  1200 
-        reductionFactorPer10000 5000  ->  6000 
-        adaptiveFeeControlFactorPer100000 40000  ->  41000 
-        maxVolatilityAccumulator 100000  ->  110000 
-        tickGroupSize 64  ->  32 
+setting...
+        whirlpoolsConfig FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
+        feeTierIndex 1025
+        tickSpacing 64
+        defaultBaseFeeRatePer1000000 3000
+        initializePoolAuthority 11111111111111111111111111111111
+        delegatedFeeAuthority 11111111111111111111111111111111
+        filterPeriod 30  ->  60
+        decayPeriod 600  ->  1200
+        reductionFactorPer10000 5000  ->  6000
+        adaptiveFeeControlFactorPer100000 40000  ->  41000
+        maxVolatilityAccumulator 100000  ->  110000
+        tickGroupSize 64  ->  32
         majorSwapThresholdTicks 64  ->  128
 ✔ if the above is OK, enter YES › Yes
 estimatedComputeUnits: 104005

@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import type { ConfigFeatureFlagData } from "@orca-so/whirlpools-sdk";
 import { FlagUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
+import { processTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptChoice, promptConfirm, promptText } from "../utils/prompt";
 
@@ -63,7 +63,7 @@ builder.addInstruction(
   }),
 );
 
-await sendTransaction(builder);
+await processTransaction(builder);
 
 /*
 
@@ -75,9 +75,9 @@ set ConfigFeatureFlag...
 ✔ flag › tokenBadge
 ✔ new value for tokenBadge (current: false) › true
 setting...
-whirlpoolsConfig: FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR 
-flag: tokenBadge 
-current value: false 
+whirlpoolsConfig: FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR
+flag: tokenBadge
+current value: false
 new value: true
 
 if the above is OK, enter YES

@@ -26,7 +26,7 @@ import {
   FailedTransactionMetadata,
   FeatureSet,
   LiteSVM,
-} from "@jshiohaha/litesvm";
+} from "litesvm";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { LOCALNET_ADMIN_KEYPAIR_0, LOCALNET_ADMIN_KEYPAIR_1 } from "./admin";
 import { getNextKeypair } from "./keypair";

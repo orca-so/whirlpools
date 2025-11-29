@@ -5,7 +5,7 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
-import { LiteSVM, Clock, FeatureSet } from "@jshiohaha/litesvm";
+import { LiteSVM, Clock, FeatureSet } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
 import * as path from "path";

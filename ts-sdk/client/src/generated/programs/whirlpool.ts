@@ -51,6 +51,7 @@ import {
   type ParsedOpenPositionWithMetadataInstruction,
   type ParsedOpenPositionWithTokenExtensionsInstruction,
   type ParsedResetPositionRangeInstruction,
+  type ParsedSetAdaptiveFeeConstantsInstruction,
   type ParsedSetCollectProtocolFeesAuthorityInstruction,
   type ParsedSetConfigExtensionAuthorityInstruction,
   type ParsedSetConfigFeatureFlagInstruction,
@@ -276,6 +277,7 @@ export enum WhirlpoolInstruction {
   OpenPositionWithMetadata,
   OpenPositionWithTokenExtensions,
   ResetPositionRange,
+  SetAdaptiveFeeConstants,
   SetCollectProtocolFeesAuthority,
   SetConfigExtensionAuthority,
   SetConfigFeatureFlag,
@@ -719,6 +721,17 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([133, 158, 212, 189, 237, 12, 73, 39]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.SetAdaptiveFeeConstants;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([34, 150, 93, 244, 139, 225, 233, 67]),
       ),
       0,
@@ -1120,6 +1133,9 @@ export type ParsedWhirlpoolInstruction<
   | ({
       instructionType: WhirlpoolInstruction.ResetPositionRange;
     } & ParsedResetPositionRangeInstruction<TProgram>)
+  | ({
+      instructionType: WhirlpoolInstruction.SetAdaptiveFeeConstants;
+    } & ParsedSetAdaptiveFeeConstantsInstruction<TProgram>)
   | ({
       instructionType: WhirlpoolInstruction.SetCollectProtocolFeesAuthority;
     } & ParsedSetCollectProtocolFeesAuthorityInstruction<TProgram>)

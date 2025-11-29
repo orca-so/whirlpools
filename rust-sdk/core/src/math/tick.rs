@@ -883,7 +883,7 @@ mod test_is_tick_index_in_bounds {
 #[cfg(all(test, not(feature = "wasm")))]
 mod test_is_tick_initializable {
     use super::*;
-    use proptest::prelude::*;
+
     const SPACINGS: [u16; 10] = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
 
     #[test]
@@ -1079,7 +1079,6 @@ mod test_is_full_range_only_flag {
 mod test_get_tick_index_in_array {
     use super::*;
     use crate::TICK_ARRAY_SIZE;
-    use proptest::prelude::*;
 
     const SPACINGS: [u16; 10] = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
 

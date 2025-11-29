@@ -728,6 +728,22 @@ export class WhirlpoolIx {
   }
 
   /**
+   * Sets specific adaptive fee constants for a pool.
+   * Only the provided constants will be updated, others remain unchanged.
+   *
+   * @category Instructions
+   * @param program - Program object containing the Whirlpool IDL
+   * @param params - SetAdaptiveFeeConstantsParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setAdaptiveFeeConstantsIx(
+    program: Program<Whirlpool>,
+    params: ix.SetAdaptiveFeeConstantsParams,
+  ) {
+    return ix.setAdaptiveFeeConstantsIx(program, params);
+  }
+
+  /**
    * Reset a position's range. Requires liquidity to be zero.
    *
    * #### Special Errors

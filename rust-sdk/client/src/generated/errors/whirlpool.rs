@@ -214,6 +214,9 @@ pub enum WhirlpoolError {
     /// 6067 - This whirlpool only supports open_position_with_token_extensions instruction
     #[error("This whirlpool only supports open_position_with_token_extensions instruction")]
     PositionWithTokenExtensionsRequired = 0x17B3,
+    /// 6068 - Provided adaptive fee constants are unchanged
+    #[error("Provided adaptive fee constants are unchanged")]
+    AdaptiveFeeConstantsUnchanged = 0x17B4,
 }
 
 impl From<WhirlpoolError> for solana_program_error::ProgramError {

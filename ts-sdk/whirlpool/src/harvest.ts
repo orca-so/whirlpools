@@ -101,7 +101,7 @@ export async function harvestPositionInstructions(
       GetEpochInfoApi
   >,
   positionMintAddress: Address,
-  authority: TransactionSigner = FUNDER,
+  authority: TransactionSigner<string> = FUNDER,
 ): Promise<HarvestPositionInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,

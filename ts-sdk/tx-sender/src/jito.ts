@@ -1,8 +1,5 @@
-import type {
-  Address,
-  TransactionSigner,
-  CompilableTransactionMessage,
-} from "@solana/kit";
+import { getTransferSolInstruction } from "@solana-program/system";
+import type { Address, TransactionSigner } from "@solana/kit";
 import {
   address,
   lamports,
@@ -13,10 +10,10 @@ import {
   type JitoFeeSetting,
   type Percentile,
 } from "./config";
-import { getTransferSolInstruction } from "@solana-program/system";
+import type { TxMessage } from "./priorityFees";
 
 export async function processJitoTipForTxMessage(
-  message: CompilableTransactionMessage,
+  message: TxMessage,
   signer: TransactionSigner,
   jito: JitoFeeSetting,
   chainId: string,

@@ -66,7 +66,7 @@ export async function resetPositionRangeInstructions(
   positionMintAddress: Address,
   newLowerPrice: number,
   newUpperPrice: number,
-  authority: TransactionSigner = FUNDER,
+  authority: TransactionSigner<string> = FUNDER,
 ): Promise<ResetPositionRageInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,

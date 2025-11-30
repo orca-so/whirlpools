@@ -77,17 +77,17 @@ describe("Fetch Pool", () => {
     const pools = await fetchWhirlpoolsByTokenPair(rpc, mintA, mintB);
     assert.strictEqual(pools.length, 3);
 
-    // Check that we have all expected tick spacings
-    const tickSpacings = pools.map((p) => p.tickSpacing);
-    assert.ok(tickSpacings.includes(64));
-    assert.ok(tickSpacings.includes(SPLASH_POOL_TICK_SPACING));
-    assert.ok(tickSpacings.includes(128));
+    // Note: we use find because ordering is not guaranteed
+    const pool0 = pools.find((p) => p.tickSpacing === 64);
+    assert.strictEqual(pool0?.initialized, true);
+    assert.strictEqual(pool0?.tickSpacing, 64);
 
-    // Check initialized states
-    const initializedPools = pools.filter((p) => p.initialized);
-    const uninitializedPools = pools.filter((p) => !p.initialized);
-    assert.strictEqual(initializedPools.length, 2);
-    assert.strictEqual(uninitializedPools.length, 1);
-    assert.strictEqual(uninitializedPools[0].tickSpacing, 128);
+    const pool1 = pools.find((p) => p.tickSpacing === SPLASH_POOL_TICK_SPACING);
+    assert.strictEqual(pool1?.initialized, true);
+    assert.strictEqual(pool1?.tickSpacing, SPLASH_POOL_TICK_SPACING);
+
+    const pool2 = pools.find((p) => p.tickSpacing === 128);
+    assert.strictEqual(pool2?.initialized, false);
+    assert.strictEqual(pool2?.tickSpacing, 128);
   });
 });

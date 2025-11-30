@@ -135,8 +135,10 @@ describe("Increase Liquidity Instructions", () => {
   it("Should throw error if authority is default address", async () => {
     const liquidity = 100_000n;
     setDefaultFunder(DEFAULT_FUNDER);
+    const postiionMintAddress = positions.entries().next().value?.[1];
+    assert(postiionMintAddress, "Position mint address is not found");
     await assert.rejects(
-      increaseLiquidityInstructions(rpc, positions.entries().next().value![1], {
+      increaseLiquidityInstructions(rpc, postiionMintAddress, {
         liquidity,
       }),
     );
@@ -145,9 +147,12 @@ describe("Increase Liquidity Instructions", () => {
 
   it("Should throw error increase liquidity amount by token is equal or greater than the token balance", async () => {
     const tokenAAmount = 1_000_000n;
+    // By default, the balance check is skipped. We must enable the check to trigger the rejection.
     setEnforceTokenBalanceCheck(true);
+    const postiionMintAddress = positions.entries().next().value?.[1];
+    assert(postiionMintAddress, "Position mint address is not found");
     await assert.rejects(
-      increaseLiquidityInstructions(rpc, positions.entries().next().value![1], {
+      increaseLiquidityInstructions(rpc, postiionMintAddress, {
         tokenA: tokenAAmount,
       }),
     );

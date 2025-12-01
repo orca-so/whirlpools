@@ -4,8 +4,8 @@
   "scripts": {
     "build": "anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",
-    "format": "cargo clippy -p whirlpool --fix --allow-dirty --allow-staged && cargo fmt -p whirlpool",
-    "lint": "cargo clippy -p whirlpool && cargo fmt --check -p whirlpool",
+    "format": "cargo +1.86.0 clippy -p whirlpool --fix --allow-dirty --allow-staged && cargo +1.86.0 fmt -p whirlpool",
+    "lint": "cargo +1.86.0 clippy -p whirlpool && cargo +1.86.0 fmt --check -p whirlpool",
     "clean": "anchor clean"
   }
 }

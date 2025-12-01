@@ -84,8 +84,8 @@ services:
       && cargo build --quiet --manifest-path rust-sdk/client/Cargo.toml
       && cargo build --quiet --manifest-path rust-sdk/whirlpool/Cargo.toml
       && cargo build --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml
-      && cargo clippy --fix --allow-dirty --allow-staged
-      && cargo fmt"
+      && cargo +1.86.0 clippy --fix --allow-dirty --allow-staged
+      && cargo +1.86.0 fmt"
     profiles: [build]
     depends_on:
       build-solana-program:
@@ -329,13 +329,13 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && rustup component add clippy rustfmt
       && yarn workspace @orca-so/whirlpools-lint lint
-      && cargo clippy -p whirlpool && cargo fmt --check -p whirlpool
-      && cargo clippy --manifest-path rust-sdk/macros/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/macros/Cargo.toml
-      && cargo clippy --manifest-path rust-sdk/core/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/core/Cargo.toml
-      && cargo clippy --manifest-path rust-sdk/client/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/client/Cargo.toml
-      && cargo clippy --manifest-path rust-sdk/whirlpool/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/whirlpool/Cargo.toml
-      && cargo clippy --manifest-path rust-sdk/tx-sender/Cargo.toml && cargo fmt --check --manifest-path rust-sdk/tx-sender/Cargo.toml
-      && cargo clippy --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml && cargo fmt --check --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
+      && cargo +1.86.0 clippy -p whirlpool && cargo +1.86.0 fmt --check -p whirlpool
+      && cargo +1.86.0 clippy --manifest-path rust-sdk/macros/Cargo.toml && cargo +1.86.0 fmt --check --manifest-path rust-sdk/macros/Cargo.toml
+      && cargo +1.86.0 clippy --manifest-path rust-sdk/core/Cargo.toml && cargo +1.86.0 fmt --check --manifest-path rust-sdk/core/Cargo.toml
+      && cargo +1.86.0 clippy --manifest-path rust-sdk/client/Cargo.toml && cargo +1.86.0 fmt --check --manifest-path rust-sdk/client/Cargo.toml
+      && cargo +1.86.0 clippy --manifest-path rust-sdk/whirlpool/Cargo.toml && cargo +1.86.0 fmt --check --manifest-path rust-sdk/whirlpool/Cargo.toml
+      && cargo +1.86.0 clippy --manifest-path rust-sdk/tx-sender/Cargo.toml && cargo +1.86.0 fmt --check --manifest-path rust-sdk/tx-sender/Cargo.toml
+      && cargo +1.86.0 clippy --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml && cargo +1.86.0 fmt --check --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
     profiles: [lint]
     depends_on:
       yarn-install:

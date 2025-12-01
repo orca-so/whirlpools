@@ -804,8 +804,11 @@ mod sparse_swap_tick_sequence_tests {
 
     mod test_proxied_tick_array {
         use crate::{
-            pinocchio::utils::tests::{
-                generate_pubkey::generate_pubkey, test_account_info::TestAccountInfo,
+            pinocchio::{
+                state::whirlpool::TickUpdate,
+                utils::tests::{
+                    generate_pubkey::generate_pubkey, test_account_info::TestAccountInfo,
+                },
             },
             state::TICK_ARRAY_SIZE_USIZE,
         };

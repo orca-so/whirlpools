@@ -5,7 +5,10 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use crate::errors::ErrorCode;
 use crate::manager::tick_array_manager::collect_rent_for_ticks_in_position;
 use crate::state;
-use crate::{state::*, util::mint_position_token_and_remove_authority};
+use crate::{
+    state::*,
+    util::{mint_position_token_and_remove_authority, resolve_one_sided_position_ticks},
+};
 
 #[derive(Accounts)]
 pub struct OpenPosition<'info> {
@@ -70,11 +73,18 @@ pub fn handler(
         &ctx.accounts.system_program,
     )?;
 
+    let (resolved_tick_lower_index, resolved_tick_upper_index) = resolve_one_sided_position_ticks(
+        tick_lower_index,
+        tick_upper_index,
+        whirlpool.tick_spacing,
+        whirlpool.tick_current_index,
+    )?;
+
     position.open_position(
         whirlpool,
         position_mint.key(),
-        tick_lower_index,
-        tick_upper_index,
+        resolved_tick_lower_index,
+        resolved_tick_upper_index,
     )?;
 
     mint_position_token_and_remove_authority(

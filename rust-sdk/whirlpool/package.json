@@ -5,8 +5,8 @@
     "build": "cargo build",
     "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && cargo test --lib",
     "deploy": "../../scripts/deploy-cargo",
-    "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
-    "lint": "cargo clippy && cargo fmt --check",
+    "format": "cargo +1.86.0 clippy --fix --allow-dirty --allow-staged && cargo +1.86.0 fmt",
+    "lint": "cargo +1.86.0 clippy && cargo +1.86.0 fmt --check",
     "clean": "cargo clean"
   },
   "devDependencies": {

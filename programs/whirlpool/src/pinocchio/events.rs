@@ -30,8 +30,21 @@ pub enum Event<'a> {
         token_a_transfer_fee: u64,
         token_b_transfer_fee: u64,
     },
+    Traded {
+        whirlpool: &'a Pubkey,
+        a_to_b: bool,
+        pre_sqrt_price: u128,
+        post_sqrt_price: u128,
+        input_amount: u64,
+        output_amount: u64,
+        input_transfer_fee: u64,
+        output_transfer_fee: u64,
+        lp_fee: u64,
+        protocol_fee: u64,
+    },
 }
 
+#[allow(unexpected_cfgs)]
 fn pino_sol_log_data(data: &[&[u8]]) {
     #[cfg(target_os = "solana")]
     unsafe {
@@ -48,6 +61,7 @@ impl Event<'_> {
         match self {
             Event::LiquidityIncreased { .. } => crate::events::LiquidityIncreased::DISCRIMINATOR,
             Event::LiquidityDecreased { .. } => crate::events::LiquidityDecreased::DISCRIMINATOR,
+            Event::Traded { .. } => crate::events::Traded::DISCRIMINATOR,
         }
     }
 

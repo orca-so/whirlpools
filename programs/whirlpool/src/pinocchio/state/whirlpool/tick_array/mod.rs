@@ -24,6 +24,19 @@ pub struct TickUpdate {
     pub reward_growths_outside: [u128; NUM_REWARDS],
 }
 
+impl From<&tick::MemoryMappedTick> for TickUpdate {
+    fn from(tick: &tick::MemoryMappedTick) -> Self {
+        TickUpdate {
+            initialized: tick.initialized(),
+            liquidity_net: tick.liquidity_net(),
+            liquidity_gross: tick.liquidity_gross(),
+            fee_growth_outside_a: tick.fee_growth_outside_a(),
+            fee_growth_outside_b: tick.fee_growth_outside_b(),
+            reward_growths_outside: tick.reward_growths_outside(),
+        }
+    }
+}
+
 pub trait TickArray {
     fn is_variable_size(&self) -> bool;
 

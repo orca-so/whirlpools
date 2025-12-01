@@ -1,5 +1,5 @@
 use super::super::{BytesI32, BytesU128, BytesU16, BytesU64, Pubkey};
-use crate::pinocchio::state::WhirlpoolProgramAccount;
+use crate::pinocchio::state::{WhirlpoolProgramAccount, whirlpool::NUM_REWARDS};
 use pinocchio::instruction::Seed;
 
 #[repr(C)]
@@ -91,6 +91,16 @@ impl MemoryMappedWhirlpool {
     }
 
     #[inline(always)]
+    pub fn fee_rate(&self) -> u16 {
+        u16::from_le_bytes(self.fee_rate)
+    }
+
+    #[inline(always)]
+    pub fn protocol_fee_rate(&self) -> u16 {
+        u16::from_le_bytes(self.protocol_fee_rate)
+    }
+
+    #[inline(always)]
     pub fn liquidity(&self) -> u128 {
         u128::from_le_bytes(self.liquidity)
     }
@@ -136,6 +146,16 @@ impl MemoryMappedWhirlpool {
     }
 
     #[inline(always)]
+    pub fn protocol_fee_owed_a(&self) -> u64 {
+        u64::from_le_bytes(self.protocol_fee_owed_a)
+    }
+
+    #[inline(always)]
+    pub fn protocol_fee_owed_b(&self) -> u64 {
+        u64::from_le_bytes(self.protocol_fee_owed_b)
+    }
+
+    #[inline(always)]
     pub fn reward_last_updated_timestamp(&self) -> u64 {
         u64::from_le_bytes(self.reward_last_updated_timestamp)
     }
@@ -145,22 +165,75 @@ impl MemoryMappedWhirlpool {
         &self.reward_infos
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_after_swap(
+        &mut self,
+        liquidity: &u128,
+        tick_index: i32,
+        sqrt_price: &u128,
+        fee_growth_global: &u128,
+        reward_growths_global: &[u128; crate::state::NUM_REWARDS],
+        protocol_fee: u64,
+        is_token_fee_in_a: bool,
+        reward_last_updated_timestamp: u64,
+    ) {
+        self.set_tick_current_index(tick_index);
+        self.set_sqrt_price(sqrt_price);
+        self.set_liquidity(liquidity);
+        self.set_reward_growths_global(reward_growths_global);
+        self.set_reward_last_updated_timestamp(reward_last_updated_timestamp);
+
+        if is_token_fee_in_a {
+            // Add fees taken via a
+            self.set_fee_growth_global_a(fee_growth_global);
+            self.set_protocol_fee_owed_a(self.protocol_fee_owed_a() + protocol_fee);
+        } else {
+            // Add fees taken via b
+            self.set_fee_growth_global_b(fee_growth_global);
+            self.set_protocol_fee_owed_b(self.protocol_fee_owed_b() + protocol_fee);
+        }
+    }
+
     pub fn update_liquidity_and_reward_growth_global(
         &mut self,
-        liquidity: u128,
-        reward_growth_global: &[u128; crate::state::NUM_REWARDS],
+        liquidity: &u128,
+        reward_growths_global: &[u128; crate::state::NUM_REWARDS],
         reward_last_updated_timestamp: u64,
     ) {
         self.set_liquidity(liquidity);
-        self.set_reward_growth_global(reward_growth_global);
+        self.set_reward_growths_global(reward_growths_global);
         self.set_reward_last_updated_timestamp(reward_last_updated_timestamp);
     }
 
-    fn set_liquidity(&mut self, liquidity: u128) {
+    fn set_tick_current_index(&mut self, tick_index: i32) {
+        self.tick_current_index = tick_index.to_le_bytes();
+    }
+
+    fn set_sqrt_price(&mut self, sqrt_price: &u128) {
+        self.sqrt_price = sqrt_price.to_le_bytes();
+    }
+
+    fn set_fee_growth_global_a(&mut self, fee_growth_global_a: &u128) {
+        self.fee_growth_global_a = fee_growth_global_a.to_le_bytes();
+    }
+
+    fn set_fee_growth_global_b(&mut self, fee_growth_global_b: &u128) {
+        self.fee_growth_global_b = fee_growth_global_b.to_le_bytes();
+    }
+
+    fn set_protocol_fee_owed_a(&mut self, protocol_fee_owed_a: u64) {
+        self.protocol_fee_owed_a = protocol_fee_owed_a.to_le_bytes();
+    }
+
+    fn set_protocol_fee_owed_b(&mut self, protocol_fee_owed_b: u64) {
+        self.protocol_fee_owed_b = protocol_fee_owed_b.to_le_bytes();
+    }
+
+    fn set_liquidity(&mut self, liquidity: &u128) {
         self.liquidity = liquidity.to_le_bytes();
     }
 
-    fn set_reward_growth_global(
+    fn set_reward_growths_global(
         &mut self,
         reward_growth_global: &[u128; crate::state::NUM_REWARDS],
     ) {

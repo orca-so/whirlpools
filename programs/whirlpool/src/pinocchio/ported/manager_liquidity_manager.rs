@@ -511,7 +511,7 @@ pub fn pino_sync_modify_liquidity_values(
     }
 
     whirlpool.update_liquidity_and_reward_growth_global(
-        modify_liquidity_update.whirlpool_liquidity,
+        &modify_liquidity_update.whirlpool_liquidity,
         &modify_liquidity_update.next_reward_growth_global,
         reward_last_updated_timestamp,
     );

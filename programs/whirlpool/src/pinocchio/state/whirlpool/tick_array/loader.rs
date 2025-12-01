@@ -3,8 +3,7 @@ use super::{
     TickArray,
 };
 use crate::pinocchio::{
-    errors::{AnchorErrorCode, WhirlpoolErrorCode},
-    Result,
+    Result, constants::address::WHIRLPOOL_PROGRAM_ID, errors::{AnchorErrorCode, WhirlpoolErrorCode}
 };
 use anchor_lang::Discriminator;
 use pinocchio::account_info::{AccountInfo, Ref, RefMut};
@@ -17,7 +16,7 @@ pub fn load_tick_array<'a>(
     account: &'a AccountInfo,
     whirlpool: &Pubkey,
 ) -> Result<LoadedTickArray<'a>> {
-    if !account.is_owned_by(&crate::ID.to_bytes()) {
+    if !account.is_owned_by(&WHIRLPOOL_PROGRAM_ID) {
         return Err(AnchorErrorCode::AccountOwnedByWrongProgram.into());
     }
 
@@ -57,7 +56,7 @@ pub fn load_tick_array_mut<'a>(
         return Err(AnchorErrorCode::AccountNotMutable.into());
     }
 
-    if !account.is_owned_by(&crate::ID.to_bytes()) {
+    if !account.is_owned_by(&WHIRLPOOL_PROGRAM_ID) {
         return Err(AnchorErrorCode::AccountOwnedByWrongProgram.into());
     }
 

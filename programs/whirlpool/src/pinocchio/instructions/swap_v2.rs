@@ -1,28 +1,32 @@
-use crate::{constants::transfer_memo, pinocchio::{
-    Result, constants::address::{SYSTEM_PROGRAM_ID, WHIRLPOOL_PROGRAM_ID}, errors::WhirlpoolErrorCode, events::Event, ported::{
-        manager_liquidity_manager::{
-            pino_calculate_liquidity_token_deltas, pino_calculate_modify_liquidity,
-            pino_sync_modify_liquidity_values,
-        }, manager_tick_array_manager::pino_update_tick_array_accounts, util_remaining_accounts_utils::pino_parse_remaining_accounts, util_shared::pino_verify_position_authority, util_sparse_swap::SparseSwapTickSequenceBuilder, util_swap_tick_sequence::SwapTickSequence, util_token::{
-            pino_calculate_transfer_fee_excluded_amount, pino_calculate_transfer_fee_included_amount, pino_transfer_from_owner_to_vault_v2, pino_transfer_from_vault_to_owner_v2
-        }
-    }, state::{
-        token::MemoryMappedTokenAccount,
-        whirlpool::{
-            self, MemoryMappedPosition, MemoryMappedTick, MemoryMappedWhirlpool, MemoryMappedWhirlpoolRewardInfo, TickArray, TickUpdate, loader::{LoadedTickArrayMut, load_tick_array_mut}, oracle::accessor::OracleAccessor, proxy::ProxiedTickArray, tick_array::loader::TickArraysMut, zeroed_tick_array::MemoryMappedZeroedTickArray
-        },
-    }, utils::{
-        account_info_iter::AccountIterator,
-        account_load::{load_account_mut, load_token_program_account},
-        verify::{verify_address, verify_constraint, verify_whirlpool_program_address_seeds},
-    }
-}, state::AdaptiveFeeInfo};
+use crate::util::{to_timestamp_u64, AccountsType};
 use crate::{
-    math::convert_to_liquidity_delta,
-    util::{to_timestamp_u64, AccountsType},
+    constants::transfer_memo,
+    pinocchio::{
+        events::Event,
+        ported::{
+            util_remaining_accounts_utils::pino_parse_remaining_accounts,
+            util_sparse_swap::SparseSwapTickSequenceBuilder,
+            util_swap_tick_sequence::SwapTickSequence,
+            util_token::{
+                pino_calculate_transfer_fee_excluded_amount,
+                pino_calculate_transfer_fee_included_amount, pino_transfer_from_owner_to_vault_v2,
+                pino_transfer_from_vault_to_owner_v2,
+            },
+        },
+        state::whirlpool::{
+            oracle::accessor::OracleAccessor, MemoryMappedTick, MemoryMappedWhirlpool, TickArray,
+            TickUpdate,
+        },
+        utils::{
+            account_info_iter::AccountIterator,
+            account_load::load_account_mut,
+            verify::{verify_address, verify_whirlpool_program_address_seeds},
+        },
+        Result,
+    },
+    state::AdaptiveFeeInfo,
 };
-use arrayvec::ArrayVec;
-use pinocchio::{account_info::AccountInfo, pubkey::{Pubkey, find_program_address, pubkey_eq}};
+use pinocchio::account_info::AccountInfo;
 use pinocchio::sysvars::{clock::Clock, Sysvar};
 
 pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
@@ -76,10 +80,10 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     // TODO: tick_array_1_info
     // TODO: tick_array_2_info
     // oracle_info
-    verify_whirlpool_program_address_seeds(oracle_info.key(), &[
-        b"oracle",
-        whirlpool_info.key().as_ref(),
-    ])?;
+    verify_whirlpool_program_address_seeds(
+        oracle_info.key(),
+        &[b"oracle", whirlpool_info.key().as_ref()],
+    )?;
 
     // The beginning of handler core logic
 
@@ -91,7 +95,11 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     let remaining_accounts = pino_parse_remaining_accounts(
         remaining_accounts,
         &data.remaining_accounts_info,
-        &[AccountsType::TransferHookA, AccountsType::TransferHookB, AccountsType::SupplementalTickArrays],
+        &[
+            AccountsType::TransferHookA,
+            AccountsType::TransferHookB,
+            AccountsType::SupplementalTickArrays,
+        ],
     )?;
 
     let swap_tick_sequence_builder = SparseSwapTickSequenceBuilder::new(
@@ -100,8 +108,12 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         tick_array_2_info,
         &remaining_accounts.supplemental_tick_arrays,
     );
-    let mut swap_tick_sequence = swap_tick_sequence_builder.try_build(whirlpool_info.key(), whirlpool.tick_current_index(), whirlpool.tick_spacing(), data.a_to_b)?;
-
+    let mut swap_tick_sequence = swap_tick_sequence_builder.try_build(
+        whirlpool_info.key(),
+        whirlpool.tick_current_index(),
+        whirlpool.tick_spacing(),
+        data.a_to_b,
+    )?;
 
     let oracle_accessor = OracleAccessor::new(whirlpool_info.key(), oracle_info)?;
     if !oracle_accessor.is_trade_enabled(timestamp)? {
@@ -124,17 +136,11 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     if data.amount_specified_is_input {
         let transfer_fee_excluded_output_amount = if data.a_to_b {
-            pino_calculate_transfer_fee_excluded_amount(
-                token_mint_b_info,
-                swap_update.amount_b,
-            )?
-            .amount
+            pino_calculate_transfer_fee_excluded_amount(token_mint_b_info, swap_update.amount_b)?
+                .amount
         } else {
-            pino_calculate_transfer_fee_excluded_amount(
-                token_mint_a_info,
-                swap_update.amount_a,
-            )?
-            .amount
+            pino_calculate_transfer_fee_excluded_amount(token_mint_a_info, swap_update.amount_a)?
+                .amount
         };
         if transfer_fee_excluded_output_amount < data.other_amount_threshold {
             return Err(ErrorCode::AmountOutBelowMinimum.into());
@@ -164,9 +170,11 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         (token_mint_b_info, token_mint_a_info)
     };
     let input_transfer_fee =
-        pino_calculate_transfer_fee_excluded_amount(token_mint_input_info, input_amount)?.transfer_fee;
+        pino_calculate_transfer_fee_excluded_amount(token_mint_input_info, input_amount)?
+            .transfer_fee;
     let output_transfer_fee =
-        pino_calculate_transfer_fee_excluded_amount(token_mint_output_info, output_amount)?.transfer_fee;
+        pino_calculate_transfer_fee_excluded_amount(token_mint_output_info, output_amount)?
+            .transfer_fee;
     let (lp_fee, protocol_fee) = (swap_update.lp_fee, swap_update.next_protocol_fee);
 
     pino_update_and_swap_whirlpool_v2(
@@ -229,9 +237,11 @@ pub fn pino_swap_with_transfer_fee_extension(
     // ExactIn
     if amount_specified_is_input {
         let transfer_fee_included_input = amount;
-        let transfer_fee_excluded_input =
-            pino_calculate_transfer_fee_excluded_amount(input_token_mint_info, transfer_fee_included_input)?
-                .amount;
+        let transfer_fee_excluded_input = pino_calculate_transfer_fee_excluded_amount(
+            input_token_mint_info,
+            transfer_fee_included_input,
+        )?
+        .amount;
 
         let swap_update = swap(
             whirlpool,
@@ -255,8 +265,11 @@ pub fn pino_swap_with_transfer_fee_extension(
         let adjusted_transfer_fee_included_input = if fullfilled {
             transfer_fee_included_input
         } else {
-            pino_calculate_transfer_fee_included_amount(input_token_mint_info, swap_update_amount_input)?
-                .amount
+            pino_calculate_transfer_fee_included_amount(
+                input_token_mint_info,
+                swap_update_amount_input,
+            )?
+            .amount
         };
 
         let transfer_fee_included_output = swap_update_amount_output;
@@ -288,9 +301,11 @@ pub fn pino_swap_with_transfer_fee_extension(
 
     // ExactOut
     let transfer_fee_excluded_output = amount;
-    let transfer_fee_included_output =
-        pino_calculate_transfer_fee_included_amount(output_token_mint_info, transfer_fee_excluded_output)?
-            .amount;
+    let transfer_fee_included_output = pino_calculate_transfer_fee_included_amount(
+        output_token_mint_info,
+        transfer_fee_excluded_output,
+    )?
+    .amount;
 
     let swap_update = swap(
         whirlpool,
@@ -309,8 +324,11 @@ pub fn pino_swap_with_transfer_fee_extension(
         (swap_update.amount_b, swap_update.amount_a)
     };
 
-    let transfer_fee_included_input =
-        pino_calculate_transfer_fee_included_amount(input_token_mint_info, swap_update_amount_input)?.amount;
+    let transfer_fee_included_input = pino_calculate_transfer_fee_included_amount(
+        input_token_mint_info,
+        swap_update_amount_input,
+    )?
+    .amount;
 
     let adjusted_transfer_fee_included_output = swap_update_amount_output;
 
@@ -339,15 +357,14 @@ pub fn pino_swap_with_transfer_fee_extension(
     }))
 }
 
-
 // -------------------------------
 
 // swap_manager
 
-use crate::math::*;
 use crate::errors::ErrorCode;
 use crate::manager::fee_rate_manager::FeeRateManager;
-use crate::state::{TICK_ARRAY_SIZE, NUM_REWARDS};
+use crate::math::*;
+use crate::state::{NUM_REWARDS, TICK_ARRAY_SIZE};
 
 #[derive(Debug)]
 pub struct PostSwapUpdate {
@@ -504,13 +521,19 @@ pub fn swap(
 
                 if next_tick_initialized {
                     let (fee_growth_global_a, fee_growth_global_b) = if a_to_b {
-                        (curr_fee_growth_global_input, whirlpool.fee_growth_global_b())
+                        (
+                            curr_fee_growth_global_input,
+                            whirlpool.fee_growth_global_b(),
+                        )
                     } else {
-                        (whirlpool.fee_growth_global_a(), curr_fee_growth_global_input)
+                        (
+                            whirlpool.fee_growth_global_a(),
+                            curr_fee_growth_global_input,
+                        )
                     };
 
                     let (update, next_liquidity) = calculate_update(
-                        &next_tick.unwrap(),
+                        next_tick.unwrap(),
                         a_to_b,
                         &curr_liquidity,
                         &fee_growth_global_a,
@@ -704,7 +727,8 @@ pub fn next_tick_cross_update(
             continue;
         }
 
-        update.reward_growths_outside[i] = reward_info.growth_global
+        update.reward_growths_outside[i] = reward_info
+            .growth_global
             .wrapping_sub(tick_reward_growths_outside[i]);
     }
     Ok(update)
@@ -764,7 +788,9 @@ pub fn next_whirlpool_reward_infos(
         .unwrap_or(0);
 
         // Add the reward growth delta to the global reward growth.
-        next_reward_infos[i].growth_global = next_reward_infos[i].growth_global.wrapping_add(reward_growth_delta);
+        next_reward_infos[i].growth_global = next_reward_infos[i]
+            .growth_global
+            .wrapping_add(reward_growth_delta);
     }
 
     Ok(next_reward_infos)

@@ -1,7 +1,13 @@
-use arrayvec::ArrayVec;
-use crate::{pinocchio::state::whirlpool::{TICK_ARRAY_SIZE, TickUpdate, tick_array::{loader::LoadedTickArrayMut, proxy::ProxiedTickArray, tick::MemoryMappedTick}}, state::{MAX_TICK_INDEX, MIN_TICK_INDEX}};
-use crate::pinocchio::Result;
 use crate::pinocchio::errors::WhirlpoolErrorCode;
+use crate::pinocchio::Result;
+use crate::{
+    pinocchio::state::whirlpool::{
+        tick_array::{loader::LoadedTickArrayMut, proxy::ProxiedTickArray, tick::MemoryMappedTick},
+        TickUpdate, TICK_ARRAY_SIZE,
+    },
+    state::{MAX_TICK_INDEX, MIN_TICK_INDEX},
+};
+use arrayvec::ArrayVec;
 
 pub struct SwapTickSequence<'a> {
     pub(crate) arrays: ArrayVec<ProxiedTickArray<'a>, 3>,
@@ -47,7 +53,12 @@ impl<'a> SwapTickSequence<'a> {
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickArrayIndexOutofBounds` - The provided array-index is out of bounds
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn get_tick(&self, array_index: usize, tick_index: i32, tick_spacing: u16) -> Result<&MemoryMappedTick> {
+    pub fn get_tick(
+        &self,
+        array_index: usize,
+        tick_index: i32,
+        tick_spacing: u16,
+    ) -> Result<&MemoryMappedTick> {
         let array = self.arrays.get(array_index);
         match array {
             Some(array) => array.get_tick(tick_index, tick_spacing),
@@ -261,7 +272,10 @@ mod swap_tick_sequence_tests {
                         ..Default::default()
                     },
                 );
-                assert_eq!(update_result.unwrap_err(), WhirlpoolErrorCode::TickNotFound.into());
+                assert_eq!(
+                    update_result.unwrap_err(),
+                    WhirlpoolErrorCode::TickNotFound.into()
+                );
             }
         }
 

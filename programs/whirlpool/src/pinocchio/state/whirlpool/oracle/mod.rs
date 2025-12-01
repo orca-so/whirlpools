@@ -1,6 +1,6 @@
-pub mod oracle;
-pub mod adaptive_fee;
 pub mod accessor;
+pub mod adaptive_fee;
+pub mod oracle;
 
 #[derive(Default)]
 pub struct AdaptiveFeeVariablesUpdate {

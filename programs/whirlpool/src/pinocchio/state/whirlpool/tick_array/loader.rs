@@ -3,7 +3,9 @@ use super::{
     TickArray,
 };
 use crate::pinocchio::{
-    Result, constants::address::WHIRLPOOL_PROGRAM_ID, errors::{AnchorErrorCode, WhirlpoolErrorCode}
+    constants::address::WHIRLPOOL_PROGRAM_ID,
+    errors::{AnchorErrorCode, WhirlpoolErrorCode},
+    Result,
 };
 use anchor_lang::Discriminator;
 use pinocchio::account_info::{AccountInfo, Ref, RefMut};

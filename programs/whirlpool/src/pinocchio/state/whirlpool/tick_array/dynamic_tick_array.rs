@@ -1,7 +1,7 @@
 use super::super::super::{BytesI32, BytesU128, Pubkey};
 use super::{tick::MemoryMappedTick, TickArray, TickUpdate, TICK_ARRAY_SIZE_USIZE};
-use crate::pinocchio::Result;
 use crate::pinocchio::state::whirlpool::TICK_ARRAY_SIZE;
+use crate::pinocchio::Result;
 
 const DYNAMIC_TICK_INITIALIZED_LEN: usize = 113;
 const DYNAMIC_TICK_UNINITIALIZED_LEN: usize = 1;

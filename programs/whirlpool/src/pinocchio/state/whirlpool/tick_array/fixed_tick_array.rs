@@ -1,7 +1,7 @@
 use super::super::super::{BytesI32, Pubkey};
 use super::{tick::MemoryMappedTick, TickArray, TickUpdate, TICK_ARRAY_SIZE_USIZE};
-use crate::pinocchio::Result;
 use crate::pinocchio::state::whirlpool::TICK_ARRAY_SIZE;
+use crate::pinocchio::Result;
 
 #[repr(C)]
 pub struct MemoryMappedFixedTickArray {

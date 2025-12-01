@@ -1,11 +1,11 @@
-use pinocchio::account_info::{AccountInfo, Ref, RefMut};
-use pinocchio::pubkey::{Pubkey, pubkey_eq};
-use crate::pinocchio::Result;
 use crate::pinocchio::constants::address::{SYSTEM_PROGRAM_ID, WHIRLPOOL_PROGRAM_ID};
-use crate::pinocchio::state::whirlpool::oracle::oracle::MemoryMappedOracle;
-use crate::state::AdaptiveFeeInfo;
 use crate::pinocchio::errors::AnchorErrorCode;
+use crate::pinocchio::state::whirlpool::oracle::oracle::MemoryMappedOracle;
+use crate::pinocchio::Result;
+use crate::state::AdaptiveFeeInfo;
 use anchor_lang::Discriminator;
+use pinocchio::account_info::{AccountInfo, Ref, RefMut};
+use pinocchio::pubkey::{pubkey_eq, Pubkey};
 
 pub struct OracleAccessor<'a> {
     oracle_account_info: &'a AccountInfo,
@@ -13,10 +13,7 @@ pub struct OracleAccessor<'a> {
 }
 
 impl<'a> OracleAccessor<'a> {
-    pub fn new(
-        whirlpool_key: &Pubkey,
-        oracle_account_info: &'a AccountInfo,
-    ) -> Result<Self> {
+    pub fn new(whirlpool_key: &Pubkey, oracle_account_info: &'a AccountInfo) -> Result<Self> {
         let oracle_account_initialized =
             Self::is_oracle_account_initialized(oracle_account_info, whirlpool_key)?;
         Ok(Self {
@@ -77,7 +74,9 @@ impl<'a> OracleAccessor<'a> {
         // Note: intentionally do not check if the account is writable here, defer the evaluation until load_mut is called
 
         // uninitialized account (owned by system program and its data size is zero)
-        if oracle_account_info.is_owned_by(&SYSTEM_PROGRAM_ID) && oracle_account_info.data_is_empty() {
+        if oracle_account_info.is_owned_by(&SYSTEM_PROGRAM_ID)
+            && oracle_account_info.data_is_empty()
+        {
             // oracle is not initialized
             return Ok(false);
         }
@@ -97,8 +96,8 @@ impl<'a> OracleAccessor<'a> {
         }
 
         // whirlpool check
-        let oracle: Ref<MemoryMappedOracle> = Ref::map(data, |data| {
-            unsafe { &*(data.as_ptr() as *const MemoryMappedOracle) }
+        let oracle: Ref<MemoryMappedOracle> = Ref::map(data, |data| unsafe {
+            &*(data.as_ptr() as *const MemoryMappedOracle)
         });
         if !pubkey_eq(oracle.whirlpool(), whirlpool_key) {
             // Just for safety: Oracle address is derived from Whirlpool address, so this should not happen.
@@ -112,8 +111,8 @@ impl<'a> OracleAccessor<'a> {
         // is_oracle_account_initialized already checked if the account is initialized
 
         let data = self.oracle_account_info.try_borrow_data()?;
-        let oracle: Ref<MemoryMappedOracle> = Ref::map(data, |data| {
-            unsafe { &*(data.as_ptr() as *const MemoryMappedOracle) }
+        let oracle: Ref<MemoryMappedOracle> = Ref::map(data, |data| unsafe {
+            &*(data.as_ptr() as *const MemoryMappedOracle)
         });
 
         Ok(oracle)
@@ -128,8 +127,8 @@ impl<'a> OracleAccessor<'a> {
         }
 
         let data = self.oracle_account_info.try_borrow_mut_data()?;
-        let oracle: RefMut<MemoryMappedOracle> = RefMut::map(data, |data| {
-            unsafe { &mut *(data.as_mut_ptr() as *mut MemoryMappedOracle) }
+        let oracle: RefMut<MemoryMappedOracle> = RefMut::map(data, |data| unsafe {
+            &mut *(data.as_mut_ptr() as *mut MemoryMappedOracle)
         });
 
         Ok(oracle)

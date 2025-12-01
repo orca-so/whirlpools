@@ -1,9 +1,9 @@
 use crate::pinocchio::{
-    Result, state::{
-        whirlpool::{
-            MemoryMappedTick, TickArray, TickUpdate, loader::LoadedTickArrayMut, zeroed_tick_array::MemoryMappedZeroedTickArray
-        },
+    state::whirlpool::{
+        loader::LoadedTickArrayMut, zeroed_tick_array::MemoryMappedZeroedTickArray,
+        MemoryMappedTick, TickArray, TickUpdate,
     },
+    Result,
 };
 
 pub enum ProxiedTickArray<'a> {

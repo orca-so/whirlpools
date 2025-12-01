@@ -5,10 +5,10 @@ use crate::state::{MAX_TICK_INDEX, MIN_TICK_INDEX};
 
 pub mod dynamic_tick_array;
 pub mod fixed_tick_array;
-pub mod zeroed_tick_array;
 pub mod loader;
 pub mod proxy;
 pub mod tick;
+pub mod zeroed_tick_array;
 
 pub const TICK_ARRAY_SIZE: i32 = 88;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 88;

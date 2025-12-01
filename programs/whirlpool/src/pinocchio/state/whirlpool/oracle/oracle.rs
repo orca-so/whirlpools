@@ -1,6 +1,5 @@
 use pinocchio::pubkey::Pubkey;
 
-use crate::pinocchio::state::whirlpool::oracle::AdaptiveFeeVariablesUpdate;
 use crate::state::{AdaptiveFeeConstants, AdaptiveFeeVariables};
 
 //use crate::errors::ErrorCode;
@@ -8,7 +7,7 @@ use crate::state::{AdaptiveFeeConstants, AdaptiveFeeVariables};
 //use crate::state::Whirlpool;
 //use anchor_lang::prelude::*;
 //use std::cell::{Ref, RefMut};
-use super::super::super::{BytesU64};
+use super::super::super::BytesU64;
 use super::adaptive_fee::{MemoryMappedAdaptiveFeeConstants, MemoryMappedAdaptiveFeeVariables};
 
 #[derive(Debug)]
@@ -23,7 +22,7 @@ pub struct MemoryMappedOracle {
     // Reserved for future use
     reserved: [u8; 128],
 }
-/* 
+/*
 impl Default for Oracle {
     fn default() -> Self {
         Self {
@@ -38,7 +37,7 @@ impl Default for Oracle {
     */
 
 impl MemoryMappedOracle {
-  #[inline(always)]
+    #[inline(always)]
     pub fn whirlpool(&self) -> &Pubkey {
         &self.whirlpool
     }
@@ -50,7 +49,7 @@ impl MemoryMappedOracle {
 
     #[inline(always)]
     pub fn adaptive_fee_constants(&self) -> AdaptiveFeeConstants {
-      // TODO: create more pure (POD) AdaptiveFeeConstants (its reserved space is not needed here)
+        // TODO: create more pure (POD) AdaptiveFeeConstants (its reserved space is not needed here)
         AdaptiveFeeConstants {
             filter_period: self.adaptive_fee_constants.filter_period(),
             decay_period: self.adaptive_fee_constants.decay_period(),
@@ -66,7 +65,9 @@ impl MemoryMappedOracle {
     #[inline(always)]
     pub fn adaptive_fee_variables(&self) -> AdaptiveFeeVariables {
         AdaptiveFeeVariables {
-            last_reference_update_timestamp: self.adaptive_fee_variables.last_reference_update_timestamp(),
+            last_reference_update_timestamp: self
+                .adaptive_fee_variables
+                .last_reference_update_timestamp(),
             last_major_swap_timestamp: self.adaptive_fee_variables.last_major_swap_timestamp(),
             volatility_reference: self.adaptive_fee_variables.volatility_reference(),
             tick_group_index_reference: self.adaptive_fee_variables.tick_group_index_reference(),
@@ -76,11 +77,11 @@ impl MemoryMappedOracle {
     }
 
     pub fn update_adaptive_fee_variables(&mut self, update: &AdaptiveFeeVariables) {
-        self.adaptive_fee_variables.update(&update);
+        self.adaptive_fee_variables.update(update);
     }
 }
 
-/* 
+/*
 #[cfg(test)]
 mod discriminator_tests {
     use anchor_lang::Discriminator;

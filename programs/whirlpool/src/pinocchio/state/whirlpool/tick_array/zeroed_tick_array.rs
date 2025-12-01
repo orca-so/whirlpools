@@ -9,9 +9,7 @@ pub struct MemoryMappedZeroedTickArray {
 
 impl MemoryMappedZeroedTickArray {
     pub fn new(start_tick_index: i32) -> Self {
-        MemoryMappedZeroedTickArray {
-            start_tick_index,
-        }
+        MemoryMappedZeroedTickArray { start_tick_index }
     }
 }
 
@@ -49,7 +47,7 @@ impl TickArray for MemoryMappedZeroedTickArray {
         match self.check_is_usable_tick_and_get_offset(tick_index, tick_spacing) {
             // always return the zeroed tick
             Some(_offset) => Ok(&super::tick::STATIC_ZEROED_MEMORY_MAPPED_TICK),
-            None => Err(crate::errors::ErrorCode::TickNotFound.into())
+            None => Err(crate::errors::ErrorCode::TickNotFound.into()),
         }
     }
 

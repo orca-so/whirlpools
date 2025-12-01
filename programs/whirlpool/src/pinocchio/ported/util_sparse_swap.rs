@@ -1,22 +1,30 @@
 //use anchor_lang::{prelude::*, system_program};
 
-
 use arrayvec::ArrayVec;
-use pinocchio::{account_info::AccountInfo, pubkey::{Pubkey, pubkey_eq}};
+use pinocchio::{
+    account_info::AccountInfo,
+    pubkey::{pubkey_eq, Pubkey},
+};
 
-use crate::{
-    math::floor_division, pinocchio::{constants::address::{SYSTEM_PROGRAM_ID, WHIRLPOOL_PROGRAM_ID}, ported::util_swap_tick_sequence::SwapTickSequence, state::whirlpool::{MemoryMappedWhirlpool, TICK_ARRAY_SIZE, TickArray, TickUpdate, proxy::ProxiedTickArray}}, state::Tick
+use crate::pinocchio::errors::WhirlpoolErrorCode;
+use crate::pinocchio::state::whirlpool::tick_array::loader::{
+    load_tick_array_mut, LoadedTickArrayMut,
 };
 use crate::pinocchio::Result;
-use crate::pinocchio::errors::WhirlpoolErrorCode;
-use crate::pinocchio::state::whirlpool::tick_array::{
-    loader::{LoadedTickArrayMut, load_tick_array_mut}, zeroed_tick_array::MemoryMappedZeroedTickArray,
-    tick::MemoryMappedTick,
+use crate::{
+    math::floor_division,
+    pinocchio::{
+        constants::address::{SYSTEM_PROGRAM_ID, WHIRLPOOL_PROGRAM_ID},
+        ported::util_swap_tick_sequence::SwapTickSequence,
+        state::whirlpool::{proxy::ProxiedTickArray, TickArray, TICK_ARRAY_SIZE},
+    },
+    state::Tick,
 };
 
 // TODO: rename
 const MAX_TRAVERSABLE_TICK_ARRAYS_LEN: usize = 3;
-const MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN: usize = MAX_TRAVERSABLE_TICK_ARRAYS_LEN + crate::util::MAX_SUPPLEMENTAL_TICK_ARRAYS_LEN;
+const MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN: usize =
+    MAX_TRAVERSABLE_TICK_ARRAYS_LEN + crate::util::MAX_SUPPLEMENTAL_TICK_ARRAYS_LEN;
 
 pub struct SparseSwapTickSequenceBuilder<'a> {
     // AccountInfo ownership must be kept while using RefMut.
@@ -38,7 +46,10 @@ impl<'a> SparseSwapTickSequenceBuilder<'a> {
         tick_array_2_info: &'a AccountInfo,
         supplemental_tick_arrays: &Option<Vec<&'a AccountInfo>>,
     ) -> Self {
-        let mut all_tick_array_account_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN> = ArrayVec::new();
+        let mut all_tick_array_account_infos: ArrayVec<
+            &AccountInfo,
+            MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN,
+        > = ArrayVec::new();
 
         all_tick_array_account_infos.push(tick_array_0_info);
         all_tick_array_account_infos.push(tick_array_1_info);
@@ -49,7 +60,8 @@ impl<'a> SparseSwapTickSequenceBuilder<'a> {
 
         // dedup by key
         all_tick_array_account_infos.sort_by_key(|info| info.key());
-        let mut tick_array_account_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN> = ArrayVec::new();
+        let mut tick_array_account_infos: ArrayVec<&AccountInfo, MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN> =
+            ArrayVec::new();
         tick_array_account_infos.push(all_tick_array_account_infos[0]);
         for info in all_tick_array_account_infos.iter().skip(1) {
             if !pubkey_eq(info.key(), tick_array_account_infos.last().unwrap().key()) {
@@ -82,17 +94,18 @@ impl<'a> SparseSwapTickSequenceBuilder<'a> {
         tick_spacing: u16,
         a_to_b: bool,
     ) -> Result<SwapTickSequence<'a>> {
-        let mut loaded_tick_arrays: ArrayVec<LoadedTickArrayMut, MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN> = ArrayVec::new();
+        let mut loaded_tick_arrays: ArrayVec<LoadedTickArrayMut, MAX_TICK_ARRAY_ACCOUNT_INFOS_LEN> =
+            ArrayVec::new();
         for tick_array_info in self.tick_array_account_infos.iter() {
-            if let Some(loaded_tick_array) =
-                maybe_load_tick_array(tick_array_info, whirlpool_key)?
+            if let Some(loaded_tick_array) = maybe_load_tick_array(tick_array_info, whirlpool_key)?
             {
                 loaded_tick_arrays.push(loaded_tick_array);
             }
         }
 
         let start_tick_indexes = get_start_tick_indexes(tick_current_index, tick_spacing, a_to_b);
-        let mut required_tick_arrays: ArrayVec<ProxiedTickArray, MAX_TRAVERSABLE_TICK_ARRAYS_LEN> = ArrayVec::new();
+        let mut required_tick_arrays: ArrayVec<ProxiedTickArray, MAX_TRAVERSABLE_TICK_ARRAYS_LEN> =
+            ArrayVec::new();
         for start_tick_index in start_tick_indexes.iter() {
             let pos = loaded_tick_arrays
                 .iter()
@@ -104,12 +117,12 @@ impl<'a> SparseSwapTickSequenceBuilder<'a> {
             }
 
             let tick_array_pda = derive_tick_array_pda(whirlpool_key, *start_tick_index);
-            let has_account_info = self.tick_array_account_infos
+            let has_account_info = self
+                .tick_array_account_infos
                 .iter()
                 .any(|account_info| pubkey_eq(account_info.key(), &tick_array_pda));
             if has_account_info {
-                required_tick_arrays
-                    .push(ProxiedTickArray::new_uninitialized(*start_tick_index));
+                required_tick_arrays.push(ProxiedTickArray::new_uninitialized(*start_tick_index));
                 continue;
             }
             break;
@@ -130,11 +143,15 @@ impl<'a> SparseSwapTickSequenceBuilder<'a> {
 }
 
 fn derive_tick_array_pda(whirlpool_key: &Pubkey, start_tick_index: i32) -> Pubkey {
-    crate::pinocchio::utils::pda::find_program_address(&[
-        b"tick_array",
-        whirlpool_key.as_ref(),
-        start_tick_index.to_string().as_bytes(),
-    ], &WHIRLPOOL_PROGRAM_ID).0
+    crate::pinocchio::utils::pda::find_program_address(
+        &[
+            b"tick_array",
+            whirlpool_key.as_ref(),
+            start_tick_index.to_string().as_bytes(),
+        ],
+        &WHIRLPOOL_PROGRAM_ID,
+    )
+    .0
 }
 
 fn maybe_load_tick_array<'a>(
@@ -149,7 +166,11 @@ fn maybe_load_tick_array<'a>(
     Ok(Some(tick_array))
 }
 
-fn get_start_tick_indexes(tick_current_index: i32, tick_spacing: u16, a_to_b: bool) -> ArrayVec<i32, MAX_TRAVERSABLE_TICK_ARRAYS_LEN> {
+fn get_start_tick_indexes(
+    tick_current_index: i32,
+    tick_spacing: u16,
+    a_to_b: bool,
+) -> ArrayVec<i32, MAX_TRAVERSABLE_TICK_ARRAYS_LEN> {
     let tick_spacing_u16 = tick_spacing;
     let tick_spacing_i32 = tick_spacing as i32;
     let ticks_in_array = TICK_ARRAY_SIZE * tick_spacing_i32;
@@ -168,17 +189,15 @@ fn get_start_tick_indexes(tick_current_index: i32, tick_spacing: u16, a_to_b: bo
     };
 
     let mut start_tick_indexes = ArrayVec::new();
-    offset
-        .iter()
-        .for_each(|&o| {
-            let start_tick_index = start_tick_index_base + o * ticks_in_array;
-            // TODO: we should remove Tick::check_is_valid_start_tick because it uses division, but we can assure that
-            // start_tick_index is always one of multiples of tick_spacing * TICK_ARRAY_SIZE.
-            // So there is no need to check it using division here.
-            if Tick::check_is_valid_start_tick(start_tick_index, tick_spacing_u16) {
-                start_tick_indexes.push(start_tick_index);
-            }
-        });
+    offset.iter().for_each(|&o| {
+        let start_tick_index = start_tick_index_base + o * ticks_in_array;
+        // TODO: we should remove Tick::check_is_valid_start_tick because it uses division, but we can assure that
+        // start_tick_index is always one of multiples of tick_spacing * TICK_ARRAY_SIZE.
+        // So there is no need to check it using division here.
+        if Tick::check_is_valid_start_tick(start_tick_index, tick_spacing_u16) {
+            start_tick_indexes.push(start_tick_index);
+        }
+    });
 
     start_tick_indexes
 }
@@ -192,7 +211,7 @@ mod sparse_swap_tick_sequence_tests {
     #[test]
     fn test_derive_tick_array_pda() {
         let whirlpool_key = pubkey!("HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ"); // well-known whirlpool key (SOL/USDC(ts=64))
- 
+
         let ta_start_neg_11264 = derive_tick_array_pda(&whirlpool_key, -11264);
         assert_eq!(
             ta_start_neg_11264,
@@ -237,7 +256,8 @@ mod sparse_swap_tick_sequence_tests {
         // b to a (only 1 ta)
 
         fn do_test(a_to_b: bool, tick_spacing: u16, tick_current_index: i32, expected: Vec<i32>) {
-            let start_tick_indexes = get_start_tick_indexes(tick_current_index, tick_spacing, a_to_b);
+            let start_tick_indexes =
+                get_start_tick_indexes(tick_current_index, tick_spacing, a_to_b);
             assert_eq!(start_tick_indexes.to_vec(), expected);
         }
 
@@ -375,7 +395,12 @@ mod sparse_swap_tick_sequence_tests {
     }
 
     mod test_sparse_swap_tick_sequence_builder {
-        use crate::{pinocchio::utils::tests::{generate_pubkey::generate_pubkey, test_account_info::TestAccountInfo}, state::TICK_ARRAY_SIZE_USIZE};
+        use crate::{
+            pinocchio::utils::tests::{
+                generate_pubkey::generate_pubkey, test_account_info::TestAccountInfo,
+            },
+            state::TICK_ARRAY_SIZE_USIZE,
+        };
 
         use super::*;
 
@@ -400,7 +425,14 @@ mod sparse_swap_tick_sequence_tests {
             );
 
             assert_eq!(builder.tick_array_account_infos.len(), 1);
-            let swap_tick_sequence = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false).unwrap();
+            let swap_tick_sequence = builder
+                .try_build(
+                    &whirlpool_address,
+                    whirlpool_tick_current_index,
+                    whirlpool_tick_spacing,
+                    false,
+                )
+                .unwrap();
 
             for i in 0..TICK_ARRAY_SIZE_USIZE {
                 let tick = swap_tick_sequence
@@ -455,9 +487,20 @@ mod sparse_swap_tick_sequence_tests {
                 &ta0.account_info,
                 &ta0.account_info,
                 &ta1.account_info,
-                &Some(vec![&ta1.account_info, &ta2.account_info, &ta2.account_info]),
+                &Some(vec![
+                    &ta1.account_info,
+                    &ta2.account_info,
+                    &ta2.account_info,
+                ]),
             );
-            let swap_tick_sequence = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false).unwrap();
+            let swap_tick_sequence = builder
+                .try_build(
+                    &whirlpool_address,
+                    whirlpool_tick_current_index,
+                    whirlpool_tick_spacing,
+                    false,
+                )
+                .unwrap();
 
             assert_eq!(swap_tick_sequence.arrays.len(), 3);
             assert_eq!(swap_tick_sequence.arrays[0].start_tick_index(), 0);
@@ -492,7 +535,14 @@ mod sparse_swap_tick_sequence_tests {
                 &ta1.account_info,
                 &None,
             );
-            let swap_tick_sequence = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false).unwrap();
+            let swap_tick_sequence = builder
+                .try_build(
+                    &whirlpool_address,
+                    whirlpool_tick_current_index,
+                    whirlpool_tick_spacing,
+                    false,
+                )
+                .unwrap();
 
             // ta1 should be ignored
             assert_eq!(swap_tick_sequence.arrays.len(), 1);
@@ -521,10 +571,15 @@ mod sparse_swap_tick_sequence_tests {
                 &ta1.account_info,
                 &None,
             );
-            let result = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false);
+            let result = builder.try_build(
+                &whirlpool_address,
+                whirlpool_tick_current_index,
+                whirlpool_tick_spacing,
+                false,
+            );
             assert!(result.is_err());
             //TODO: fix
-            /* 
+            /*
             assert!(result
                 .err()
                 .unwrap()
@@ -571,7 +626,14 @@ mod sparse_swap_tick_sequence_tests {
                 &ta0.account_info,
                 &Some(vec![&ta3.account_info]),
             );
-            let swap_tick_sequence = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false).unwrap();
+            let swap_tick_sequence = builder
+                .try_build(
+                    &whirlpool_address,
+                    whirlpool_tick_current_index,
+                    whirlpool_tick_spacing,
+                    false,
+                )
+                .unwrap();
 
             assert_eq!(swap_tick_sequence.arrays.len(), 3);
             assert_eq!(swap_tick_sequence.arrays[0].start_tick_index(), -5632);
@@ -617,7 +679,14 @@ mod sparse_swap_tick_sequence_tests {
                 &ta2.account_info, // 11264
                 &None,
             );
-            let swap_tick_sequence = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false).unwrap();
+            let swap_tick_sequence = builder
+                .try_build(
+                    &whirlpool_address,
+                    whirlpool_tick_current_index,
+                    whirlpool_tick_spacing,
+                    false,
+                )
+                .unwrap();
 
             // -5632 should be used as the first tick array
             // 5632 should not be included because it is not provided
@@ -661,14 +730,21 @@ mod sparse_swap_tick_sequence_tests {
                 .writable();
 
             let builder = SparseSwapTickSequenceBuilder::new(
-                    &ta0.account_info, // 0
-                    &ta1.account_info, // 5632
-                    &ta2.account_info, // 11264
+                &ta0.account_info, // 0
+                &ta1.account_info, // 5632
+                &ta2.account_info, // 11264
                 &Some(vec![
                     &ta3.account_info, // -5632
                 ]),
             );
-            let swap_tick_sequence = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, true).unwrap();
+            let swap_tick_sequence = builder
+                .try_build(
+                    &whirlpool_address,
+                    whirlpool_tick_current_index,
+                    whirlpool_tick_spacing,
+                    true,
+                )
+                .unwrap();
 
             // 5632 should be used as the first tick array and its direction should be a to b.
             assert_eq!(swap_tick_sequence.arrays.len(), 3);
@@ -708,10 +784,15 @@ mod sparse_swap_tick_sequence_tests {
                 &ta2.account_info,
                 &None,
             );
-            let result = builder.try_build(&whirlpool_address, whirlpool_tick_current_index, whirlpool_tick_spacing, false);
+            let result = builder.try_build(
+                &whirlpool_address,
+                whirlpool_tick_current_index,
+                whirlpool_tick_spacing,
+                false,
+            );
             assert!(result.is_err());
             //TODO: fix
-            /* 
+            /*
             assert!(result
                 .err()
                 .unwrap()
@@ -722,7 +803,12 @@ mod sparse_swap_tick_sequence_tests {
     }
 
     mod test_proxied_tick_array {
-        use crate::{pinocchio::utils::tests::{generate_pubkey::generate_pubkey, test_account_info::TestAccountInfo}, state::TICK_ARRAY_SIZE_USIZE};
+        use crate::{
+            pinocchio::utils::tests::{
+                generate_pubkey::generate_pubkey, test_account_info::TestAccountInfo,
+            },
+            state::TICK_ARRAY_SIZE_USIZE,
+        };
 
         use super::*;
 
@@ -730,7 +816,12 @@ mod sparse_swap_tick_sequence_tests {
             account_info: &'a AccountInfo,
             whirlpool_key: &Pubkey,
         ) -> ProxiedTickArray<'a> {
-            let loaded_tick_array = crate::pinocchio::state::whirlpool::tick_array::loader::load_tick_array_mut(account_info, whirlpool_key).unwrap();
+            let loaded_tick_array =
+                crate::pinocchio::state::whirlpool::tick_array::loader::load_tick_array_mut(
+                    account_info,
+                    whirlpool_key,
+                )
+                .unwrap();
             ProxiedTickArray::new_initialized(loaded_tick_array)
         }
 
@@ -738,14 +829,12 @@ mod sparse_swap_tick_sequence_tests {
         fn initialized_start_tick_index() {
             let whirlpool_address = generate_pubkey();
             let tick_array_address = generate_pubkey();
-            let start_28160 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                28160
-            )
-            .key(&tick_array_address)
-            .writable();
-                
-            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
+            let start_28160 = TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 28160)
+                .key(&tick_array_address)
+                .writable();
+
+            let proxied_28160 =
+                to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
             assert_eq!(proxied_28160.start_tick_index(), 28160);
         }
 
@@ -759,14 +848,12 @@ mod sparse_swap_tick_sequence_tests {
         fn initialized_get_and_update_tick() {
             let whirlpool_address = generate_pubkey();
             let tick_array_address = generate_pubkey();
-            let start_28160 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                28160
-            )
-            .key(&tick_array_address)
-            .writable();
-                
-            let mut proxied_28160 = to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
+            let start_28160 = TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 28160)
+                .key(&tick_array_address)
+                .writable();
+
+            let mut proxied_28160 =
+                to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
 
             let tick = proxied_28160.get_tick(28160 + 64, 64).unwrap();
             assert!(!tick.initialized());
@@ -816,18 +903,18 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn initialized_is_min_tick_array() {
             let whirlpool_address = generate_pubkey();
-            let start_28160 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                28160
-            ).writable();
-            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
+            let start_28160 =
+                TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 28160).writable();
+            let proxied_28160 =
+                to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
             assert!(!proxied_28160.is_min_tick_array());
 
-            let start_neg_444928 = TestAccountInfo::new_fixed_tick_array(
+            let start_neg_444928 =
+                TestAccountInfo::new_fixed_tick_array(&whirlpool_address, -444928).writable();
+            let proxied_neg_444928 = to_proxied_tick_array_initialized(
+                &start_neg_444928.account_info,
                 &whirlpool_address,
-                -444928
-            ).writable();
-            let proxied_neg_444928 = to_proxied_tick_array_initialized(&start_neg_444928.account_info, &whirlpool_address);
+            );
             assert!(proxied_neg_444928.is_min_tick_array());
         }
 
@@ -843,18 +930,16 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn initialized_is_max_tick_array() {
             let whirlpool_address = generate_pubkey();
-            let start_28160 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                28160
-            ).writable();
-            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
+            let start_28160 =
+                TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 28160).writable();
+            let proxied_28160 =
+                to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
             assert!(!proxied_28160.is_max_tick_array(64));
 
-            let start_439296 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                439296
-            ).writable();
-            let proxied_439296 = to_proxied_tick_array_initialized(&start_439296.account_info, &whirlpool_address);
+            let start_439296 =
+                TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 439296).writable();
+            let proxied_439296 =
+                to_proxied_tick_array_initialized(&start_439296.account_info, &whirlpool_address);
             assert!(proxied_439296.is_max_tick_array(64));
         }
 
@@ -870,11 +955,10 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn initialized_tick_offset() {
             let whirlpool_address = generate_pubkey();
-            let start_28160 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                28160
-            ).writable();
-            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
+            let start_28160 =
+                TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 28160).writable();
+            let proxied_28160 =
+                to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
 
             for i in 0..TICK_ARRAY_SIZE_USIZE {
                 let offset = proxied_28160
@@ -898,11 +982,10 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn initialized_get_next_init_tick_index() {
             let whirlpool_address = generate_pubkey();
-            let start_28160 = TestAccountInfo::new_fixed_tick_array(
-                &whirlpool_address,
-                28160
-            ).writable();
-            let mut proxied_28160 = to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
+            let start_28160 =
+                TestAccountInfo::new_fixed_tick_array(&whirlpool_address, 28160).writable();
+            let mut proxied_28160 =
+                to_proxied_tick_array_initialized(&start_28160.account_info, &whirlpool_address);
 
             proxied_28160
                 .update_tick(

@@ -42,7 +42,8 @@ jobs:
           docker volume rm -f whirlpools_node_modules || true
           docker volume rm -f whirlpools_yarn_cache || true
       - name: Build non-program packages
-        run: docker compose --profile build up --quiet-pull --abort-on-container-failure
+        # Only build packages; program artifacts already built and downloaded in `build-program` job
+        run: docker compose --profile build-packages up --quiet-pull --abort-on-container-failure
 
   test-sdks:
     runs-on: blacksmith-8vcpu-ubuntu-2404-arm

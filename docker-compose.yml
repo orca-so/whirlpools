@@ -1,5 +1,17 @@
 name: whirlpools
 
+# Profile Usage:
+#   build-program           - Builds only the Solana program (outputs to target/)
+#   build-packages          - Builds all packages (requires program artifacts in target/)
+#   build                   - Builds everything (program + packages)
+#   test                    - Runs SDK tests (requires program artifacts in target/)
+#   test-whirlpools-program - Runs program tests (requires program artifacts in target/)
+#   lint                    - Runs linters
+#
+# For local development, use: docker compose --profile build up
+# For CI/package-only builds: docker compose --profile build-packages up
+#   (Note: build-packages assumes program artifacts already exist in target/)
+
 services:
   build-solana-program:
     platform: linux/amd64
@@ -7,7 +19,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
-    profiles: [build-program]
+    profiles: [build-program, build]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -19,7 +31,7 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install --mode=skip-build"
-    profiles: [build, test, lint]
+    profiles: [build-packages, build, test, lint]
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
@@ -38,7 +50,7 @@ services:
       && yarn workspace @orca-so/tx-sender build
       && yarn workspace @orca-so/whirlpools build
       && yarn workspace @orca-so/whirlpools-lint format"
-    profiles: [build, test]
+    profiles: [build-packages, build, test]
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -57,7 +69,7 @@ services:
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-cli build"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -78,7 +90,7 @@ services:
       && cargo build --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
-    profiles: [build]
+    profiles: [build-packages, build]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -90,7 +102,7 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-integration build"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -112,7 +124,7 @@ services:
       && yarn workspace @orca-so/whirlpools-docs-rust build
       && yarn workspace @orca-so/whirlpools-docs-legacy build
       && yarn workspace @orca-so/whirlpools-docs build"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -134,7 +146,7 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-example-ts-next build
       && cargo build --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -145,11 +157,11 @@ services:
       - node_modules:/usr/src/whirlpools/node_modules:ro
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
-  build:
+  build-packages:
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
-      echo "Build Completed"
+      echo "Build Packages Completed"
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -165,6 +177,20 @@ services:
         condition: service_completed_successfully
       build-examples:
         condition: service_completed_successfully
+    profiles: [build-packages, build]
+    volumes:
+      - ./:/usr/src/whirlpools
+
+  build:
+    image: alpine:3
+    working_dir: /usr/src/whirlpools
+    command: >
+      echo "Build Completed"
+    depends_on:
+      build-solana-program:
+        condition: service_completed_successfully
+      build-packages:
+        condition: service_completed_successfully
     profiles: [build]
     volumes:
       - ./:/usr/src/whirlpools
@@ -174,7 +200,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       cargo test -p whirlpool
-    profiles: [test, test-whirlpools-program]
+    profiles: [test-whirlpools-program]
     volumes:
       - ./:/usr/src/whirlpools
 

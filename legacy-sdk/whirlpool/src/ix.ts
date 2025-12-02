@@ -830,6 +830,13 @@ export class WhirlpoolIx {
     return ix.initializeRewardV2Ix(program, params);
   }
 
+  public static initializeRewardV2WithExternalSignerIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeRewardV2WithExternalSignerParams,
+  ) {
+    return ix.initializeRewardV2WithExternalSignerIx(program, params);
+  }
+
   public static initDynamicTickArrayIx(
     program: Program<Whirlpool>,
     params: ix.InitDynamicTickArrayParams,

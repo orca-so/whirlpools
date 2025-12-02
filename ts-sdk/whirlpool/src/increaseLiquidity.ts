@@ -179,7 +179,7 @@ export async function increaseLiquidityInstructions(
   positionMintAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionSigner = FUNDER,
+  authority: TransactionSigner<string> = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -302,7 +302,7 @@ async function internalOpenPositionInstructions(
   mintA: Account<Mint>,
   mintB: Account<Mint>,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionSigner = FUNDER,
+  funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -509,7 +509,7 @@ export async function openFullRangePositionInstructions(
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionSigner = FUNDER,
+  funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
@@ -582,7 +582,7 @@ export async function openPositionInstructions(
   lowerPrice: number,
   upperPrice: number,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionSigner = FUNDER,
+  funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   assert(

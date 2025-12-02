@@ -9,27 +9,85 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-program:
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Build Solana program
+        run: docker compose --profile build-program up
+      - name: Upload Solana program artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: solana-programs-${{ github.run_id }}
+          path: |
+            target/deploy/*.so
+            target/idl/*.json
+            target/types/*.ts
+          retention-days: 1
+
   build:
     runs-on: blacksmith-8vcpu-ubuntu-2404
+    needs: build-program
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Build all packages
-        run: docker compose --profile build up --quiet-pull --abort-on-container-failure
+      - name: Download Solana program artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: solana-programs-${{ github.run_id }}
+          path: target
+      - name: Clean stale volumes
+        run: |
+          docker volume rm -f whirlpools_node_modules || true
+          docker volume rm -f whirlpools_yarn_cache || true
+      - name: Build non-program packages
+        # Only build packages; program artifacts already built and downloaded in `build-program` job
+        run: docker compose --profile build-packages up --quiet-pull --abort-on-container-failure
+
+  test-matrix:
+    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
+    needs: build-program
+    strategy:
+      matrix:
+        profile: [test-sdks, test-whirlpools-program]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Download Solana program artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: solana-programs-${{ github.run_id }}
+          path: target
+      - name: Clean stale volumes
+        run: |
+          docker volume rm -f whirlpools_node_modules || true
+          docker volume rm -f whirlpools_yarn_cache || true
+      - name: Run tests
+        run: docker compose --profile ${{ matrix.profile }} up --quiet-pull --abort-on-container-failure
 
   test:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
+    needs: test-matrix
+    if: always()
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-      - name: Run tests
-        run: docker compose --profile test up --quiet-pull --abort-on-container-failure
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-matrix.result }}" != "success" ]; then
+            echo "Tests failed"
+            exit 1
+          fi
+          echo "All tests passed"
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+      - name: Clean stale volumes
+        run: |
+          docker volume rm -f whirlpools_node_modules || true
+          docker volume rm -f whirlpools_yarn_cache || true
       - name: Run lint
         run: docker compose --profile lint up --quiet-pull --abort-on-container-failure
 

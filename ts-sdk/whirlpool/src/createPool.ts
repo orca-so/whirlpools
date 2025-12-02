@@ -90,7 +90,7 @@ export function createSplashPoolInstructions(
   tokenMintA: Address,
   tokenMintB: Address,
   initialPrice: number = 1,
-  funder: TransactionSigner = FUNDER,
+  funder: TransactionSigner<string> = FUNDER,
 ): Promise<CreatePoolInstructions> {
   return createConcentratedLiquidityPoolInstructions(
     rpc,
@@ -145,7 +145,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   tokenMintB: Address,
   tickSpacing: number,
   initialPrice: number = 1,
-  funder: TransactionSigner = FUNDER,
+  funder: TransactionSigner<string> = FUNDER,
 ): Promise<CreatePoolInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -157,6 +157,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   );
   const instructions: Instruction[] = [];
 
+  // as Parameters<typeof fetchSysvarRent>[0],
   const rent = await fetchSysvarRent(rpc);
   let nonRefundableRent: bigint = 0n;
 

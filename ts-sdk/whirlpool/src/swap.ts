@@ -261,7 +261,7 @@ export async function swapInstructions<T extends SwapParams>(
   params: T,
   poolAddress: Address,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  signer: TransactionSigner = FUNDER,
+  signer: TransactionSigner<string> = FUNDER,
 ): Promise<SwapInstructions<T>> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const [tokenA, tokenB] = await fetchAllMint(rpc, [

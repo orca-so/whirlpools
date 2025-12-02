@@ -32,18 +32,18 @@
     "@orca-so/tx-sender": "*",
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
-    "@solana-program/memo": "^0.8.0",
-    "@solana-program/system": "^0.8.0",
-    "@solana-program/token": "^0.6.0",
-    "@solana-program/token-2022": "^0.5.0",
-    "@solana/sysvars": "^3.0.3"
+    "@solana-program/memo": "^0.10.0",
+    "@solana-program/system": "^0.10.0",
+    "@solana-program/token": "^0.9.0",
+    "@solana-program/token-2022": "^0.6.1",
+    "@solana/sysvars": "^5.0.0"
   },
   "peerDependencies": {
-    "@solana/kit": "^3.0.3"
+    "@solana/kit": "^5.0.0"
   },
   "devDependencies": {
-    "@solana/kit": "^3.0.3",
-    "solana-bankrun": "^0.4.0",
+    "@solana/kit": "^5.0.0",
+    "litesvm": "^0.4.0",
     "tsup": "^8.4.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

@@ -1,5 +1,17 @@
 name: whirlpools
 
+# Profile Usage:
+#   build-program           - Builds only the Solana program (outputs to target/)
+#   build-packages          - Builds all packages (requires program artifacts in target/)
+#   build                   - Builds everything (program + packages)
+#   test-sdks               - Runs SDK tests (requires program artifacts in target/)
+#   test-whirlpools-program - Runs program tests (requires program artifacts in target/)
+#   lint                    - Runs linters
+#
+# For local development, use: docker compose --profile build up
+# For CI/package-only builds: docker compose --profile build-packages up
+#   (Note: build-packages assumes program artifacts already exist in target/)
+
 services:
   build-solana-program:
     platform: linux/amd64
@@ -7,27 +19,25 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
-    profiles: [build, test-whirlpools-program, test]
+    profiles: [build-program, build]
     volumes:
       - ./:/usr/src/whirlpools
 
   yarn-install:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
-      && yarn install"
-    profiles: [build, test, lint]
+      && yarn install --mode=skip-build"
+    profiles: [build-packages, build, test-sdks, lint]
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
       - yarn_cache:/usr/src/whirlpools/.yarn/cache
 
   build-ts-sdk:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -40,19 +50,16 @@ services:
       && yarn workspace @orca-so/tx-sender build
       && yarn workspace @orca-so/whirlpools build
       && yarn workspace @orca-so/whirlpools-lint format"
-    profiles: [build, test]
+    profiles: [build-packages, build, test-sdks]
     depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
       yarn-install:
         condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
-      - node_modules:/usr/src/whirlpools/node_modules:ro
+      - node_modules:/usr/src/whirlpools/node_modules
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-legacy-sdk:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -62,10 +69,8 @@ services:
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-cli build"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
       yarn-install:
         condition: service_completed_successfully
     volumes:
@@ -74,7 +79,6 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-rust-sdk:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -86,15 +90,11 @@ services:
       && cargo build --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
-    profiles: [build]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
+    profiles: [build-packages, build]
     volumes:
       - ./:/usr/src/whirlpools
 
   build-integration:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -102,7 +102,7 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-integration build"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -114,7 +114,6 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-docs:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -125,7 +124,7 @@ services:
       && yarn workspace @orca-so/whirlpools-docs-rust build
       && yarn workspace @orca-so/whirlpools-docs-legacy build
       && yarn workspace @orca-so/whirlpools-docs build"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -139,7 +138,6 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-examples:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -148,7 +146,7 @@ services:
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn workspace @orca-so/whirlpools-example-ts-next build
       && cargo build --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
-    profiles: [build]
+    profiles: [build-packages, build]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully
@@ -159,15 +157,12 @@ services:
       - node_modules:/usr/src/whirlpools/node_modules:ro
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
-  build:
-    platform: linux/amd64
+  build-packages:
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
-      echo "Build Completed"
+      echo "Build Packages Completed"
     depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
       yarn-install:
         condition: service_completed_successfully
       build-rust-sdk:
@@ -182,25 +177,34 @@ services:
         condition: service_completed_successfully
       build-examples:
         condition: service_completed_successfully
+    profiles: [build-packages, build]
+    volumes:
+      - ./:/usr/src/whirlpools
+
+  build:
+    image: alpine:3
+    working_dir: /usr/src/whirlpools
+    command: >
+      echo "Build Completed"
+    depends_on:
+      build-solana-program:
+        condition: service_completed_successfully
+      build-packages:
+        condition: service_completed_successfully
     profiles: [build]
     volumes:
       - ./:/usr/src/whirlpools
 
   test-program:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
       cargo test -p whirlpool
-    profiles: [test]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
+    profiles: [test-whirlpools-program]
     volumes:
       - ./:/usr/src/whirlpools
 
   test-program-integration:
-    platform: linux/amd64
     image: ubuntu:24.04
     working_dir: /usr/src/whirlpools
     command: >
@@ -214,16 +218,12 @@ services:
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-integration test"
     profiles: [test-whirlpools-program]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-ts-sdk:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -234,10 +234,8 @@ services:
       && yarn workspace @orca-so/whirlpools-core test
       && yarn workspace @orca-so/tx-sender test
       && yarn workspace @orca-so/whirlpools test"
-    profiles: [test]
+    profiles: [test-sdks]
     depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
       yarn-install:
         condition: service_completed_successfully
       build-ts-sdk:
@@ -248,7 +246,6 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-rust-sdk:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >
@@ -261,10 +258,7 @@ services:
       && cargo test --quiet --manifest-path rust-sdk/client/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/whirlpool/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml --lib"
-    profiles: [test]
-    depends_on:
-      build-solana-program:
-        condition: service_completed_successfully
+    profiles: [test-sdks]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -290,7 +284,6 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-whirlpools-program:
-    platform: linux/amd64
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
@@ -305,7 +298,6 @@ services:
       - ./:/usr/src/whirlpools
 
   test-sdks:
-    platform: linux/amd64
     image: alpine:3
     working_dir: /usr/src/whirlpools
     command: >
@@ -315,12 +307,11 @@ services:
         condition: service_completed_successfully
       test-rust-sdk:
         condition: service_completed_successfully
-    profiles: [test]
+    profiles: [test-sdks]
     volumes:
       - ./:/usr/src/whirlpools
 
   lint:
-    platform: linux/amd64
     image: rust:1.86.0
     working_dir: /usr/src/whirlpools
     command: >

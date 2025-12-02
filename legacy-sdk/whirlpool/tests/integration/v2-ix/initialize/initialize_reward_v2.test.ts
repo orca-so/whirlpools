@@ -281,6 +281,28 @@ describe("initialize_reward_v2", () => {
         });
       });
     });
+
+    describe("initializeRewardV2WithExternalSignerIx", () => {
+      it("builds instruction without rewardVault signer when rewardVault public key is provided", async () => {
+        const rewardVault = Keypair.generate().publicKey;
+
+        const ix = WhirlpoolIx.initializeRewardV2WithExternalSignerIx(
+          ctx.program,
+          {
+            rewardAuthority: provider.wallet.publicKey,
+            funder: provider.wallet.publicKey,
+            whirlpool: Keypair.generate().publicKey,
+            rewardMint: Keypair.generate().publicKey,
+            rewardTokenBadge: Keypair.generate().publicKey,
+            rewardTokenProgram: TEST_TOKEN_PROGRAM_ID,
+            rewardVault,
+            rewardIndex: 0,
+          },
+        );
+
+        assert.ok(ix.signers.length === 0);
+      });
+    });
   });
 
   describe("v2 specific accounts", () => {

@@ -310,7 +310,6 @@ async function internalOpenPositionInstructions(
   );
   const instructions: Instruction[] = [];
 
-  // rpc as Parameters<typeof fetchSysvarRent>[0],
   const rent = await fetchSysvarRent(rpc);
   let nonRefundableRent: bigint = 0n;
 

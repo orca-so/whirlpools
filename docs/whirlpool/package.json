@@ -29,7 +29,7 @@
     "@orca-so/whirlpools-docs-legacy": "*",
     "@orca-so/whirlpools-docs-rust": "*",
     "@orca-so/whirlpools-docs-ts": "*",
-    "@types/react": "^19.2.2",
+    "@types/react": "^19.2.7",
     "gh-pages": "^6.3.0"
   },
   "browserslist": {

@@ -4,7 +4,7 @@ name: whirlpools
 #   build-program           - Builds only the Solana program (outputs to target/)
 #   build-packages          - Builds all packages (requires program artifacts in target/)
 #   build                   - Builds everything (program + packages)
-#   test                    - Runs SDK tests (requires program artifacts in target/)
+#   test-sdks               - Runs SDK tests (requires program artifacts in target/)
 #   test-whirlpools-program - Runs program tests (requires program artifacts in target/)
 #   lint                    - Runs linters
 #
@@ -31,7 +31,7 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install --mode=skip-build"
-    profiles: [build-packages, build, test, lint]
+    profiles: [build-packages, build, test-sdks, lint]
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
@@ -50,7 +50,7 @@ services:
       && yarn workspace @orca-so/tx-sender build
       && yarn workspace @orca-so/whirlpools build
       && yarn workspace @orca-so/whirlpools-lint format"
-    profiles: [build-packages, build, test]
+    profiles: [build-packages, build, test-sdks]
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -234,7 +234,7 @@ services:
       && yarn workspace @orca-so/whirlpools-core test
       && yarn workspace @orca-so/tx-sender test
       && yarn workspace @orca-so/whirlpools test"
-    profiles: [test]
+    profiles: [test-sdks]
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -258,7 +258,7 @@ services:
       && cargo test --quiet --manifest-path rust-sdk/client/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/whirlpool/Cargo.toml --lib
       && cargo test --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml --lib"
-    profiles: [test]
+    profiles: [test-sdks]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -307,7 +307,7 @@ services:
         condition: service_completed_successfully
       test-rust-sdk:
         condition: service_completed_successfully
-    profiles: [test]
+    profiles: [test-sdks]
     volumes:
       - ./:/usr/src/whirlpools
 

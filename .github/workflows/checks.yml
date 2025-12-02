@@ -45,9 +45,12 @@ jobs:
         # Only build packages; program artifacts already built and downloaded in `build-program` job
         run: docker compose --profile build-packages up --quiet-pull --abort-on-container-failure
 
-  test-sdks:
+  test:
     runs-on: blacksmith-8vcpu-ubuntu-2404-arm
     needs: build-program
+    strategy:
+      matrix:
+        profile: [test-sdks, test-whirlpools-program]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -61,25 +64,7 @@ jobs:
           docker volume rm -f whirlpools_node_modules || true
           docker volume rm -f whirlpools_yarn_cache || true
       - name: Run tests
-        run: docker compose --profile test up --quiet-pull --abort-on-container-failure
-
-  test-whirlpools-program:
-    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
-    needs: build-program
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-      - name: Download Solana program artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: solana-programs-${{ github.run_id }}
-          path: target
-      - name: Clean stale volumes
-        run: |
-          docker volume rm -f whirlpools_node_modules || true
-          docker volume rm -f whirlpools_yarn_cache || true
-      - name: Run tests
-        run: docker compose --profile test-whirlpools-program up --quiet-pull --abort-on-container-failure
+        run: docker compose --profile ${{ matrix.profile }} up --quiet-pull --abort-on-container-failure
 
   lint:
     runs-on: blacksmith-8vcpu-ubuntu-2404

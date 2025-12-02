@@ -3,13 +3,16 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { WhirlpoolData, WhirlpoolContext, TickArrayData } from "../../../../src";
+import type {
+  WhirlpoolData,
+  WhirlpoolContext,
+  TickArrayData,
+} from "../../../../src";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
   METADATA_PROGRAM_ADDRESS,
   NUM_REWARDS,
-  PDAUtil,
   TickArrayUtil,
   toTx,
   WhirlpoolIx,
@@ -35,13 +38,7 @@ import {
 import { createTokenAccount as createTokenAccountForPosition } from "../../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
-import { getTickArrayStartTickIndex } from "@orca-so/whirlpools-core";
-import {
-  collectFeesQuote,
-} from "../../../../src";
-import type {
-  PositionData,
-} from "../../../../src";
+import type { PositionData } from "../../../../src";
 
 describe("collect_reward_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -463,8 +460,7 @@ describe("collect_reward_v2", () => {
               },
             ],
           });
-          const { poolInitInfo, positions, rewards } =
-            fixture.getInfos();
+          const { poolInitInfo, positions, rewards } = fixture.getInfos();
           const positionInitInfo = positions[0];
 
           warpClock(1.2);
@@ -501,22 +497,18 @@ describe("collect_reward_v2", () => {
           )) as TickArrayData;
 
           // Extract tick data without the initialized field to create DynamicTickData
-          const {
-            initialized: _lowerTickInitialized,
-            ...lowerTick
-          } = TickArrayUtil.getTickFromArray(
-            lowerTickArrayData,
-            tickLowerIndex,
-            tickSpacing,
-          );
-          const {
-            initialized: _upperTickInitialized,
-            ...upperTick
-          } = TickArrayUtil.getTickFromArray(
-            upperTickArrayData,
-            tickUpperIndex,
-            tickSpacing,
-          );
+          const { initialized: _lowerTickInitialized, ...lowerTick } =
+            TickArrayUtil.getTickFromArray(
+              lowerTickArrayData,
+              tickLowerIndex,
+              tickSpacing,
+            );
+          const { initialized: _upperTickInitialized, ...upperTick } =
+            TickArrayUtil.getTickFromArray(
+              upperTickArrayData,
+              tickUpperIndex,
+              tickSpacing,
+            );
 
           const expectation = collectRewardsQuote({
             whirlpool: whirlpoolData,
@@ -553,10 +545,7 @@ describe("collect_reward_v2", () => {
           const collectedBalance = parseInt(
             await getTokenBalance(provider, rewardOwnerAccount),
           );
-          assert.equal(
-            collectedBalance,
-            expectation.rewardOwed[0]?.toNumber(),
-          );
+          assert.equal(collectedBalance, expectation.rewardOwed[0]?.toNumber());
 
           // Verify vault balance decreased correctly
           const vaultBalance = parseInt(

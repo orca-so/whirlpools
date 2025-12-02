@@ -518,22 +518,18 @@ describe("collect_fees_v2", () => {
           )) as TickArrayData;
 
           // Extract tick data without the initialized field to create DynamicTickData
-          const {
-            initialized: _lowerTickInitialized,
-            ...lowerTick
-          } = TickArrayUtil.getTickFromArray(
-            lowerTickArrayData,
-            tickLowerIndex,
-            tickSpacing,
-          );
-          const {
-            initialized: _upperTickInitialized,
-            ...upperTick
-          } = TickArrayUtil.getTickFromArray(
-            upperTickArrayData,
-            tickUpperIndex,
-            tickSpacing,
-          );
+          const { initialized: _lowerTickInitialized, ...lowerTick } =
+            TickArrayUtil.getTickFromArray(
+              lowerTickArrayData,
+              tickLowerIndex,
+              tickSpacing,
+            );
+          const { initialized: _upperTickInitialized, ...upperTick } =
+            TickArrayUtil.getTickFromArray(
+              upperTickArrayData,
+              tickUpperIndex,
+              tickSpacing,
+            );
 
           const expectation = collectFeesQuote({
             whirlpool: whirlpoolData,
@@ -568,8 +564,7 @@ describe("collect_fees_v2", () => {
               tokenVaultA: tokenVaultAKeypair.publicKey,
               tokenVaultB: tokenVaultBKeypair.publicKey,
             }),
-          )
-            .buildAndExecute();
+          ).buildAndExecute();
         });
 
         it("fails when position does not match whirlpool", async () => {

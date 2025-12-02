@@ -468,6 +468,110 @@ describe("collect_fees_v2", () => {
             .buildAndExecute();
         });
 
+        it("successfully collect fees of a position with dynamic tick arrays", async () => {
+          const tickLowerIndex = -1280;
+          const tickUpperIndex = 1280;
+          const tickSpacing = TickSpacing.Standard;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              {
+                tickLowerIndex,
+                tickUpperIndex,
+                liquidityAmount: new anchor.BN(10_000_000),
+              },
+            ],
+            initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+            dynamicTickArrays: true,
+          });
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tokenMintA,
+              tokenMintB,
+              tokenProgramA,
+              tokenProgramB,
+            },
+            positions,
+            tokenAccountA,
+            tokenAccountB,
+          } = fixture.getInfos();
+
+          const positionBefore = (await fetcher.getPosition(
+            positions[0].publicKey,
+          )) as PositionData;
+          assert.ok(positionBefore.feeOwedA.eq(ZERO_BN));
+          assert.ok(positionBefore.feeOwedB.eq(ZERO_BN));
+
+          const whirlpoolData = (await fetcher.getPool(
+            whirlpoolPda.publicKey,
+          )) as WhirlpoolData;
+          const lowerTickArrayData = (await fetcher.getTickArray(
+            positions[0].tickArrayLower,
+          )) as TickArrayData;
+          const upperTickArrayData = (await fetcher.getTickArray(
+            positions[0].tickArrayUpper,
+          )) as TickArrayData;
+
+          // Extract tick data without the initialized field to create DynamicTickData
+          const {
+            initialized: _lowerTickInitialized,
+            ...lowerTick
+          } = TickArrayUtil.getTickFromArray(
+            lowerTickArrayData,
+            tickLowerIndex,
+            tickSpacing,
+          );
+          const {
+            initialized: _upperTickInitialized,
+            ...upperTick
+          } = TickArrayUtil.getTickFromArray(
+            upperTickArrayData,
+            tickUpperIndex,
+            tickSpacing,
+          );
+
+          const expectation = collectFeesQuote({
+            whirlpool: whirlpoolData,
+            position: positionBefore,
+            tickLower: lowerTick,
+            tickUpper: upperTick,
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolData,
+                IGNORE_CACHE,
+              ),
+          });
+
+          // With no swaps, fees should be zero
+          assert.ok(expectation.feeOwedA.eq(ZERO_BN));
+          assert.ok(expectation.feeOwedB.eq(ZERO_BN));
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA,
+              tokenMintB,
+              tokenProgramA,
+              tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+            }),
+          )
+            .buildAndExecute();
+        });
+
         it("fails when position does not match whirlpool", async () => {
           // In same tick array - start index 22528
           const tickLowerIndex = 29440;

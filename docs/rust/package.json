@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-docs-rust",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "private": true,
   "scripts": {
     "build": "cargo doc --lib --no-deps && cp -rf target/doc/. dist",

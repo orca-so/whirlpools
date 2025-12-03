@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-example-rust-repositioning-bot
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1162](https://github.com/orca-so/whirlpools/pull/1162) [`14c5655`](https://github.com/orca-so/whirlpools/commit/14c5655b664b1a7484b5a630ed65c7b13965ab5e) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update solana rust dependencies from v2 to v3. Fix some compilation warnings.
+
 ## 0.2.3
 
 ### Patch Changes

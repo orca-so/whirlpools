@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/tx-sender",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Send transactions to the Solana blockchain with auto priority fees.",
   "type": "module",
   "main": "./dist/index.cjs",

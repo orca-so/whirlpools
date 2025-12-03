@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-client",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Typescript client to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",

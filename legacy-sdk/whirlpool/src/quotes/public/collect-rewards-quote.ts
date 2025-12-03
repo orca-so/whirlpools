@@ -1,7 +1,12 @@
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
-import type { PositionData, TickData, WhirlpoolData } from "../../types/public";
+import type {
+  DynamicTickData,
+  PositionData,
+  TickData,
+  WhirlpoolData,
+} from "../../types/public";
 import { NUM_REWARDS } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
@@ -20,8 +25,8 @@ import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 export type CollectRewardsQuoteParam = {
   whirlpool: WhirlpoolData;
   position: PositionData;
-  tickLower: TickData;
-  tickUpper: TickData;
+  tickLower: TickData | DynamicTickData;
+  tickUpper: TickData | DynamicTickData;
   tokenExtensionCtx: TokenExtensionContextForReward;
   timeStampInSeconds?: BN;
 };
@@ -113,7 +118,7 @@ export function collectRewardsQuote(
     const tickUpperRewardGrowthsOutsideX64 = tickUpper.rewardGrowthsOutside[i];
 
     let rewardGrowthsBelowX64: BN = adjustedRewardGrowthGlobalX64;
-    if (tickLower.initialized) {
+    if (isTickInitialized(tickLower) || isDynamicTickData(tickLower)) {
       rewardGrowthsBelowX64 =
         tickCurrentIndex < tickLowerIndex
           ? MathUtil.subUnderflowU128(
@@ -124,7 +129,7 @@ export function collectRewardsQuote(
     }
 
     let rewardGrowthsAboveX64: BN = new BN(0);
-    if (tickUpper.initialized) {
+    if (isTickInitialized(tickUpper) || isDynamicTickData(tickUpper)) {
       rewardGrowthsAboveX64 =
         tickCurrentIndex < tickUpperIndex
           ? tickUpperRewardGrowthsOutsideX64
@@ -170,4 +175,14 @@ export function collectRewardsQuote(
       deductedFromRewardOwed: transferFee,
     },
   };
+}
+
+function isTickInitialized(tick: TickData | DynamicTickData): tick is TickData {
+  return "initialized" in tick && tick.initialized;
+}
+
+function isDynamicTickData(
+  tick: TickData | DynamicTickData,
+): tick is DynamicTickData {
+  return !("initialized" in tick);
 }

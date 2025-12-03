@@ -3,12 +3,17 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { WhirlpoolData, WhirlpoolContext } from "../../../../src";
+import type {
+  WhirlpoolData,
+  WhirlpoolContext,
+  TickArrayData,
+} from "../../../../src";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
   METADATA_PROGRAM_ADDRESS,
   NUM_REWARDS,
+  TickArrayUtil,
   toTx,
   WhirlpoolIx,
 } from "../../../../src";
@@ -33,6 +38,7 @@ import {
 import { createTokenAccount as createTokenAccountForPosition } from "../../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
+import type { PositionData } from "../../../../src";
 
 describe("collect_reward_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -425,6 +431,140 @@ describe("collect_reward_v2", () => {
               rewardIndex: 0,
             }),
           ).buildAndExecute();
+        });
+
+        it("successfully collect reward of a position with dynamic tick arrays", async () => {
+          const tickLowerIndex = -1280;
+          const tickUpperIndex = 1280;
+          const tickSpacing = TickSpacing.Standard;
+          const vaultStartBalance = 1_000_000;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            tokenTraitA: tokenTraits.tokenTraitAB,
+            tokenTraitB: tokenTraits.tokenTraitAB,
+            tickSpacing,
+            positions: [
+              {
+                tickLowerIndex,
+                tickUpperIndex,
+                liquidityAmount: new anchor.BN(1_000_000),
+              },
+            ],
+            initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+            dynamicTickArrays: true,
+            rewards: [
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+            ],
+          });
+          const { poolInitInfo, positions, rewards } = fixture.getInfos();
+          const positionInitInfo = positions[0];
+
+          warpClock(1.2);
+
+          const rewardOwnerAccount = await createTokenAccountV2(
+            provider,
+            tokenTraits.tokenTraitR,
+            rewards[0].rewardMint,
+            provider.wallet.publicKey,
+          );
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              position: positions[0].publicKey,
+              tickArrayLower: positions[0].tickArrayLower,
+              tickArrayUpper: positions[0].tickArrayUpper,
+            }),
+          ).buildAndExecute();
+
+          const whirlpoolData = (await fetcher.getPool(
+            poolInitInfo.whirlpoolPda.publicKey,
+          )) as WhirlpoolData;
+          const positionBeforeCollect = (await fetcher.getPosition(
+            positions[0].publicKey,
+            IGNORE_CACHE,
+          )) as PositionData;
+          const lowerTickArrayData = (await fetcher.getTickArray(
+            positions[0].tickArrayLower,
+          )) as TickArrayData;
+          const upperTickArrayData = (await fetcher.getTickArray(
+            positions[0].tickArrayUpper,
+          )) as TickArrayData;
+
+          // Extract tick data without the initialized field to create DynamicTickData
+          const { initialized: _lowerTickInitialized, ...lowerTick } =
+            TickArrayUtil.getTickFromArray(
+              lowerTickArrayData,
+              tickLowerIndex,
+              tickSpacing,
+            );
+          const { initialized: _upperTickInitialized, ...upperTick } =
+            TickArrayUtil.getTickFromArray(
+              upperTickArrayData,
+              tickUpperIndex,
+              tickSpacing,
+            );
+
+          const expectation = collectRewardsQuote({
+            whirlpool: whirlpoolData,
+            position: positionBeforeCollect,
+            tickLower: lowerTick,
+            tickUpper: upperTick,
+            timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolData,
+                IGNORE_CACHE,
+              ),
+          });
+
+          assert.ok(!expectation.rewardOwed[0]!.isZero());
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positionInitInfo.publicKey,
+              positionTokenAccount: positionInitInfo.tokenAccount,
+              rewardMint: rewards[0].rewardMint,
+              rewardTokenProgram: rewards[0].tokenProgram,
+              rewardOwnerAccount,
+              rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+              rewardIndex: 0,
+            }),
+          ).buildAndExecute();
+
+          // Verify collected rewards match expectation
+          const collectedBalance = parseInt(
+            await getTokenBalance(provider, rewardOwnerAccount),
+          );
+          assert.equal(collectedBalance, expectation.rewardOwed[0]?.toNumber());
+
+          // Verify vault balance decreased correctly
+          const vaultBalance = parseInt(
+            await getTokenBalance(
+              provider,
+              rewards[0].rewardVaultKeypair.publicKey,
+            ),
+          );
+          assert.equal(vaultStartBalance - collectedBalance, vaultBalance);
+
+          // Verify position reward info was updated
+          const position = await fetcher.getPosition(
+            positions[0].publicKey,
+            IGNORE_CACHE,
+          );
+          assert.equal(position?.rewardInfos[0].amountOwed, 0);
+          assert.ok(
+            position?.rewardInfos[0].growthInsideCheckpoint.gte(ZERO_BN),
+          );
         });
 
         it("fails when reward index references an uninitialized reward", async () => {

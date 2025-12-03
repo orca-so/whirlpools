@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import type {
@@ -10,6 +10,7 @@ import type {
   WhirlpoolContext,
 } from "../../../../src";
 import {
+  buildWhirlpoolClient,
   collectFeesQuote,
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
@@ -18,6 +19,7 @@ import {
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
+import { swapQuoteByInputToken } from "../../../../src/quotes/public/swap-quote";
 import {
   approveToken,
   getTokenBalance,
@@ -466,6 +468,216 @@ describe("collect_fees_v2", () => {
           )
             .addSigner(newOwner)
             .buildAndExecute();
+        });
+
+        it("successfully collect fees of a position with dynamic tick arrays", async () => {
+          const tickLowerIndex = -1280;
+          const tickUpperIndex = 1280;
+          const tickSpacing = TickSpacing.Standard;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              {
+                tickLowerIndex,
+                tickUpperIndex,
+                liquidityAmount: new anchor.BN(10_000_000),
+              },
+            ],
+            initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+            dynamicTickArrays: true,
+          });
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tokenMintA,
+              tokenMintB,
+              tokenProgramA,
+              tokenProgramB,
+            },
+            positions,
+            tokenAccountA,
+            tokenAccountB,
+          } = fixture.getInfos();
+
+          const positionBeforeSwap = (await fetcher.getPosition(
+            positions[0].publicKey,
+          )) as PositionData;
+          assert.ok(positionBeforeSwap.feeOwedA.eq(ZERO_BN));
+          assert.ok(positionBeforeSwap.feeOwedB.eq(ZERO_BN));
+
+          const oraclePda = PDAUtil.getOracle(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+          );
+
+          const client = buildWhirlpoolClient(ctx);
+          const pool = await client.getPool(
+            whirlpoolPda.publicKey,
+            IGNORE_CACHE,
+          );
+
+          // Accrue fees in token A
+          const swapAmount1 = new BN(50_000);
+          const swapQuote1 = await swapQuoteByInputToken(
+            pool,
+            tokenMintA,
+            swapAmount1,
+            Percentage.fromFraction(1, 100),
+            ctx.program.programId,
+            fetcher,
+            IGNORE_CACHE,
+          );
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.swapV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              tokenMintA,
+              tokenMintB,
+              tokenProgramA,
+              tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              oracle: oraclePda.publicKey,
+              tokenAuthority: ctx.wallet.publicKey,
+              amount: swapAmount1,
+              otherAmountThreshold: swapQuote1.otherAmountThreshold,
+              sqrtPriceLimit: swapQuote1.sqrtPriceLimit,
+              amountSpecifiedIsInput: true,
+              aToB: true,
+              tickArray0: swapQuote1.tickArray0,
+              tickArray1: swapQuote1.tickArray1,
+              tickArray2: swapQuote1.tickArray2,
+            }),
+          ).buildAndExecute();
+
+          await pool.refreshData();
+
+          // Accrue fees in token B
+          const swapAmount2 = new BN(50_000);
+          const swapQuote2 = await swapQuoteByInputToken(
+            pool,
+            tokenMintB,
+            swapAmount2,
+            Percentage.fromFraction(1, 100),
+            ctx.program.programId,
+            fetcher,
+            IGNORE_CACHE,
+          );
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.swapV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              tokenMintA,
+              tokenMintB,
+              tokenProgramA,
+              tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+              oracle: oraclePda.publicKey,
+              tokenAuthority: ctx.wallet.publicKey,
+              amount: swapAmount2,
+              otherAmountThreshold: swapQuote2.otherAmountThreshold,
+              sqrtPriceLimit: swapQuote2.sqrtPriceLimit,
+              amountSpecifiedIsInput: true,
+              aToB: false,
+              tickArray0: swapQuote2.tickArray0,
+              tickArray1: swapQuote2.tickArray1,
+              tickArray2: swapQuote2.tickArray2,
+            }),
+          ).buildAndExecute();
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              position: positions[0].publicKey,
+              tickArrayLower: positions[0].tickArrayLower,
+              tickArrayUpper: positions[0].tickArrayUpper,
+            }),
+          ).buildAndExecute();
+
+          const positionAfterSwap = (await fetcher.getPosition(
+            positions[0].publicKey,
+            IGNORE_CACHE,
+          )) as PositionData;
+          assert.ok(positionAfterSwap.feeOwedA.gt(ZERO_BN));
+          assert.ok(positionAfterSwap.feeOwedB.gt(ZERO_BN));
+
+          const whirlpoolData = (await fetcher.getPool(
+            whirlpoolPda.publicKey,
+          )) as WhirlpoolData;
+          const lowerTickArrayData = (await fetcher.getTickArray(
+            positions[0].tickArrayLower,
+          )) as TickArrayData;
+          const upperTickArrayData = (await fetcher.getTickArray(
+            positions[0].tickArrayUpper,
+          )) as TickArrayData;
+
+          // Extract tick data without the initialized field to create DynamicTickData
+          const { initialized: _lowerTickInitialized, ...lowerTick } =
+            TickArrayUtil.getTickFromArray(
+              lowerTickArrayData,
+              tickLowerIndex,
+              tickSpacing,
+            );
+          const { initialized: _upperTickInitialized, ...upperTick } =
+            TickArrayUtil.getTickFromArray(
+              upperTickArrayData,
+              tickUpperIndex,
+              tickSpacing,
+            );
+
+          const expectation = collectFeesQuote({
+            whirlpool: whirlpoolData,
+            position: positionAfterSwap,
+            tickLower: lowerTick,
+            tickUpper: upperTick,
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolData,
+                IGNORE_CACHE,
+              ),
+          });
+
+          assert.ok(expectation.feeOwedA.gt(ZERO_BN));
+          assert.ok(expectation.feeOwedB.gt(ZERO_BN));
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              tokenMintA,
+              tokenMintB,
+              tokenProgramA,
+              tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: tokenVaultAKeypair.publicKey,
+              tokenVaultB: tokenVaultBKeypair.publicKey,
+            }),
+          ).buildAndExecute();
+
+          const positionAfterCollect = (await fetcher.getPosition(
+            positions[0].publicKey,
+            IGNORE_CACHE,
+          )) as PositionData;
+
+          assert.ok(positionAfterCollect.feeOwedA.eq(ZERO_BN));
+          assert.ok(positionAfterCollect.feeOwedB.eq(ZERO_BN));
         });
 
         it("fails when position does not match whirlpool", async () => {

@@ -1,6 +1,11 @@
 import type { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import type { PositionData, TickData, WhirlpoolData } from "../../types/public";
+import type {
+  DynamicTickData,
+  PositionData,
+  TickData,
+  WhirlpoolData,
+} from "../../types/public";
 import type { TokenExtensionContextForPool } from "../../utils/public/token-extension-util";
 import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
@@ -10,8 +15,8 @@ import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 export type CollectFeesQuoteParam = {
   whirlpool: WhirlpoolData;
   position: PositionData;
-  tickLower: TickData;
-  tickUpper: TickData;
+  tickLower: TickData | DynamicTickData;
+  tickUpper: TickData | DynamicTickData;
   tokenExtensionCtx: TokenExtensionContextForPool;
 };
 

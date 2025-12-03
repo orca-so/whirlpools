@@ -2,23 +2,31 @@ import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
+import { Percentage } from "@orca-so/common-sdk";
 import type { AdaptiveFeeConstantsData, WhirlpoolContext } from "../../../src";
 import {
   IGNORE_CACHE,
   PDAUtil,
   PriceMath,
+  TickUtil,
+  buildWhirlpoolClient,
+  increaseLiquidityQuoteByLiquidityWithParams,
+  swapQuoteByInputToken,
   toTx,
   WhirlpoolIx,
 } from "../../../src";
+import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import {
   initAdaptiveFeeTier,
   initializeConfigWithDefaultConfigParams,
 } from "../../utils/init-utils";
+import { createAndMintToAssociatedTokenAccount } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   createInOrderMints,
   getDefaultPresetAdaptiveFeeConstants,
 } from "../../utils/test-builders";
+import BN from "bn.js";
 
 describe("set_adaptive_fee_constants", () => {
   let ctx: WhirlpoolContext;
@@ -99,11 +107,106 @@ describe("set_adaptive_fee_constants", () => {
         oraclePda,
         tokenVaultAKeypair,
         tokenVaultBKeypair,
-        initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(0),
+        initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(192),
         initializePoolAuthority: ctx.wallet.publicKey,
         funder: ctx.wallet.publicKey,
       }),
     ).buildAndExecute();
+
+    // Create token accounts first (needed for liquidity deposit)
+    const tokenAccountA = await createAndMintToAssociatedTokenAccount(
+      ctx.provider,
+      tokenMintA,
+      new BN(1_000_000_000),
+    );
+    const tokenAccountB = await createAndMintToAssociatedTokenAccount(
+      ctx.provider,
+      tokenMintB,
+      new BN(1_000_000_000),
+    );
+
+    // Initialize tick arrays and add liquidity
+    const client = buildWhirlpoolClient(ctx);
+    const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    await (await pool.initTickArrayForTicks(
+      TickUtil.getFullRangeTickIndex(tickSpacing),
+    ))!.buildAndExecute();
+
+    const fullRange = TickUtil.getFullRangeTickIndex(tickSpacing);
+    const liquidityAmount = new BN(1_000_000);
+    const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+      liquidity: liquidityAmount,
+      slippageTolerance: Percentage.fromFraction(0, 100),
+      sqrtPrice: pool.getData().sqrtPrice,
+      tickCurrentIndex: pool.getData().tickCurrentIndex,
+      tickLowerIndex: fullRange[0],
+      tickUpperIndex: fullRange[1],
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+    });
+
+    const { tx: openPositionTx } = await pool.openPosition(
+      fullRange[0],
+      fullRange[1],
+      depositQuote,
+    );
+    await openPositionTx.buildAndExecute();
+
+    // Perform a swap to update oracle variables
+    const swapAmount = new BN(10_000);
+    const swapQuote = await swapQuoteByInputToken(
+      pool,
+      tokenMintA,
+      swapAmount,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapV2Ix(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA: TOKEN_PROGRAM_ID,
+        tokenProgramB: TOKEN_PROGRAM_ID,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: pool.getData().tokenVaultA,
+        tokenVaultB: pool.getData().tokenVaultB,
+        oracle: oraclePda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        amount: swapAmount,
+        otherAmountThreshold: swapQuote.otherAmountThreshold,
+        sqrtPriceLimit: swapQuote.sqrtPriceLimit,
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        tickArray0: swapQuote.tickArray0,
+        tickArray1: swapQuote.tickArray1,
+        tickArray2: swapQuote.tickArray2,
+      }),
+    ).buildAndExecute();
+
+    // Verify oracle variables are non-default after swap
+    const oracleAfterSwap = await fetcher.getOracle(
+      oraclePda.publicKey,
+      IGNORE_CACHE,
+    );
+    assert.ok(
+      !oracleAfterSwap?.adaptiveFeeVariables.lastReferenceUpdateTimestamp.isZero(),
+    );
+    assert.ok(
+      !oracleAfterSwap?.adaptiveFeeVariables.lastMajorSwapTimestamp.isZero(),
+    );
+    assert.notEqual(
+      oracleAfterSwap?.adaptiveFeeVariables.tickGroupIndexReference,
+      0,
+    );
+    assert.notEqual(
+      oracleAfterSwap?.adaptiveFeeVariables.volatilityAccumulator,
+      0,
+    );
 
     // Update only filter_period and decay_period
     await toTx(
@@ -121,30 +224,53 @@ describe("set_adaptive_fee_constants", () => {
       .buildAndExecute();
 
     // Verify only specified constants were updated
-    const oracle = await fetcher.getOracle(oraclePda.publicKey, IGNORE_CACHE);
-    assert.equal(oracle?.adaptiveFeeConstants.filterPeriod, 60);
-    assert.equal(oracle?.adaptiveFeeConstants.decayPeriod, 1200);
+    const oracleAfterUpdate = await fetcher.getOracle(
+      oraclePda.publicKey,
+      IGNORE_CACHE,
+    );
+    assert.equal(oracleAfterUpdate?.adaptiveFeeConstants.filterPeriod, 60);
+    assert.equal(oracleAfterUpdate?.adaptiveFeeConstants.decayPeriod, 1200);
 
     // Other constants should remain unchanged
     assert.equal(
-      oracle?.adaptiveFeeConstants.reductionFactor,
+      oracleAfterUpdate?.adaptiveFeeConstants.reductionFactor,
       initialPresetAdaptiveFeeConstants.reductionFactor,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.adaptiveFeeControlFactor,
+      oracleAfterUpdate?.adaptiveFeeConstants.adaptiveFeeControlFactor,
       initialPresetAdaptiveFeeConstants.adaptiveFeeControlFactor,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.maxVolatilityAccumulator,
+      oracleAfterUpdate?.adaptiveFeeConstants.maxVolatilityAccumulator,
       initialPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.tickGroupSize,
+      oracleAfterUpdate?.adaptiveFeeConstants.tickGroupSize,
       initialPresetAdaptiveFeeConstants.tickGroupSize,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.majorSwapThresholdTicks,
+      oracleAfterUpdate?.adaptiveFeeConstants.majorSwapThresholdTicks,
       initialPresetAdaptiveFeeConstants.majorSwapThresholdTicks,
+    );
+
+    // Verify adaptive fee variables were reset to default values
+    assert.ok(
+      oracleAfterUpdate?.adaptiveFeeVariables.lastReferenceUpdateTimestamp.isZero(),
+    );
+    assert.ok(
+      oracleAfterUpdate?.adaptiveFeeVariables.lastMajorSwapTimestamp.isZero(),
+    );
+    assert.equal(
+      oracleAfterUpdate?.adaptiveFeeVariables.volatilityReference,
+      0,
+    );
+    assert.equal(
+      oracleAfterUpdate?.adaptiveFeeVariables.tickGroupIndexReference,
+      0,
+    );
+    assert.equal(
+      oracleAfterUpdate?.adaptiveFeeVariables.volatilityAccumulator,
+      0,
     );
   });
 
@@ -207,11 +333,106 @@ describe("set_adaptive_fee_constants", () => {
         oraclePda,
         tokenVaultAKeypair,
         tokenVaultBKeypair,
-        initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(0),
+        initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(192),
         initializePoolAuthority: ctx.wallet.publicKey,
         funder: ctx.wallet.publicKey,
       }),
     ).buildAndExecute();
+
+    // Create token accounts first (needed for liquidity deposit)
+    const tokenAccountA = await createAndMintToAssociatedTokenAccount(
+      ctx.provider,
+      tokenMintA,
+      new BN(1_000_000_000),
+    );
+    const tokenAccountB = await createAndMintToAssociatedTokenAccount(
+      ctx.provider,
+      tokenMintB,
+      new BN(1_000_000_000),
+    );
+
+    // Initialize tick arrays and add liquidity
+    const client = buildWhirlpoolClient(ctx);
+    const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    await (await pool.initTickArrayForTicks(
+      TickUtil.getFullRangeTickIndex(tickSpacing),
+    ))!.buildAndExecute();
+
+    const fullRange = TickUtil.getFullRangeTickIndex(tickSpacing);
+    const liquidityAmount = new BN(1_000_000);
+    const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+      liquidity: liquidityAmount,
+      slippageTolerance: Percentage.fromFraction(0, 100),
+      sqrtPrice: pool.getData().sqrtPrice,
+      tickCurrentIndex: pool.getData().tickCurrentIndex,
+      tickLowerIndex: fullRange[0],
+      tickUpperIndex: fullRange[1],
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+    });
+
+    const { tx: openPositionTx } = await pool.openPosition(
+      fullRange[0],
+      fullRange[1],
+      depositQuote,
+    );
+    await openPositionTx.buildAndExecute();
+
+    // Perform a swap to update oracle variables
+    const swapAmount = new BN(10_000);
+    const swapQuote = await swapQuoteByInputToken(
+      pool,
+      tokenMintA,
+      swapAmount,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapV2Ix(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA: TOKEN_PROGRAM_ID,
+        tokenProgramB: TOKEN_PROGRAM_ID,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: pool.getData().tokenVaultA,
+        tokenVaultB: pool.getData().tokenVaultB,
+        oracle: oraclePda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        amount: swapAmount,
+        otherAmountThreshold: swapQuote.otherAmountThreshold,
+        sqrtPriceLimit: swapQuote.sqrtPriceLimit,
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        tickArray0: swapQuote.tickArray0,
+        tickArray1: swapQuote.tickArray1,
+        tickArray2: swapQuote.tickArray2,
+      }),
+    ).buildAndExecute();
+
+    // Verify oracle variables are non-default after swap
+    const oracleAfterSwap = await fetcher.getOracle(
+      oraclePda.publicKey,
+      IGNORE_CACHE,
+    );
+    assert.ok(
+      !oracleAfterSwap?.adaptiveFeeVariables.lastReferenceUpdateTimestamp.isZero(),
+    );
+    assert.ok(
+      !oracleAfterSwap?.adaptiveFeeVariables.lastMajorSwapTimestamp.isZero(),
+    );
+    assert.notEqual(
+      oracleAfterSwap?.adaptiveFeeVariables.tickGroupIndexReference,
+      0,
+    );
+    assert.notEqual(
+      oracleAfterSwap?.adaptiveFeeVariables.volatilityAccumulator,
+      0,
+    );
 
     // Update all constants
     const newConstants = {
@@ -238,34 +459,57 @@ describe("set_adaptive_fee_constants", () => {
       .buildAndExecute();
 
     // Verify all constants were updated
-    const oracle = await fetcher.getOracle(oraclePda.publicKey, IGNORE_CACHE);
+    const oracleAfterUpdate = await fetcher.getOracle(
+      oraclePda.publicKey,
+      IGNORE_CACHE,
+    );
     assert.equal(
-      oracle?.adaptiveFeeConstants.filterPeriod,
+      oracleAfterUpdate?.adaptiveFeeConstants.filterPeriod,
       newConstants.filterPeriod,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.decayPeriod,
+      oracleAfterUpdate?.adaptiveFeeConstants.decayPeriod,
       newConstants.decayPeriod,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.reductionFactor,
+      oracleAfterUpdate?.adaptiveFeeConstants.reductionFactor,
       newConstants.reductionFactor,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.adaptiveFeeControlFactor,
+      oracleAfterUpdate?.adaptiveFeeConstants.adaptiveFeeControlFactor,
       newConstants.adaptiveFeeControlFactor,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.maxVolatilityAccumulator,
+      oracleAfterUpdate?.adaptiveFeeConstants.maxVolatilityAccumulator,
       newConstants.maxVolatilityAccumulator,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.tickGroupSize,
+      oracleAfterUpdate?.adaptiveFeeConstants.tickGroupSize,
       newConstants.tickGroupSize,
     );
     assert.equal(
-      oracle?.adaptiveFeeConstants.majorSwapThresholdTicks,
+      oracleAfterUpdate?.adaptiveFeeConstants.majorSwapThresholdTicks,
       newConstants.majorSwapThresholdTicks,
+    );
+
+    // Verify adaptive fee variables were reset to default values
+    assert.ok(
+      oracleAfterUpdate?.adaptiveFeeVariables.lastReferenceUpdateTimestamp.isZero(),
+    );
+    assert.ok(
+      oracleAfterUpdate?.adaptiveFeeVariables.lastMajorSwapTimestamp.isZero(),
+    );
+    assert.equal(
+      oracleAfterUpdate?.adaptiveFeeVariables.volatilityReference,
+      0,
+    );
+    assert.equal(
+      oracleAfterUpdate?.adaptiveFeeVariables.tickGroupIndexReference,
+      0,
+    );
+    assert.equal(
+      oracleAfterUpdate?.adaptiveFeeVariables.volatilityAccumulator,
+      0,
     );
   });
 

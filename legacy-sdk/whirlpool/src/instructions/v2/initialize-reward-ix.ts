@@ -51,7 +51,7 @@ export type InitializeRewardV2Params = InitializeRewardV2BaseParams & {
  * @param funder - The account that would fund the creation of this account
  * @param rewardTokenProgram - PublicKey for the token program.
  */
-export type InitializeRewardV2WithExternalSignerParams =
+export type InitializeRewardV2WithPubkeyParams =
   InitializeRewardV2BaseParams & {
     rewardVault: PublicKey;
   };
@@ -60,67 +60,33 @@ export type InitializeRewardV2WithExternalSignerParams =
  * Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.
  * The initial emissionsPerSecond is set to 0.
  *
+ * This function supports two flows:
+ * - SDK-managed reward vault (with `rewardVaultKeypair`) where the SDK
+ *   includes the vault keypair in the returned signers.
+ * - External-signer reward vault (with `rewardVault`) where the vault account
+ *   already exists and its signing is handled externally (e.g. Squads), so no
+ *   vault signer is returned.
+ *
  * #### Special Errors
  * - `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized index in this pool,
  *                          or exceeds NUM_REWARDS, or all reward slots for this pool has been initialized.
  *
  * @category Instructions
  * @param context - Context object containing services required to generate the instruction
- * @param params - InitializeRewardV2Params object
+ * @param params - InitializeRewardV2Params or InitializeRewardV2WithPubkeyParams
  * @returns - Instruction to perform the action.
  */
 export function initializeRewardV2Ix(
   program: Program<Whirlpool>,
   params: InitializeRewardV2Params,
-): Instruction {
-  const {
-    rewardAuthority,
-    funder,
-    whirlpool,
-    rewardMint,
-    rewardTokenBadge,
-    rewardVaultKeypair,
-    rewardIndex,
-    rewardTokenProgram,
-  } = params;
-
-  const ix = program.instruction.initializeRewardV2(rewardIndex, {
-    accounts: {
-      rewardAuthority,
-      funder,
-      whirlpool,
-      rewardMint,
-      rewardTokenBadge,
-      rewardVault: rewardVaultKeypair.publicKey,
-      rewardTokenProgram,
-      systemProgram: SystemProgram.programId,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-    },
-  });
-
-  return {
-    instructions: [ix],
-    cleanupInstructions: [],
-    signers: [rewardVaultKeypair],
-  };
-}
-
-/**
- * Initialize reward for a Whirlpool using an existing reward vault account
- * whose signing will be handled externally (e.g. via a multisig such as
- * Squads).
- *
- * This builds the same on-chain `initializeRewardV2` instruction but does
- * not include the reward vault keypair in the returned signers.
- *
- * @category Instructions
- * @param context - Context object containing services required to generate the instruction
- * @param params - InitializeRewardV2WithExternalSignerParams object
- * @returns - Instruction to perform the action.
- */
-export function initializeRewardV2WithExternalSignerIx(
+): Instruction;
+export function initializeRewardV2Ix(
   program: Program<Whirlpool>,
-  params: InitializeRewardV2WithExternalSignerParams,
+  params: InitializeRewardV2WithPubkeyParams,
+): Instruction;
+export function initializeRewardV2Ix(
+  program: Program<Whirlpool>,
+  params: InitializeRewardV2Params | InitializeRewardV2WithPubkeyParams,
 ): Instruction {
   const {
     rewardAuthority,
@@ -128,10 +94,14 @@ export function initializeRewardV2WithExternalSignerIx(
     whirlpool,
     rewardMint,
     rewardTokenBadge,
-    rewardVault,
     rewardIndex,
     rewardTokenProgram,
   } = params;
+
+  const rewardVault =
+    "rewardVaultKeypair" in params
+      ? params.rewardVaultKeypair.publicKey
+      : params.rewardVault;
 
   const ix = program.instruction.initializeRewardV2(rewardIndex, {
     accounts: {
@@ -150,6 +120,6 @@ export function initializeRewardV2WithExternalSignerIx(
   return {
     instructions: [ix],
     cleanupInstructions: [],
-    signers: [],
+    signers: "rewardVaultKeypair" in params ? [params.rewardVaultKeypair] : [],
   };
 }

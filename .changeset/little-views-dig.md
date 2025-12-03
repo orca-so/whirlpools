@@ -1,5 +1,5 @@
 ---
-"@orca-so/whirlpools-sdk": minor
+"@orca-so/whirlpools-sdk": patch
 ---
 
-Add external-signer variant for initializeRewardV2 (new params/helper, WhirlpoolIx wrapper, and test)
+Add overloaded initializeRewardV2 params and builders so callers can either pass a vault keypair (SDK signs) or an existing vault PublicKey for external signing, without changing existing behavior.

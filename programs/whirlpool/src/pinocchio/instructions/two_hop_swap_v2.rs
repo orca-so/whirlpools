@@ -1,4 +1,6 @@
-use crate::pinocchio::instructions::swap_v2::{PostSwapUpdate, pino_swap_with_transfer_fee_extension};
+use crate::pinocchio::instructions::swap_v2::{
+    pino_swap_with_transfer_fee_extension, PostSwapUpdate,
+};
 use crate::util::{to_timestamp_u64, AccountsType};
 use crate::{
     constants::transfer_memo,
@@ -7,17 +9,12 @@ use crate::{
         ported::{
             util_remaining_accounts_utils::pino_parse_remaining_accounts,
             util_sparse_swap::SparseSwapTickSequenceBuilder,
-            util_swap_tick_sequence::SwapTickSequence,
             util_token::{
-                pino_calculate_transfer_fee_excluded_amount,
-                pino_calculate_transfer_fee_included_amount, pino_transfer_from_owner_to_vault_v2,
+                pino_calculate_transfer_fee_excluded_amount, pino_transfer_from_owner_to_vault_v2,
                 pino_transfer_from_vault_to_owner_v2,
             },
         },
-        state::whirlpool::{
-            oracle::accessor::OracleAccessor, MemoryMappedTick, MemoryMappedWhirlpool, TickArray,
-            TickUpdate,
-        },
+        state::whirlpool::{oracle::accessor::OracleAccessor, MemoryMappedWhirlpool},
         utils::{
             account_info_iter::AccountIterator,
             account_load::load_account_mut,
@@ -25,7 +22,6 @@ use crate::{
         },
         Result,
     },
-    state::AdaptiveFeeInfo,
 };
 use pinocchio::account_info::AccountInfo;
 use pinocchio::pubkey::pubkey_eq;
@@ -33,8 +29,7 @@ use pinocchio::sysvars::{clock::Clock, Sysvar};
 
 use crate::errors::ErrorCode;
 
-
-/* 
+/*
 #[derive(Accounts)]
 #[instruction(
     amount: u64,
@@ -225,20 +220,16 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     // TODO: tick_array_two_1_info
     // TODO: tick_array_two_2_info
     // oracle_one_info
-    verify_whirlpool_program_address_seeds(oracle_one_info.key(),
-    &[
-        b"oracle",
-        whirlpool_one_info.key().as_ref(),
-    ],
-  )?;
+    verify_whirlpool_program_address_seeds(
+        oracle_one_info.key(),
+        &[b"oracle", whirlpool_one_info.key().as_ref()],
+    )?;
     // oracle_two_info
-    verify_whirlpool_program_address_seeds(oracle_two_info.key(),
-    &[
-        b"oracle",
-        whirlpool_two_info.key().as_ref(),
-    ],
-  )?;
-  // memo_program_info: done
+    verify_whirlpool_program_address_seeds(
+        oracle_two_info.key(),
+        &[b"oracle", whirlpool_two_info.key().as_ref()],
+    )?;
+    // memo_program_info: done
 
     // The beginning of handler core logic
 
@@ -278,7 +269,12 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         tick_array_one_2_info,
         &remaining_accounts.supplemental_tick_arrays_one,
     );
-    let mut swap_tick_sequence_one = swap_tick_sequence_builder_one.try_build(whirlpool_one_info.key(), whirlpool_one.tick_current_index(), whirlpool_one.tick_spacing(), data.a_to_b_one)?;
+    let mut swap_tick_sequence_one = swap_tick_sequence_builder_one.try_build(
+        whirlpool_one_info.key(),
+        whirlpool_one.tick_current_index(),
+        whirlpool_one.tick_spacing(),
+        data.a_to_b_one,
+    )?;
 
     let swap_tick_sequence_builder_two = SparseSwapTickSequenceBuilder::new(
         tick_array_two_0_info,
@@ -286,17 +282,20 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         tick_array_two_2_info,
         &remaining_accounts.supplemental_tick_arrays_two,
     );
-    let mut swap_tick_sequence_two = swap_tick_sequence_builder_two.try_build(whirlpool_two_info.key(), whirlpool_two.tick_current_index(), whirlpool_two.tick_spacing(), data.a_to_b_two)?;
+    let mut swap_tick_sequence_two = swap_tick_sequence_builder_two.try_build(
+        whirlpool_two_info.key(),
+        whirlpool_two.tick_current_index(),
+        whirlpool_two.tick_spacing(),
+        data.a_to_b_two,
+    )?;
 
-    let oracle_accessor_one =
-        OracleAccessor::new(whirlpool_one_info.key(), oracle_one_info)?;
+    let oracle_accessor_one = OracleAccessor::new(whirlpool_one_info.key(), oracle_one_info)?;
     if !oracle_accessor_one.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }
     let adaptive_fee_info_one = oracle_accessor_one.get_adaptive_fee_info()?;
 
-    let oracle_accessor_two =
-        OracleAccessor::new(whirlpool_two_info.key(), oracle_two_info)?;
+    let oracle_accessor_two = OracleAccessor::new(whirlpool_two_info.key(), oracle_two_info)?;
     if !oracle_accessor_two.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }
@@ -547,7 +546,8 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         output_transfer_fee: output_transfer_fee_one,
         lp_fee: lp_fee_one,
         protocol_fee: protocol_fee_one,
-    }.emit()?;
+    }
+    .emit()?;
 
     Event::Traded {
         whirlpool: whirlpool_two_info.key(),
@@ -560,11 +560,11 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         output_transfer_fee: output_transfer_fee_two,
         lp_fee: lp_fee_two,
         protocol_fee: protocol_fee_two,
-    }.emit()?;
+    }
+    .emit()?;
 
     Ok(())
 }
-
 
 // ----------------------------------------
 

@@ -165,6 +165,42 @@ impl MemoryMappedWhirlpool {
         &self.reward_infos
     }
 
+    #[inline(always)]
+    pub fn input_token_mint(&self, a_to_b: bool) -> &Pubkey {
+        if a_to_b {
+            &self.token_mint_a
+        } else {
+            &self.token_mint_b
+        }
+    }
+
+    #[inline(always)]
+    pub fn input_token_vault(&self, a_to_b: bool) -> &Pubkey {
+        if a_to_b {
+            &self.token_vault_a
+        } else {
+            &self.token_vault_b
+        }
+    }
+
+    #[inline(always)]
+    pub fn output_token_mint(&self, a_to_b: bool) -> &Pubkey {
+        if a_to_b {
+            &self.token_mint_b
+        } else {
+            &self.token_mint_a
+        }
+    }
+
+    #[inline(always)]
+    pub fn output_token_vault(&self, a_to_b: bool) -> &Pubkey {
+        if a_to_b {
+            &self.token_vault_b
+        } else {
+            &self.token_vault_a
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn update_after_swap(
         &mut self,

@@ -117,7 +117,7 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     let oracle_accessor = OracleAccessor::new(whirlpool_info.key(), oracle_info)?;
     if !oracle_accessor.is_trade_enabled(timestamp)? {
-        return Err(crate::errors::ErrorCode::TradeIsNotEnabled.into());
+        return Err(ErrorCode::TradeIsNotEnabled.into());
     }
     let adaptive_fee_info = oracle_accessor.get_adaptive_fee_info()?;
 

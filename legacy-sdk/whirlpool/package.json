@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-sdk",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "description": "Typescript SDK to interact with Orca's Whirlpool program.",
   "license": "SEE LICENSE IN LICENSE",
   "main": "dist/index.js",

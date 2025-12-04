@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.17.2
+
+### Patch Changes
+
+- [#1194](https://github.com/orca-so/whirlpools/pull/1194) [`0b2389e`](https://github.com/orca-so/whirlpools/commit/0b2389ea186c8e8c4da2f2fecb5faff0fc3bbee9) Thanks [@calintje](https://github.com/calintje)! - Add overloaded initializeRewardV2 params and builders so callers can either pass a vault keypair (SDK signs) or an existing vault PublicKey for external signing, without changing existing behavior.
+
 ## 0.17.1
 
 ### Patch Changes

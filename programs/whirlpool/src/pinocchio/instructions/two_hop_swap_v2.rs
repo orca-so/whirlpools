@@ -144,9 +144,9 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     let tick_array_two_0_info = iter.next_mut()?;
     let tick_array_two_1_info = iter.next_mut()?;
     let tick_array_two_2_info = iter.next_mut()?;
-    let memo_program_info = iter.next_program_memo()?;
     let oracle_one_info = iter.next_mut()?;
     let oracle_two_info = iter.next_mut()?;
+    let memo_program_info = iter.next_program_memo()?;
     // remaining accounts
     // - accounts for transfer hook program of token_mint_input
     // - accounts for transfer hook program of token_mint_intermediate

@@ -1,5 +1,17 @@
 # @orca-so/whirlpools
 
+## 6.0.0
+
+### Major Changes
+
+- [#1163](https://github.com/orca-so/whirlpools/pull/1163) [`c2c96da`](https://github.com/orca-so/whirlpools/commit/c2c96dae47cf0102afc2ec41d9ba5cf0c99fa340) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update solana ts dependencies, migrate from tests from bankrun to litesvm
+
+### Patch Changes
+
+- Updated dependencies [[`c2c96da`](https://github.com/orca-so/whirlpools/commit/c2c96dae47cf0102afc2ec41d9ba5cf0c99fa340)]:
+  - @orca-so/tx-sender@3.0.0
+  - @orca-so/whirlpools-client@6.0.0
+
 ## 5.0.0
 
 ### Major Changes

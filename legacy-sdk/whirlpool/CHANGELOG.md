@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.17.1
+
+### Patch Changes
+
+- [#1192](https://github.com/orca-so/whirlpools/pull/1192) [`8b2c0f9`](https://github.com/orca-so/whirlpools/commit/8b2c0f9c311998ed0f118f0de76dc9925457d2d7) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update CollectFeesQuoteParam and CollectRewardsQuoteParam to accept TickData or DynamicTickData"
+
 ## 0.17.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.17.3
+
+### Patch Changes
+
+- [#1200](https://github.com/orca-so/whirlpools/pull/1200) [`2c2c266`](https://github.com/orca-so/whirlpools/commit/2c2c266f616d29b32efa544b7ffb6fb6d008131d) Thanks [@calintje](https://github.com/calintje)! - Fix: export missing InitializeRewardV2WithPubkeyParams
+
 ## 0.17.2
 
 ### Patch Changes

@@ -1,5 +1,5 @@
 import type { Program } from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
+import type { PDA, Instruction } from "@orca-so/common-sdk";
 import type { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
@@ -825,8 +825,11 @@ export class WhirlpoolIx {
 
   public static initializeRewardV2Ix(
     program: Program<Whirlpool>,
-    params: ix.InitializeRewardV2Params,
-  ) {
+    params: ix.InitializeRewardV2Params | ix.InitializeRewardV2WithPubkeyParams,
+  ): Instruction {
+    if ("rewardVaultKeypair" in params) {
+      return ix.initializeRewardV2Ix(program, params);
+    }
     return ix.initializeRewardV2Ix(program, params);
   }
 

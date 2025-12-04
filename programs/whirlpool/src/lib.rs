@@ -1164,6 +1164,7 @@ pub mod whirlpool {
     /// - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
     /// - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
     #[allow(clippy::too_many_arguments)]
+    #[allow(unused_variables)]
     pub fn two_hop_swap_v2<'info>(
         ctx: Context<'_, '_, '_, 'info, TwoHopSwapV2<'info>>,
         amount: u64,
@@ -1175,17 +1176,7 @@ pub mod whirlpool {
         sqrt_price_limit_two: u128,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        instructions::v2::two_hop_swap::handler(
-            ctx,
-            amount,
-            other_amount_threshold,
-            amount_specified_is_input,
-            a_to_b_one,
-            a_to_b_two,
-            sqrt_price_limit_one,
-            sqrt_price_limit_two,
-            remaining_accounts_info,
-        )
+        unreachable!(); // Pinocchio
     }
 
     /// Initializes a WhirlpoolConfigExtension account that hosts info & authorities.

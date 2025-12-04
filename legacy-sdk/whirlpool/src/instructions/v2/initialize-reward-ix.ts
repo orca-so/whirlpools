@@ -78,14 +78,6 @@ export type InitializeRewardV2WithPubkeyParams =
  */
 export function initializeRewardV2Ix(
   program: Program<Whirlpool>,
-  params: InitializeRewardV2Params,
-): Instruction;
-export function initializeRewardV2Ix(
-  program: Program<Whirlpool>,
-  params: InitializeRewardV2WithPubkeyParams,
-): Instruction;
-export function initializeRewardV2Ix(
-  program: Program<Whirlpool>,
   params: InitializeRewardV2Params | InitializeRewardV2WithPubkeyParams,
 ): Instruction {
   const {

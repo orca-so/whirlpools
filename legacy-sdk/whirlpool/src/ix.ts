@@ -825,14 +825,6 @@ export class WhirlpoolIx {
 
   public static initializeRewardV2Ix(
     program: Program<Whirlpool>,
-    params: ix.InitializeRewardV2Params,
-  ): Instruction;
-  public static initializeRewardV2Ix(
-    program: Program<Whirlpool>,
-    params: ix.InitializeRewardV2WithPubkeyParams,
-  ): Instruction;
-  public static initializeRewardV2Ix(
-    program: Program<Whirlpool>,
     params: ix.InitializeRewardV2Params | ix.InitializeRewardV2WithPubkeyParams,
   ): Instruction {
     if ("rewardVaultKeypair" in params) {

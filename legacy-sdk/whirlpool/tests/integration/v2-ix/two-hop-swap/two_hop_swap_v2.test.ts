@@ -52,6 +52,7 @@ import {
   asyncAssertOwnerProgram,
   createMintV2,
   createTokenAccountV2,
+  mintToDestinationV2,
 } from "../../../utils/v2/token-2022";
 import {
   NO_TOKEN_EXTENSION_CONTEXT,
@@ -323,6 +324,7 @@ describe("two_hop_swap_v2", () => {
             // To match token program (Token or Token-2022), create new mint and token account here
             const anotherMintInput = await createMintV2(provider, tokenTraits.tokenTraitA, baseIxParams.tokenAuthority);
             const anotherTokenOwnerAccountInput = await createTokenAccountV2(provider, tokenTraits.tokenTraitA, anotherMintInput, baseIxParams.tokenAuthority);
+            await mintToDestinationV2(provider, tokenTraits.tokenTraitA, anotherMintInput, anotherTokenOwnerAccountInput, baseIxParams.amount);
             const anotherMintOutput = await createMintV2(provider, tokenTraits.tokenTraitC, baseIxParams.tokenAuthority);
             const anotherTokenOwnerAccountOutput = await createTokenAccountV2(provider, tokenTraits.tokenTraitC, anotherMintOutput, baseIxParams.tokenAuthority);
 

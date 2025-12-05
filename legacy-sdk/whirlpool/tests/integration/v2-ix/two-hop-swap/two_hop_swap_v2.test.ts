@@ -319,9 +319,9 @@ describe("two_hop_swap_v2", () => {
           });
 
           it("fails invalid token account", async () => {
-            const errorRegExp = tokenTraits.tokenTraitA.isToken2022 == tokenTraits.tokenTraitC.isToken2022
-              ? /0x3/ // MintMismatch (from Token program, validation has been delegated to Token program
-              : /InvalidAccountData/; // Token program mismatch
+            const errorRegExp = baseIxParams.tokenProgramInput.equals(baseIxParams.tokenProgramOutput)
+              ? /0x3/ // MintMismatch (from Token program, validation has been delegated to Token program)
+              : /InvalidAccountData/; // TokenProgramMismatch (from Token program, validation has been delegated to Token program)
 
             await rejectParams(
               {

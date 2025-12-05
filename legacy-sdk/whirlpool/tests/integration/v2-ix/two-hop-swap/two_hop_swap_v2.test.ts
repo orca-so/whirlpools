@@ -51,6 +51,7 @@ import type {
 import {
   asyncAssertOwnerProgram,
   createMintV2,
+  createTokenAccountV2,
 } from "../../../utils/v2/token-2022";
 import {
   NO_TOKEN_EXTENSION_CONTEXT,
@@ -319,25 +320,27 @@ describe("two_hop_swap_v2", () => {
           });
 
           it("fails invalid token account", async () => {
-            const errorRegExp = baseIxParams.tokenProgramInput.equals(baseIxParams.tokenProgramOutput)
-              ? /0x3/ // MintMismatch (from Token program, validation has been delegated to Token program)
-              : /InvalidAccountData/; // TokenProgramMismatch (from Token program, validation has been delegated to Token program)
+            // To match token program (Token or Token-2022), create new mint and token account here
+            const anotherMintInput = await createMintV2(provider, tokenTraits.tokenTraitA, baseIxParams.tokenAuthority);
+            const anotherTokenOwnerAccountInput = await createTokenAccountV2(provider, tokenTraits.tokenTraitA, anotherMintInput, baseIxParams.tokenAuthority);
+            const anotherMintOutput = await createMintV2(provider, tokenTraits.tokenTraitC, baseIxParams.tokenAuthority);
+            const anotherTokenOwnerAccountOutput = await createTokenAccountV2(provider, tokenTraits.tokenTraitC, anotherMintOutput, baseIxParams.tokenAuthority);
 
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
+                tokenOwnerAccountInput: anotherTokenOwnerAccountInput,
               },
               // /0x7d3/, // Anchor: ConstraintRaw
-              errorRegExp, // pinocchio
+              /0x3/ // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
+                tokenOwnerAccountOutput: anotherTokenOwnerAccountOutput,
               },
               // /0x7d3/, // Anchor: ConstraintRaw
-              errorRegExp, // pinocchio
+              /0x3/ // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
             );
           });
 

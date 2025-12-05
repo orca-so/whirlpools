@@ -159,6 +159,11 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     // whirlpool_one_info
     let mut whirlpool_one = load_account_mut::<MemoryMappedWhirlpool>(whirlpool_one_info)?;
     // whirlpool_two_info
+    // Don't allow swaps on the same whirlpool
+    // load_account_mut will throw AccountBorrowFailed if both accounts are the same.
+    if pubkey_eq(whirlpool_one_info.key(), whirlpool_two_info.key()) {
+        return Err(ErrorCode::DuplicateTwoHopPool.into());
+    }
     let mut whirlpool_two = load_account_mut::<MemoryMappedWhirlpool>(whirlpool_two_info)?;
     // token_mint_input_info
     verify_address(
@@ -236,13 +241,6 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
-
-    // TODO: load_mut for the same Whirlpool ... different error ?
-
-    // Don't allow swaps on the same whirlpool
-    if pubkey_eq(whirlpool_one_info.key(), whirlpool_two_info.key()) {
-        return Err(ErrorCode::DuplicateTwoHopPool.into());
-    }
 
     let swap_one_output_mint = whirlpool_one.output_token_mint(data.a_to_b_one);
     let swap_two_input_mint = whirlpool_two.input_token_mint(data.a_to_b_two);

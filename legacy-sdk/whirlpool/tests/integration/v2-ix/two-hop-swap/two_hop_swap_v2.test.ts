@@ -310,9 +310,11 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 whirlpoolOne: baseIxParams.whirlpoolTwo,
               },
-              ///0x7d3/ // ConstraintRaw
-              // V2 has token_mint_one_a and it has address constraint
-              /0x7dc/, // ConstraintAddress
+              // Anchor
+              /////0x7d3/ // ConstraintRaw
+              //// V2 has token_mint_one_a and it has address constraint
+              ///0x7dc/, // ConstraintAddress
+              /0x179a/ // pinocchio: DuplicateTwoHopPool
             );
           });
 
@@ -322,14 +324,16 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
               },
-              /0x7d3/, // ConstraintRaw
+              // /0x7d3/, // Anchor: ConstraintRaw
+              /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
               },
-              /0x7d3/, // ConstraintRaw
+              // /0x7d3/, // Anchor: ConstraintRaw
+              /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
             );
           });
 

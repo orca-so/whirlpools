@@ -319,13 +319,17 @@ describe("two_hop_swap_v2", () => {
           });
 
           it("fails invalid token account", async () => {
+            const errorRegExp = tokenTraits.tokenTraitA.isToken2022 == tokenTraits.tokenTraitC.isToken2022
+              ? /0x3/ // MintMismatch (from Token program, validation has been delegated to Token program
+              : /InvalidAccountData/; // Token program mismatch
+
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
               },
               // /0x7d3/, // Anchor: ConstraintRaw
-              /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
+              errorRegExp, // pinocchio
             );
             await rejectParams(
               {
@@ -333,7 +337,7 @@ describe("two_hop_swap_v2", () => {
                 tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
               },
               // /0x7d3/, // Anchor: ConstraintRaw
-              /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
+              errorRegExp, // pinocchio
             );
           });
 

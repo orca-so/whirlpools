@@ -2016,7 +2016,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "5.0.2"
+version = "6.0.0"
 dependencies = [
  "bincode",
  "bs58",
@@ -2049,7 +2049,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "6.0.0"
+version = "7.0.0"
 dependencies = [
  "borsh",
  "num-derive",
@@ -2069,7 +2069,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "ethnum",
  "libm",
@@ -5418,7 +5418,7 @@ dependencies = [
 
 [[package]]
 name = "whirlpool_repositioning_bot"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "clap",
  "colored",

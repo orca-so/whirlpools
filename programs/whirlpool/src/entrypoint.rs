@@ -10,7 +10,11 @@ const MAX_TX_ACCOUNTS: usize = 64;
 #[no_mangle]
 pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
     type PinocchioInstructionHandler = fn(&[AccountInfo], &[u8]) -> crate::pinocchio::Result<()>;
-    const PINOCCHIO_INSTRUCTIONS: [(&[u8], PinocchioInstructionHandler); 6] = [
+    const PINOCCHIO_INSTRUCTIONS: [(&[u8], PinocchioInstructionHandler); 7] = [
+        (
+            crate::instruction::Swap::DISCRIMINATOR,
+            crate::pinocchio::instructions::swap::handler,
+        ),
         (
             crate::instruction::SwapV2::DISCRIMINATOR,
             crate::pinocchio::instructions::swap_v2::handler,

@@ -243,7 +243,7 @@ pub fn pino_swap_with_transfer_fee_extension(
         )?
         .amount;
 
-        let swap_update = swap(
+        let swap_update = pino_swap(
             whirlpool,
             swap_tick_sequence,
             transfer_fee_excluded_input,
@@ -307,7 +307,7 @@ pub fn pino_swap_with_transfer_fee_extension(
     )?
     .amount;
 
-    let swap_update = swap(
+    let swap_update = pino_swap(
         whirlpool,
         swap_tick_sequence,
         transfer_fee_included_output,
@@ -386,7 +386,7 @@ struct PartialRewardInfo {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn swap(
+pub fn pino_swap(
     whirlpool: &MemoryMappedWhirlpool,
     swap_tick_sequence: &mut SwapTickSequence,
     amount: u64,

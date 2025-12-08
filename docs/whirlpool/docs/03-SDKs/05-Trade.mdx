@@ -140,8 +140,8 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     7. **Submit Transaction**: Use the callback to submit the transaction.
 
     ```tsx
-    import { setWhirlpoolsConfig, swap } from '@orca-so/whirlpools';
-    import { createSolanaRpc, address, setRpc, setPayerFromBytes } from '@solana/kit';
+    import { setWhirlpoolsConfig, swap, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
+    import { createSolanaRpc, address } from '@solana/kit';
     import secret from "wallet.json";
 
     await setWhirlpoolsConfig('solanaDevnet');

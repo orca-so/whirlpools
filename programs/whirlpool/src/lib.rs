@@ -517,6 +517,7 @@ pub mod whirlpool {
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
     /// - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
     /// - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
+    #[allow(unused_variables)]
     #[allow(clippy::too_many_arguments)]
     pub fn two_hop_swap(
         ctx: Context<TwoHopSwap>,
@@ -528,16 +529,7 @@ pub mod whirlpool {
         sqrt_price_limit_one: u128,
         sqrt_price_limit_two: u128,
     ) -> Result<()> {
-        instructions::two_hop_swap::handler(
-            ctx,
-            amount,
-            other_amount_threshold,
-            amount_specified_is_input,
-            a_to_b_one,
-            a_to_b_two,
-            sqrt_price_limit_one,
-            sqrt_price_limit_two,
-        )
+        unreachable!(); // Pinocchio
     }
 
     /// Initializes a PositionBundle account that bundles several positions.

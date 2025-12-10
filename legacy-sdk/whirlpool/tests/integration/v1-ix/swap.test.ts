@@ -194,7 +194,8 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
     );
   });
 
@@ -240,7 +241,8 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
     );
   });
 
@@ -382,7 +384,8 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x7dc/, // pinocchio: ConstraintAddress (token_vault_a)
     );
   });
 
@@ -431,7 +434,8 @@ describe("swap", () => {
         }),
       ).buildAndExecute(),
       // This test case violates the constraint on vault (before tickarray)
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x7dc/, // pinocchio: ConstraintAddress (token_vault_a)
     );
   });
 

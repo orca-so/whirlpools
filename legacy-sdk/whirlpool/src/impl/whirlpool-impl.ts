@@ -329,7 +329,7 @@ export class WhirlpoolImpl implements Whirlpool {
     tokenProgramId: PublicKey,
     withMetadata: boolean = false,
     positionMint?: PublicKey,
-    resolveATA?: boolean,
+    resolveATA: boolean = true,
   ): Promise<{ positionMint: PublicKey; tx: TransactionBuilder }> {
     invariant(
       TickUtil.checkTickInBounds(tickLower),

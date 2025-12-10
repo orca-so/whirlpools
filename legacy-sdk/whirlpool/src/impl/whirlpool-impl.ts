@@ -9,6 +9,7 @@ import {
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import {
+  NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
@@ -440,8 +441,10 @@ export class WhirlpoolImpl implements Whirlpool {
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
 
-    if (resolveATA) {
+    if (resolveATA || whirlpool.tokenMintA.equals(NATIVE_MINT)) {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
+    }
+    if (resolveATA || whirlpool.tokenMintB.equals(NATIVE_MINT)) {
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     }
 

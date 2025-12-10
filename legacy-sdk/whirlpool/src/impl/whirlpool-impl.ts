@@ -424,7 +424,6 @@ export class WhirlpoolImpl implements Whirlpool {
       txBuilder.addSigner(positionMintKeypair);
     }
 
-
     const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,
       wallet,
@@ -441,7 +440,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
 
-    if (resolveATA) {  
+    if (resolveATA) {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     }

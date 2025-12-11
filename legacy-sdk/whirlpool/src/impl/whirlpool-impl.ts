@@ -9,6 +9,7 @@ import {
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import {
+  NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
@@ -119,6 +120,7 @@ export class WhirlpoolImpl implements Whirlpool {
     funder?: Address,
     positionMint?: PublicKey,
     tokenProgramId?: PublicKey,
+    resolveATA?: boolean,
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -131,6 +133,7 @@ export class WhirlpoolImpl implements Whirlpool {
       tokenProgramId ?? TOKEN_PROGRAM_ID,
       false,
       positionMint,
+      resolveATA,
     );
   }
 
@@ -142,6 +145,7 @@ export class WhirlpoolImpl implements Whirlpool {
     funder?: Address,
     positionMint?: PublicKey,
     tokenProgramId?: PublicKey,
+    resolveATA?: boolean,
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -156,6 +160,7 @@ export class WhirlpoolImpl implements Whirlpool {
       tokenProgramId ?? TOKEN_PROGRAM_ID,
       true,
       positionMint,
+      resolveATA,
     );
   }
 
@@ -325,6 +330,7 @@ export class WhirlpoolImpl implements Whirlpool {
     tokenProgramId: PublicKey,
     withMetadata: boolean = false,
     positionMint?: PublicKey,
+    resolveATA: boolean = true,
   ): Promise<{ positionMint: PublicKey; tx: TransactionBuilder }> {
     invariant(
       TickUtil.checkTickInBounds(tickLower),
@@ -435,8 +441,12 @@ export class WhirlpoolImpl implements Whirlpool {
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
 
-    txBuilder.addInstruction(tokenOwnerAccountAIx);
-    txBuilder.addInstruction(tokenOwnerAccountBIx);
+    if (resolveATA || whirlpool.tokenMintA.equals(NATIVE_MINT)) {
+      txBuilder.addInstruction(tokenOwnerAccountAIx);
+    }
+    if (resolveATA || whirlpool.tokenMintB.equals(NATIVE_MINT)) {
+      txBuilder.addInstruction(tokenOwnerAccountBIx);
+    }
 
     const tickArrayLowerPda = PDAUtil.getTickArrayFromTickIndex(
       tickLower,

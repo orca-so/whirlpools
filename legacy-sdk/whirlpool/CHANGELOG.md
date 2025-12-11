@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.17.4
+
+### Patch Changes
+
+- [#1202](https://github.com/orca-so/whirlpools/pull/1202) [`9d7e56d`](https://github.com/orca-so/whirlpools/commit/9d7e56da10bb951bd7603bf14303664d3de2e252) Thanks [@parhim](https://github.com/parhim)! - Exposed an optional 'resolveATA' param for openPositionWithMetadata on whirlpoolClient
+
 ## 0.17.3
 
 ### Patch Changes

@@ -1,5 +1,7 @@
 # @orca-so/whirlpools-docs-rust
 
+## 0.2.8
+
 ## 0.2.7
 
 ### Patch Changes

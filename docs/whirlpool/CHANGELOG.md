@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.8
+
+### Patch Changes
+
+- [#1201](https://github.com/orca-so/whirlpools/pull/1201) [`cdac31a`](https://github.com/orca-so/whirlpools/commit/cdac31ab3b2f0a53d303e7beda1144bb09e48e37) Thanks [@amanmunda-collab](https://github.com/amanmunda-collab)! - fixed the wrong imports for setRpc, setPayerFromBytes which are from @orca-so/whirlpools
+
 ## 0.2.7
 
 ## 0.2.6

@@ -10,6 +10,7 @@ use crate::constants::nft::whirlpool_nft_update_auth::ID as WP_NFT_UPDATE_AUTH;
 use crate::util::{
     initialize_position_mint_2022, initialize_position_token_account_2022,
     initialize_token_metadata_extension, mint_position_token_2022_and_remove_authority,
+    resolve_one_sided_position_ticks,
 };
 
 #[derive(Accounts)]
@@ -73,11 +74,18 @@ pub fn handler(
         &ctx.accounts.system_program,
     )?;
 
+    let (resolved_tick_lower_index, resolved_tick_upper_index) = resolve_one_sided_position_ticks(
+        tick_lower_index,
+        tick_upper_index,
+        whirlpool.tick_spacing,
+        whirlpool.tick_current_index,
+    )?;
+
     position.open_position(
         whirlpool,
         position_mint.key(),
-        tick_lower_index,
-        tick_upper_index,
+        resolved_tick_lower_index,
+        resolved_tick_upper_index,
     )?;
 
     let is_non_transferable_position_required = whirlpool.is_non_transferable_position_required();

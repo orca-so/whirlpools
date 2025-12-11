@@ -123,3 +123,17 @@ export async function requestAirdropIfBalanceLow(
     );
   }
 }
+
+export function remEuclid(a: number, n: number): number {
+  const r = a % n;
+  return r < 0 ? r + n : r;
+}
+
+export function snapTickDown(t: number, spacing: number): number {
+  return t - remEuclid(t, spacing);
+}
+
+export function snapTickUp(t: number, spacing: number): number {
+  const r = remEuclid(t, spacing);
+  return r === 0 ? t : t + (spacing - r);
+}

@@ -4,9 +4,26 @@ use orca_whirlpools_macros::wasm_expose;
 use libm::{floor, pow, sqrt};
 
 use super::{invert_tick_index, sqrt_price_to_tick_index, tick_index_to_sqrt_price};
-use crate::U128;
+use crate::{CoreError, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS, U128};
 
 const Q64_RESOLUTION: f64 = 18446744073709551616.0;
+
+/// Check if a sqrt_price is within valid bounds and return an error if not.
+///
+/// # Parameters
+/// - `sqrt_price` - A u128 representing the sqrt price
+///
+/// # Returns
+/// - `Ok(())` if the sqrt_price is in bounds
+/// - `Err(SQRT_PRICE_OUT_OF_BOUNDS)` if the sqrt_price is out of bounds
+#[inline]
+pub(crate) fn check_sqrt_price_bounds(sqrt_price: u128) -> Result<(), CoreError> {
+    if sqrt_price >= MIN_SQRT_PRICE && sqrt_price <= MAX_SQRT_PRICE {
+        Ok(())
+    } else {
+        Err(SQRT_PRICE_OUT_OF_BOUNDS)
+    }
+}
 
 /// Convert a price into a sqrt priceX64
 /// IMPORTANT: floating point operations can reduce the precision of the result.
@@ -59,7 +76,7 @@ pub fn sqrt_price_to_price(sqrt_price: U128, decimals_a: u8, decimals_b: u8) -> 
 pub fn invert_price(price: f64, decimals_a: u8, decimals_b: u8) -> f64 {
     let tick_index = price_to_tick_index(price, decimals_a, decimals_b);
     let inverted_tick_index = invert_tick_index(tick_index);
-    tick_index_to_price(inverted_tick_index, decimals_a, decimals_b)
+    tick_index_to_price(inverted_tick_index, decimals_a, decimals_b).unwrap_or(0.0)
 }
 
 /// Convert a tick index into a price
@@ -72,11 +89,11 @@ pub fn invert_price(price: f64, decimals_a: u8, decimals_b: u8) -> f64 {
 /// * `decimals_b` - The number of decimals of the quote token
 ///
 /// # Returns
-/// * `f64` - The decimal price
+/// * `Result<f64, CoreError>` - The decimal price
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn tick_index_to_price(tick_index: i32, decimals_a: u8, decimals_b: u8) -> f64 {
-    let sqrt_price = tick_index_to_sqrt_price(tick_index);
-    sqrt_price_to_price(sqrt_price, decimals_a, decimals_b)
+pub fn tick_index_to_price(tick_index: i32, decimals_a: u8, decimals_b: u8) -> Result<f64, CoreError> {
+    let sqrt_price = tick_index_to_sqrt_price(tick_index)?;
+    Ok(sqrt_price_to_price(sqrt_price, decimals_a, decimals_b))
 }
 
 /// Convert a price into a tick index
@@ -93,7 +110,7 @@ pub fn tick_index_to_price(tick_index: i32, decimals_a: u8, decimals_b: u8) -> f
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn price_to_tick_index(price: f64, decimals_a: u8, decimals_b: u8) -> i32 {
     let sqrt_price = price_to_sqrt_price(price, decimals_a, decimals_b);
-    sqrt_price_to_tick_index(sqrt_price)
+    sqrt_price_to_tick_index(sqrt_price).unwrap_or(0) // Convert user-provided price, may be invalid
 }
 
 #[cfg(all(test, not(feature = "wasm")))]
@@ -129,9 +146,9 @@ mod tests {
 
     #[test]
     fn test_tick_index_to_price() {
-        assert_relative_eq!(tick_index_to_price(-92111, 8, 6), 0.009998, epsilon = 1e-5);
-        assert_relative_eq!(tick_index_to_price(0, 6, 6), 1.0);
-        assert_relative_eq!(tick_index_to_price(92108, 6, 8), 99.999912, epsilon = 1e-5);
+        assert_relative_eq!(tick_index_to_price(-92111, 8, 6).unwrap(), 0.009998, epsilon = 1e-5);
+        assert_relative_eq!(tick_index_to_price(0, 6, 6).unwrap(), 1.0);
+        assert_relative_eq!(tick_index_to_price(92108, 6, 8).unwrap(), 99.999912, epsilon = 1e-5);
     }
 
     #[test]

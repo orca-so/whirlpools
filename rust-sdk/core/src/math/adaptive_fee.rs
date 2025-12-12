@@ -89,6 +89,7 @@ impl FeeRateManager {
                         Some((
                             core_tick_group_range_lower_index,
                             tick_index_to_sqrt_price(core_tick_group_range_lower_bound_tick_index)
+                                .unwrap() // safe unwrap: tick is checked against MIN_TICK_INDEX
                                 .into(),
                         ))
                     } else {
@@ -99,6 +100,7 @@ impl FeeRateManager {
                         Some((
                             core_tick_group_range_upper_index,
                             tick_index_to_sqrt_price(core_tick_group_range_upper_bound_tick_index)
+                                .unwrap() // safe unwrap: tick is checked against MAX_TICK_INDEX
                                 .into(),
                         ))
                     } else {
@@ -178,7 +180,7 @@ impl FeeRateManager {
         sqrt_price: u128,
         next_tick_sqrt_price: u128,
         next_tick_index: i32,
-    ) {
+    ) -> Result<(), CoreError> {
         match self {
             Self::Static { .. } => {
                 // static fee rate manager doesn't use skip feature
@@ -203,9 +205,9 @@ impl FeeRateManager {
 
                     // Note: It was pointed out during the review that using curr_tick_index may suppress tick_index_from_sqrt_price.
                     //       However, since curr_tick_index may also be shifted by -1, we decided to prioritize safety by recalculating it here.
-                    let tick_index = sqrt_price_to_tick_index(sqrt_price.into());
+                    let tick_index = sqrt_price_to_tick_index(sqrt_price.into())?;
                     let sqrt_price_from_tick_index: u128 =
-                        tick_index_to_sqrt_price(tick_index).into();
+                        tick_index_to_sqrt_price(tick_index)?.into();
                     let is_on_tick_group_boundary =
                         tick_index % adaptive_fee_constants.tick_group_size as i32 == 0
                             && sqrt_price == sqrt_price_from_tick_index;
@@ -237,6 +239,7 @@ impl FeeRateManager {
                 *tick_group_index += if *a_to_b { -1 } else { 1 };
             }
         }
+        Ok(())
     }
 
     pub fn get_total_fee_rate(&self) -> u32 {
@@ -334,6 +337,7 @@ impl FeeRateManager {
                 let boundary_sqrt_price: u128 = tick_index_to_sqrt_price(
                     boundary_tick_index.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX),
                 )
+                .unwrap() // safe unwrap: tick is clamped to valid bounds
                 .into();
 
                 if *a_to_b {
@@ -472,7 +476,9 @@ impl AdaptiveFeeVariablesFacade {
         };
 
         let major_swap_sqrt_price_factor: u128 =
-            tick_index_to_sqrt_price(major_swap_threshold_ticks as i32).into();
+            tick_index_to_sqrt_price(major_swap_threshold_ticks as i32)
+                .unwrap()
+                .into(); // safe unwrap: major_swap_threshold_ticks is a u16, well within bounds
         let major_swap_sqrt_price_target: u128 = ((<U256>::from(smaller_sqrt_price)
             * <U256>::from(major_swap_sqrt_price_factor))
             >> 64u32)

@@ -21,10 +21,49 @@ jobs:
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
           user: changests[bot]
-      - name: Setup Anchor
-        uses: ./.github/actions/anchor
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+      - name: Setup Rust
+        run: |
+          rustup toolchain install 1.86.0 --profile minimal
+          rustup default 1.86.0
       - name: Install dependencies
         run: yarn install
+      - name: Check for pending changesets and capture release set
+        run: |
+          set -euo pipefail
+          STATUS_OUTPUT=$(yarn changeset status 2>&1 || true)
+          echo "$STATUS_OUTPUT"
+
+          # Extract package names from bullet lines like:
+          # 🦋  - @orca-so/whirlpools-rust-core
+          PKGS=$(printf '%s\n' "$STATUS_OUTPUT" \
+            | sed -n 's/^.*- \(@[^[:space:]]*\).*$/\1/p' \
+            | sort -u \
+            | grep -v '^@orca-so/whirlpools-program$' || true)
+
+          if [ -z "$PKGS" ]; then
+            echo "No unreleased changesets found; exiting publish workflow."
+            exit 0
+          fi
+
+          # Turn the package list into a Yarn brace list, e.g.
+          # {@pkg/a,@pkg/b}
+          RELEASE_PACKAGES=$(echo "$PKGS" | paste -sd, -)
+          PACKAGES="{${RELEASE_PACKAGES}}"
+
+          echo "Brace list for release set: $PACKAGES"
+          echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
+      - name: Build Solana program in Docker
+        run: docker compose run --rm --profile build build-solana-program
+      - name: Build release set and dependencies
+        run: |
+          set -euo pipefail
+          echo "Building release set (and transitive deps) from brace list: $PACKAGES"
+          yarn workspaces foreach -Rpt --from "$PACKAGES" run build
       - name: Determine New Versions
         run: yarn changeset version
         env:
@@ -34,7 +73,7 @@ jobs:
       - name: Git Commit
         run: git add . && git commit -m "Publish Packages"
       - name: Publish Packages
-        run: yarn deploy
+        run: yarn workspaces foreach -A --topological-dev run deploy
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

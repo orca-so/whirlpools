@@ -872,6 +872,49 @@ pub mod whirlpool {
         instructions::set_fee_rate_by_delegated_fee_authority::handler(ctx, fee_rate)
     }
 
+    /// Sets specific adaptive fee constants for a pool. Only the provided constants will be updated,
+    /// others remain unchanged. Caller should avoid invoking this instruction when a pool's adaptive
+    /// fee is high to prevent LP revenue loss
+    ///
+    /// ### Authority
+    /// - `fee_authority` - Set authority in the WhirlpoolsConfig
+    ///
+    /// ### Parameters
+    /// All parameters are optional. Only provided values will be updated.
+    /// - `filter_period` - Period determine high frequency trading time window. (seconds)
+    /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)
+    /// - `reduction_factor` - Adaptive fee rate decrement rate.
+    /// - `adaptive_fee_control_factor` - Adaptive fee control factor.
+    /// - `max_volatility_accumulator` - Max volatility accumulator.
+    /// - `tick_group_size` - Tick group size to define tick group index.
+    /// - `major_swap_threshold_ticks` - Major swap threshold ticks to define major swap.
+    ///
+    /// #### Special Errors
+    /// - `InvalidAdaptiveFeeConstants` - If the resulting constants are invalid for the pool's tick_spacing.
+    /// - `AdaptiveFeeConstantsUnchanged` - If the provided adaptive fee constants are unchanged from the existing constants.
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_adaptive_fee_constants(
+        ctx: Context<SetAdaptiveFeeConstants>,
+        filter_period: Option<u16>,
+        decay_period: Option<u16>,
+        reduction_factor: Option<u16>,
+        adaptive_fee_control_factor: Option<u32>,
+        max_volatility_accumulator: Option<u32>,
+        tick_group_size: Option<u16>,
+        major_swap_threshold_ticks: Option<u16>,
+    ) -> Result<()> {
+        instructions::adaptive_fee::set_adaptive_fee_constants::handler(
+            ctx,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+            major_swap_threshold_ticks,
+        )
+    }
+
     /// Sets the feature flag for a WhirlpoolConfig.
     ///
     /// ### Authority

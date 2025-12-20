@@ -4,11 +4,11 @@
 This package provides developers with low-level functionalities for interacting with the Whirlpool Program on Solana. It serves as a foundational tool that allows developers to manage and integrate detailed operations into their Rust projects, particularly those related to Orca's Whirlpool Program. This package offers granular control for advanced use cases.
 
 ## Compatibiltiy
-- Compatible with `anchor` versions `^0.26` but `<0.30`. If you enable the `anchor` feature of `orca_whirlpools_client` in `cargo.toml` while using a version of anchor that's `^0.30` in your project, you may need to apply a lockfile patch to switch to a lower version:
+- Compatible with `anchor` versions `^0.31`. If you enable the `anchor` feature of `orca_whirlpools_client` in `cargo.toml` while using a version of anchor that's `<0.31` in your project, you may need to apply a lockfile patch to switch to a higher version:
     ```bash
-    cargo update anchor:<current-version> --precise 0.29
+    cargo update anchor:<current-version> --precise 0.31
     ```
-- Compatible with `solana-program` versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+- Compatible with `solana-program` versions `^2.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
     ```bash
     cargo update solana-program:<current-version> --precise <required-version>
     ```

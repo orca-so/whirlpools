@@ -16,6 +16,7 @@
   pub(crate) mod r#lock_type;
   pub(crate) mod r#lock_type_label;
   pub(crate) mod r#pool_initialized;
+  pub(crate) mod r#position_opened;
   pub(crate) mod r#position_reward_info;
   pub(crate) mod r#remaining_accounts_info;
   pub(crate) mod r#remaining_accounts_slice;
@@ -35,6 +36,7 @@
   pub use self::r#lock_type::*;
   pub use self::r#lock_type_label::*;
   pub use self::r#pool_initialized::*;
+  pub use self::r#position_opened::*;
   pub use self::r#position_reward_info::*;
   pub use self::r#remaining_accounts_info::*;
   pub use self::r#remaining_accounts_slice::*;

@@ -1,6 +1,14 @@
 use anchor_lang::prelude::*;
 
 #[event]
+pub struct PositionOpened {
+    pub whirlpool: Pubkey,
+    pub position: Pubkey,
+    pub tick_lower_index: i32,
+    pub tick_upper_index: i32,
+}
+
+#[event]
 pub struct PoolInitialized {
     pub whirlpool: Pubkey,
     pub whirlpools_config: Pubkey,

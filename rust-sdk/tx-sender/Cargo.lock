@@ -2209,7 +2209,7 @@ dependencies = [
 
 [[package]]
 name = "orca_tx_sender"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "reqwest 0.11.27",
  "serde",

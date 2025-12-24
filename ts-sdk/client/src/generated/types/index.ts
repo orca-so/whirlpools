@@ -17,6 +17,7 @@ export * from "./liquidityIncreased";
 export * from "./lockType";
 export * from "./lockTypeLabel";
 export * from "./poolInitialized";
+export * from "./positionOpened";
 export * from "./positionRewardInfo";
 export * from "./remainingAccountsInfo";
 export * from "./remainingAccountsSlice";

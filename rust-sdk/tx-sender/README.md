@@ -1,4 +1,4 @@
-# orca_tx_sender
+# Orca Transaction Sender
 
 A Rust crate for building and sending Solana transactions with priority fees and Jito tips.
 

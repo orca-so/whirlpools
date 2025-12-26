@@ -8,6 +8,7 @@
     "clean": "rimraf dist"
   },
   "devDependencies": {
+    "@orca-so/rust-tx-sender": "*",
     "@orca-so/whirlpools-rust": "*",
     "@orca-so/whirlpools-rust-client": "*",
     "@orca-so/whirlpools-rust-core": "*"

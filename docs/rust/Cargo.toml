@@ -6,6 +6,8 @@ edition = "2021"
 
 [dependencies]
 orca_whirlpools_core = { path = "../../rust-sdk/core", features = ["floats"] }
-orca_whirlpools_client = { path = "../../rust-sdk/client", features = ["core-types"] }
+orca_whirlpools_client = { path = "../../rust-sdk/client", features = [
+    "core-types",
+] }
 orca_whirlpools = { path = "../../rust-sdk/whirlpool" }
-
+orca_tx_sender = { path = "../../rust-sdk/tx-sender" }

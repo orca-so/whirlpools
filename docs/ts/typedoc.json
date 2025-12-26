@@ -2,7 +2,8 @@
   "entryPoints": [
     "../../ts-sdk/core",
     "../../ts-sdk/client",
-    "../../ts-sdk/whirlpool"
+    "../../ts-sdk/whirlpool",
+    "../../ts-sdk/tx-sender"
   ],
   "entryPointStrategy": "packages",
   "githubPages": false,

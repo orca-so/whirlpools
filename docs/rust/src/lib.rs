@@ -14,3 +14,8 @@ pub mod orca_whirlpools {
     #![doc = include_str!("../../../rust-sdk/whirlpool/README.md")]
     pub use orca_whirlpools::*;
 }
+
+pub mod orca_tx_sender {
+    #![doc = include_str!("../../../rust-sdk/tx-sender/README.md")]
+    pub use orca_tx_sender::*;
+}

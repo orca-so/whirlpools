@@ -4283,7 +4283,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender":
+"@orca-so/rust-tx-sender@npm:*, @orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender":
   version: 0.0.0-use.local
   resolution: "@orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender"
   languageName: unknown
@@ -4351,6 +4351,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-docs-rust@workspace:docs/rust"
   dependencies:
+    "@orca-so/rust-tx-sender": "npm:*"
     "@orca-so/whirlpools-rust": "npm:*"
     "@orca-so/whirlpools-rust-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
@@ -4361,6 +4362,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-docs-ts@workspace:docs/ts"
   dependencies:
+    "@orca-so/tx-sender": "npm:*"
     "@orca-so/whirlpools": "npm:*"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"

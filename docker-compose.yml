@@ -4,6 +4,7 @@ name: whirlpools
 #   build-program           - Builds only the Solana program (outputs to target/)
 #   build-packages          - Builds all packages (requires program artifacts in target/)
 #   build                   - Builds everything (program + packages)
+#   docs-dev                - Builds required dependencies and runs the local Docusaurus dev server
 #   test-sdks               - Runs SDK tests (requires program artifacts in target/)
 #   test-whirlpools-program - Runs program tests (requires program artifacts in target/)
 #   lint                    - Runs linters
@@ -19,7 +20,7 @@ services:
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
-    profiles: [build-program, build]
+    profiles: [build-program, build, docs-dev]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -31,7 +32,28 @@ services:
       && apt-get update && apt-get install -y nodejs
       && corepack enable && corepack prepare yarn@4.6.0 --activate
       && yarn install --mode=skip-build"
-    profiles: [build-packages, build, test-sdks, lint]
+    profiles: [build-packages, build, test-sdks, lint, docs-dev]
+    volumes:
+      - ./:/usr/src/whirlpools
+      - node_modules:/usr/src/whirlpools/node_modules
+      - yarn_cache:/usr/src/whirlpools/.yarn/cache
+
+  docs-dev:
+    image: rust:1.86.0
+    working_dir: /usr/src/whirlpools
+    command: >
+      sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      && apt-get update && apt-get install -y nodejs
+      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && yarn workspace @orca-so/whirlpools-docs start --host 0.0.0.0 --port 3000"
+    profiles: [docs-dev]
+    depends_on:
+      yarn-install:
+        condition: service_completed_successfully
+      build-docs:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
     volumes:
       - ./:/usr/src/whirlpools
       - node_modules:/usr/src/whirlpools/node_modules
@@ -50,7 +72,7 @@ services:
       && yarn workspace @orca-so/tx-sender build
       && yarn workspace @orca-so/whirlpools build
       && yarn workspace @orca-so/whirlpools-lint format"
-    profiles: [build-packages, build, test-sdks]
+    profiles: [build-packages, build, test-sdks, docs-dev]
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -69,7 +91,7 @@ services:
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-cli build"
-    profiles: [build-packages, build]
+    profiles: [build-packages, build, docs-dev]
     depends_on:
       yarn-install:
         condition: service_completed_successfully
@@ -90,7 +112,7 @@ services:
       && cargo build --quiet --manifest-path rust-sdk/tx-sender/Cargo.toml
       && cargo clippy --fix --allow-dirty --allow-staged
       && cargo fmt"
-    profiles: [build-packages, build]
+    profiles: [build-packages, build, docs-dev]
     volumes:
       - ./:/usr/src/whirlpools
 
@@ -124,7 +146,7 @@ services:
       && yarn workspace @orca-so/whirlpools-docs-rust build
       && yarn workspace @orca-so/whirlpools-docs-legacy build
       && yarn workspace @orca-so/whirlpools-docs build"
-    profiles: [build-packages, build]
+    profiles: [build-packages, build, docs-dev]
     depends_on:
       build-rust-sdk:
         condition: service_completed_successfully

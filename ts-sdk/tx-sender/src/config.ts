@@ -287,6 +287,15 @@ type FeeSetting =
     };
 
 /**
+ * Compute unit limit strategy for transaction building.
+ * - `dynamic`: Estimate compute units by simulating the transaction (default).
+ * - `exact`: Use a specific compute unit limit without simulation.
+ */
+export type ComputeUnitLimitStrategy =
+  | { type: "dynamic" }
+  | { type: "exact"; units: number };
+
+/**
  * Configuration for transaction fees, including Jito and priority fee settings.
  */
 export type JitoFeeSetting = FeeSetting & {
@@ -353,4 +362,20 @@ export type RpcConfig = {
   chainId: ChainId;
   pollIntervalMs: number;
   resendOnPoll: boolean;
+};
+
+/**
+ * Configuration for building transactions with explicit settings.
+ * Use this with `buildTransactionWithConfig` for full control over transaction building.
+ *
+ * @property {RpcConfig} rpcConfig - RPC connection settings
+ * @property {TransactionConfig} transactionConfig - Fee and compute settings
+ * @property {ComputeUnitLimitStrategy} [computeUnitLimitStrategy] - How to determine compute unit limit.
+ *   Defaults to `{ type: "dynamic" }` which simulates to estimate compute units.
+ *   Use `{ type: "exact", units: N }` to skip simulation and use a specific limit.
+ */
+export type BuildTransactionConfig = {
+  rpcConfig: RpcConfig;
+  transactionConfig?: TransactionConfig;
+  computeUnitLimitStrategy?: ComputeUnitLimitStrategy;
 };

@@ -21,6 +21,10 @@ import {
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
 import { addPriorityInstructions } from "./priorityFees";
+import type {
+  BuildTransactionConfig,
+  ComputeUnitLimitStrategy,
+} from "./config";
 import { getRpcConfig } from "./config";
 
 /**
@@ -57,13 +61,68 @@ export async function buildTransaction(
   );
 }
 
+/**
+ * Builds and signs a transaction using explicit configuration instead of global settings.
+ *
+ * @param {Instruction[]} instructions - Array of instructions to include in the transaction
+ * @param {KeyPairSigner | NoopSigner} feePayer - The signer that will pay for the transaction
+ * @param {BuildTransactionConfig} config - Explicit configuration for RPC, fees, and compute units
+ * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses
+ *
+ * @returns {Promise<Readonly<Transaction & TransactionWithLifetime>>}
+ *
+ * @example
+ * // Use exact compute units to skip simulation
+ * const tx = await buildTransactionWithConfig(instructions, keypairSigner, {
+ *   rpcConfig: { rpcUrl: "https://api.mainnet-beta.solana.com", ... },
+ *   computeUnitLimitStrategy: { type: "exact", units: 200_000 },
+ * });
+ *
+ * // Use dynamic compute units (simulation)
+ * const tx = await buildTransactionWithConfig(instructions, keypairSigner, {
+ *   rpcConfig: { rpcUrl: "https://api.mainnet-beta.solana.com", ... },
+ *   computeUnitLimitStrategy: { type: "dynamic" },
+ * });
+ */
+export async function buildTransactionWithConfig(
+  instructions: Instruction[],
+  feePayer: KeyPairSigner | NoopSigner,
+  config: BuildTransactionConfig,
+  lookupTableAddresses?: (Address | string)[],
+): Promise<Readonly<Transaction & TransactionWithLifetime>> {
+  return buildTransactionMessageWithConfig(
+    instructions,
+    feePayer,
+    config,
+    normalizeAddresses(lookupTableAddresses),
+  );
+}
+
 async function buildTransactionMessage(
   instructions: Instruction[],
   feePayer: KeyPairSigner | NoopSigner,
   lookupTableAddresses?: Address[],
+  computeUnitLimitStrategy?: ComputeUnitLimitStrategy,
 ) {
-  const { rpcUrl } = getRpcConfig();
-  const rpc = rpcFromUrl(rpcUrl);
+  const rpcConfig = getRpcConfig();
+  return buildTransactionMessageWithConfig(
+    instructions,
+    feePayer,
+    {
+      rpcConfig,
+      computeUnitLimitStrategy,
+    },
+    lookupTableAddresses,
+  );
+}
+
+async function buildTransactionMessageWithConfig(
+  instructions: Instruction[],
+  feePayer: KeyPairSigner | NoopSigner,
+  config: BuildTransactionConfig,
+  lookupTableAddresses?: Address[],
+) {
+  const rpc = rpcFromUrl(config.rpcConfig.rpcUrl);
 
   let message = await prepareTransactionMessage(instructions, rpc, feePayer);
 
@@ -91,6 +150,7 @@ async function buildTransactionMessage(
   const messageWithPriorityFees = await addPriorityInstructions(
     message,
     feePayer,
+    config.computeUnitLimitStrategy,
   );
 
   return await partiallySignTransactionMessageWithSigners(

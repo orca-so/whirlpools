@@ -1,3 +1,4 @@
+import type { BuildTransactionConfig, RpcConfig } from "./config";
 import { getRpcConfig } from "./config";
 import type {
   Address,
@@ -16,7 +17,10 @@ import {
   getBase58Decoder,
 } from "@solana/kit";
 import { rpcFromUrl } from "./compatibility";
-import { buildTransaction } from "./buildTransaction";
+import {
+  buildTransaction,
+  buildTransactionWithConfig,
+} from "./buildTransaction";
 
 /**
  * Builds and sends a transaction with the given instructions, signers, and commitment level.
@@ -49,6 +53,47 @@ export async function buildAndSendTransaction(
 }
 
 /**
+ * Builds and sends a transaction using explicit configuration instead of global settings.
+ *
+ * @param {Instruction[]} instructions - Array of instructions to include in the transaction.
+ * @param {KeyPairSigner | NoopSigner} payer - The fee payer for the transaction.
+ * @param {BuildTransactionConfig} config - Explicit configuration for RPC, fees, and compute units.
+ * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses.
+ * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
+ *
+ * @returns {Promise<Signature>} A promise that resolves to the transaction signature.
+ *
+ * @example
+ * ```ts
+ * // With exact compute units (skip simulation)
+ * const signature = await buildAndSendTransactionWithConfig(
+ *   instructions,
+ *   keypairSigner,
+ *   {
+ *     rpcConfig: { rpcUrl: "https://...", ... },
+ *     computeUnitLimitStrategy: { type: "exact", units: 200_000 },
+ *   },
+ * );
+ * ```
+ */
+export async function buildAndSendTransactionWithConfig(
+  instructions: Instruction[],
+  payer: KeyPairSigner | NoopSigner,
+  config: BuildTransactionConfig,
+  lookupTableAddresses?: (Address | string)[],
+  commitment: Commitment = "confirmed",
+): Promise<Signature> {
+  const tx = await buildTransactionWithConfig(
+    instructions,
+    payer,
+    config,
+    lookupTableAddresses,
+  );
+  assertIsFullySignedTransaction(tx);
+  return sendTransactionWithConfig(tx, config.rpcConfig, commitment);
+}
+
+/**
  * Sends a signed transaction message to the Solana network with a specified commitment level.
  * Asserts that the transaction is fully signed before sending.
  *
@@ -75,9 +120,32 @@ export async function sendTransaction(
   transaction: Readonly<Transaction & TransactionWithLifetime>,
   commitment: Commitment = "confirmed",
 ): Promise<Signature> {
+  const rpcConfig = getRpcConfig();
+  return sendTransactionWithConfig(transaction, rpcConfig, commitment);
+}
+
+/**
+ * Sends a signed transaction using explicit RPC configuration instead of global settings.
+ *
+ * @param {Transaction & TransactionWithLifetime} transaction - The transaction to send.
+ * @param {RpcConfig} rpcConfig - Explicit RPC configuration.
+ * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
+ *
+ * @returns {Promise<Signature>} A promise that resolves to the transaction signature.
+ *
+ * @example
+ * ```ts
+ * const signature = await sendTransactionWithConfig(signedTx, rpcConfig, "confirmed");
+ * ```
+ */
+export async function sendTransactionWithConfig(
+  transaction: Readonly<Transaction & TransactionWithLifetime>,
+  rpcConfig: RpcConfig,
+  commitment: Commitment = "confirmed",
+): Promise<Signature> {
   assertIsFullySignedTransaction(transaction);
 
-  const { rpcUrl, pollIntervalMs, resendOnPoll } = getRpcConfig();
+  const { rpcUrl, pollIntervalMs, resendOnPoll } = rpcConfig;
   const rpc = rpcFromUrl(rpcUrl);
   const txHash = getTxHash(transaction);
   const encodedTransaction = getBase64EncodedWireTransaction(transaction);

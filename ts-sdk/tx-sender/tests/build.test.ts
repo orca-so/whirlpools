@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { buildTransaction } from "../src/buildTransaction";
+import { describe, expect, it, beforeEach } from "vitest";
+import {
+  buildTransaction,
+  buildTransactionWithConfig,
+} from "../src/buildTransaction";
 import { vi } from "vitest";
 import * as jito from "../src/jito";
 import type {
@@ -14,14 +17,17 @@ import {
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/kit";
 import assert from "assert";
+import type {
+  RpcConfig} from "../src/config";
 import {
   setRpc,
   setPriorityFeeSetting,
   setJitoTipSetting,
-  setComputeUnitMarginMultiplier,
+  setComputeUnitMarginMultiplier
 } from "../src/config";
 import { decodeTransaction, encodeTransaction } from "./utils";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
+import { estimateComputeUnitLimitFactory } from "@solana-program/compute-budget";
 import { setupMockRpc, mockRpc } from "./utils/mockRpc";
 
 const rpcUrl = "https://api.mainnet-beta.solana.com";
@@ -66,6 +72,16 @@ vi.mock("@solana/kit", async () => {
   };
 });
 
+vi.mock("@solana-program/compute-budget", async () => {
+  const actual = await vi.importActual("@solana-program/compute-budget");
+  return {
+    ...actual,
+    estimateComputeUnitLimitFactory: vi
+      .fn()
+      .mockReturnValue(vi.fn().mockResolvedValue(50_000)),
+  };
+});
+
 setupMockRpc();
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
@@ -74,6 +90,13 @@ describe("Build Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
   const amount = 1_000_000n;
+  const rpcConfig: RpcConfig = {
+    rpcUrl,
+    chainId: "solana",
+    supportsPriorityFeePercentile: false,
+    pollIntervalMs: 1000,
+    resendOnPoll: false,
+  };
 
   setPriorityFeeSetting({ type: "none" });
   setJitoTipSetting({ type: "none" });
@@ -84,6 +107,11 @@ describe("Build Transaction", async () => {
     destination: recipient,
     amount,
   });
+
+  beforeEach(() => {
+    vi.mocked(estimateComputeUnitLimitFactory).mockClear();
+  });
+
   it("Should fail when RPC URL is not set", async () => {
     await assert.rejects(
       async () => {
@@ -112,6 +140,8 @@ describe("Build Transaction", async () => {
 
     assert.strictEqual(systemProgramixCount, 1);
     assert.strictEqual(computeUnitProgramixCount, 1);
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
   });
 
   it("Should build transaction with exact priority fee", async () => {
@@ -135,6 +165,8 @@ describe("Build Transaction", async () => {
 
     assert.strictEqual(systemProgramixCount, 1);
     assert.strictEqual(computeUnitProgramixCount, 2);
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
   });
 
   it("Should build transaction with dynamic priority fee", async () => {
@@ -163,6 +195,8 @@ describe("Build Transaction", async () => {
 
     assert.strictEqual(systemProgramixCount, 1);
     assert.strictEqual(computeUnitProgramixCount, 2);
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
   });
 
   it("Should build transaction with exact Jito tip", async () => {
@@ -186,6 +220,8 @@ describe("Build Transaction", async () => {
 
     assert.strictEqual(computeUnitProgramixCount, 1);
     assert.strictEqual(systemProgramixCount, 2);
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
   });
 
   it("Should build transaction with dynamic Jito tip", async () => {
@@ -205,6 +241,8 @@ describe("Build Transaction", async () => {
 
     assert.strictEqual(computeUnitProgramixCount, 1);
     assert.strictEqual(systemProgramixCount, 2);
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
   });
 
   it("Should build transaction with lookup tables", async () => {
@@ -234,9 +272,39 @@ describe("Build Transaction", async () => {
     assert.strictEqual(computeUnitProgramixCount, 2);
     assert.strictEqual(systemProgramixCount, 1);
 
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
     expect(vi.mocked(fetchAllMaybeAddressLookupTable)).toHaveBeenCalledWith(
       mockRpc,
       lookupTables,
     );
+  });
+
+  it("Should skip simulation when computeUnitLimitStrategy is 'exact'", async () => {
+    const tx = await buildTransactionWithConfig([transferInstruction], signer, {
+      rpcConfig,
+      computeUnitLimitStrategy: { type: "exact", units: 200_000 },
+    });
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).not.toHaveBeenCalled();
+    expect(tx).toBeDefined();
+  });
+
+  it("Should run simulation when computeUnitLimitStrategy is dynamic", async () => {
+    const tx = await buildTransactionWithConfig([transferInstruction], signer, {
+      rpcConfig,
+      computeUnitLimitStrategy: { type: "dynamic" },
+    });
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
+    expect(tx).toBeDefined();
+  });
+
+  it("Should run simulation when computeUnitLimitStrategy is undefined", async () => {
+    const tx = await buildTransactionWithConfig([transferInstruction], signer, {
+      rpcConfig,
+    });
+
+    expect(vi.mocked(estimateComputeUnitLimitFactory)).toHaveBeenCalled();
+    expect(tx).toBeDefined();
   });
 });

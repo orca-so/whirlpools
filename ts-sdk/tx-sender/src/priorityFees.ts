@@ -12,6 +12,7 @@ import type {
   TransactionVersion,
 } from "@solana/kit";
 import { estimateComputeUnitLimitFactory } from "@solana-program/compute-budget";
+import type { ComputeUnitLimitStrategy } from "./config";
 import { getJitoConfig, getRpcConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { processJitoTipForTxMessage } from "./jito";
@@ -36,6 +37,7 @@ export type TxMessage = TransactionMessageWithFeePayerSigner<
 export async function addPriorityInstructions(
   message: TxMessage,
   signer: TransactionSigner,
+  computeUnitLimitStrategy?: ComputeUnitLimitStrategy,
 ) {
   const { rpcUrl, chainId } = getRpcConfig();
   const jito = getJitoConfig();
@@ -44,7 +46,13 @@ export async function addPriorityInstructions(
   if (jito.type !== "none") {
     message = await processJitoTipForTxMessage(message, signer, jito, chainId);
   }
-  let computeUnits = await getComputeUnitsForTxMessage(rpc, message);
+
+  let computeUnits: number;
+  if (computeUnitLimitStrategy?.type === "exact") {
+    computeUnits = computeUnitLimitStrategy.units;
+  } else {
+    computeUnits = await getComputeUnitsForTxMessage(rpc, message);
+  }
 
   return processComputeBudgetForTxMessage(message, computeUnits);
 }

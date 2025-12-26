@@ -17,13 +17,12 @@ import {
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/kit";
 import assert from "assert";
-import type {
-  RpcConfig} from "../src/config";
+import type { RpcConfig } from "../src/config";
 import {
   setRpc,
   setPriorityFeeSetting,
   setJitoTipSetting,
-  setComputeUnitMarginMultiplier
+  setComputeUnitMarginMultiplier,
 } from "../src/config";
 import { decodeTransaction, encodeTransaction } from "./utils";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";

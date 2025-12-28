@@ -4283,28 +4283,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender":
-  version: 0.0.0-use.local
-  resolution: "@orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender"
-  languageName: unknown
-  linkType: soft
-
-"@orca-so/tx-sender@npm:*, @orca-so/tx-sender@workspace:ts-sdk/tx-sender":
-  version: 0.0.0-use.local
-  resolution: "@orca-so/tx-sender@workspace:ts-sdk/tx-sender"
+"@orca-so/tx-sender@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@orca-so/tx-sender@npm:3.0.0"
   dependencies:
     "@solana-program/address-lookup-table": "npm:^0.10.0"
     "@solana-program/compute-budget": "npm:^0.11.0"
     "@solana-program/system": "npm:^0.10.0"
-    "@solana/kit": "npm:^5.0.0"
-    tsup: "npm:^8.4.0"
-    typescript: "npm:^5.9.3"
-    vitest: "npm:^3.2.4"
   peerDependencies:
     "@solana/kit": ^5.0.0
     "@solana/rpc": ^5.0.0
-  languageName: unknown
-  linkType: soft
+  checksum: 10c0/3fbe0df6665bddffcf45578f49c0b6e752f5501e16a1fb1990e7f62da10ad2f4c6c7eb039f6f8d4c9c4fba8452f3d0c766e575766b2ee14af8fe614f5af5af5a
+  languageName: node
+  linkType: hard
 
 "@orca-so/whirlpools-client@npm:*, @orca-so/whirlpools-client@workspace:ts-sdk/client":
   version: 0.0.0-use.local
@@ -4412,7 +4403,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-example-ts-next@workspace:examples/ts-sdk/next"
   dependencies:
     "@next/bundle-analyzer": "npm:^15.5.6"
-    "@orca-so/tx-sender": "npm:*"
+    "@orca-so/tx-sender": "npm:^3.0.0"
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^5.0.0"
     "@solana/react": "npm:^5.0.0"
@@ -4564,7 +4555,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools@workspace:ts-sdk/whirlpool"
   dependencies:
-    "@orca-so/tx-sender": "npm:*"
+    "@orca-so/tx-sender": "npm:^3.0.0"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
     "@solana-program/memo": "npm:^0.10.0"

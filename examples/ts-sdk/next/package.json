@@ -8,7 +8,7 @@
     "clean": "rimraf .next"
   },
   "dependencies": {
-    "@orca-so/tx-sender": "*",
+    "@orca-so/tx-sender": "^3.0.0",
     "@orca-so/whirlpools": "*",
     "@solana/kit": "^5.0.0",
     "@solana/react": "^5.0.0",

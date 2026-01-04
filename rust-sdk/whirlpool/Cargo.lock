@@ -2506,7 +2506,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "5.0.2"
+version = "6.0.0"
 dependencies = [
  "agave-feature-set",
  "async-trait",
@@ -2553,7 +2553,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "6.0.0"
+version = "7.0.0"
 dependencies = [
  "borsh",
  "num-derive",
@@ -2573,7 +2573,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "ethnum",
  "libm",

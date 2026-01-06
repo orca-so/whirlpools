@@ -342,8 +342,6 @@ pub fn build_position_token_metadata<'info>(
         &mint_address[mint_address.len() - 4..],
     );
 
-    // WP_2022_METADATA_URI_BASE + "/" + position address
-    // Must be less than 128 bytes
     let uri = format!("{}/{}", WP_2022_METADATA_URI_BASE, position.key());
 
     (name, WP_2022_METADATA_SYMBOL.to_string(), uri)

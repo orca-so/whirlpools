@@ -28,7 +28,9 @@ pub const WPB_METADATA_URI: &str =
 // https://github.com/solana-labs/solana-program-library/blob/cd6ce4b7709d2420bca60b4656bbd3d15d2e1485/token-metadata/interface/src/state.rs#L25
 pub const WP_2022_METADATA_NAME_PREFIX: &str = "OWP";
 pub const WP_2022_METADATA_SYMBOL: &str = "OWP";
+// Position addresses are not necessarily unique across networks. Metadata URIs should encode enough
+// infromation to uniquely identify a position across networks and clusters.
 #[cfg(feature = "devnet")]
 pub const WP_2022_METADATA_URI_BASE: &str = "https://metadata.devnet.orca.so/positions";
-#[cfg(feature = "mainnet")]
+#[cfg(not(feature = "devnet"))]
 pub const WP_2022_METADATA_URI_BASE: &str = "https://metadata.orca.so/positions";

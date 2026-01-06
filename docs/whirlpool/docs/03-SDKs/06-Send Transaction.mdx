@@ -2,6 +2,7 @@
 sidebar_label: Send Transactions
 hide_table_of_contents: true
 ---
+
 import DocCard from "@theme/DocCard";
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
@@ -25,13 +26,13 @@ import TabItem from "@theme/TabItem";
       <TabItem value="rust" label="Rust">
         ```toml title="Cargo.toml"
         [dependencies]
-        orca_tx_sender = { version = "^0.1.0" }
+        orca_tx_sender = { version = "^3.0.0" }
         ```
       </TabItem>
       <TabItem value="ts-kit" label="Typescript Kit" default>
         ```json title="package.json"
         "dependencies": {
-          "@orca-so/tx-sender": "^1.0.0"
+          "@orca-so/tx-sender": "^3.0.0"
         },
         ```
       </TabItem>
@@ -267,14 +268,18 @@ import TabItem from "@theme/TabItem";
 
     <Tabs groupId="programming-languages">
       <TabItem value="rust" label="Rust">
-        ```rust // Values typically range from 1.0 (no margin) to 2.0 (100% extra
-        margin) // Default is 1.1 (10% margin)
-        set_compute_unit_margin_multiplier(1.2)?; // 20% margin ```
+        ```rust
+        // Values typically range from 1.0 (no margin) to 2.0 (100% extra margin)
+        // Default is 1.1 (10% margin)
+        set_compute_unit_margin_multiplier(1.2)?; // 20% margin
+        ```
       </TabItem>
       <TabItem value="ts-kit" label="Typescript Kit" default>
-        ```tsx // Values typically range from 1.0 (no margin) to 2.0 (100% extra
-        margin) // Default is 1.1 (10% margin) setComputeUnitMarginMultiplier(1.2);
-        // 20% margin for compute units ```
+        ```tsx
+        // Values typically range from 1.0 (no margin) to 2.0 (100% extra margin)
+        // Default is 1.1 (10% margin)
+        setComputeUnitMarginMultiplier(1.2); // 20% margin for compute units
+        ```
       </TabItem>
     </Tabs>
 
@@ -282,15 +287,20 @@ import TabItem from "@theme/TabItem";
 
     <Tabs groupId="programming-languages">
       <TabItem value="rust" label="Rust">
-        ```rust // Basic RPC configuration
-        set_rpc("https://api.mainnet-beta.solana.com").await?; // Get the configured
-        RPC client for other operations let client = get_rpc_client()?; ```
+        ```rust
+        // Basic RPC configuration
+        set_rpc("https://api.mainnet-beta.solana.com").await?;
+        // Get the configured RPC client for other operations
+        let client = get_rpc_client()?;
+        ```
       </TabItem>
       <TabItem value="ts-kit" label="Typescript Kit" default>
-        ```tsx // Basic RPC configuration await
-        setRpc("https://api.mainnet-beta.solana.com"); // For RPC providers that
-        support percentile-based priority fees (e.g., Triton) await
-        setRpc("https://triton.rpcpool.com/some_endpoint", true); ```
+        ```tsx
+        // Basic RPC configuration
+        await setRpc("https://api.mainnet-beta.solana.com");
+        // For RPC providers that support percentile-based priority fees (e.g., Triton)
+        await setRpc("https://triton.rpcpool.com/some_endpoint", true);
+        ```
       </TabItem>
     </Tabs>
 
@@ -733,5 +743,6 @@ import TabItem from "@theme/TabItem";
     ```tsx
     await txBuilder.buildAndExecute({computeUnitBudget: "auto"});
     ```
+
   </TabItem>
 </Tabs>

@@ -93,6 +93,7 @@ pub fn handler(
 
     mint_position_token_with_metadata_and_remove_authority(
         whirlpool,
+        position,
         position_mint,
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_metadata_account,

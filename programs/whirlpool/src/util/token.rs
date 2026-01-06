@@ -1,4 +1,4 @@
-use crate::state::{PositionBundle, Whirlpool};
+use crate::state::{Position, PositionBundle, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_spl::metadata::{self, mpl_token_metadata::types::DataV2, CreateMetadataAccountsV3};
 use anchor_spl::token::spl_token::instruction::{
@@ -118,6 +118,7 @@ pub fn mint_position_token_and_remove_authority<'info>(
 #[allow(clippy::too_many_arguments)]
 pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     whirlpool: &Account<'info, Whirlpool>,
+    position: &Account<'info, Position>,
     position_mint: &Account<'info, Mint>,
     position_token_account: &Account<'info, TokenAccount>,
     position_metadata_account: &UncheckedAccount<'info>,
@@ -153,7 +154,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
         DataV2 {
             name: WP_METADATA_NAME.to_string(),
             symbol: WP_METADATA_SYMBOL.to_string(),
-            uri: WP_METADATA_URI.to_string(),
+            uri: format!("{}/{}", WP_METADATA_URI, position.key()),
             creators: None,
             seller_fee_basis_points: 0,
             collection: None,

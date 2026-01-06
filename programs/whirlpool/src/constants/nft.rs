@@ -12,7 +12,10 @@ pub mod whirlpool_nft_update_auth {
 // METADATA_URI    : max 200 bytes
 pub const WP_METADATA_NAME: &str = "Orca Whirlpool Position";
 pub const WP_METADATA_SYMBOL: &str = "OWP";
-pub const WP_METADATA_URI: &str = "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws";
+#[cfg(feature = "devnet")]
+pub const WP_METADATA_URI: &str = "https://metadata.devnet.orca.so/positions";
+#[cfg(not(feature = "devnet"))]
+pub const WP_METADATA_URI: &str = "https://metadata.orca.so/positions";
 
 pub const WPB_METADATA_NAME_PREFIX: &str = "Orca Position Bundle";
 pub const WPB_METADATA_SYMBOL: &str = "OPB";

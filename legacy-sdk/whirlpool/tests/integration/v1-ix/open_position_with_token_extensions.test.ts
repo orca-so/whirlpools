@@ -82,7 +82,7 @@ describe("open_position_with_token_extensions", () => {
   ) {
     const WP_2022_METADATA_NAME_PREFIX = "OWP";
     const WP_2022_METADATA_SYMBOL = "OWP";
-    const WP_2022_METADATA_URI_BASE = "https://position-nft.orca.so/meta";
+    const WP_2022_METADATA_URI_BASE = "https://metadata.orca.so/positions";
 
     const mintAddress = positionMint.toBase58();
     const name =
@@ -92,12 +92,7 @@ describe("open_position_with_token_extensions", () => {
       "..." +
       mintAddress.slice(-4);
 
-    const uri =
-      WP_2022_METADATA_URI_BASE +
-      "/" +
-      poolAddress.toBase58() +
-      "/" +
-      positionAddress.toBase58();
+    const uri = WP_2022_METADATA_URI_BASE + "/" + positionAddress.toBase58();
 
     assert.ok(tokenMetadata.mint.equals(positionMint));
     assert.ok(tokenMetadata.name === name);

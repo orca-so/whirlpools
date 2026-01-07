@@ -58,7 +58,7 @@ jobs:
           echo "Brace list for release set: $PACKAGES"
           echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
       - name: Build Solana program in Docker
-        run: docker compose run --rm --profile build build-solana-program
+        run: docker compose --profile build run --rm build-solana-program
       - name: Build release set and dependencies
         run: |
           set -euo pipefail

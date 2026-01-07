@@ -1,6 +1,6 @@
 import { themes } from "prism-react-renderer";
-import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 
 export default {
   title: "Whirlpools",
@@ -79,6 +79,16 @@ export default {
             {
               href: "/legacy/",
               label: "TS Legacy SDK Reference",
+              target: "_blank",
+            },
+            {
+              href: "https://orca-so.github.io/tx-sender/rust/orca_tx_sender",
+              label: "Rust TX Sender",
+              target: "_blank",
+            },
+            {
+              href: "https://orca-so.github.io/tx-sender/ts",
+              label: "TS TX Sender",
               target: "_blank",
             },
           ],

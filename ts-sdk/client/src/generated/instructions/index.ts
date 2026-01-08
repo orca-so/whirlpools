@@ -43,6 +43,7 @@ export * from "./openPosition";
 export * from "./openPositionWithMetadata";
 export * from "./openPositionWithTokenExtensions";
 export * from "./resetPositionRange";
+export * from "./setAdaptiveFeeConstants";
 export * from "./setCollectProtocolFeesAuthority";
 export * from "./setConfigExtensionAuthority";
 export * from "./setConfigFeatureFlag";

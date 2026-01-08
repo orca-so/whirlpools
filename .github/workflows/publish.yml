@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Building release set (and transitive deps) from brace list: $PACKAGES"
-          yarn workspaces foreach -Rpt --from "$PACKAGES" run build
+          yarn workspaces foreach -Rt --from "$PACKAGES" run build
       - name: Determine New Versions
         run: yarn changeset version
         env:

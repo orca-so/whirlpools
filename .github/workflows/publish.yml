@@ -63,7 +63,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "Building release set (and transitive deps) from brace list: $PACKAGES"
-          yarn workspaces foreach -Rt --from "$PACKAGES" run build
+          # skip @orca-so/whirlpools-program here:
+          # - it was already built in the previous step via docker
+          # - building it in this step would invoke `anchor build`, and anchor isn't installed on the runner
+          yarn workspaces foreach -Rp --topological-dev --from "$PACKAGES" --exclude @orca-so/whirlpools-program run build
       - name: Determine New Versions
         run: yarn changeset version
         env:

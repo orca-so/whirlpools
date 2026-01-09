@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Creates the necessary instructions to initialize a Splash Pool."><title>create_splash_pool_instructions in orca_whirlpools_docs::orca_whirlpools - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="orca_whirlpools_docs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.86.0 (05f9846f8 2025-03-31)" data-channel="1.86.0" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../orca_whirlpools_docs/index.html">orca_<wbr>whirlpools_<wbr>docs</a><span class="version">0.2.8</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">create_<wbr>splash_<wbr>pool_<wbr>instructions</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#errors" title="Errors">Errors</a></li><li><a href="#example" title="Example">Example</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In orca_<wbr>whirlpools_<wbr>docs::<wbr>orca_<wbr>whirlpools</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">orca_whirlpools_docs</a>::<wbr><a href="index.html">orca_whirlpools</a></div><h1>Function <span class="fn">create_splash_pool_instructions</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><pre class="rust item-decl"><code>pub async fn create_splash_pool_instructions(
+    rpc: &amp;RpcClient,
+    token_a: Address,
+    token_b: Address,
+    initial_price: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.f64.html">f64</a>&gt;,
+    funder: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Address&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.CreatePoolInstructions.html" title="struct orca_whirlpools_docs::orca_whirlpools::CreatePoolInstructions">CreatePoolInstructions</a>, <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/error/trait.Error.html" title="trait core::error::Error">Error</a>&gt;&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Creates the necessary instructions to initialize a Splash Pool.</p>
+<h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
+<ul>
+<li><code>rpc</code> - A reference to a Solana RPC client for communicating with the blockchain.</li>
+<li><code>token_a</code> - The public key of the first token mint address to include in the pool.</li>
+<li><code>token_b</code> - The public key of the second token mint address to include in the pool.</li>
+<li><code>initial_price</code> - An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.</li>
+<li><code>funder</code> - An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.</li>
+</ul>
+<h2 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h2>
+<p>A <code>Result</code> containing <code>CreatePoolInstructions</code> on success:</p>
+<ul>
+<li><code>instructions</code> - A vector of Solana instructions needed to initialize the pool.</li>
+<li><code>initialization_cost</code> - The estimated rent exemption cost for initializing the pool, in lamports.</li>
+<li><code>pool_address</code> - The public key of the newly created pool.</li>
+<li><code>additional_signers</code> - A vector of <code>Keypair</code> objects representing additional signers required for the instructions.</li>
+</ul>
+<h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>
+<p>This function will return an error if:</p>
+<ul>
+<li>The funder account is invalid.</li>
+<li>Token mints are not found or have invalid data.</li>
+<li>The token mint order does not match the canonical byte order.</li>
+<li>Any RPC request to the blockchain fails.</li>
+</ul>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>orca_whirlpools::{
+    create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+};
+<span class="kw">use </span>solana_client::nonblocking::rpc_client::RpcClient;
+<span class="kw">use </span>solana_keypair::{Keypair, Signer};
+<span class="kw">use </span>solana_pubkey::Pubkey;
+<span class="kw">use </span>std::str::FromStr;
+
+<span class="attr">#[tokio::main]
+</span><span class="kw">async fn </span>main() {
+    set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+    <span class="kw">let </span>rpc = RpcClient::new(<span class="string">"https://api.devnet.solana.com"</span>.to_string());
+    <span class="kw">let </span>token_a = Pubkey::from_str(<span class="string">"So11111111111111111111111111111111111111112"</span>).unwrap();
+    <span class="kw">let </span>token_b = Pubkey::from_str(<span class="string">"BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"</span>).unwrap(); <span class="comment">// devUSDC
+    </span><span class="kw">let </span>initial_price = <span class="prelude-val">Some</span>(<span class="number">0.01</span>);
+    <span class="kw">let </span>wallet = Keypair::new(); <span class="comment">// CAUTION: This wallet is not persistent.
+    </span><span class="kw">let </span>funder = <span class="prelude-val">Some</span>(wallet.pubkey());
+
+    <span class="kw">let </span>create_pool_instructions =
+        create_splash_pool_instructions(<span class="kw-2">&amp;</span>rpc, token_a, token_b, initial_price, funder)
+            .<span class="kw">await
+            </span>.unwrap();
+
+    <span class="macro">println!</span>(<span class="string">"Pool Address: {:?}"</span>, create_pool_instructions.pool_address);
+    <span class="macro">println!</span>(
+        <span class="string">"Initialization Cost: {} lamports"</span>,
+        create_pool_instructions.initialization_cost
+    );
+}</code></pre></div>
+</div></details></section></div></main></body></html>

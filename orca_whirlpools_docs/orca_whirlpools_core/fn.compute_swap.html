@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Computes the amounts of tokens A and B based on the current Whirlpool state and tick sequence."><title>compute_swap in orca_whirlpools_docs::orca_whirlpools_core - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="orca_whirlpools_docs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.86.0 (05f9846f8 2025-03-31)" data-channel="1.86.0" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../orca_whirlpools_docs/index.html">orca_<wbr>whirlpools_<wbr>docs</a><span class="version">0.2.8</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">compute_<wbr>swap</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#notes" title="Notes">Notes</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In orca_<wbr>whirlpools_<wbr>docs::<wbr>orca_<wbr>whirlpools_<wbr>core</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">orca_whirlpools_docs</a>::<wbr><a href="index.html">orca_whirlpools_core</a></div><h1>Function <span class="fn">compute_swap</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><pre class="rust item-decl"><code>pub fn compute_swap&lt;const SIZE: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>&gt;(
+    token_amount: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
+    sqrt_price_limit: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u128.html">u128</a>,
+    whirlpool: <a class="struct" href="struct.WhirlpoolFacade.html" title="struct orca_whirlpools_docs::orca_whirlpools_core::WhirlpoolFacade">WhirlpoolFacade</a>,
+    tick_sequence: <a class="struct" href="struct.TickArraySequence.html" title="struct orca_whirlpools_docs::orca_whirlpools_core::TickArraySequence">TickArraySequence</a>&lt;SIZE&gt;,
+    a_to_b: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.bool.html">bool</a>,
+    specified_input: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.bool.html">bool</a>,
+    timestamp: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
+    adaptive_fee_info: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.AdaptiveFeeInfo.html" title="struct orca_whirlpools_docs::orca_whirlpools_core::AdaptiveFeeInfo">AdaptiveFeeInfo</a>&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.SwapResult.html" title="struct orca_whirlpools_docs::orca_whirlpools_core::SwapResult">SwapResult</a>, &amp;'static <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.str.html">str</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Computes the amounts of tokens A and B based on the current Whirlpool state and tick sequence.</p>
+<h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
+<ul>
+<li><code>token_amount</code>: The input or output amount specified for the swap. Must be non-zero.</li>
+<li><code>sqrt_price_limit</code>: The price limit for the swap represented as a square root.
+If set to <code>0</code>, it defaults to the minimum or maximum sqrt price based on the direction of the swap.</li>
+<li><code>whirlpool</code>: The current state of the Whirlpool AMM, including liquidity, price, and tick information.</li>
+<li><code>tick_sequence</code>: A sequence of ticks used to determine price levels during the swap process.</li>
+<li><code>a_to_b</code>: Indicates the direction of the swap:
+<ul>
+<li><code>true</code>: Swap from token A to token B.</li>
+<li><code>false</code>: Swap from token B to token A.</li>
+</ul>
+</li>
+<li><code>specified_input</code>: Determines if the input amount is specified:
+<ul>
+<li><code>true</code>: <code>token_amount</code> represents the input amount.</li>
+<li><code>false</code>: <code>token_amount</code> represents the output amount.</li>
+</ul>
+</li>
+<li><code>timestamp</code>: A timestamp used to calculate the adaptive fee rate.</li>
+<li><code>adaptive_fee_info</code>: An optional <code>AdaptiveFeeInfo</code> struct containing information about the adaptive fee rate.</li>
+</ul>
+<h2 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h2>
+<p>A <code>Result</code> containing a <code>SwapResult</code> struct if the swap is successful, or an <code>ErrorCode</code> if the computation fails.</p>
+<h2 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h2>
+<ul>
+<li>This function doesn’t take into account slippage tolerance.</li>
+<li>This function doesn’t take into account transfer fee extension.</li>
+</ul>
+</div></details></section></div></main></body></html>

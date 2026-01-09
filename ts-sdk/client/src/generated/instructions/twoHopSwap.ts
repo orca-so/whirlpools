@@ -37,13 +37,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from "../shared";
+} from '../shared';
 
 export const TWO_HOP_SWAP_DISCRIMINATOR = new Uint8Array([
   195, 96, 237, 108, 68, 162, 219, 230,
@@ -51,7 +51,7 @@ export const TWO_HOP_SWAP_DISCRIMINATOR = new Uint8Array([
 
 export function getTwoHopSwapDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TWO_HOP_SWAP_DISCRIMINATOR,
+    TWO_HOP_SWAP_DISCRIMINATOR
   );
 }
 
@@ -59,7 +59,7 @@ export type TwoHopSwapInstruction<
   TProgram extends string = typeof WHIRLPOOL_PROGRAM_ADDRESS,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountTokenAuthority extends string | AccountMeta<string> = string,
   TAccountWhirlpoolOne extends string | AccountMeta<string> = string,
   TAccountWhirlpoolTwo extends string | AccountMeta<string> = string,
@@ -173,29 +173,29 @@ export type TwoHopSwapInstructionDataArgs = {
 export function getTwoHopSwapInstructionDataEncoder(): FixedSizeEncoder<TwoHopSwapInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amount", getU64Encoder()],
-      ["otherAmountThreshold", getU64Encoder()],
-      ["amountSpecifiedIsInput", getBooleanEncoder()],
-      ["aToBOne", getBooleanEncoder()],
-      ["aToBTwo", getBooleanEncoder()],
-      ["sqrtPriceLimitOne", getU128Encoder()],
-      ["sqrtPriceLimitTwo", getU128Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amount', getU64Encoder()],
+      ['otherAmountThreshold', getU64Encoder()],
+      ['amountSpecifiedIsInput', getBooleanEncoder()],
+      ['aToBOne', getBooleanEncoder()],
+      ['aToBTwo', getBooleanEncoder()],
+      ['sqrtPriceLimitOne', getU128Encoder()],
+      ['sqrtPriceLimitTwo', getU128Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: TWO_HOP_SWAP_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: TWO_HOP_SWAP_DISCRIMINATOR })
   );
 }
 
 export function getTwoHopSwapInstructionDataDecoder(): FixedSizeDecoder<TwoHopSwapInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amount", getU64Decoder()],
-    ["otherAmountThreshold", getU64Decoder()],
-    ["amountSpecifiedIsInput", getBooleanDecoder()],
-    ["aToBOne", getBooleanDecoder()],
-    ["aToBTwo", getBooleanDecoder()],
-    ["sqrtPriceLimitOne", getU128Decoder()],
-    ["sqrtPriceLimitTwo", getU128Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amount', getU64Decoder()],
+    ['otherAmountThreshold', getU64Decoder()],
+    ['amountSpecifiedIsInput', getBooleanDecoder()],
+    ['aToBOne', getBooleanDecoder()],
+    ['aToBTwo', getBooleanDecoder()],
+    ['sqrtPriceLimitOne', getU128Decoder()],
+    ['sqrtPriceLimitTwo', getU128Decoder()],
   ]);
 }
 
@@ -205,7 +205,7 @@ export function getTwoHopSwapInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getTwoHopSwapInstructionDataEncoder(),
-    getTwoHopSwapInstructionDataDecoder(),
+    getTwoHopSwapInstructionDataDecoder()
   );
 }
 
@@ -251,13 +251,13 @@ export type TwoHopSwapAsyncInput<
   tickArrayTwo2: Address<TAccountTickArrayTwo2>;
   oracleOne?: Address<TAccountOracleOne>;
   oracleTwo?: Address<TAccountOracleTwo>;
-  amount: TwoHopSwapInstructionDataArgs["amount"];
-  otherAmountThreshold: TwoHopSwapInstructionDataArgs["otherAmountThreshold"];
-  amountSpecifiedIsInput: TwoHopSwapInstructionDataArgs["amountSpecifiedIsInput"];
-  aToBOne: TwoHopSwapInstructionDataArgs["aToBOne"];
-  aToBTwo: TwoHopSwapInstructionDataArgs["aToBTwo"];
-  sqrtPriceLimitOne: TwoHopSwapInstructionDataArgs["sqrtPriceLimitOne"];
-  sqrtPriceLimitTwo: TwoHopSwapInstructionDataArgs["sqrtPriceLimitTwo"];
+  amount: TwoHopSwapInstructionDataArgs['amount'];
+  otherAmountThreshold: TwoHopSwapInstructionDataArgs['otherAmountThreshold'];
+  amountSpecifiedIsInput: TwoHopSwapInstructionDataArgs['amountSpecifiedIsInput'];
+  aToBOne: TwoHopSwapInstructionDataArgs['aToBOne'];
+  aToBTwo: TwoHopSwapInstructionDataArgs['aToBTwo'];
+  sqrtPriceLimitOne: TwoHopSwapInstructionDataArgs['sqrtPriceLimitOne'];
+  sqrtPriceLimitTwo: TwoHopSwapInstructionDataArgs['sqrtPriceLimitTwo'];
 };
 
 export async function getTwoHopSwapInstructionAsync<
@@ -305,7 +305,7 @@ export async function getTwoHopSwapInstructionAsync<
     TAccountOracleOne,
     TAccountOracleTwo
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   TwoHopSwapInstruction<
     TProgramAddress,
@@ -380,7 +380,7 @@ export async function getTwoHopSwapInstructionAsync<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.oracleOne.value) {
     accounts.oracleOne.value = await getProgramDerivedAddress({
@@ -401,7 +401,7 @@ export async function getTwoHopSwapInstructionAsync<
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.tokenProgram),
@@ -426,7 +426,7 @@ export async function getTwoHopSwapInstructionAsync<
       getAccountMeta(accounts.oracleTwo),
     ],
     data: getTwoHopSwapInstructionDataEncoder().encode(
-      args as TwoHopSwapInstructionDataArgs,
+      args as TwoHopSwapInstructionDataArgs
     ),
     programAddress,
   } as TwoHopSwapInstruction<
@@ -496,13 +496,13 @@ export type TwoHopSwapInput<
   tickArrayTwo2: Address<TAccountTickArrayTwo2>;
   oracleOne: Address<TAccountOracleOne>;
   oracleTwo: Address<TAccountOracleTwo>;
-  amount: TwoHopSwapInstructionDataArgs["amount"];
-  otherAmountThreshold: TwoHopSwapInstructionDataArgs["otherAmountThreshold"];
-  amountSpecifiedIsInput: TwoHopSwapInstructionDataArgs["amountSpecifiedIsInput"];
-  aToBOne: TwoHopSwapInstructionDataArgs["aToBOne"];
-  aToBTwo: TwoHopSwapInstructionDataArgs["aToBTwo"];
-  sqrtPriceLimitOne: TwoHopSwapInstructionDataArgs["sqrtPriceLimitOne"];
-  sqrtPriceLimitTwo: TwoHopSwapInstructionDataArgs["sqrtPriceLimitTwo"];
+  amount: TwoHopSwapInstructionDataArgs['amount'];
+  otherAmountThreshold: TwoHopSwapInstructionDataArgs['otherAmountThreshold'];
+  amountSpecifiedIsInput: TwoHopSwapInstructionDataArgs['amountSpecifiedIsInput'];
+  aToBOne: TwoHopSwapInstructionDataArgs['aToBOne'];
+  aToBTwo: TwoHopSwapInstructionDataArgs['aToBTwo'];
+  sqrtPriceLimitOne: TwoHopSwapInstructionDataArgs['sqrtPriceLimitOne'];
+  sqrtPriceLimitTwo: TwoHopSwapInstructionDataArgs['sqrtPriceLimitTwo'];
 };
 
 export function getTwoHopSwapInstruction<
@@ -550,7 +550,7 @@ export function getTwoHopSwapInstruction<
     TAccountOracleOne,
     TAccountOracleTwo
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): TwoHopSwapInstruction<
   TProgramAddress,
   TAccountTokenProgram,
@@ -623,10 +623,10 @@ export function getTwoHopSwapInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.tokenProgram),
@@ -651,7 +651,7 @@ export function getTwoHopSwapInstruction<
       getAccountMeta(accounts.oracleTwo),
     ],
     data: getTwoHopSwapInstructionDataEncoder().encode(
-      args as TwoHopSwapInstructionDataArgs,
+      args as TwoHopSwapInstructionDataArgs
     ),
     programAddress,
   } as TwoHopSwapInstruction<
@@ -715,11 +715,11 @@ export function parseTwoHopSwapInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedTwoHopSwapInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 20) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

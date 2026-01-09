@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.9
+
+### Patch Changes
+
+- [#1211](https://github.com/orca-so/whirlpools/pull/1211) [`966d952`](https://github.com/orca-so/whirlpools/commit/966d952110016d6e3eb72590f47ac4d64a5af13d) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update tx-sender version in example, fix formatting issue
+
 ## 0.2.8
 
 ### Patch Changes

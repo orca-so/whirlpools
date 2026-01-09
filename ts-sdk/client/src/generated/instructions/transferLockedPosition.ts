@@ -31,13 +31,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from "../shared";
+} from '../shared';
 
 export const TRANSFER_LOCKED_POSITION_DISCRIMINATOR = new Uint8Array([
   179, 121, 229, 46, 67, 138, 194, 138,
@@ -45,7 +45,7 @@ export const TRANSFER_LOCKED_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getTransferLockedPositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TRANSFER_LOCKED_POSITION_DISCRIMINATOR,
+    TRANSFER_LOCKED_POSITION_DISCRIMINATOR
   );
 }
 
@@ -60,7 +60,7 @@ export type TransferLockedPositionInstruction<
   TAccountLockConfig extends string | AccountMeta<string> = string,
   TAccountToken2022Program extends
     | string
-    | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    | AccountMeta<string> = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -103,17 +103,17 @@ export type TransferLockedPositionInstructionDataArgs = {};
 
 export function getTransferLockedPositionInstructionDataEncoder(): FixedSizeEncoder<TransferLockedPositionInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: TRANSFER_LOCKED_POSITION_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getTransferLockedPositionInstructionDataDecoder(): FixedSizeDecoder<TransferLockedPositionInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -123,7 +123,7 @@ export function getTransferLockedPositionInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getTransferLockedPositionInstructionDataEncoder(),
-    getTransferLockedPositionInstructionDataDecoder(),
+    getTransferLockedPositionInstructionDataDecoder()
   );
 }
 
@@ -168,7 +168,7 @@ export async function getTransferLockedPositionInstructionAsync<
     TAccountLockConfig,
     TAccountToken2022Program
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   TransferLockedPositionInstruction<
     TProgramAddress,
@@ -219,7 +219,7 @@ export async function getTransferLockedPositionInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110])
         ),
         getAddressEncoder().encode(expectAddress(accounts.positionMint.value)),
       ],
@@ -227,10 +227,10 @@ export async function getTransferLockedPositionInstructionAsync<
   }
   if (!accounts.token2022Program.value) {
     accounts.token2022Program.value =
-      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" as Address<"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb">;
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.positionAuthority),
@@ -298,7 +298,7 @@ export function getTransferLockedPositionInstruction<
     TAccountLockConfig,
     TAccountToken2022Program
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): TransferLockedPositionInstruction<
   TProgramAddress,
   TAccountPositionAuthority,
@@ -344,10 +344,10 @@ export function getTransferLockedPositionInstruction<
   // Resolve default values.
   if (!accounts.token2022Program.value) {
     accounts.token2022Program.value =
-      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" as Address<"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb">;
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.positionAuthority),
@@ -398,11 +398,11 @@ export function parseTransferLockedPositionInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedTransferLockedPositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -423,7 +423,7 @@ export function parseTransferLockedPositionInstruction<
       token2022Program: getNextAccount(),
     },
     data: getTransferLockedPositionInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

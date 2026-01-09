@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const DELETE_POSITION_BUNDLE_DISCRIMINATOR = new Uint8Array([
   100, 25, 99, 2, 217, 239, 124, 173,
@@ -39,7 +39,7 @@ export const DELETE_POSITION_BUNDLE_DISCRIMINATOR = new Uint8Array([
 
 export function getDeletePositionBundleDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    DELETE_POSITION_BUNDLE_DISCRIMINATOR,
+    DELETE_POSITION_BUNDLE_DISCRIMINATOR
   );
 }
 
@@ -54,7 +54,7 @@ export type DeletePositionBundleInstruction<
   TAccountReceiver extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -91,17 +91,17 @@ export type DeletePositionBundleInstructionDataArgs = {};
 
 export function getDeletePositionBundleInstructionDataEncoder(): FixedSizeEncoder<DeletePositionBundleInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
       discriminator: DELETE_POSITION_BUNDLE_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getDeletePositionBundleInstructionDataDecoder(): FixedSizeDecoder<DeletePositionBundleInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -111,7 +111,7 @@ export function getDeletePositionBundleInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getDeletePositionBundleInstructionDataEncoder(),
-    getDeletePositionBundleInstructionDataDecoder(),
+    getDeletePositionBundleInstructionDataDecoder()
   );
 }
 
@@ -148,7 +148,7 @@ export function getDeletePositionBundleInstruction<
     TAccountReceiver,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): DeletePositionBundleInstruction<
   TProgramAddress,
   TAccountPositionBundle,
@@ -187,10 +187,10 @@ export function getDeletePositionBundleInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.positionBundle),
@@ -235,11 +235,11 @@ export function parseDeletePositionBundleInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedDeletePositionBundleInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -258,7 +258,7 @@ export function parseDeletePositionBundleInstruction<
       tokenProgram: getNextAccount(),
     },
     data: getDeletePositionBundleInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

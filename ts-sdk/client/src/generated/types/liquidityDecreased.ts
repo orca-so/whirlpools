@@ -22,7 +22,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LiquidityDecreased = {
   whirlpool: Address;
@@ -50,29 +50,29 @@ export type LiquidityDecreasedArgs = {
 
 export function getLiquidityDecreasedEncoder(): FixedSizeEncoder<LiquidityDecreasedArgs> {
   return getStructEncoder([
-    ["whirlpool", getAddressEncoder()],
-    ["position", getAddressEncoder()],
-    ["tickLowerIndex", getI32Encoder()],
-    ["tickUpperIndex", getI32Encoder()],
-    ["liquidity", getU128Encoder()],
-    ["tokenAAmount", getU64Encoder()],
-    ["tokenBAmount", getU64Encoder()],
-    ["tokenATransferFee", getU64Encoder()],
-    ["tokenBTransferFee", getU64Encoder()],
+    ['whirlpool', getAddressEncoder()],
+    ['position', getAddressEncoder()],
+    ['tickLowerIndex', getI32Encoder()],
+    ['tickUpperIndex', getI32Encoder()],
+    ['liquidity', getU128Encoder()],
+    ['tokenAAmount', getU64Encoder()],
+    ['tokenBAmount', getU64Encoder()],
+    ['tokenATransferFee', getU64Encoder()],
+    ['tokenBTransferFee', getU64Encoder()],
   ]);
 }
 
 export function getLiquidityDecreasedDecoder(): FixedSizeDecoder<LiquidityDecreased> {
   return getStructDecoder([
-    ["whirlpool", getAddressDecoder()],
-    ["position", getAddressDecoder()],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
-    ["liquidity", getU128Decoder()],
-    ["tokenAAmount", getU64Decoder()],
-    ["tokenBAmount", getU64Decoder()],
-    ["tokenATransferFee", getU64Decoder()],
-    ["tokenBTransferFee", getU64Decoder()],
+    ['whirlpool', getAddressDecoder()],
+    ['position', getAddressDecoder()],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
+    ['liquidity', getU128Decoder()],
+    ['tokenAAmount', getU64Decoder()],
+    ['tokenBAmount', getU64Decoder()],
+    ['tokenATransferFee', getU64Decoder()],
+    ['tokenBTransferFee', getU64Decoder()],
   ]);
 }
 
@@ -82,6 +82,6 @@ export function getLiquidityDecreasedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLiquidityDecreasedEncoder(),
-    getLiquidityDecreasedDecoder(),
+    getLiquidityDecreasedDecoder()
   );
 }

@@ -106,10 +106,6 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     // The beginning of handler core logic
 
-    if position.tick_upper_index() < position.tick_lower_index() {
-        return Err(WhirlpoolErrorCode::InvalidTickIndex.into());
-    }
-
     pino_verify_position_authority(&position_token_account, position_authority_info)?;
     drop(position_token_account);
 

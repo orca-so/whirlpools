@@ -119,12 +119,6 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
 
     drop(position_token_account);
 
-    pino_ensure_position_has_enough_rent_for_ticks(
-        funder_info,
-        position_account_info,
-        system_program_info,
-    )?;
-
     let clock = Clock::get()?;
 
     let remaining_accounts = pino_parse_remaining_accounts(
@@ -157,6 +151,12 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         timestamp,
         &mut existing_range_token_a_decrease_amount,
         &mut existing_range_token_b_decrease_amount,
+    )?;
+
+    pino_ensure_position_has_enough_rent_for_ticks(
+        funder_info,
+        position_account_info,
+        system_program_info,
     )?;
 
     // Even though there is no token transfer at this point, we use the transfer fee excluded amount

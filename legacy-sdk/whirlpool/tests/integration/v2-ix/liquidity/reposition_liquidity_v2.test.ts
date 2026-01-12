@@ -5,6 +5,8 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import type { WhirlpoolContext } from "../../../../src";
 import {
+  AccountName,
+  getAccountSize,
   IGNORE_CACHE,
   MAX_SQRT_PRICE_BN,
   METADATA_PROGRAM_ADDRESS,
@@ -16,7 +18,7 @@ import {
   WhirlpoolIx,
 } from "../../../../src";
 import {
-  getLiteSVM,
+  getMinimumBalanceForSpace,
   initializeLiteSVMEnvironment,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
@@ -24,7 +26,10 @@ import {
   warpClock,
   ZERO_BN,
 } from "../../../utils";
-import { initTickArrayIfNeeded } from "../../../utils/init-utils";
+import {
+  initDynamicTickArray,
+  initTickArrayIfNeeded,
+} from "../../../utils/init-utils";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../../utils/v2/token-2022";
@@ -169,24 +174,6 @@ describe("reposition_v2", () => {
             whirlpoolPda.publicKey,
             TickUtil.getStartTickIndex(repositionTickUpper, tickSpacing),
           );
-
-          // Get the position account and drain most of its lamports
-          // to make it underfunded (less than rent-exempt for Position::LEN)
-          const litesvm = getLiteSVM();
-          const positionAccount = litesvm.getAccount(positions[0].publicKey);
-          assert.ok(positionAccount, "Position account should exist");
-
-          // Set lamports to an amount required for Position rent
-          // This creates the scenario where the funder must add additional lamports
-          // to make the position account rent-exempt.
-          const underfundedLamports = 2_394_240;
-          litesvm.setAccount(positions[0].publicKey, {
-            lamports: underfundedLamports,
-            data: positionAccount.data,
-            owner: positionAccount.owner,
-            executable: positionAccount.executable,
-            rentEpoch: Number(positionAccount.rentEpoch),
-          });
 
           await toTx(
             ctx,
@@ -1705,6 +1692,197 @@ describe("reposition_v2", () => {
           );
         });
       });
+    });
+  });
+
+  describe("rent collection", () => {
+    it("succeeds when rent from initial position with all liquidity withdrawn funds rent for new ticks", async () => {
+      const currTick = 0;
+      // Initial position: 1-sided position below price
+      const initialTickLower = -11_392;
+      const initialTickUpper = -128;
+      const initialLiquidity = new BN(1_000_000);
+      // New position: 1-sided position above price
+      const newTickLower = 128;
+      const newTickUpper = 11_392;
+
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: false },
+        tickSpacing: TickSpacing.Standard,
+        dynamicTickArrays: true,
+        positions: [
+          {
+            tickLowerIndex: initialTickLower,
+            tickUpperIndex: initialTickUpper,
+            liquidityAmount: initialLiquidity,
+          },
+        ],
+        initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
+      });
+
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenProgramA,
+          tokenProgramB,
+          tokenMintA,
+          tokenMintB,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tickSpacing,
+        },
+        positions,
+        tokenAccountA,
+        tokenAccountB,
+      } = fixture.getInfos();
+
+      const newTickArrayLower = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+      );
+      const newTickArrayUpper = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+      );
+
+      await initDynamicTickArray(
+        ctx,
+        whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickLower, tickSpacing),
+      );
+      await initDynamicTickArray(
+        ctx,
+        whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
+      );
+
+      const positionAccountInfo = await ctx.connection.getAccountInfo(
+        positions[0].publicKey,
+      );
+      assert.ok(positionAccountInfo);
+      assert.equal(
+        positionAccountInfo.data.length,
+        getAccountSize(AccountName.Position),
+      );
+
+      const positionRentRequired =
+        await ctx.connection.getMinimumBalanceForRentExemption(
+          positionAccountInfo.data.length,
+        );
+      assert.equal(
+        positionAccountInfo.lamports,
+        positionRentRequired,
+        "position should only have account rent",
+      );
+
+      const initialLowerTickArrayBefore = await ctx.connection.getAccountInfo(
+        positions[0].tickArrayLower,
+      );
+      const initialUpperTickArrayBefore = await ctx.connection.getAccountInfo(
+        positions[0].tickArrayUpper,
+      );
+      assert.ok(
+        initialLowerTickArrayBefore,
+        "initial lower tick array should exist before reposition",
+      );
+      assert.ok(
+        initialUpperTickArrayBefore,
+        "initial upper tick array should exist before reposition",
+      );
+
+      const emptyFunder = anchor.web3.Keypair.generate();
+      const funderBefore = await ctx.connection.getAccountInfo(
+        emptyFunder.publicKey,
+      );
+      assert.equal(funderBefore, null);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
+          newTickLowerIndex: newTickLower,
+          newTickUpperIndex: newTickUpper,
+          newLiquidityAmount: initialLiquidity,
+          existingRangeTokenMinA: ZERO_BN,
+          existingRangeTokenMinB: ZERO_BN,
+          newRangeTokenMaxA: new BN(500_000),
+          newRangeTokenMaxB: new BN(500_000),
+          whirlpool: whirlpoolPda.publicKey,
+          tokenProgramA: tokenProgramA,
+          tokenProgramB: tokenProgramB,
+          positionAuthority: provider.wallet.publicKey,
+          funder: emptyFunder.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA: tokenMintA,
+          tokenMintB: tokenMintB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          existingTickArrayLower: positions[0].tickArrayLower,
+          existingTickArrayUpper: positions[0].tickArrayUpper,
+          newTickArrayLower: newTickArrayLower.publicKey,
+          newTickArrayUpper: newTickArrayUpper.publicKey,
+        }),
+      )
+        .addSigner(emptyFunder)
+        .buildAndExecute();
+
+      const positionAfter = await fetcher.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      );
+      assert.equal(positionAfter?.tickLowerIndex, newTickLower);
+      assert.equal(positionAfter?.tickUpperIndex, newTickUpper);
+      assert.ok(positionAfter?.liquidity.eq(initialLiquidity));
+
+      const initialLowerTickArrayAfter = await ctx.connection.getAccountInfo(
+        positions[0].tickArrayLower,
+      );
+      const initialUpperTickArrayAfter = await ctx.connection.getAccountInfo(
+        positions[0].tickArrayUpper,
+      );
+      assert.ok(
+        initialLowerTickArrayAfter,
+        "initial lower tick array should exist after reposition",
+      );
+      assert.ok(
+        initialUpperTickArrayAfter,
+        "initial upper tick array should exist after reposition",
+      );
+
+      // DYNAMIC_TICK_INITIALIZED_LEN - DYNAMIC_TICK_UNINITIALIZED_LEN
+      const INITIALIZED_DYNAMIC_TICK_SIZE = 112;
+      const tickRentAmount = await getMinimumBalanceForSpace(
+        ctx.connection,
+        INITIALIZED_DYNAMIC_TICK_SIZE,
+      );
+
+      assert.equal(
+        initialLowerTickArrayBefore.lamports -
+          initialLowerTickArrayAfter.lamports,
+        tickRentAmount,
+        "lower tick array rent delta should match the rent required for an initialized tick",
+      );
+      assert.equal(
+        initialUpperTickArrayBefore.lamports -
+          initialUpperTickArrayAfter.lamports,
+        tickRentAmount,
+        "upper tick array rent delta should match the rent required for an initialized tick",
+      );
+
+      const funderAfter = await ctx.connection.getAccountInfo(
+        emptyFunder.publicKey,
+      );
+      assert.equal(funderAfter, null);
+
+      const positionBalanceAfter = await ctx.connection.getBalance(
+        positions[0].publicKey,
+      );
+      assert.equal(positionBalanceAfter, positionRentRequired);
     });
   });
 

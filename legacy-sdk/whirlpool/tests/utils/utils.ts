@@ -8,6 +8,7 @@ import type {
   Connection,
   Commitment,
 } from "@solana/web3.js";
+import { SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 
 export function systemTransferTx(
   provider: AnchorProvider,
@@ -136,4 +137,24 @@ export function snapTickDown(t: number, spacing: number): number {
 export function snapTickUp(t: number, spacing: number): number {
   const r = remEuclid(t, spacing);
   return r === 0 ? t : t + (spacing - r);
+}
+
+// This is the same as the standard `getMinimumBalanceForRentExemption` RPC function,
+// except it doesn't bake in the 128 byte account overhead: ACCOUNT_STORAGE_OVERHEAD.
+// this means we can get the required rent for an explicit number of bytes
+// source: https://github.com/anza-xyz/kit/blob/57e6d68e50e44ca8a571760fcf303f93ac5f1bb8/packages/kit/src/get-minimum-balance-for-rent-exemption.ts#L1-L26
+export async function getMinimumBalanceForSpace(
+  connection: Connection,
+  size: number,
+): Promise<number> {
+  const rentAccount = await connection.getAccountInfo(SYSVAR_RENT_PUBKEY);
+  if (!rentAccount) {
+    throw new Error("Rent sysvar account not found");
+  }
+
+  const rentData = rentAccount.data;
+  const lamportsPerByteYear = Number(rentData.readBigUInt64LE(0));
+  const exemptionThreshold = rentData.readDoubleLE(8);
+
+  return Math.ceil(size * lamportsPerByteYear * exemptionThreshold);
 }

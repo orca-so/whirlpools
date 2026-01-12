@@ -365,7 +365,7 @@ pub fn estimate_max_liquidity_from_token_amounts(
     if current_sqrt_price >= upper_sqrt_price {
         // Entirely above range – constrained by token B
         est_liquidity_for_token_b(upper_sqrt_price, lower_sqrt_price, token_max_b)
-    } else if current_sqrt_price < lower_sqrt_price {
+    } else if current_sqrt_price <= lower_sqrt_price {
         // Entirely below range – constrained by token A
         est_liquidity_for_token_a(lower_sqrt_price, upper_sqrt_price, token_max_a)
     } else {

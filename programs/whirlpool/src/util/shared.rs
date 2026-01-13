@@ -9,7 +9,10 @@ use std::convert::TryFrom;
 
 use crate::{
     errors::ErrorCode,
-    math::{sqrt_price_from_tick_index, tick_index_from_sqrt_price},
+    math::{
+        sqrt_price_from_tick_index, tick_index_from_sqrt_price,
+        FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD,
+    },
     state,
 };
 
@@ -98,7 +101,9 @@ pub fn resolve_one_sided_position_ticks(
 ) -> Result<(i32, i32)> {
     let lower_is_sentinel = tick_lower_index == i32::MIN;
     let upper_is_sentinel = tick_upper_index == i32::MAX;
-    if !lower_is_sentinel && !upper_is_sentinel {
+    let is_full_range_only = tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD;
+    // If the pool is full-range only, or both bounds are provided, return the original bounds.
+    if (!lower_is_sentinel && !upper_is_sentinel) || is_full_range_only {
         return Ok((tick_lower_index, tick_upper_index));
     }
     if lower_is_sentinel && upper_is_sentinel {

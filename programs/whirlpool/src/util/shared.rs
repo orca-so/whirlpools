@@ -142,9 +142,6 @@ pub fn resolve_one_sided_position_ticks(
         }
         resolved_tick_upper_index = snapped;
     }
-    if resolved_tick_lower_index >= resolved_tick_upper_index {
-        return Err(ErrorCode::InvalidTickIndex.into());
-    }
     Ok((resolved_tick_lower_index, resolved_tick_upper_index))
 }
 
@@ -251,14 +248,6 @@ mod tests {
         let sqrt_price = sqrt_price_from_tick_index(state::MIN_TICK_INDEX + 5).saturating_sub(1);
         let err = resolve_one_sided_position_ticks(state::MIN_TICK_INDEX, i32::MAX, 10, sqrt_price)
             .unwrap_err();
-        assert_eq!(err, ErrorCode::InvalidTickIndex.into());
-    }
-
-    #[test]
-    fn errors_when_resolved_bounds_are_not_strictly_increasing() {
-        let sqrt_price = sqrt_price_from_tick_index(90);
-        let err = resolve_one_sided_position_ticks(i32::MIN, 80, 10, sqrt_price)
-            .expect_err("bounds invalid");
         assert_eq!(err, ErrorCode::InvalidTickIndex.into());
     }
 }

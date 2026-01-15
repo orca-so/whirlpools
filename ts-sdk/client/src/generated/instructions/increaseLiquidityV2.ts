@@ -37,15 +37,15 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 import {
   getRemainingAccountsInfoDecoder,
   getRemainingAccountsInfoEncoder,
   type RemainingAccountsInfo,
   type RemainingAccountsInfoArgs,
-} from '../types';
+} from "../types";
 
 export const INCREASE_LIQUIDITY_V2_DISCRIMINATOR = new Uint8Array([
   133, 29, 89, 223, 69, 238, 176, 10,
@@ -53,7 +53,7 @@ export const INCREASE_LIQUIDITY_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getIncreaseLiquidityV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INCREASE_LIQUIDITY_V2_DISCRIMINATOR
+    INCREASE_LIQUIDITY_V2_DISCRIMINATOR,
   );
 }
 
@@ -64,7 +64,7 @@ export type IncreaseLiquidityV2Instruction<
   TAccountTokenProgramB extends string | AccountMeta<string> = string,
   TAccountMemoProgram extends
     | string
-    | AccountMeta<string> = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
+    | AccountMeta<string> = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
   TAccountPositionAuthority extends string | AccountMeta<string> = string,
   TAccountPosition extends string | AccountMeta<string> = string,
   TAccountPositionTokenAccount extends string | AccountMeta<string> = string,
@@ -149,30 +149,30 @@ export type IncreaseLiquidityV2InstructionDataArgs = {
 export function getIncreaseLiquidityV2InstructionDataEncoder(): Encoder<IncreaseLiquidityV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['liquidityAmount', getU128Encoder()],
-      ['tokenMaxA', getU64Encoder()],
-      ['tokenMaxB', getU64Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["liquidityAmount", getU128Encoder()],
+      ["tokenMaxA", getU64Encoder()],
+      ["tokenMaxB", getU64Encoder()],
       [
-        'remainingAccountsInfo',
+        "remainingAccountsInfo",
         getOptionEncoder(getRemainingAccountsInfoEncoder()),
       ],
     ]),
     (value) => ({
       ...value,
       discriminator: INCREASE_LIQUIDITY_V2_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getIncreaseLiquidityV2InstructionDataDecoder(): Decoder<IncreaseLiquidityV2InstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['liquidityAmount', getU128Decoder()],
-    ['tokenMaxA', getU64Decoder()],
-    ['tokenMaxB', getU64Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["liquidityAmount", getU128Decoder()],
+    ["tokenMaxA", getU64Decoder()],
+    ["tokenMaxB", getU64Decoder()],
     [
-      'remainingAccountsInfo',
+      "remainingAccountsInfo",
       getOptionDecoder(getRemainingAccountsInfoDecoder()),
     ],
   ]);
@@ -184,7 +184,7 @@ export function getIncreaseLiquidityV2InstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getIncreaseLiquidityV2InstructionDataEncoder(),
-    getIncreaseLiquidityV2InstructionDataDecoder()
+    getIncreaseLiquidityV2InstructionDataDecoder(),
   );
 }
 
@@ -220,10 +220,10 @@ export type IncreaseLiquidityV2Input<
   tokenVaultB: Address<TAccountTokenVaultB>;
   tickArrayLower: Address<TAccountTickArrayLower>;
   tickArrayUpper: Address<TAccountTickArrayUpper>;
-  liquidityAmount: IncreaseLiquidityV2InstructionDataArgs['liquidityAmount'];
-  tokenMaxA: IncreaseLiquidityV2InstructionDataArgs['tokenMaxA'];
-  tokenMaxB: IncreaseLiquidityV2InstructionDataArgs['tokenMaxB'];
-  remainingAccountsInfo: IncreaseLiquidityV2InstructionDataArgs['remainingAccountsInfo'];
+  liquidityAmount: IncreaseLiquidityV2InstructionDataArgs["liquidityAmount"];
+  tokenMaxA: IncreaseLiquidityV2InstructionDataArgs["tokenMaxA"];
+  tokenMaxB: IncreaseLiquidityV2InstructionDataArgs["tokenMaxB"];
+  remainingAccountsInfo: IncreaseLiquidityV2InstructionDataArgs["remainingAccountsInfo"];
 };
 
 export function getIncreaseLiquidityV2Instruction<
@@ -261,7 +261,7 @@ export function getIncreaseLiquidityV2Instruction<
     TAccountTickArrayLower,
     TAccountTickArrayUpper
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): IncreaseLiquidityV2Instruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -324,10 +324,10 @@ export function getIncreaseLiquidityV2Instruction<
   // Resolve default values.
   if (!accounts.memoProgram.value) {
     accounts.memoProgram.value =
-      'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr' as Address<'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'>;
+      "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr" as Address<"MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -347,7 +347,7 @@ export function getIncreaseLiquidityV2Instruction<
       getAccountMeta(accounts.tickArrayUpper),
     ],
     data: getIncreaseLiquidityV2InstructionDataEncoder().encode(
-      args as IncreaseLiquidityV2InstructionDataArgs
+      args as IncreaseLiquidityV2InstructionDataArgs,
     ),
     programAddress,
   } as IncreaseLiquidityV2Instruction<
@@ -401,11 +401,11 @@ export function parseIncreaseLiquidityV2Instruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedIncreaseLiquidityV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 15) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -433,7 +433,7 @@ export function parseIncreaseLiquidityV2Instruction<
       tickArrayUpper: getNextAccount(),
     },
     data: getIncreaseLiquidityV2InstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

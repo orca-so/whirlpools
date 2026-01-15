@@ -31,16 +31,16 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const SET_REWARD_AUTHORITY_BY_SUPER_AUTHORITY_DISCRIMINATOR =
   new Uint8Array([240, 154, 201, 198, 148, 93, 56, 25]);
 
 export function getSetRewardAuthorityBySuperAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_REWARD_AUTHORITY_BY_SUPER_AUTHORITY_DISCRIMINATOR
+    SET_REWARD_AUTHORITY_BY_SUPER_AUTHORITY_DISCRIMINATOR,
   );
 }
 
@@ -86,20 +86,20 @@ export type SetRewardAuthorityBySuperAuthorityInstructionDataArgs = {
 export function getSetRewardAuthorityBySuperAuthorityInstructionDataEncoder(): FixedSizeEncoder<SetRewardAuthorityBySuperAuthorityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['rewardIndex', getU8Encoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["rewardIndex", getU8Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_REWARD_AUTHORITY_BY_SUPER_AUTHORITY_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
 export function getSetRewardAuthorityBySuperAuthorityInstructionDataDecoder(): FixedSizeDecoder<SetRewardAuthorityBySuperAuthorityInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['rewardIndex', getU8Decoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["rewardIndex", getU8Decoder()],
   ]);
 }
 
@@ -109,7 +109,7 @@ export function getSetRewardAuthorityBySuperAuthorityInstructionDataCodec(): Fix
 > {
   return combineCodec(
     getSetRewardAuthorityBySuperAuthorityInstructionDataEncoder(),
-    getSetRewardAuthorityBySuperAuthorityInstructionDataDecoder()
+    getSetRewardAuthorityBySuperAuthorityInstructionDataDecoder(),
   );
 }
 
@@ -123,7 +123,7 @@ export type SetRewardAuthorityBySuperAuthorityInput<
   whirlpool: Address<TAccountWhirlpool>;
   rewardEmissionsSuperAuthority: TransactionSigner<TAccountRewardEmissionsSuperAuthority>;
   newRewardAuthority: Address<TAccountNewRewardAuthority>;
-  rewardIndex: SetRewardAuthorityBySuperAuthorityInstructionDataArgs['rewardIndex'];
+  rewardIndex: SetRewardAuthorityBySuperAuthorityInstructionDataArgs["rewardIndex"];
 };
 
 export function getSetRewardAuthorityBySuperAuthorityInstruction<
@@ -139,7 +139,7 @@ export function getSetRewardAuthorityBySuperAuthorityInstruction<
     TAccountRewardEmissionsSuperAuthority,
     TAccountNewRewardAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetRewardAuthorityBySuperAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpoolsConfig,
@@ -174,7 +174,7 @@ export function getSetRewardAuthorityBySuperAuthorityInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpoolsConfig),
@@ -183,7 +183,7 @@ export function getSetRewardAuthorityBySuperAuthorityInstruction<
       getAccountMeta(accounts.newRewardAuthority),
     ],
     data: getSetRewardAuthorityBySuperAuthorityInstructionDataEncoder().encode(
-      args as SetRewardAuthorityBySuperAuthorityInstructionDataArgs
+      args as SetRewardAuthorityBySuperAuthorityInstructionDataArgs,
     ),
     programAddress,
   } as SetRewardAuthorityBySuperAuthorityInstruction<
@@ -215,14 +215,14 @@ export function parseSetRewardAuthorityBySuperAuthorityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetRewardAuthorityBySuperAuthorityInstruction<
   TProgram,
   TAccountMetas
 > {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -239,7 +239,7 @@ export function parseSetRewardAuthorityBySuperAuthorityInstruction<
       newRewardAuthority: getNextAccount(),
     },
     data: getSetRewardAuthorityBySuperAuthorityInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

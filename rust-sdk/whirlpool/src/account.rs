@@ -8,7 +8,6 @@ use solana_sysvar_id::SysvarId;
 use std::{error::Error, str::FromStr};
 
 #[cfg(test)]
-#[cfg(test)]
 use solana_account_decoder::UiAccountEncoding;
 
 #[derive(Debug, Clone)]

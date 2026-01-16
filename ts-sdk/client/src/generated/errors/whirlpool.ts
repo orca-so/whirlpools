@@ -11,8 +11,8 @@ import {
   type Address,
   type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   type SolanaError,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
 
 /** InvalidEnum: Enum value could not be converted */
 export const WHIRLPOOL_ERROR__INVALID_ENUM = 0x1770; // 6000
@@ -222,7 +222,7 @@ export type WhirlpoolError =
   | typeof WHIRLPOOL_ERROR__ZERO_TRADABLE_AMOUNT;
 
 let whirlpoolErrorMessages: Record<WhirlpoolError, string> | undefined;
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   whirlpoolErrorMessages = {
     [WHIRLPOOL_ERROR__AMOUNT_CALC_OVERFLOW]: `Amount calculated overflows`,
     [WHIRLPOOL_ERROR__AMOUNT_IN_ABOVE_MAXIMUM]: `Amount in above maximum threshold`,
@@ -296,11 +296,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export function getWhirlpoolErrorMessage(code: WhirlpoolError): string {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     return (whirlpoolErrorMessages as Record<WhirlpoolError, string>)[code];
   }
 
-  return 'Error message not available in production bundles.';
+  return "Error message not available in production bundles.";
 }
 
 export function isWhirlpoolError<TProgramErrorCode extends WhirlpoolError>(
@@ -308,13 +308,13 @@ export function isWhirlpoolError<TProgramErrorCode extends WhirlpoolError>(
   transactionMessage: {
     instructions: Record<number, { programAddress: Address }>;
   },
-  code?: TProgramErrorCode
+  code?: TProgramErrorCode,
 ): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
   Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
   return isProgramError<TProgramErrorCode>(
     error,
     transactionMessage,
     WHIRLPOOL_PROGRAM_ADDRESS,
-    code
+    code,
   );
 }

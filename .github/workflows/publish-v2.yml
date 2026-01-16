@@ -34,6 +34,7 @@ jobs:
         run: |
           rustup toolchain install 1.86.0 --profile minimal
           rustup default 1.86.0
+          rustup component add rustfmt clippy
       - name: Install dependencies
         run: yarn install
       - name: Build Solana program in Docker

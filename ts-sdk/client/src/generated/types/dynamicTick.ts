@@ -21,29 +21,29 @@ import {
   type Encoder,
   type GetDiscriminatedUnionVariant,
   type GetDiscriminatedUnionVariantContent,
-} from '@solana/kit';
+} from "@solana/kit";
 import {
   getDynamicTickDataDecoder,
   getDynamicTickDataEncoder,
   type DynamicTickData,
   type DynamicTickDataArgs,
-} from '.';
+} from ".";
 
 export type DynamicTick =
-  | { __kind: 'Uninitialized' }
-  | { __kind: 'Initialized'; fields: readonly [DynamicTickData] };
+  | { __kind: "Uninitialized" }
+  | { __kind: "Initialized"; fields: readonly [DynamicTickData] };
 
 export type DynamicTickArgs =
-  | { __kind: 'Uninitialized' }
-  | { __kind: 'Initialized'; fields: readonly [DynamicTickDataArgs] };
+  | { __kind: "Uninitialized" }
+  | { __kind: "Initialized"; fields: readonly [DynamicTickDataArgs] };
 
 export function getDynamicTickEncoder(): Encoder<DynamicTickArgs> {
   return getDiscriminatedUnionEncoder([
-    ['Uninitialized', getUnitEncoder()],
+    ["Uninitialized", getUnitEncoder()],
     [
-      'Initialized',
+      "Initialized",
       getStructEncoder([
-        ['fields', getTupleEncoder([getDynamicTickDataEncoder()])],
+        ["fields", getTupleEncoder([getDynamicTickDataEncoder()])],
       ]),
     ],
   ]);
@@ -51,11 +51,11 @@ export function getDynamicTickEncoder(): Encoder<DynamicTickArgs> {
 
 export function getDynamicTickDecoder(): Decoder<DynamicTick> {
   return getDiscriminatedUnionDecoder([
-    ['Uninitialized', getUnitDecoder()],
+    ["Uninitialized", getUnitDecoder()],
     [
-      'Initialized',
+      "Initialized",
       getStructDecoder([
-        ['fields', getTupleDecoder([getDynamicTickDataDecoder()])],
+        ["fields", getTupleDecoder([getDynamicTickDataDecoder()])],
       ]),
     ],
   ]);
@@ -67,28 +67,28 @@ export function getDynamicTickCodec(): Codec<DynamicTickArgs, DynamicTick> {
 
 // Data Enum Helpers.
 export function dynamicTick(
-  kind: 'Uninitialized'
-): GetDiscriminatedUnionVariant<DynamicTickArgs, '__kind', 'Uninitialized'>;
+  kind: "Uninitialized",
+): GetDiscriminatedUnionVariant<DynamicTickArgs, "__kind", "Uninitialized">;
 export function dynamicTick(
-  kind: 'Initialized',
+  kind: "Initialized",
   data: GetDiscriminatedUnionVariantContent<
     DynamicTickArgs,
-    '__kind',
-    'Initialized'
-  >['fields']
-): GetDiscriminatedUnionVariant<DynamicTickArgs, '__kind', 'Initialized'>;
-export function dynamicTick<K extends DynamicTickArgs['__kind'], Data>(
+    "__kind",
+    "Initialized"
+  >["fields"],
+): GetDiscriminatedUnionVariant<DynamicTickArgs, "__kind", "Initialized">;
+export function dynamicTick<K extends DynamicTickArgs["__kind"], Data>(
   kind: K,
-  data?: Data
+  data?: Data,
 ) {
   return Array.isArray(data)
     ? { __kind: kind, fields: data }
     : { __kind: kind, ...(data ?? {}) };
 }
 
-export function isDynamicTick<K extends DynamicTick['__kind']>(
+export function isDynamicTick<K extends DynamicTick["__kind"]>(
   kind: K,
-  value: DynamicTick
+  value: DynamicTick,
 ): value is DynamicTick & { __kind: K } {
   return value.__kind === kind;
 }

@@ -32,19 +32,19 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from '../shared';
+} from "../shared";
 import {
   getLockTypeDecoder,
   getLockTypeEncoder,
   type LockType,
   type LockTypeArgs,
-} from '../types';
+} from "../types";
 
 export const LOCK_POSITION_DISCRIMINATOR = new Uint8Array([
   227, 62, 2, 252, 247, 10, 171, 185,
@@ -52,7 +52,7 @@ export const LOCK_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getLockPositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    LOCK_POSITION_DISCRIMINATOR
+    LOCK_POSITION_DISCRIMINATOR,
   );
 }
 
@@ -67,10 +67,10 @@ export type LockPositionInstruction<
   TAccountWhirlpool extends string | AccountMeta<string> = string,
   TAccountToken2022Program extends
     | string
-    | AccountMeta<string> = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
+    | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
   TAccountSystemProgram extends
     | string
-    | AccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -119,17 +119,17 @@ export type LockPositionInstructionDataArgs = { lockType: LockTypeArgs };
 export function getLockPositionInstructionDataEncoder(): FixedSizeEncoder<LockPositionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['lockType', getLockTypeEncoder()],
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["lockType", getLockTypeEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: LOCK_POSITION_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: LOCK_POSITION_DISCRIMINATOR }),
   );
 }
 
 export function getLockPositionInstructionDataDecoder(): FixedSizeDecoder<LockPositionInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['lockType', getLockTypeDecoder()],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["lockType", getLockTypeDecoder()],
   ]);
 }
 
@@ -139,7 +139,7 @@ export function getLockPositionInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLockPositionInstructionDataEncoder(),
-    getLockPositionInstructionDataDecoder()
+    getLockPositionInstructionDataDecoder(),
   );
 }
 
@@ -163,7 +163,7 @@ export type LockPositionAsyncInput<
   whirlpool: Address<TAccountWhirlpool>;
   token2022Program?: Address<TAccountToken2022Program>;
   systemProgram?: Address<TAccountSystemProgram>;
-  lockType: LockPositionInstructionDataArgs['lockType'];
+  lockType: LockPositionInstructionDataArgs["lockType"];
 };
 
 export async function getLockPositionInstructionAsync<
@@ -189,7 +189,7 @@ export async function getLockPositionInstructionAsync<
     TAccountToken2022Program,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   LockPositionInstruction<
     TProgramAddress,
@@ -242,7 +242,7 @@ export async function getLockPositionInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110])
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
         ),
         getAddressEncoder().encode(expectAddress(accounts.positionMint.value)),
       ],
@@ -253,7 +253,7 @@ export async function getLockPositionInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([108, 111, 99, 107, 95, 99, 111, 110, 102, 105, 103])
+          new Uint8Array([108, 111, 99, 107, 95, 99, 111, 110, 102, 105, 103]),
         ),
         getAddressEncoder().encode(expectAddress(accounts.position.value)),
       ],
@@ -261,14 +261,14 @@ export async function getLockPositionInstructionAsync<
   }
   if (!accounts.token2022Program.value) {
     accounts.token2022Program.value =
-      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
+      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" as Address<"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb">;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -282,7 +282,7 @@ export async function getLockPositionInstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getLockPositionInstructionDataEncoder().encode(
-      args as LockPositionInstructionDataArgs
+      args as LockPositionInstructionDataArgs,
     ),
     programAddress,
   } as LockPositionInstruction<
@@ -319,7 +319,7 @@ export type LockPositionInput<
   whirlpool: Address<TAccountWhirlpool>;
   token2022Program?: Address<TAccountToken2022Program>;
   systemProgram?: Address<TAccountSystemProgram>;
-  lockType: LockPositionInstructionDataArgs['lockType'];
+  lockType: LockPositionInstructionDataArgs["lockType"];
 };
 
 export function getLockPositionInstruction<
@@ -345,7 +345,7 @@ export function getLockPositionInstruction<
     TAccountToken2022Program,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): LockPositionInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -393,14 +393,14 @@ export function getLockPositionInstruction<
   // Resolve default values.
   if (!accounts.token2022Program.value) {
     accounts.token2022Program.value =
-      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
+      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" as Address<"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb">;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -414,7 +414,7 @@ export function getLockPositionInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getLockPositionInstructionDataEncoder().encode(
-      args as LockPositionInstructionDataArgs
+      args as LockPositionInstructionDataArgs,
     ),
     programAddress,
   } as LockPositionInstruction<
@@ -456,11 +456,11 @@ export function parseLockPositionInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedLockPositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

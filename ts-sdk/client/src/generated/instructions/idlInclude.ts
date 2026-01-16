@@ -25,9 +25,9 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from '@solana/kit';
-import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+} from "@solana/kit";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
 export const IDL_INCLUDE_DISCRIMINATOR = new Uint8Array([
   223, 253, 121, 121, 60, 193, 129, 31,
@@ -42,7 +42,7 @@ export type IdlIncludeInstruction<
   TAccountTickArray extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | AccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -64,14 +64,14 @@ export type IdlIncludeInstructionDataArgs = {};
 
 export function getIdlIncludeInstructionDataEncoder(): FixedSizeEncoder<IdlIncludeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: IDL_INCLUDE_DISCRIMINATOR })
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: IDL_INCLUDE_DISCRIMINATOR }),
   );
 }
 
 export function getIdlIncludeInstructionDataDecoder(): FixedSizeDecoder<IdlIncludeInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -81,7 +81,7 @@ export function getIdlIncludeInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getIdlIncludeInstructionDataEncoder(),
-    getIdlIncludeInstructionDataDecoder()
+    getIdlIncludeInstructionDataDecoder(),
   );
 }
 
@@ -99,7 +99,7 @@ export function getIdlIncludeInstruction<
   TProgramAddress extends Address = typeof WHIRLPOOL_PROGRAM_ADDRESS,
 >(
   input: IdlIncludeInput<TAccountTickArray, TAccountSystemProgram>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): IdlIncludeInstruction<
   TProgramAddress,
   TAccountTickArray,
@@ -121,10 +121,10 @@ export function getIdlIncludeInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.tickArray),
@@ -157,11 +157,11 @@ export function parseIdlIncludeInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedIdlIncludeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {

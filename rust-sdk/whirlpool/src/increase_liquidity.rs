@@ -10,7 +10,8 @@ use orca_whirlpools_client::{IncreaseLiquidityV2, IncreaseLiquidityV2Instruction
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
     increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
-    order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote, TransferFee,
+    is_tick_index_in_bounds, is_tick_initializable, order_tick_indexes, price_to_tick_index,
+    IncreaseLiquidityQuote, TransferFee,
 };
 use solana_account::Account;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -709,6 +710,149 @@ pub async fn open_position_instructions(
     )
     .await
 }
+
+/// Opens a position in a liquidity pool using explicit tick-index bounds.
+///
+/// This function creates a new position for the specified pool using the provided
+/// `lower_tick_index` and `upper_tick_index` bounds (instead of floating-point prices).
+/// The tick indexes must be within Whirlpool's global bounds and aligned with the pool's
+/// tick spacing.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `pool_address` - The public key of the liquidity pool.
+/// * `lower_tick_index` - The lower tick bound for the position. It returns error if out of bounds or not aligned with tick spacing.
+/// * `upper_tick_index` - The upper tick bound for the position. It returns error if out of bounds or not aligned with tick spacing.
+/// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
+/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+/// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
+/// * `position_mint` - The mint address of the position NFT.
+/// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
+/// * `instructions` - A vector of `Instruction` objects required for creating the position.
+/// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
+/// * `initialization_cost` - The cost of initializing the position, in lamports.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The pool or token mint accounts are not found or invalid.
+/// - Any RPC request fails.
+/// - The pool is a Splash Pool, as they only support full-range positions.
+/// - `lower_tick_index` or `upper_tick_index` is out of bounds.
+/// - `lower_tick_index` or `upper_tick_index` is not aligned with the pool's tick spacing.
+/// - `lower_tick_index` is greater than or equal to `upper_tick_index`.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_keypair::Keypair;
+/// use solana_pubkey::Pubkey;
+/// use orca_whirlpools::{open_position_instructions_with_tick_bounds, IncreaseLiquidityParam};
+/// use std::str::FromStr;
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
+/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
+/// let lower_tick_index = -44320;
+/// let upper_tick_index = -22160;
+/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let slippage_tolerance_bps = Some(100);
+///
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let result = open_position_instructions_with_tick_bounds(
+///     &rpc,
+///     whirlpool_pubkey,
+///     lower_tick_index,
+///     upper_tick_index,
+///     param,
+///     slippage_tolerance_bps,
+///     funder,
+/// ).unwrap();
+///
+/// println!("Position Mint: {:?}", result.position_mint);
+/// println!("Initialization Cost: {} lamports", result.initialization_cost);
+/// ```
+pub async fn open_position_instructions_with_tick_bounds(
+    rpc: &RpcClient,
+    pool_address: Pubkey,
+    lower_tick_index: i32,
+    upper_tick_index: i32,
+    param: IncreaseLiquidityParam,
+    slippage_tolerance_bps: Option<u16>,
+    funder: Option<Pubkey>,
+) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    let whirlpool_info = rpc.get_account(&pool_address).await?;
+    let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
+    if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
+        return Err("Splash pools only support full range positions".into());
+    }
+
+    if !is_tick_index_in_bounds(lower_tick_index) {
+        return Err("Lower tick index is out of bounds".into());
+    }
+
+    if !is_tick_initializable(lower_tick_index, whirlpool.tick_spacing) {
+        return Err(format!(
+            "Lower tick index {} is not aligned with tick spacing {}",
+            lower_tick_index, whirlpool.tick_spacing
+        )
+        .into());
+    }
+
+    if !is_tick_index_in_bounds(upper_tick_index) {
+        return Err("Upper tick index is out of bounds".into());
+    }
+
+    if !is_tick_initializable(upper_tick_index, whirlpool.tick_spacing) {
+        return Err(format!(
+            "Upper tick index {} is not aligned with tick spacing {}",
+            upper_tick_index, whirlpool.tick_spacing
+        )
+        .into());
+    }
+
+    if lower_tick_index >= upper_tick_index {
+        return Err(format!(
+            "Lower tick index {} must be less than upper tick index {}",
+            lower_tick_index, upper_tick_index
+        )
+        .into());
+    }
+
+    let mint_infos = rpc
+        .get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])
+        .await?;
+    let mint_a_info = mint_infos[0]
+        .as_ref()
+        .ok_or("Token A mint info not found")?;
+    let mint_b_info = mint_infos[1]
+        .as_ref()
+        .ok_or("Token B mint info not found")?;
+
+    internal_open_position(
+        rpc,
+        pool_address,
+        whirlpool,
+        param,
+        lower_tick_index,
+        upper_tick_index,
+        mint_a_info,
+        mint_b_info,
+        slippage_tolerance_bps,
+        funder,
+    )
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -1151,5 +1295,158 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    mod open_position_with_tick_bounds {
+        use super::*;
+        use crate::open_position_instructions_with_tick_bounds;
+
+        #[tokio::test]
+        #[serial]
+        async fn fails_if_lower_tick_out_of_bounds() -> Result<(), Box<dyn Error>> {
+            let ctx = RpcContext::new();
+
+            let minted = setup_all_mints(&ctx).await?;
+            setup_all_atas(&ctx, &minted).await?;
+
+            let mint_a_key = minted.get("A").unwrap();
+            let mint_b_key = minted.get("B").unwrap();
+            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+            let res = open_position_instructions_with_tick_bounds(
+                &ctx.rpc,
+                pool_pubkey,
+                i32::MAX,
+                64,
+                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                Some(100),
+                Some(ctx.signer.pubkey()),
+            )
+            .await;
+
+            assert!(
+                res.is_err(),
+                "Should fail if user tries to open position with lower tick out of bounds"
+            );
+            let err_str = format!("{:?}", res.err().unwrap());
+            assert!(
+                err_str.contains("Lower tick index is out of bounds"),
+                "Unexpected error message: {}",
+                err_str
+            );
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        #[serial]
+        async fn fails_if_upper_tick_out_of_bounds() -> Result<(), Box<dyn Error>> {
+            let ctx = RpcContext::new();
+
+            let minted = setup_all_mints(&ctx).await?;
+            setup_all_atas(&ctx, &minted).await?;
+
+            let mint_a_key = minted.get("A").unwrap();
+            let mint_b_key = minted.get("B").unwrap();
+            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+            let res = open_position_instructions_with_tick_bounds(
+                &ctx.rpc,
+                pool_pubkey,
+                0,
+                i32::MAX,
+                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                Some(100),
+                Some(ctx.signer.pubkey()),
+            )
+            .await;
+
+            assert!(
+                res.is_err(),
+                "Should fail if user tries to open position with upper tick out of bounds"
+            );
+            let err_str = format!("{:?}", res.err().unwrap());
+            assert!(
+                err_str.contains("Upper tick index is out of bounds"),
+                "Unexpected error message: {}",
+                err_str
+            );
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        #[serial]
+        async fn fails_if_tick_not_aligned_with_tick_spacing() -> Result<(), Box<dyn Error>> {
+            let ctx = RpcContext::new();
+
+            let minted = setup_all_mints(&ctx).await?;
+            setup_all_atas(&ctx, &minted).await?;
+
+            let mint_a_key = minted.get("A").unwrap();
+            let mint_b_key = minted.get("B").unwrap();
+            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+            let res = open_position_instructions_with_tick_bounds(
+                &ctx.rpc,
+                pool_pubkey,
+                1,  // not aligned with tick spacing 64
+                64, // aligned
+                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                Some(100),
+                Some(ctx.signer.pubkey()),
+            )
+            .await;
+
+            assert!(
+                res.is_err(),
+                "Should fail if user tries to open position with tick not aligned with tick spacing"
+            );
+            let err_str = format!("{:?}", res.err().unwrap());
+            assert!(
+                err_str.contains("Lower tick index 1 is not aligned with tick spacing 64"),
+                "Unexpected error message: {}",
+                err_str
+            );
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        #[serial]
+        async fn fails_if_lower_tick_gte_upper_tick() -> Result<(), Box<dyn Error>> {
+            let ctx = RpcContext::new();
+
+            let minted = setup_all_mints(&ctx).await?;
+            setup_all_atas(&ctx, &minted).await?;
+
+            let mint_a_key = minted.get("A").unwrap();
+            let mint_b_key = minted.get("B").unwrap();
+            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+            let res = open_position_instructions_with_tick_bounds(
+                &ctx.rpc,
+                pool_pubkey,
+                64,
+                64,
+                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                Some(100),
+                Some(ctx.signer.pubkey()),
+            )
+            .await;
+
+            assert!(
+                res.is_err(),
+                "Should fail if user tries to open position with lower tick >= upper tick"
+            );
+            let err_str = format!("{:?}", res.err().unwrap());
+            assert!(
+                err_str.contains("Lower tick index 64 must be less than upper tick index 64"),
+                "Unexpected error message: {}",
+                err_str
+            );
+
+            Ok(())
+        }
     }
 }

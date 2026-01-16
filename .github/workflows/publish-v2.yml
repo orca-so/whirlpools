@@ -1,0 +1,64 @@
+name: updated publish check
+
+on:
+  push:
+    branches:
+      - "shio/add-format-to-publish-workflow-check"
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          fetch-depth: 0
+      - name: Ensure base branch exists locally for Changesets
+        run: |
+          set -euo pipefail
+          git fetch origin main:main
+      - name: Setup SSH
+        uses: ./.github/actions/ssh
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          user: changests[bot]
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "yarn"
+      - name: Setup Rust
+        run: |
+          rustup toolchain install 1.86.0 --profile minimal
+          rustup default 1.86.0
+      - name: Install dependencies
+        run: yarn install
+      - name: Build Solana program in Docker
+        run: docker compose --profile build run --rm build-solana-program
+      - name: Build release set and dependencies
+        run: |
+          set -euo pipefail
+          # simulate a set of packages that are ready to be published
+          PACKAGES={@orca-so/whirlpools-docs,@orca-so/whirlpools-docs-legacy,@orca-so/whirlpools-docs-rust,@orca-so/whirlpools-docs-ts}
+          echo "Building release set (and transitive deps) from packages: $PACKAGES"
+          # skip @orca-so/whirlpools-program here:
+          # - it was already built in the previous step via docker
+          # - building it in this step would invoke `anchor build`, and anchor isn't installed on the runner
+          yarn workspaces foreach -Rp --topological-dev --from "$PACKAGES" --exclude @orca-so/whirlpools-program run build
+      - name: Format packages with auto-generated code
+        run: |
+          # Format auto-generated ts/js client ts-sdk/client
+          yarn workspace @orca-so/whirlpools-lint run format
+          # Format auto-generated rust client in rust-sdk/client
+          yarn workspace @orca-so/whirlpools-rust-client run format
+      - name: Determine New Versions
+        run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Cargo Version Numbers
+        uses: ./.github/actions/sync
+      - name: Git status
+        run: git status

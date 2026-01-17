@@ -62,7 +62,7 @@ jobs:
           # The ending comma does not cause any issues and ensures that lists of
           # size >=1 works
           RELEASE_PACKAGES=$(echo "$PKGS" | paste -sd, -)
-          PACKAGES="{${RELEASE_PACKAGES}}"
+          PACKAGES="{${RELEASE_PACKAGES},}"
 
           echo "Brace list for release set: $PACKAGES"
           echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"

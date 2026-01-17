@@ -92,6 +92,7 @@ describe("open_position_with_metadata", () => {
 
   async function checkMetadata(
     metadataPda: PDA | undefined,
+    position: PublicKey,
     positionMint: PublicKey,
   ) {
     assert.ok(metadataPda != null);
@@ -111,9 +112,10 @@ describe("open_position_with_metadata", () => {
         "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
     );
     assert.ok(metadata.mint.toBase58() === positionMint.toString());
+
     assert.ok(
       metadata.uri.replace(/\0/g, "") ===
-        `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`,
+        `https://metadata.orca.so/positions/${position.toBase58()}`,
     );
   }
 
@@ -140,7 +142,11 @@ describe("open_position_with_metadata", () => {
     assert.ok(position.feeOwedA.eq(ZERO_BN));
     assert.ok(position.feeOwedB.eq(ZERO_BN));
 
-    await checkMetadata(metadataPda, position.positionMint);
+    await checkMetadata(
+      metadataPda,
+      positionPda.publicKey,
+      position.positionMint,
+    );
     // TODO: Add tests for rewards
   });
 
@@ -175,7 +181,11 @@ describe("open_position_with_metadata", () => {
     assert.ok(position.feeOwedA.eq(ZERO_BN));
     assert.ok(position.feeOwedB.eq(ZERO_BN));
 
-    await checkMetadata(metadataPda, position.positionMint);
+    await checkMetadata(
+      metadataPda,
+      positionPda.publicKey,
+      position.positionMint,
+    );
   });
 
   it("succeeds when funder is different than account paying for transaction fee", async () => {
@@ -188,7 +198,11 @@ describe("open_position_with_metadata", () => {
       funderKeypair,
     );
 
-    await checkMetadata(params.metadataPda, params.positionMintAddress);
+    await checkMetadata(
+      params.metadataPda,
+      params.positionPda.publicKey,
+      params.positionMintAddress,
+    );
   });
 
   it("open position & verify position mint behavior", async () => {
@@ -202,12 +216,17 @@ describe("open_position_with_metadata", () => {
       newOwner.publicKey,
     );
     const {
+      positionPda,
       metadataPda,
       positionMintAddress,
       positionTokenAccount: positionTokenAccountAddress,
     } = positionInitInfo.params;
 
-    await checkMetadata(metadataPda, positionMintAddress);
+    await checkMetadata(
+      metadataPda,
+      positionPda.publicKey,
+      positionMintAddress,
+    );
 
     const userTokenAccount = await getAccount(
       ctx.connection,

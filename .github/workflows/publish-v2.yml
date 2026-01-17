@@ -1,0 +1,108 @@
+name: updated publish check
+
+on:
+  push:
+    branches:
+      - "shio/update-publish-workflow"
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          fetch-depth: 0
+      - name: Ensure base branch exists locally for Changesets
+        run: |
+          set -euo pipefail
+          git fetch origin main:main
+      - name: Setup SSH
+        uses: ./.github/actions/ssh
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          user: changests[bot]
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+      - name: Setup Rust
+        run: |
+          rustup toolchain install 1.86.0 --profile minimal
+          rustup default 1.86.0
+          rustup component add rustfmt clippy
+      - name: Install dependencies
+        run: yarn install
+      - name: Check for pending changesets and capture release set
+        run: |
+          set -euo pipefail
+          STATUS_OUTPUT=$(yarn changeset status 2>&1 || true)
+          echo "$STATUS_OUTPUT"
+
+          # Strip ANSI color codes before processing
+          STATUS_OUTPUT=$(printf '%s\n' "$STATUS_OUTPUT" | sed 's/\x1b\[[0-9;]*m//g')
+
+          # Extract package names from bullet lines like:
+          # 🦋  - @orca-so/whirlpools-rust-core
+          PKGS=$(printf '%s\n' "$STATUS_OUTPUT" \
+            | sed -n 's/^.*- \(@[^[:space:]]*\).*$/\1/p' \
+            | sort -u \
+            | grep -v '^@orca-so/whirlpools-program$' || true)
+
+          if [ -z "$PKGS" ]; then
+            echo "No unreleased changesets found; exiting publish workflow."
+            exit 0
+          fi
+
+          # Turn the package list into a Yarn brace list, e.g. {@pkg/a,@pkg/b,}
+          # The ending comma does not cause any issues and ensures that lists of
+          # size >=1 works
+          RELEASE_PACKAGES=$(echo "$PKGS" | paste -sd, -)
+          PACKAGES="{${RELEASE_PACKAGES},}"
+
+          echo "Brace list for release set: $PACKAGES"
+          echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
+      - name: Build Solana program in Docker
+        run: docker compose --profile build run --rm build-solana-program
+      - name: Build release set and dependencies
+        run: |
+          set -euo pipefail
+          echo "Building release set: $PACKAGES"
+          # skip @orca-so/whirlpools-program here:
+          # - it was already built in the previous step via docker
+          # - building it in this step would invoke `anchor build`, and anchor isn't installed on the runner
+          yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-program run build
+      - name: Format packages with auto-generated code
+        run: |
+          # Format auto-generated ts/js client ts-sdk/client
+          yarn workspace @orca-so/whirlpools-lint run format
+          # Format auto-generated rust client in rust-sdk/client
+          yarn workspace @orca-so/whirlpools-rust-client run format
+      - name: Determine New Versions
+        run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Cargo Version Numbers
+        uses: ./.github/actions/sync
+      - name: Git Commit
+        run: git add . && git commit -m "Publish Packages"
+      - name: Publish Packages
+        run: |
+          set -euo pipefail
+          echo "Deploying release set: $PACKAGES"
+          # Use the same -Rp/--from combo we rely on for the build so only release-set packages
+          # and their dependencies deploy, while still excluding the root monorepo script.
+          yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo -n run deploy
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      # - name: Tag Release
+      #   run: yarn changeset tag
+      # - name: Git Push
+      #   run: git push origin main && git push --tags
+  

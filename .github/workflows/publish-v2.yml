@@ -91,12 +91,8 @@ jobs:
       - name: Git Commit
         run: git add . && git commit -m "Publish Packages"
       - name: Publish Packages
-        run: |
-          set -euo pipefail
-          echo "Deploying release set: $PACKAGES"
-          # Use the same -Rp/--from combo we rely on for the build so only release-set packages
-          # and their dependencies deploy, while still excluding the root monorepo script.
-          yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo -n run deploy
+        # skip @orca-so/whirlpools-monorepo to avoid invoking the workspace's root deploy script
+        run: yarn workspaces foreach -A --topological-dev --exclude @orca-so/whirlpools-monorepo -n run deploy
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

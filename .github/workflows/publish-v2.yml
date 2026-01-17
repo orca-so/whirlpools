@@ -62,7 +62,7 @@ jobs:
           # The ending comma does not cause any issues and ensures that lists of
           # size >=1 works
           RELEASE_PACKAGES=$(echo "$PKGS" | paste -sd, -)
-          PACKAGES="{${RELEASE_PACKAGES},}"
+          PACKAGES="{${RELEASE_PACKAGES}}"
 
           echo "Brace list for release set: $PACKAGES"
           echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
@@ -92,7 +92,7 @@ jobs:
         run: git add . && git commit -m "Publish Packages"
       - name: Publish Packages
         # skip @orca-so/whirlpools-monorepo to avoid invoking the workspace's root deploy script
-        run: yarn workspaces foreach -A --topological-dev --exclude @orca-so/whirlpools-monorepo -n run deploy
+        run: yarn workspaces foreach -A --topological-dev --exclude @orca-so/whirlpools-monorepo run echo "deploy"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

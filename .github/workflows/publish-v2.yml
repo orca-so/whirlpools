@@ -92,7 +92,7 @@ jobs:
         run: git add . && git commit -m "Publish Packages"
       - name: Publish Packages
         # skip @orca-so/whirlpools-monorepo to avoid invoking the workspace's root deploy script
-        run: yarn workspaces foreach -A --topological-dev --exclude @orca-so/whirlpools-monorepo run echo "deploy"
+        run: yarn workspaces foreach -A --topological-dev --exclude @orca-so/whirlpools-monorepo exec echo "deploy"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

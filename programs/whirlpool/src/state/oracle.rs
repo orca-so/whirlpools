@@ -338,7 +338,7 @@ impl Oracle {
         self.adaptive_fee_variables = variables;
     }
 
-    fn reset_adaptive_fee_variables(&mut self) {
+    pub fn reset_adaptive_fee_variables(&mut self) {
         self.adaptive_fee_variables = AdaptiveFeeVariables::default();
     }
 }

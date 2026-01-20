@@ -32,10 +32,9 @@ jobs:
         run: |
           set -euo pipefail
           solana-verify build . \
-            --library-name whirlpool \
             -- \
-            --features=mainnet \
-            -p whirlpool
+            --manifest-path programs/whirlpool/Cargo.toml \
+            --features=mainnet
 
       - name: Upload program artifacts
         uses: actions/upload-artifact@v4

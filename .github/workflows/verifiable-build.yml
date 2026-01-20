@@ -31,10 +31,7 @@ jobs:
       - name: Run verifiable build
         run: |
           set -euo pipefail
-          solana-verify build . \
-            -- \
-            --manifest-path programs/whirlpool/Cargo.toml \
-            --features=mainnet
+          solana-verify build -- --features=mainnet
 
       - name: Upload program artifacts
         uses: actions/upload-artifact@v4

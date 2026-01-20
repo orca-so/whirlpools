@@ -1,0 +1,46 @@
+name: Verifiable Build (Test)
+
+on:
+  push:
+    branches:
+      - "shio/verifiable-build-test"
+
+jobs:
+  verifiable-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev
+
+      - name: Install solana-verify
+        run: cargo install solana-verify --locked
+
+      - name: Run verifiable build
+        run: |
+          set -euo pipefail
+          solana-verify build \
+            --library-name whirlpool \
+            -- \
+            --manifest-path programs/whirlpool/Cargo.toml \
+            --features=mainnet
+
+      - name: Upload program artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: whirlpool-verifiable-build
+          path: |
+            target/deploy/program.so
+            target/idl/whirlpool.json

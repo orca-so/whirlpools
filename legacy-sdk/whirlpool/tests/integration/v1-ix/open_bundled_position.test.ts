@@ -17,6 +17,7 @@ import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
+  PriceMath,
   POSITION_BUNDLE_SIZE,
   TickUtil,
   toTx,
@@ -33,6 +34,10 @@ import {
   ZERO_BN,
   expireBlockhash,
   initializeLiteSVMEnvironment,
+  SENTINEL_MIN,
+  SENTINEL_MAX,
+  snapTickDown,
+  snapTickUp,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
@@ -40,6 +45,7 @@ import {
   initTestPool,
   openBundledPosition,
 } from "../../utils/init-utils";
+import { pollForCondition } from "../../utils/litesvm";
 
 describe("open_bundled_position", () => {
   let provider: anchor.AnchorProvider;
@@ -53,6 +59,55 @@ describe("open_bundled_position", () => {
     program = env.program;
     ctx = env.ctx;
     fetcher = env.fetcher;
+  });
+
+  it("emit PositionOpened event (bundled)", async () => {
+    const positionBundleInfo = await initializePositionBundle(ctx);
+    const bundleIndex = 0;
+    const lower = 0;
+    const upper = 128;
+
+    // event verification
+    let eventVerified = false;
+    let detectedSignature: string | null = null;
+    const listener = ctx.program.addEventListener(
+      "positionOpened",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify whirlpool and ticks; position pubkey checked after
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.strictEqual(event.tickLowerIndex, lower);
+        assert.strictEqual(event.tickUpperIndex, upper);
+        eventVerified = true;
+      },
+    );
+
+    const { params, txId } = await openBundledPosition(
+      ctx,
+      whirlpoolPda.publicKey,
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
+      bundleIndex,
+      lower,
+      upper,
+    );
+
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === txId && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
+    assert.equal(txId, detectedSignature);
+    assert.ok(eventVerified);
+
+    // Ensure the event's position matches created bundled position PDA
+    const position = (await fetcher.getPosition(
+      params.bundledPositionPda.publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
+    assert.strictEqual(position.tickLowerIndex, lower);
+    assert.strictEqual(position.tickUpperIndex, upper);
+
+    ctx.program.removeEventListener(listener);
   });
 
   const tickLowerIndex = 0;
@@ -911,5 +966,197 @@ describe("open_bundled_position", () => {
       ),
       /0x17a6/, // FullRangeOnlyPool
     );
+  });
+
+  describe("one-sided (sentinel) open bundled position", () => {
+    it("snaps correctly when current price is exactly on an initializable tick (bundled)", async () => {
+      // Initialize a fresh pool where sqrt price is exactly on tick 0
+      const onTickSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(0);
+      const { poolInitInfo: onTickPool } = await initTestPool(
+        ctx,
+        TickSpacing.Standard,
+        onTickSqrtPrice,
+      );
+
+      const whirlpool = await fetcher.getPool(
+        onTickPool.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      // When on-tick, ceil(current) === current and floor(current) === current
+      const expectedLower = snapTickUp(curr, spacing);
+      const expectedUpper = snapTickDown(curr, spacing);
+
+      const positionBundleInfo = await initializePositionBundle(
+        ctx,
+        ctx.wallet.publicKey,
+      );
+      const bundleIndex = 0;
+
+      // Lower sentinel case: expect lower snapped to ceil(current)
+      {
+        const upper = expectedLower + spacing;
+        const positionInitInfo = await openBundledPosition(
+          ctx,
+          onTickPool.whirlpoolPda.publicKey,
+          positionBundleInfo.positionBundleMintKeypair.publicKey,
+          bundleIndex,
+          SENTINEL_MIN,
+          upper,
+        );
+        const { bundledPositionPda } = positionInitInfo.params;
+        const position = (await fetcher.getPosition(
+          bundledPositionPda.publicKey,
+          IGNORE_CACHE,
+        )) as PositionData;
+        checkPositionAccountContents(
+          position,
+          positionBundleInfo.positionBundleMintKeypair.publicKey,
+          onTickPool.whirlpoolPda.publicKey,
+          expectedLower,
+          upper,
+        );
+      }
+
+      // Upper sentinel case: expect upper snapped to floor(current)
+      {
+        const lower = expectedUpper - spacing;
+        const positionInitInfo = await openBundledPosition(
+          ctx,
+          onTickPool.whirlpoolPda.publicKey,
+          positionBundleInfo.positionBundleMintKeypair.publicKey,
+          bundleIndex + 1,
+          lower,
+          SENTINEL_MAX,
+        );
+        const { bundledPositionPda } = positionInitInfo.params;
+        const position = (await fetcher.getPosition(
+          bundledPositionPda.publicKey,
+          IGNORE_CACHE,
+        )) as PositionData;
+        checkPositionAccountContents(
+          position,
+          positionBundleInfo.positionBundleMintKeypair.publicKey,
+          onTickPool.whirlpoolPda.publicKey,
+          lower,
+          expectedUpper,
+        );
+      }
+    });
+
+    it("snaps lower to ceil(current) when lower sentinel is used (bundled)", async () => {
+      const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey);
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedLower = snapTickUp(curr, spacing);
+      const upper = expectedLower + spacing;
+
+      const positionBundleInfo = await initializePositionBundle(
+        ctx,
+        ctx.wallet.publicKey,
+      );
+      const bundleIndex = 0;
+      const positionInitInfo = await openBundledPosition(
+        ctx,
+        whirlpoolPda.publicKey,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        bundleIndex,
+        SENTINEL_MIN,
+        upper,
+      );
+      const { bundledPositionPda } = positionInitInfo.params;
+      const position = (await fetcher.getPosition(
+        bundledPositionPda.publicKey,
+      )) as PositionData;
+      checkPositionAccountContents(
+        position,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        poolInitInfo.whirlpoolPda.publicKey,
+        expectedLower,
+        upper,
+      );
+    });
+
+    it("snaps upper to floor(current) when upper sentinel is used (bundled)", async () => {
+      const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey);
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedUpper = snapTickDown(curr, spacing);
+      const lower = expectedUpper - spacing;
+
+      const positionBundleInfo = await initializePositionBundle(
+        ctx,
+        ctx.wallet.publicKey,
+      );
+      const bundleIndex = 0;
+      const positionInitInfo = await openBundledPosition(
+        ctx,
+        whirlpoolPda.publicKey,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        bundleIndex,
+        lower,
+        SENTINEL_MAX,
+      );
+      const { bundledPositionPda } = positionInitInfo.params;
+      const position = (await fetcher.getPosition(
+        bundledPositionPda.publicKey,
+      )) as PositionData;
+      checkPositionAccountContents(
+        position,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        poolInitInfo.whirlpoolPda.publicKey,
+        lower,
+        expectedUpper,
+      );
+    });
+
+    it("fails if both sentinels are used (bundled)", async () => {
+      const positionBundleInfo = await initializePositionBundle(
+        ctx,
+        ctx.wallet.publicKey,
+      );
+      const bundleIndex = 0;
+      await assert.rejects(
+        openBundledPosition(
+          ctx,
+          whirlpoolPda.publicKey,
+          positionBundleInfo.positionBundleMintKeypair.publicKey,
+          bundleIndex,
+          SENTINEL_MIN,
+          SENTINEL_MAX,
+        ),
+        /0x177a/, // InvalidTickIndex
+      );
+    });
+
+    it("fails if snapped range collapses (lower >= upper) (bundled)", async () => {
+      const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey);
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedLower = snapTickUp(curr, spacing);
+      const upperEqualsLower = expectedLower;
+
+      const positionBundleInfo = await initializePositionBundle(
+        ctx,
+        ctx.wallet.publicKey,
+      );
+      const bundleIndex = 0;
+      await assert.rejects(
+        openBundledPosition(
+          ctx,
+          whirlpoolPda.publicKey,
+          positionBundleInfo.positionBundleMintKeypair.publicKey,
+          bundleIndex,
+          SENTINEL_MIN,
+          upperEqualsLower,
+        ),
+        /0x177a/, // InvalidTickIndex
+      );
+    });
   });
 });

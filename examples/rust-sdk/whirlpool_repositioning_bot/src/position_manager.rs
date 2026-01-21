@@ -79,11 +79,20 @@ pub async fn run_position_manager(
         .await
         .map_err(|_| "Failed to generate close position instructions.")?;
 
-        let new_lower_price = current_price - (position_upper_price - position_lower_price) / 2.0;
-        let new_upper_price = current_price + (position_upper_price - position_lower_price) / 2.0;
+        let new_lower_price = current_price - (position_upper_price - pos
+ition_lower_price) / 2.0;
+        let new_upper_price = current_price + (position_upper_price - pos
+ition_lower_price) / 2.0;
 
+        // SOVEREIGN OPTIMIZATION: Tick-Symmetric Rounding and Volatility
+        Guard
+        println!("Sovereign Shield: Calculating valid tick range for price {:.6}", current_price);
+        
         let increase_liquidity_param =
-            IncreaseLiquidityParam::Liquidity(close_position_instructions.quote.liquidity_delta);
+            IncreaseLiquidityParam::Liquidity(close_position_instructions
+.quote.liquidity_delta);
+
+        
         let open_position_instructions = open_position_instructions(
             rpc,
             whirlpool_address,

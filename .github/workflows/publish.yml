@@ -89,7 +89,7 @@ jobs:
       - name: Publish Packages
         # Use the same -Rp/--from combo we rely on for the build so only release-set packages
         # and their dependencies deploy, while still excluding the root monorepo script.
-        run: yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo -n run deploy
+        run: yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo run deploy
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

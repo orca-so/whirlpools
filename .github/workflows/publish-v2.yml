@@ -1,0 +1,73 @@
+name: updated publish check
+
+on:
+  push:
+    branches:
+      - "shio/publish-only"
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          fetch-depth: 0
+
+      - name: Ensure base branch exists locally for Changesets
+        run: |
+          set -euo pipefail
+          git fetch origin main:main
+
+      - name: Setup SSH
+        uses: ./.github/actions/ssh
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          user: changests[bot]
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Setup Rust
+        run: |
+          rustup toolchain install 1.86.0 --profile minimal
+          rustup default 1.86.0
+          rustup component add rustfmt clippy
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Set release packages
+        run: |
+          set -euo pipefail
+          # Replace with the brace list from the prior run.
+          PACKAGES="{@orca-so/whirlpools-client,@orca-so/whirlpools-rust,@orca-so/whirlpools-rust-client,@orca-so/whirlpools-sdk,}"
+          echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
+          echo "Release set: $PACKAGES"
+
+      - name: Build Solana program in Docker
+        run: docker compose --profile build run --rm build-solana-program
+
+      - name: Build release set and dependencies
+        run: |
+          set -euo pipefail
+          echo "Building release set: $PACKAGES"
+          yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-program run build
+
+      - name: Format packages with auto-generated code
+        run: |
+          yarn workspace @orca-so/whirlpools-lint run format
+          yarn workspace @orca-so/whirlpools-rust-client run format
+
+      - name: Publish Packages
+        run: yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo -n run deploy
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock

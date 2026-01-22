@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-rust
 
+## 6.1.0
+
+### Minor Changes
+
+- [#1216](https://github.com/orca-so/whirlpools/pull/1216) [`eaee66f`](https://github.com/orca-so/whirlpools/commit/eaee66f814943158ea00a72acb170c08fb69d7b7) Thanks [@jshiohaha](https://github.com/jshiohaha)! - expose new open_position_with_tick_bounds function to whirlpools high level rust sdk
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
 ## 6.0.0
 
 ### Major Changes

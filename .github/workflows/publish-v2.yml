@@ -33,6 +33,17 @@ jobs:
         with:
           node-version: 22
           cache: yarn
+          registry-url: https://registry.npmjs.org
+          always-auth: true
+
+      - name: Check npm token
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM token missing"
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Setup Rust
         run: |

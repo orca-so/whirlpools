@@ -11,8 +11,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          fetch-depth: 0
+
+      - name: Ensure main branch exists locally
+        run: |
+          set -euo pipefail
+          git fetch origin main:main
 
       - name: Install system dependencies
         run: |
@@ -25,7 +33,7 @@ jobs:
       - name: Produce verifiable build
         run: |
           set -euo pipefail
-          solana-verify build --library-name whirlpool -- --features=mainnet
+          solana-verify build -- --features=mainnet
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

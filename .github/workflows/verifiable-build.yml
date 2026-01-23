@@ -8,18 +8,9 @@ on:
 jobs:
   verifiable-build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        network: [devnet, mainnet]
     permissions:
       contents: read
     steps:
-      - name: Checkout main branch
-        uses: actions/checkout@v6
-        with:
-          ref: main
-          fetch-depth: 0
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -34,10 +25,4 @@ jobs:
       - name: Produce verifiable build
         run: |
           set -euo pipefail
-          solana-verify build -- --features=${{ matrix.network }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: whirlpool-verifiable-build-${{ matrix.network }}
-          path: target/deploy/whirlpool.so
+          solana-verify verify-from-repo https://github.com/orca-so/whirlpools --program-id whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc --library-name whirlpool

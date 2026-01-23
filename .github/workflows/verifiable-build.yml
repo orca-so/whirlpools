@@ -25,4 +25,10 @@ jobs:
       - name: Produce verifiable build
         run: |
           set -euo pipefail
-          solana-verify verify-from-repo https://github.com/orca-so/whirlpools --program-id whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc --library-name whirlpool -- --features=mainnet
+          solana-verify build --library-name whirlpool -- --features=mainnet
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: whirlpool-verifiable-build-mainnet
+          path: target/deploy/whirlpool.so

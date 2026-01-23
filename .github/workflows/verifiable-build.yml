@@ -25,4 +25,4 @@ jobs:
       - name: Produce verifiable build
         run: |
           set -euo pipefail
-          solana-verify verify-from-repo https://github.com/orca-so/whirlpools --program-id whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc --library-name whirlpool
+          solana-verify verify-from-repo https://github.com/orca-so/whirlpools --program-id whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc --library-name whirlpool -- --features=mainnet

@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-rust-client
 
+## 7.1.0
+
+### Minor Changes
+
+- [#1189](https://github.com/orca-so/whirlpools/pull/1189) [`a9d760d`](https://github.com/orca-so/whirlpools/commit/a9d760d980f1552deb7a722ec88c8d31ff74efdf) Thanks [@josh-orca](https://github.com/josh-orca)! - Add open one-sided position logic to open position instructions
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
 ## 7.0.0
 
 ### Major Changes

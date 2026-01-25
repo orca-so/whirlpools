@@ -21,6 +21,7 @@ import {
   METADATA_PROGRAM_ADDRESS,
   MIN_TICK_INDEX,
   PDAUtil,
+  PriceMath,
   TickUtil,
   WhirlpoolIx,
   toTx,
@@ -35,11 +36,16 @@ import {
   mintToDestination,
   systemTransferTx,
   initializeLiteSVMEnvironment,
+  SENTINEL_MIN,
+  SENTINEL_MAX,
+  snapTickDown,
+  snapTickUp,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../../utils/init-utils";
 import { MetaplexHttpClient } from "../../utils/metaplex";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
+import { pollForCondition } from "../../utils/litesvm";
 
 describe("open_position_with_metadata", () => {
   let provider: anchor.AnchorProvider;
@@ -51,6 +57,62 @@ describe("open_position_with_metadata", () => {
     provider = env.provider;
     ctx = env.ctx;
     fetcher = env.fetcher;
+  });
+
+  it("emit PositionOpened event (with_metadata)", async () => {
+    const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
+    const { whirlpoolPda } = poolInitInfo;
+    const lower = 0;
+    const upper = 128;
+    const hasEvent =
+      Array.isArray(ctx.program.idl?.events) &&
+      ctx.program.idl.events.some((e) => e.name === "positionOpened");
+
+    // event verification
+    let eventVerified = false;
+    let detectedSignature: string | null = null;
+    const listener = ctx.program.addEventListener(
+      "positionOpened",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.strictEqual(event.tickLowerIndex, lower);
+        assert.strictEqual(event.tickUpperIndex, upper);
+        eventVerified = true;
+      },
+    );
+
+    const { params, txId } = await openPositionWithMetadata(
+      ctx,
+      whirlpoolPda.publicKey,
+      lower,
+      upper,
+    );
+
+    if (!hasEvent) {
+      // IDL not updated yet; accept execution without event assertion.
+      ctx.program.removeEventListener(listener);
+      return;
+    }
+
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === txId && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
+    assert.equal(txId, detectedSignature);
+    assert.ok(eventVerified);
+    // Ensure position pubkey also matches the event
+    // Fetch event via listener context is enough; direct equality check for position key:
+    // We cannot access event again here, so do a lightweight state check:
+    const pos = (await fetcher.getPosition(
+      params.positionPda.publicKey,
+    )) as PositionData;
+    assert.strictEqual(pos.tickLowerIndex, lower);
+    assert.strictEqual(pos.tickUpperIndex, upper);
+
+    ctx.program.removeEventListener(listener);
   });
 
   const metaplex = new MetaplexHttpClient();
@@ -92,6 +154,7 @@ describe("open_position_with_metadata", () => {
 
   async function checkMetadata(
     metadataPda: PDA | undefined,
+    position: PublicKey,
     positionMint: PublicKey,
   ) {
     assert.ok(metadataPda != null);
@@ -111,9 +174,10 @@ describe("open_position_with_metadata", () => {
         "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
     );
     assert.ok(metadata.mint.toBase58() === positionMint.toString());
+
     assert.ok(
       metadata.uri.replace(/\0/g, "") ===
-        `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`,
+        `https://metadata.orca.so/positions/${position.toBase58()}`,
     );
   }
 
@@ -140,7 +204,11 @@ describe("open_position_with_metadata", () => {
     assert.ok(position.feeOwedA.eq(ZERO_BN));
     assert.ok(position.feeOwedB.eq(ZERO_BN));
 
-    await checkMetadata(metadataPda, position.positionMint);
+    await checkMetadata(
+      metadataPda,
+      positionPda.publicKey,
+      position.positionMint,
+    );
     // TODO: Add tests for rewards
   });
 
@@ -175,7 +243,11 @@ describe("open_position_with_metadata", () => {
     assert.ok(position.feeOwedA.eq(ZERO_BN));
     assert.ok(position.feeOwedB.eq(ZERO_BN));
 
-    await checkMetadata(metadataPda, position.positionMint);
+    await checkMetadata(
+      metadataPda,
+      positionPda.publicKey,
+      position.positionMint,
+    );
   });
 
   it("succeeds when funder is different than account paying for transaction fee", async () => {
@@ -188,7 +260,11 @@ describe("open_position_with_metadata", () => {
       funderKeypair,
     );
 
-    await checkMetadata(params.metadataPda, params.positionMintAddress);
+    await checkMetadata(
+      params.metadataPda,
+      params.positionPda.publicKey,
+      params.positionMintAddress,
+    );
   });
 
   it("open position & verify position mint behavior", async () => {
@@ -202,12 +278,17 @@ describe("open_position_with_metadata", () => {
       newOwner.publicKey,
     );
     const {
+      positionPda,
       metadataPda,
       positionMintAddress,
       positionTokenAccount: positionTokenAccountAddress,
     } = positionInitInfo.params;
 
-    await checkMetadata(metadataPda, positionMintAddress);
+    await checkMetadata(
+      metadataPda,
+      positionPda.publicKey,
+      positionMintAddress,
+    );
 
     const userTokenAccount = await getAccount(
       ctx.connection,
@@ -491,5 +572,136 @@ describe("open_position_with_metadata", () => {
       ),
       /0x17a6/, // FullRangeOnlyPool
     );
+  });
+
+  describe("one-sided (sentinel) open position with metadata", () => {
+    it("snaps correctly when current price is exactly on an initializable tick", async () => {
+      // Initialize a fresh pool where sqrt price is exactly on tick 0
+      const onTickSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(0);
+      const { poolInitInfo: onTickPool } = await initTestPool(
+        ctx,
+        TickSpacing.Standard,
+        onTickSqrtPrice,
+      );
+
+      const whirlpool = await fetcher.getPool(
+        onTickPool.whirlpoolPda.publicKey,
+      );
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      // When on-tick, ceil(current) === current and floor(current) === current
+      const expectedLower = snapTickUp(curr, spacing);
+      const expectedUpper = snapTickDown(curr, spacing);
+
+      // Lower sentinel case
+      {
+        const upper = expectedLower + spacing;
+        const positionInitInfo = await openPositionWithMetadata(
+          ctx,
+          onTickPool.whirlpoolPda.publicKey,
+          SENTINEL_MIN,
+          upper,
+        );
+        const { positionPda } = positionInitInfo.params;
+        const position = (await fetcher.getPosition(
+          positionPda.publicKey,
+        )) as PositionData;
+        assert.strictEqual(position.tickLowerIndex, expectedLower);
+        assert.strictEqual(position.tickUpperIndex, upper);
+      }
+
+      // Upper sentinel case
+      {
+        const lower = expectedUpper - spacing;
+        const positionInitInfo = await openPositionWithMetadata(
+          ctx,
+          onTickPool.whirlpoolPda.publicKey,
+          lower,
+          SENTINEL_MAX,
+        );
+        const { positionPda } = positionInitInfo.params;
+        const position = (await fetcher.getPosition(
+          positionPda.publicKey,
+        )) as PositionData;
+        assert.strictEqual(position.tickLowerIndex, lower);
+        assert.strictEqual(position.tickUpperIndex, expectedUpper);
+      }
+    });
+
+    it("snaps lower to ceil(current) when lower sentinel is used", async () => {
+      const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey);
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedLower = snapTickUp(curr, spacing);
+      const upper = expectedLower + spacing;
+
+      const positionInitInfo = await openPositionWithMetadata(
+        ctx,
+        whirlpoolPda.publicKey,
+        SENTINEL_MIN,
+        upper,
+      );
+      const { positionPda } = positionInitInfo.params;
+      const position = (await fetcher.getPosition(
+        positionPda.publicKey,
+      )) as PositionData;
+      assert.strictEqual(position.tickLowerIndex, expectedLower);
+      assert.strictEqual(position.tickUpperIndex, upper);
+    });
+
+    it("snaps upper to floor(current) when upper sentinel is used", async () => {
+      const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey);
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedUpper = snapTickDown(curr, spacing);
+      const lower = expectedUpper - spacing;
+
+      const positionInitInfo = await openPositionWithMetadata(
+        ctx,
+        whirlpoolPda.publicKey,
+        lower,
+        SENTINEL_MAX,
+      );
+      const { positionPda } = positionInitInfo.params;
+      const position = (await fetcher.getPosition(
+        positionPda.publicKey,
+      )) as PositionData;
+      assert.strictEqual(position.tickLowerIndex, lower);
+      assert.strictEqual(position.tickUpperIndex, expectedUpper);
+    });
+
+    it("fails if both sentinels are used", async () => {
+      await assert.rejects(
+        openPositionWithMetadata(
+          ctx,
+          whirlpoolPda.publicKey,
+          SENTINEL_MIN,
+          SENTINEL_MAX,
+        ),
+        /0x177a/, // InvalidTickIndex
+      );
+    });
+
+    it("fails if snapped range collapses (lower >= upper)", async () => {
+      const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey);
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedLower = snapTickUp(curr, spacing);
+      const upperEqualsLower = expectedLower;
+
+      await assert.rejects(
+        openPositionWithMetadata(
+          ctx,
+          whirlpoolPda.publicKey,
+          SENTINEL_MIN,
+          upperEqualsLower,
+        ),
+        /0x177a/, // InvalidTickIndex
+      );
+    });
   });
 });

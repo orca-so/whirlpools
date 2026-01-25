@@ -30,6 +30,7 @@ jobs:
         run: |
           rustup toolchain install 1.86.0 --profile minimal
           rustup default 1.86.0
+          rustup component add rustfmt clippy
       - name: Install dependencies
         run: yarn install
       - name: Check for pending changesets and capture release set
@@ -37,6 +38,9 @@ jobs:
           set -euo pipefail
           STATUS_OUTPUT=$(yarn changeset status 2>&1 || true)
           echo "$STATUS_OUTPUT"
+
+          # Strip ANSI color codes before processing
+          STATUS_OUTPUT=$(printf '%s\n' "$STATUS_OUTPUT" | sed 's/\x1b\[[0-9;]*m//g')
 
           # Extract package names from bullet lines like:
           # 🦋  - @orca-so/whirlpools-rust-core
@@ -50,20 +54,30 @@ jobs:
             exit 0
           fi
 
-          # Turn the package list into a Yarn brace list, e.g.
-          # {@pkg/a,@pkg/b}
+          # Turn the package list into a Yarn brace list, e.g. {@pkg/a,@pkg/b,}
+          # The ending comma does not cause any issues and ensures that lists of
+          # size >=1 works
           RELEASE_PACKAGES=$(echo "$PKGS" | paste -sd, -)
-          PACKAGES="{${RELEASE_PACKAGES}}"
+          PACKAGES="{${RELEASE_PACKAGES},}"
 
           echo "Brace list for release set: $PACKAGES"
           echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
       - name: Build Solana program in Docker
-        run: docker compose run --rm --profile build build-solana-program
+        run: docker compose --profile build run --rm build-solana-program
       - name: Build release set and dependencies
         run: |
           set -euo pipefail
-          echo "Building release set (and transitive deps) from brace list: $PACKAGES"
-          yarn workspaces foreach -Rpt --from "$PACKAGES" run build
+          echo "Building release set: $PACKAGES"
+          # skip @orca-so/whirlpools-program here:
+          # - it was already built in the previous step via docker
+          # - building it in this step would invoke `anchor build`, and anchor isn't installed on the runner
+          yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-program run build
+      - name: Format packages with auto-generated code
+        run: |
+          # Format auto-generated ts/js client ts-sdk/client
+          yarn workspace @orca-so/whirlpools-lint run format
+          # Format auto-generated rust client in rust-sdk/client
+          yarn workspace @orca-so/whirlpools-rust-client run format
       - name: Determine New Versions
         run: yarn changeset version
         env:
@@ -73,7 +87,9 @@ jobs:
       - name: Git Commit
         run: git add . && git commit -m "Publish Packages"
       - name: Publish Packages
-        run: yarn workspaces foreach -A --topological-dev run deploy
+        # Use the same -Rp/--from combo we rely on for the build so only release-set packages
+        # and their dependencies deploy, while still excluding the root monorepo script.
+        run: yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo -n run deploy
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

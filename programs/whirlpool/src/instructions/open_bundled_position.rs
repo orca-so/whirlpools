@@ -2,8 +2,11 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
 use crate::{
-    errors::ErrorCode, manager::tick_array_manager::collect_rent_for_ticks_in_position, state::*,
-    util::verify_position_bundle_authority,
+    errors::ErrorCode,
+    events::*,
+    manager::tick_array_manager::collect_rent_for_ticks_in_position,
+    state::*,
+    util::{resolve_one_sided_position_ticks, verify_position_bundle_authority},
 };
 
 #[derive(Accounts)]
@@ -69,12 +72,26 @@ pub fn handler(
 
     position_bundle.open_bundled_position(bundle_index)?;
 
+    let (resolved_tick_lower_index, resolved_tick_upper_index) = resolve_one_sided_position_ticks(
+        tick_lower_index,
+        tick_upper_index,
+        whirlpool.tick_spacing,
+        whirlpool.sqrt_price,
+    )?;
+
     position.open_position(
         whirlpool,
         position_bundle.position_bundle_mint,
-        tick_lower_index,
-        tick_upper_index,
+        resolved_tick_lower_index,
+        resolved_tick_upper_index,
     )?;
+
+    emit!(PositionOpened {
+        whirlpool: whirlpool.key(),
+        position: position.key(),
+        tick_lower_index: resolved_tick_lower_index,
+        tick_upper_index: resolved_tick_upper_index,
+    });
 
     Ok(())
 }

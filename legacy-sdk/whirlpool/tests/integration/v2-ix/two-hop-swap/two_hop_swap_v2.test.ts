@@ -316,17 +316,41 @@ describe("two_hop_swap_v2", () => {
               /////0x7d3/ // ConstraintRaw
               //// V2 has token_mint_one_a and it has address constraint
               ///0x7dc/, // ConstraintAddress
-              /0x179a/ // pinocchio: DuplicateTwoHopPool
+              /0x179a/, // pinocchio: DuplicateTwoHopPool
             );
           });
 
           it("fails invalid token account", async () => {
             // To match token program (Token or Token-2022), create new mint and token account here
-            const anotherMintInput = await createMintV2(provider, tokenTraits.tokenTraitA, baseIxParams.tokenAuthority);
-            const anotherTokenOwnerAccountInput = await createTokenAccountV2(provider, tokenTraits.tokenTraitA, anotherMintInput, baseIxParams.tokenAuthority);
-            await mintToDestinationV2(provider, tokenTraits.tokenTraitA, anotherMintInput, anotherTokenOwnerAccountInput, baseIxParams.amount);
-            const anotherMintOutput = await createMintV2(provider, tokenTraits.tokenTraitC, baseIxParams.tokenAuthority);
-            const anotherTokenOwnerAccountOutput = await createTokenAccountV2(provider, tokenTraits.tokenTraitC, anotherMintOutput, baseIxParams.tokenAuthority);
+            const anotherMintInput = await createMintV2(
+              provider,
+              tokenTraits.tokenTraitA,
+              baseIxParams.tokenAuthority,
+            );
+            const anotherTokenOwnerAccountInput = await createTokenAccountV2(
+              provider,
+              tokenTraits.tokenTraitA,
+              anotherMintInput,
+              baseIxParams.tokenAuthority,
+            );
+            await mintToDestinationV2(
+              provider,
+              tokenTraits.tokenTraitA,
+              anotherMintInput,
+              anotherTokenOwnerAccountInput,
+              baseIxParams.amount,
+            );
+            const anotherMintOutput = await createMintV2(
+              provider,
+              tokenTraits.tokenTraitC,
+              baseIxParams.tokenAuthority,
+            );
+            const anotherTokenOwnerAccountOutput = await createTokenAccountV2(
+              provider,
+              tokenTraits.tokenTraitC,
+              anotherMintOutput,
+              baseIxParams.tokenAuthority,
+            );
 
             await rejectParams(
               {
@@ -334,7 +358,7 @@ describe("two_hop_swap_v2", () => {
                 tokenOwnerAccountInput: anotherTokenOwnerAccountInput,
               },
               // /0x7d3/, // Anchor: ConstraintRaw
-              /0x3/ // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
+              /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
             );
             await rejectParams(
               {
@@ -342,7 +366,7 @@ describe("two_hop_swap_v2", () => {
                 tokenOwnerAccountOutput: anotherTokenOwnerAccountOutput,
               },
               // /0x7d3/, // Anchor: ConstraintRaw
-              /0x3/ // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
+              /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
             );
           });
 

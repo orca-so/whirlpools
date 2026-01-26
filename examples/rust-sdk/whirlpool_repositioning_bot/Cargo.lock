@@ -2016,7 +2016,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "6.0.0"
+version = "6.1.0"
 dependencies = [
  "bincode",
  "bs58",
@@ -2049,7 +2049,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "7.0.0"
+version = "7.1.0"
 dependencies = [
  "borsh",
  "num-derive",

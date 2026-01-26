@@ -136,7 +136,7 @@ describe("two-hop swap", () => {
           whirlpoolOne: baseIxParams.whirlpoolTwo,
         },
         // /0x7d3/, // Anchor: ConstraintRaw
-        /0x179a/ // pinocchio: DuplicateTwoHopPool
+        /0x179a/, // pinocchio: DuplicateTwoHopPool
       );
     });
 
@@ -147,7 +147,7 @@ describe("two-hop swap", () => {
           tokenOwnerAccountOneA: baseIxParams.tokenOwnerAccountOneB,
         },
         // /0x7d3/, // Anchor: ConstraintRaw
-        /0x3/ // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
+        /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program)
       );
     });
 

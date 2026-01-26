@@ -1,6 +1,6 @@
 use crate::pinocchio::instructions::swap::pino_update_and_swap_whirlpool;
 use crate::pinocchio::instructions::swap_v2::{
-    PostSwapUpdate, pino_swap, pino_swap_with_transfer_fee_extension
+    pino_swap, pino_swap_with_transfer_fee_extension, PostSwapUpdate,
 };
 use crate::util::{to_timestamp_u64, AccountsType};
 use crate::{
@@ -154,28 +154,16 @@ pub fn handler(accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
     let mut whirlpool_two = load_account_mut::<MemoryMappedWhirlpool>(whirlpool_two_info)?;
     // token_owner_account_one_a_info: we don't need to verify this account, token program will verify it
     // token_vault_one_a_info
-    verify_address(
-        token_vault_one_a_info.key(),
-        whirlpool_one.token_vault_a(),
-    )?;
+    verify_address(token_vault_one_a_info.key(), whirlpool_one.token_vault_a())?;
     // token_owner_account_one_b_info: we don't need to verify this account, token program will verify it
     // token_vault_one_b_info
-    verify_address(
-        token_vault_one_b_info.key(),
-        whirlpool_one.token_vault_b(),
-    )?;
+    verify_address(token_vault_one_b_info.key(), whirlpool_one.token_vault_b())?;
     // token_owner_account_two_a_info: we don't need to verify this account, token program will verify it
     // token_vault_two_a_info
-    verify_address(
-        token_vault_two_a_info.key(),
-        whirlpool_two.token_vault_a(),
-    )?;
+    verify_address(token_vault_two_a_info.key(), whirlpool_two.token_vault_a())?;
     // token_owner_account_two_b_info: we don't need to verify this account, token program will verify it
     // token_vault_two_b_info
-    verify_address(
-        token_vault_two_b_info.key(),
-        whirlpool_two.token_vault_b(),
-    )?;
+    verify_address(token_vault_two_b_info.key(), whirlpool_two.token_vault_b())?;
     // TODO: tick_array_one_0_info
     // TODO: tick_array_one_1_info
     // TODO: tick_array_one_2_info

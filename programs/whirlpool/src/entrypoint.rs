@@ -42,9 +42,8 @@ pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
         (
             crate::instruction::TwoHopSwapV2::DISCRIMINATOR,
             crate::pinocchio::instructions::two_hop_swap_v2::handler,
-        )
-        // add other discriminators and handlers here as needed
-        // note: sort by the frequency of usage to optimize the search speed [swap ops..., liq ops..., ...]
+        ), // add other discriminators and handlers here as needed
+           // note: sort by the frequency of usage to optimize the search speed [swap ops..., liq ops..., ...]
     ];
 
     // pinocchio instructions

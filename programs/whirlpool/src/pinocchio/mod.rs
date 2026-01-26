@@ -5,7 +5,6 @@ mod events;
 mod ported;
 mod state;
 mod utils;
-mod events;
 
 pub mod instructions;
 

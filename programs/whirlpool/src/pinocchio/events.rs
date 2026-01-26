@@ -30,6 +30,26 @@ pub enum Event<'a> {
         token_a_transfer_fee: u64,
         token_b_transfer_fee: u64,
     },
+    LiquidityRepositioned {
+        whirlpool: &'a Pubkey,
+        position: &'a Pubkey,
+        existing_range_tick_lower_index: i32,
+        existing_range_tick_upper_index: i32,
+        new_range_tick_lower_index: i32,
+        new_range_tick_upper_index: i32,
+        existing_range_liquidity: u128,
+        new_range_liquidity: u128,
+        existing_range_token_a_amount: u64,
+        existing_range_token_b_amount: u64,
+        new_range_token_a_amount: u64,
+        new_range_token_b_amount: u64,
+        token_a_transfer_amount: u64,
+        token_a_transfer_fee: u64,
+        is_token_a_transfer_from_owner: bool,
+        token_b_transfer_amount: u64,
+        token_b_transfer_fee: u64,
+        is_token_b_transfer_from_owner: bool,
+    },
 }
 
 fn pino_sol_log_data(data: &[&[u8]]) {
@@ -48,6 +68,9 @@ impl Event<'_> {
         match self {
             Event::LiquidityIncreased { .. } => crate::events::LiquidityIncreased::DISCRIMINATOR,
             Event::LiquidityDecreased { .. } => crate::events::LiquidityDecreased::DISCRIMINATOR,
+            Event::LiquidityRepositioned { .. } => {
+                crate::events::LiquidityRepositioned::DISCRIMINATOR
+            }
         }
     }
 

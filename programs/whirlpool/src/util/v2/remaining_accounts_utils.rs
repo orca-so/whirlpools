@@ -14,6 +14,11 @@ pub enum AccountsType {
     SupplementalTickArrays,
     SupplementalTickArraysOne,
     SupplementalTickArraysTwo,
+    // These are only used when we must be able to differentiate directional transfers (e.g. reposition liquidity)
+    TransferHookDepositA,
+    TransferHookDepositB,
+    TransferHookWithdrawalA,
+    TransferHookWithdrawalB,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -38,6 +43,10 @@ pub struct ParsedRemainingAccounts<'info> {
     pub supplemental_tick_arrays: Option<Vec<AccountInfo<'info>>>,
     pub supplemental_tick_arrays_one: Option<Vec<AccountInfo<'info>>>,
     pub supplemental_tick_arrays_two: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_deposit_a: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_deposit_b: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_withdrawal_a: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_withdrawal_b: Option<Vec<AccountInfo<'info>>>,
 }
 
 pub fn parse_remaining_accounts<'info>(
@@ -146,6 +155,36 @@ pub fn parse_remaining_accounts<'info>(
                     return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
                 }
                 parsed_remaining_accounts.supplemental_tick_arrays_two = Some(accounts);
+            }
+            AccountsType::TransferHookDepositA => {
+                if parsed_remaining_accounts.transfer_hook_deposit_a.is_some() {
+                    return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+                }
+                parsed_remaining_accounts.transfer_hook_deposit_a = Some(accounts);
+            }
+            AccountsType::TransferHookDepositB => {
+                if parsed_remaining_accounts.transfer_hook_deposit_b.is_some() {
+                    return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+                }
+                parsed_remaining_accounts.transfer_hook_deposit_b = Some(accounts);
+            }
+            AccountsType::TransferHookWithdrawalA => {
+                if parsed_remaining_accounts
+                    .transfer_hook_withdrawal_a
+                    .is_some()
+                {
+                    return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+                }
+                parsed_remaining_accounts.transfer_hook_withdrawal_a = Some(accounts);
+            }
+            AccountsType::TransferHookWithdrawalB => {
+                if parsed_remaining_accounts
+                    .transfer_hook_withdrawal_b
+                    .is_some()
+                {
+                    return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+                }
+                parsed_remaining_accounts.transfer_hook_withdrawal_b = Some(accounts);
             }
         }
     }

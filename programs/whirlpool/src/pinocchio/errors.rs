@@ -45,7 +45,8 @@ impl From<UnifiedError> for u64 {
         match value {
             UnifiedError::Pinocchio(e) => e.into(),
             UnifiedError::Anchor(e) => {
-                let program_error: anchor_lang::solana_program::program_error::ProgramError = e.into();
+                let program_error: anchor_lang::solana_program::program_error::ProgramError =
+                    e.into();
                 program_error.into()
             }
         }

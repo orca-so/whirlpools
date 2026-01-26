@@ -21,6 +21,10 @@ TransferHookOutput,
 SupplementalTickArrays,
 SupplementalTickArraysOne,
 SupplementalTickArraysTwo,
+TransferHookDepositA,
+TransferHookDepositB,
+TransferHookWithdrawalA,
+TransferHookWithdrawalB,
 }
 
 

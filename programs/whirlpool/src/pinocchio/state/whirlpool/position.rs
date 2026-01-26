@@ -1,5 +1,12 @@
 use super::super::{BytesI32, BytesU128, BytesU64, Pubkey};
-use crate::pinocchio::state::WhirlpoolProgramAccount;
+use super::MemoryMappedWhirlpool;
+use crate::pinocchio::state::whirlpool::NUM_REWARDS;
+use crate::{
+    errors::ErrorCode,
+    math::FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD,
+    pinocchio::{state::WhirlpoolProgramAccount, Result},
+    state::Tick,
+};
 
 #[repr(C)]
 pub struct MemoryMappedPositionRewardInfo {
@@ -90,6 +97,34 @@ impl MemoryMappedPosition {
         &self.reward_infos
     }
 
+    pub fn reset_position_range(
+        &mut self,
+        whirlpool: &MemoryMappedWhirlpool,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+        keep_owed: bool,
+    ) -> Result<()> {
+        if !self.is_position_empty(keep_owed) {
+            return Err(ErrorCode::ClosePositionNotEmpty.into());
+        }
+
+        if new_tick_lower_index == self.tick_lower_index()
+            && new_tick_upper_index == self.tick_upper_index()
+        {
+            return Err(ErrorCode::SameTickRangeNotAllowed.into());
+        }
+
+        validate_tick_range_for_whirlpool(whirlpool, new_tick_lower_index, new_tick_upper_index)?;
+
+        self.set_tick_lower_index(new_tick_lower_index);
+        self.set_tick_upper_index(new_tick_upper_index);
+        self.set_fee_growth_checkpoint_a(0);
+        self.set_fee_growth_checkpoint_b(0);
+        self.reset_reward_growth_checkpoints();
+
+        Ok(())
+    }
+
     pub fn update(&mut self, update: &crate::state::PositionUpdate) {
         self.set_liquidity(update.liquidity);
         self.set_fee_growth_checkpoint_a(update.fee_growth_checkpoint_a);
@@ -99,8 +134,29 @@ impl MemoryMappedPosition {
         self.set_reward_infos(&update.reward_infos);
     }
 
+    fn is_position_empty(&self, keep_owed: bool) -> bool {
+        if keep_owed {
+            return self.liquidity() == 0;
+        }
+
+        let fees_not_owed = self.fee_owed_a() == 0 && self.fee_owed_b() == 0;
+        let mut rewards_not_owed = true;
+        for i in 0..NUM_REWARDS {
+            rewards_not_owed = rewards_not_owed && self.reward_infos()[i].amount_owed() == 0
+        }
+        self.liquidity() == 0 && fees_not_owed && rewards_not_owed
+    }
+
     fn set_liquidity(&mut self, liquidity: u128) {
         self.liquidity = liquidity.to_le_bytes();
+    }
+
+    fn set_tick_lower_index(&mut self, tick_lower_index: i32) {
+        self.tick_lower_index = tick_lower_index.to_le_bytes();
+    }
+
+    fn set_tick_upper_index(&mut self, tick_upper_index: i32) {
+        self.tick_upper_index = tick_upper_index.to_le_bytes();
     }
 
     fn set_fee_growth_checkpoint_a(&mut self, fee_growth_checkpoint_a: u128) {
@@ -133,4 +189,36 @@ impl MemoryMappedPosition {
         self.reward_infos[2].growth_inside_checkpoint =
             reward_infos[2].growth_inside_checkpoint.to_le_bytes();
     }
+
+    fn reset_reward_growth_checkpoints(&mut self) {
+        for reward_info in &mut self.reward_infos {
+            reward_info.growth_inside_checkpoint = 0u128.to_le_bytes();
+        }
+    }
+}
+
+fn validate_tick_range_for_whirlpool(
+    whirlpool: &MemoryMappedWhirlpool,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
+) -> Result<()> {
+    let tick_spacing = whirlpool.tick_spacing();
+
+    if !Tick::check_is_usable_tick(tick_lower_index, tick_spacing)
+        || !Tick::check_is_usable_tick(tick_upper_index, tick_spacing)
+        || tick_lower_index >= tick_upper_index
+    {
+        return Err(ErrorCode::InvalidTickIndex.into());
+    }
+
+    if tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD {
+        let (full_range_lower_index, full_range_upper_index) =
+            Tick::full_range_indexes(tick_spacing);
+        if tick_lower_index != full_range_lower_index || tick_upper_index != full_range_upper_index
+        {
+            return Err(ErrorCode::FullRangeOnlyPool.into());
+        }
+    }
+
+    Ok(())
 }

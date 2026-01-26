@@ -10,9 +10,19 @@ const MAX_TX_ACCOUNTS: usize = 64;
 #[no_mangle]
 pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
     type PinocchioInstructionHandler = fn(&[AccountInfo], &[u8]) -> crate::pinocchio::Result<()>;
-    const PINOCCHIO_INSTRUCTIONS: [(&[u8], PinocchioInstructionHandler); 2] = [
-        (crate::instruction::IncreaseLiquidityV2::DISCRIMINATOR, crate::pinocchio::instructions::increase_liquidity_v2::handler),
-        (crate::instruction::DecreaseLiquidityV2::DISCRIMINATOR, crate::pinocchio::instructions::decrease_liquidity_v2::handler),
+    const PINOCCHIO_INSTRUCTIONS: [(&[u8], PinocchioInstructionHandler); 3] = [
+        (
+            crate::instruction::IncreaseLiquidityV2::DISCRIMINATOR,
+            crate::pinocchio::instructions::increase_liquidity_v2::handler,
+        ),
+        (
+            crate::instruction::IncreaseLiquidityByTokenAmountsV2::DISCRIMINATOR,
+            crate::pinocchio::instructions::increase_liquidity_by_token_amounts_v2::handler,
+        ),
+        (
+            crate::instruction::DecreaseLiquidityV2::DISCRIMINATOR,
+            crate::pinocchio::instructions::decrease_liquidity_v2::handler,
+        ),
         // add other discriminators and handlers here as needed
         // note: sort by the frequency of usage to optimize the search speed [swap ops..., liq ops..., ...]
     ];
@@ -26,16 +36,13 @@ pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
         pinocchio::entrypoint::deserialize::<MAX_TX_ACCOUNTS>(input, &mut accounts);
     let matched_pinocchio_instruction = PINOCCHIO_INSTRUCTIONS
         .iter()
-        .find(|pix|instruction_data.starts_with(pix.0));
+        .find(|pix| instruction_data.starts_with(pix.0));
     if let Some((_, handler)) = matched_pinocchio_instruction {
         // We do not output instruction name to save compute units.
 
         let parsed_accounts = core::slice::from_raw_parts(accounts.as_ptr() as _, count);
 
-        return match handler(
-            parsed_accounts,
-            instruction_data,
-        ) {
+        return match handler(parsed_accounts, instruction_data) {
             Ok(()) => solana_program::entrypoint::SUCCESS,
             Err(e) => e.into(),
         };

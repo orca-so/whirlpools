@@ -1,9 +1,17 @@
 use crate::pinocchio::{
-    Result, cpi::{memo_build_memo::BuildMemo, token_transfer_checked::TransferChecked}, errors::WhirlpoolErrorCode, state::{token::{
-        MemoryMappedTokenMint, MemoryMappedTokenAccount, extensions::{TokenExtensions, parse_token_extensions}
-    }, whirlpool::MemoryMappedWhirlpool}, utils::account_load::{load_token_program_account, load_token_program_account_unchecked}
+    cpi::{memo_build_memo::BuildMemo, token_transfer_checked::TransferChecked},
+    errors::WhirlpoolErrorCode,
+    state::{
+        token::{
+            extensions::{parse_token_extensions, TokenExtensions},
+            MemoryMappedTokenAccount, MemoryMappedTokenMint,
+        },
+        whirlpool::MemoryMappedWhirlpool,
+    },
+    utils::account_load::{load_token_program_account, load_token_program_account_unchecked},
+    Result,
 };
-use crate::util::{TransferFeeIncludedAmount, TransferFeeExcludedAmount};
+use crate::util::{TransferFeeExcludedAmount, TransferFeeIncludedAmount};
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
     TransferFee, MAX_FEE_BASIS_POINTS,
 };
@@ -15,7 +23,6 @@ pub fn pino_calculate_transfer_fee_excluded_amount(
     token_mint_info: &AccountInfo,
     transfer_fee_included_amount: u64,
 ) -> Result<TransferFeeExcludedAmount> {
-    // This mint account is stored as token_mint_a or token_mint_b of the whirlpool, so it must be valid Mint account.
     let token_mint =
         load_token_program_account_unchecked::<MemoryMappedTokenMint>(token_mint_info)?;
     let token_mint_extensions = parse_token_extensions(token_mint.extensions_tlv_data())?;
@@ -248,8 +255,10 @@ pub fn pino_transfer_from_vault_to_owner_v2(
     }
 
     // MemoTransfer extension
-    let token_owner_account = load_token_program_account::<MemoryMappedTokenAccount>(token_owner_account_info)?;
-    let token_owner_account_exteensions = parse_token_extensions(token_owner_account.extensions_tlv_data())?;
+    let token_owner_account =
+        load_token_program_account::<MemoryMappedTokenAccount>(token_owner_account_info)?;
+    let token_owner_account_exteensions =
+        parse_token_extensions(token_owner_account.extensions_tlv_data())?;
     if pino_is_transfer_memo_required(&token_owner_account_exteensions) {
         BuildMemo {
             program: memo_program_info,
@@ -265,7 +274,7 @@ pub fn pino_transfer_from_vault_to_owner_v2(
         // TODO: implement transfer with TransferHook CPI
         unimplemented!()
 
-        /* 
+        /*
         let mut instruction = spl_token_2022::instruction::transfer_checked(
             token_program.key,
             // vault to owner
@@ -328,9 +337,7 @@ fn pino_get_transfer_hook_program_id<'a>(
     }
 }
 
-fn pino_is_transfer_memo_required(
-    token_extensions: &TokenExtensions,
-) -> bool {
+fn pino_is_transfer_memo_required(token_extensions: &TokenExtensions) -> bool {
     match token_extensions.memo_transfer {
         None => false,
         Some(memo_transfer) => memo_transfer.is_memo_required(),

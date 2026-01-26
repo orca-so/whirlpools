@@ -175,6 +175,9 @@ pub enum ErrorCode {
 
     #[msg("Provided adaptive fee constants are unchanged")]
     AdaptiveFeeConstantsUnchanged, // 0x17b4 (6068)
+
+    #[msg("Price outside slippage bounds")]
+    PriceSlippageOutOfBounds, // 0x17b5 (6069)
 }
 
 impl From<TryFromIntError> for ErrorCode {

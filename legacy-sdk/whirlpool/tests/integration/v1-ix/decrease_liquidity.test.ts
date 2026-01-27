@@ -38,6 +38,8 @@ import {
 } from "../../utils/litesvm";
 
 type LiquidityDecreasedEvent = {
+  whirlpool: anchor.web3.PublicKey;
+  position: anchor.web3.PublicKey;
   liquidity: anchor.BN;
   tokenAAmount: anchor.BN;
   tokenBAmount: anchor.BN;
@@ -1203,7 +1205,8 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: tickArray,
         }),
       ).buildAndExecute(),
-      /0x7d1/, // A has_one constraint was violated
+      // /0x7d1/, // Anchor: A has_one constraint was violated
+      /0x7dc/, // pinocchio: ConstraintAddress
     );
   });
 
@@ -1251,7 +1254,8 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x7dc/, // pinocchio: ConstraintAddress
     );
 
     await assert.rejects(
@@ -1273,7 +1277,8 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x7dc/, // pinocchio: ConstraintAddress
     );
   });
 
@@ -1316,7 +1321,8 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
     );
 
     await assert.rejects(
@@ -1338,7 +1344,8 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
     );
   });
 
@@ -1645,6 +1652,8 @@ describe("decrease_liquidity", () => {
 
     // Type assertion after null check
     const event = observedEvent as LiquidityDecreasedEvent;
+    assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+    assert.ok(event.position.equals(positions[0].publicKey));
     assert.ok(event.liquidity.eq(removalQuote.liquidityAmount));
     assert.ok(event.tokenAAmount.gte(removalQuote.tokenMinA));
     assert.ok(event.tokenBAmount.gte(removalQuote.tokenMinB));

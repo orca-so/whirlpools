@@ -1818,36 +1818,35 @@ describe("TokenExtension/TransferHook", () => {
         ...tokenTransferHookAccountsA!.slice(3),
       ];
 
-      // Important note: Now, solana doesn't require to include program account in the account list in CPI context.
-      // So the transaction will succeed even if the hook program account is missing.
-      // But the hook program must be included in the transaction at the moment.
-      // see also: https://github.com/orca-so/whirlpools/pull/1004
-      await toTx(
-        ctx,
-        WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
-          liquidityAmount,
-          tokenMaxA: tokenAmount.tokenA,
-          tokenMaxB: tokenAmount.tokenB,
-          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-          positionAuthority: provider.wallet.publicKey,
-          position: positionInitInfo.publicKey,
-          positionTokenAccount: positionInitInfo.tokenAccount,
-          tokenMintA: poolInitInfo.tokenMintA,
-          tokenMintB: poolInitInfo.tokenMintB,
-          tokenProgramA: poolInitInfo.tokenProgramA,
-          tokenProgramB: poolInitInfo.tokenProgramB,
-          tokenOwnerAccountA: tokenAccountA,
-          tokenOwnerAccountB: tokenAccountB,
-          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          tickArrayLower: positionInitInfo.tickArrayLower,
-          tickArrayUpper: positionInitInfo.tickArrayUpper,
-          tokenTransferHookAccountsA: insufficientTransferHookAccountsA, // The transfer hook program is not included
-          tokenTransferHookAccountsB, // The transfer hook program is included as a part of accounts for B
-        }),
-      )
-        .prependInstruction(useMaxCU())
-        .buildAndExecute();
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+            liquidityAmount,
+            tokenMaxA: tokenAmount.tokenA,
+            tokenMaxB: tokenAmount.tokenB,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positionInitInfo.publicKey,
+            positionTokenAccount: positionInitInfo.tokenAccount,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArrayLower: positionInitInfo.tickArrayLower,
+            tickArrayUpper: positionInitInfo.tickArrayUpper,
+            tokenTransferHookAccountsA: insufficientTransferHookAccountsA, // The transfer hook program is not included
+            tokenTransferHookAccountsB, // The transfer hook program is included as a part of accounts for B
+          }),
+        )
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
+        /Unknown program/, // Program account must be included
+      );
     });
 
     it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A & B are insufficient(HookProgram)", async () => {
@@ -1879,10 +1878,6 @@ describe("TokenExtension/TransferHook", () => {
         ...tokenTransferHookAccountsB!.slice(3),
       ];
 
-      // Important note: Now, solana doesn't require to include program account in the account list in CPI context.
-      // So the transaction will succeed even if the hook program account is missing.
-      // But the hook program must be included in the transaction at the moment.
-      // see also: https://github.com/orca-so/whirlpools/pull/1004
       await assert.rejects(
         toTx(
           ctx,
@@ -1910,7 +1905,7 @@ describe("TokenExtension/TransferHook", () => {
         )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
-        /Unknown program/, // Program account must be included in the transaction
+        /Unknown program/, // Program account must be included
       );
     });
 
@@ -2471,30 +2466,33 @@ describe("TokenExtension/TransferHook", () => {
         ...tokenTransferHookAccountsA!.slice(3),
       ];
 
-      await toTx(
-        ctx,
-        WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
-          ...removalQuote,
-          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-          positionAuthority: provider.wallet.publicKey,
-          position: positions[0].publicKey,
-          positionTokenAccount: positions[0].tokenAccount,
-          tokenMintA: poolInitInfo.tokenMintA,
-          tokenMintB: poolInitInfo.tokenMintB,
-          tokenProgramA: poolInitInfo.tokenProgramA,
-          tokenProgramB: poolInitInfo.tokenProgramB,
-          tokenOwnerAccountA: destAccountA,
-          tokenOwnerAccountB: destAccountB,
-          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          tickArrayLower: positions[0].tickArrayLower,
-          tickArrayUpper: positions[0].tickArrayUpper,
-          tokenTransferHookAccountsA: insufficientTransferHookAccountsA, // The transfer hook program is not included
-          tokenTransferHookAccountsB, // The transfer hook program is included as a part of accounts for B
-        }),
-      )
-        .prependInstruction(useMaxCU())
-        .buildAndExecute();
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
+            ...removalQuote,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: destAccountA,
+            tokenOwnerAccountB: destAccountB,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArrayLower: positions[0].tickArrayLower,
+            tickArrayUpper: positions[0].tickArrayUpper,
+            tokenTransferHookAccountsA: insufficientTransferHookAccountsA, // The transfer hook program is not included
+            tokenTransferHookAccountsB, // The transfer hook program is included as a part of accounts for B
+          }),
+        )
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
+        /Unknown program/, // Program account must be included
+      );
     });
 
     it("decrease_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A & B are insufficient(HookProgram)", async () => {

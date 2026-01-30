@@ -1796,7 +1796,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("increase_liquidity_v2: with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
+    it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
       const positionInitInfo = positions[0];
@@ -2454,7 +2454,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("decrease_liquidity_v2: with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
+    it("decrease_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
       const { poolInitInfo, positions } = fixture.getInfos();
 
       // HookProgram is missing

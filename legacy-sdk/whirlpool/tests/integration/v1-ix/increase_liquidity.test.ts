@@ -43,6 +43,8 @@ import {
 } from "../../utils/litesvm";
 
 type LiquidityIncreasedEvent = {
+  whirlpool: anchor.web3.PublicKey;
+  position: anchor.web3.PublicKey;
   liquidity: anchor.BN;
   tokenAAmount: anchor.BN;
   tokenBAmount: anchor.BN;
@@ -1267,7 +1269,8 @@ describe("increase_liquidity", () => {
           tickArrayUpper: tickArrayPda.publicKey,
         }),
       ).buildAndExecute(),
-      /0x7d1/, // A has_one constraint was violated
+      // /0x7d1/, // Anchor: A has_one constraint was violated
+      /0x7dc/, // pinocchio: ConstraintAddress
     );
   });
 
@@ -1318,7 +1321,8 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x7dc/, // pinocchio: ConstraintAddress
     );
 
     await assert.rejects(
@@ -1340,7 +1344,8 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x7dc/, // pinocchio: ConstraintAddress
     );
   });
 
@@ -1387,7 +1392,8 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
     );
 
     await assert.rejects(
@@ -1409,7 +1415,8 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /0x7d3/, // ConstraintRaw
+      // /0x7d3/, // Anchor: ConstraintRaw
+      /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
     );
   });
 
@@ -1784,14 +1791,16 @@ describe("increase_liquidity", () => {
     assert.equal(signature, detectedSignature);
     assert.ok(eventVerified);
     assert.ok(observedEvent);
-    const ev = observedEvent as LiquidityIncreasedEvent;
-    assert.ok(ev.liquidity.eq(liquidityAmount));
-    assert.ok(ev.tokenAAmount.eq(tokenAmount.tokenA));
-    assert.ok(ev.tokenBAmount.eq(tokenAmount.tokenB));
-    assert.ok(ev.tickLowerIndex === tickLowerIndex);
-    assert.ok(ev.tickUpperIndex === tickUpperIndex);
-    assert.ok(ev.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
-    assert.ok(ev.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+    const event = observedEvent as LiquidityIncreasedEvent;
+    assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+    assert.ok(event.position.equals(positions[0].publicKey));
+    assert.ok(event.liquidity.eq(liquidityAmount));
+    assert.ok(event.tokenAAmount.eq(tokenAmount.tokenA));
+    assert.ok(event.tokenBAmount.eq(tokenAmount.tokenB));
+    assert.ok(event.tickLowerIndex === tickLowerIndex);
+    assert.ok(event.tickUpperIndex === tickUpperIndex);
+    assert.ok(event.tokenATransferFee.isZero()); // v1 doesn't handle TransferFee extension
+    assert.ok(event.tokenBTransferFee.isZero()); // v1 doesn't handle TransferFee extension
 
     ctx.program.removeEventListener(listener);
   });

@@ -484,6 +484,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
       // but at runtime they're compatible
       const result = vm.sendTransaction(tx);
+      patchEnvironmentAfterSendTransaction();
       // Check if transaction failed
       if ("err" in result) {
         const error = result.err();
@@ -541,6 +542,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         }
       }
       const result = vm.sendTransaction(tx);
+      patchEnvironmentAfterSendTransaction();
       // Check if transaction failed
       if ("err" in result) {
         const error = result.err();
@@ -640,6 +642,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
         // but at runtime they're compatible
         const result = vm.sendTransaction(tx);
+        patchEnvironmentAfterSendTransaction();
         // Check if transaction failed
         if ("err" in result) {
           const error = result.err();
@@ -1385,4 +1388,18 @@ export async function initializeLiteSVMEnvironment() {
 export async function resetAndInitializeLiteSVMEnvironment() {
   await resetLiteSVM();
   return await initializeLiteSVMEnvironment();
+}
+
+// After calling sendTransaction, performing a remainder operation results in NaN.
+// When taking the remainder of an integer greater than or equal to 2^31, NaN occurs once - but it does not occur afterward.
+//
+// For numbers smaller than 2^31, the computation path is different, so this does not serve as a workaround.
+// The issue occurs on Intel Macs and Intel Linux systems, but not on Apple Silicon.
+// It’s possible that liteSVM is changing floating-point settings, and those changes are affecting Node as well.
+//
+// The hypothesis is that performing an operation which resets the floating-point environment restores it to the state Node expects.
+//
+// This behavior is observed when Number or BN calls toString(), since toString() internally uses the remainder operator - resulting in NaN appearing in the string output.
+function patchEnvironmentAfterSendTransaction() {
+  void (Number.MAX_SAFE_INTEGER % 10000000);
 }

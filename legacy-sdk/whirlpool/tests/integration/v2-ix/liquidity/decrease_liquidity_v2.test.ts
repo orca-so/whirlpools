@@ -1336,7 +1336,8 @@ describe("decrease_liquidity_v2", () => {
                 tickArrayUpper: tickArray,
               }),
             ).buildAndExecute(),
-            /0x7d1/, // A has_one constraint was violated
+            // /0x7d1/, // Anchor: A has_one constraint was violated
+            /0x7dc/, // pinocchio: ConstraintAddress
           );
         });
 
@@ -1391,7 +1392,8 @@ describe("decrease_liquidity_v2", () => {
                 tickArrayUpper: position.tickArrayUpper,
               }),
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            // /0x7d3/, // Anchor: ConstraintRaw
+            /0x7dc/, // pinocchio: ConstraintAddress
           );
 
           await assert.rejects(
@@ -1417,7 +1419,8 @@ describe("decrease_liquidity_v2", () => {
                 tickArrayUpper: position.tickArrayUpper,
               }),
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            // /0x7d3/, // Anchor: ConstraintRaw
+            /0x7dc/, // pinocchio: ConstraintAddress
           );
         });
 
@@ -1481,7 +1484,8 @@ describe("decrease_liquidity_v2", () => {
                 tickArrayUpper: position.tickArrayUpper,
               }),
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            // /0x7d3/, // Anchor: ConstraintRaw
+            /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
           );
 
           await assert.rejects(
@@ -1507,7 +1511,8 @@ describe("decrease_liquidity_v2", () => {
                 tickArrayUpper: position.tickArrayUpper,
               }),
             ).buildAndExecute(),
-            /0x7d3/, // ConstraintRaw
+            // /0x7d3/, // Anchor: ConstraintRaw
+            /0x3/, // pinocchio: MintMismatch (from Token program, validation has been delegated to Token program, https://github.com/solana-program/token/blob/81ba155af8684c224c943af16ac3d70f5cad5e93/interface/src/error.rs#L25)
           );
         });
 

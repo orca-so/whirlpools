@@ -10,7 +10,7 @@ const MAX_TX_ACCOUNTS: usize = 64;
 #[no_mangle]
 pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
     type PinocchioInstructionHandler = fn(&[AccountInfo], &[u8]) -> crate::pinocchio::Result<()>;
-    const PINOCCHIO_INSTRUCTIONS: [(&[u8], PinocchioInstructionHandler); 4] = [
+    const PINOCCHIO_INSTRUCTIONS: [(&[u8], PinocchioInstructionHandler); 5] = [
         (
             crate::instruction::IncreaseLiquidity::DISCRIMINATOR,
             crate::pinocchio::instructions::increase_liquidity::handler,
@@ -26,6 +26,10 @@ pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
         (
             crate::instruction::DecreaseLiquidityV2::DISCRIMINATOR,
             crate::pinocchio::instructions::decrease_liquidity_v2::handler,
+        ),
+        (
+            crate::instruction::RepositionLiquidityV2::DISCRIMINATOR,
+            crate::pinocchio::instructions::reposition_liquidity_v2::handler,
         ),
         // add other discriminators and handlers here as needed
         // note: sort by the frequency of usage to optimize the search speed [swap ops..., liq ops..., ...]

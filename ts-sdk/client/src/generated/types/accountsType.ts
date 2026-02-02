@@ -25,6 +25,10 @@ export enum AccountsType {
   SupplementalTickArrays,
   SupplementalTickArraysOne,
   SupplementalTickArraysTwo,
+  TransferHookDepositA,
+  TransferHookDepositB,
+  TransferHookWithdrawalA,
+  TransferHookWithdrawalB,
 }
 
 export type AccountsTypeArgs = AccountsType;

@@ -91,6 +91,12 @@ impl<'a> AccountIterator<'a> {
         self.next_program_account(&[&address::TOKEN_PROGRAM_ID, &address::TOKEN_2022_PROGRAM_ID])
     }
 
+    /// Get the next account that must be the System program
+    #[inline(always)]
+    pub fn next_program_system(&mut self) -> Result<&'a AccountInfo> {
+        self.next_program_account(&[&address::SYSTEM_PROGRAM_ID])
+    }
+
     /// Get remaining accounts as a slice
     pub fn remaining_accounts(&self) -> &[AccountInfo] {
         &self.accounts[self.current_index..]

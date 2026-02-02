@@ -50,6 +50,7 @@ import {
   type ParsedOpenPositionInstruction,
   type ParsedOpenPositionWithMetadataInstruction,
   type ParsedOpenPositionWithTokenExtensionsInstruction,
+  type ParsedRepositionLiquidityV2Instruction,
   type ParsedResetPositionRangeInstruction,
   type ParsedSetAdaptiveFeeConstantsInstruction,
   type ParsedSetCollectProtocolFeesAuthorityInstruction,
@@ -276,6 +277,7 @@ export enum WhirlpoolInstruction {
   OpenPosition,
   OpenPositionWithMetadata,
   OpenPositionWithTokenExtensions,
+  RepositionLiquidityV2,
   ResetPositionRange,
   SetAdaptiveFeeConstants,
   SetCollectProtocolFeesAuthority,
@@ -710,6 +712,17 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([191, 169, 224, 11, 131, 19, 158, 253]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.RepositionLiquidityV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([164, 123, 180, 141, 194, 100, 160, 175]),
       ),
       0,
@@ -1130,6 +1143,9 @@ export type ParsedWhirlpoolInstruction<
   | ({
       instructionType: WhirlpoolInstruction.OpenPositionWithTokenExtensions;
     } & ParsedOpenPositionWithTokenExtensionsInstruction<TProgram>)
+  | ({
+      instructionType: WhirlpoolInstruction.RepositionLiquidityV2;
+    } & ParsedRepositionLiquidityV2Instruction<TProgram>)
   | ({
       instructionType: WhirlpoolInstruction.ResetPositionRange;
     } & ParsedResetPositionRangeInstruction<TProgram>)

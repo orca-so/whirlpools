@@ -2,6 +2,7 @@ use crate::pinocchio::state::TokenProgramAccount;
 
 use super::super::{BytesU64, COption, Pubkey};
 
+#[derive(PartialEq, Eq)]
 #[repr(u8)]
 #[allow(dead_code)]
 pub enum AccountState {

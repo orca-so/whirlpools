@@ -13,6 +13,7 @@
   pub(crate) mod r#dynamic_tick_data;
   pub(crate) mod r#liquidity_decreased;
   pub(crate) mod r#liquidity_increased;
+  pub(crate) mod r#liquidity_repositioned;
   pub(crate) mod r#lock_type;
   pub(crate) mod r#lock_type_label;
   pub(crate) mod r#pool_initialized;
@@ -20,6 +21,7 @@
   pub(crate) mod r#position_reward_info;
   pub(crate) mod r#remaining_accounts_info;
   pub(crate) mod r#remaining_accounts_slice;
+  pub(crate) mod r#reposition_liquidity_method;
   pub(crate) mod r#tick;
   pub(crate) mod r#token_badge_attribute;
   pub(crate) mod r#traded;
@@ -33,6 +35,7 @@
   pub use self::r#dynamic_tick_data::*;
   pub use self::r#liquidity_decreased::*;
   pub use self::r#liquidity_increased::*;
+  pub use self::r#liquidity_repositioned::*;
   pub use self::r#lock_type::*;
   pub use self::r#lock_type_label::*;
   pub use self::r#pool_initialized::*;
@@ -40,6 +43,7 @@
   pub use self::r#position_reward_info::*;
   pub use self::r#remaining_accounts_info::*;
   pub use self::r#remaining_accounts_slice::*;
+  pub use self::r#reposition_liquidity_method::*;
   pub use self::r#tick::*;
   pub use self::r#token_badge_attribute::*;
   pub use self::r#traded::*;

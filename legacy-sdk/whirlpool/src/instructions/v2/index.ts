@@ -8,6 +8,7 @@ export * from "./initialize-reward-ix";
 export * from "./set-reward-emissions-ix";
 export * from "./swap-ix";
 export * from "./two-hop-swap-ix";
+export * from "./reposition-liquidity-ix";
 
 export * from "./initialize-config-extension-ix";
 export * from "./set-config-extension-authority-ix";

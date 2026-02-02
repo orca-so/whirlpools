@@ -20,6 +20,7 @@
   pub(crate) mod r#delete_token_badge;
   pub(crate) mod r#idl_include;
   pub(crate) mod r#increase_liquidity;
+  pub(crate) mod r#increase_liquidity_by_token_amounts_v2;
   pub(crate) mod r#increase_liquidity_v2;
   pub(crate) mod r#initialize_adaptive_fee_tier;
   pub(crate) mod r#initialize_config;
@@ -86,6 +87,7 @@
   pub use self::r#delete_token_badge::*;
   pub use self::r#idl_include::*;
   pub use self::r#increase_liquidity::*;
+  pub use self::r#increase_liquidity_by_token_amounts_v2::*;
   pub use self::r#increase_liquidity_v2::*;
   pub use self::r#initialize_adaptive_fee_tier::*;
   pub use self::r#initialize_config::*;

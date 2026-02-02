@@ -152,6 +152,8 @@ export const WHIRLPOOL_ERROR__FEATURE_IS_NOT_ENABLED = 0x17b2; // 6066
 export const WHIRLPOOL_ERROR__POSITION_WITH_TOKEN_EXTENSIONS_REQUIRED = 0x17b3; // 6067
 /** AdaptiveFeeConstantsUnchanged: Provided adaptive fee constants are unchanged */
 export const WHIRLPOOL_ERROR__ADAPTIVE_FEE_CONSTANTS_UNCHANGED = 0x17b4; // 6068
+/** PriceSlippageOutOfBounds: Price outside slippage bounds */
+export const WHIRLPOOL_ERROR__PRICE_SLIPPAGE_OUT_OF_BOUNDS = 0x17b5; // 6069
 
 export type WhirlpoolError =
   | typeof WHIRLPOOL_ERROR__ADAPTIVE_FEE_CONSTANTS_UNCHANGED
@@ -203,6 +205,7 @@ export type WhirlpoolError =
   | typeof WHIRLPOOL_ERROR__POSITION_BUNDLE_NOT_DELETABLE
   | typeof WHIRLPOOL_ERROR__POSITION_NOT_LOCKABLE
   | typeof WHIRLPOOL_ERROR__POSITION_WITH_TOKEN_EXTENSIONS_REQUIRED
+  | typeof WHIRLPOOL_ERROR__PRICE_SLIPPAGE_OUT_OF_BOUNDS
   | typeof WHIRLPOOL_ERROR__PROTOCOL_FEE_RATE_MAX_EXCEEDED
   | typeof WHIRLPOOL_ERROR__REMAINING_ACCOUNTS_DUPLICATED_ACCOUNTS_TYPE
   | typeof WHIRLPOOL_ERROR__REMAINING_ACCOUNTS_INSUFFICIENT
@@ -276,6 +279,7 @@ if (process.env.NODE_ENV !== "production") {
     [WHIRLPOOL_ERROR__POSITION_BUNDLE_NOT_DELETABLE]: `Unable to delete PositionBundle with open positions`,
     [WHIRLPOOL_ERROR__POSITION_NOT_LOCKABLE]: `Position is not lockable`,
     [WHIRLPOOL_ERROR__POSITION_WITH_TOKEN_EXTENSIONS_REQUIRED]: `This whirlpool only supports open_position_with_token_extensions instruction`,
+    [WHIRLPOOL_ERROR__PRICE_SLIPPAGE_OUT_OF_BOUNDS]: `Price outside slippage bounds`,
     [WHIRLPOOL_ERROR__PROTOCOL_FEE_RATE_MAX_EXCEEDED]: `Exceeded max protocol fee rate`,
     [WHIRLPOOL_ERROR__REMAINING_ACCOUNTS_DUPLICATED_ACCOUNTS_TYPE]: `Same accounts type is provided more than once`,
     [WHIRLPOOL_ERROR__REMAINING_ACCOUNTS_INSUFFICIENT]: `Insufficient remaining accounts`,

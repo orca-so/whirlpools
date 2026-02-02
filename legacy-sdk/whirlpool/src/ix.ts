@@ -832,6 +832,13 @@ export class WhirlpoolIx {
     return ix.increaseLiquidityV2Ix(program, params);
   }
 
+  public static increaseLiquidityByTokenAmountsV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.IncreaseLiquidityByTokenAmountsV2Params,
+  ) {
+    return ix.increaseLiquidityByTokenAmountsV2Ix(program, params);
+  }
+
   public static initializePoolV2Ix(
     program: Program<Whirlpool>,
     params: ix.InitPoolV2Params,

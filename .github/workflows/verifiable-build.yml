@@ -25,4 +25,4 @@ jobs:
       - name: Produce verifiable build
         run: |
           set -euo pipefail
-          solana-verify export-pda-tx https://github.com/orca-so/whirlpools --program-id whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc --library-name whirlpool --commit-hash a9d760d980f1552deb7a722ec88c8d31ff74efdf --uploader GwH3Hiv5mACLX3ufTw1pFsrhSPon5tdw252DBs4Rx4PV --encoding base58 --compute-unit-price 0 -- --features=mainnet
+          solana-verify export-pda-tx https://github.com/orca-so/whirlpools --program-id whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc --library-name whirlpool --commit-hash e5f089bc5c49b01f5c8abb43c78457ab6c440568 --uploader GwH3Hiv5mACLX3ufTw1pFsrhSPon5tdw252DBs4Rx4PV --encoding base58 --compute-unit-price 0 -- --features=mainnet

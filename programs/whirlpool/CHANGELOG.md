@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-program
 
+## 0.9.0
+
+### Minor Changes
+
+- [#1226](https://github.com/orca-so/whirlpools/pull/1226) [`822f213`](https://github.com/orca-so/whirlpools/commit/822f21312d2f0020e9b4f9cfcc6c68e9c200016f) Thanks [@josh-orca](https://github.com/josh-orca)! - Pinocchio Updates
+
 ## 0.8.0
 
 ### Minor Changes

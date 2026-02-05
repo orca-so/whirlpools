@@ -1,5 +1,15 @@
 # @orca-so/whirlpools-sdk
 
+## 0.19.0
+
+### Minor Changes
+
+- [#1226](https://github.com/orca-so/whirlpools/pull/1226) [`822f213`](https://github.com/orca-so/whirlpools/commit/822f21312d2f0020e9b4f9cfcc6c68e9c200016f) Thanks [@josh-orca](https://github.com/josh-orca)! - Pinocchio Updates
+
+- [#1227](https://github.com/orca-so/whirlpools/pull/1227) [`6017e1d`](https://github.com/orca-so/whirlpools/commit/6017e1df57c1f9f14ec6895d0008a429749c0552) Thanks [@josh-orca](https://github.com/josh-orca)! - add optimized reposition liquidity instruction
+
+- [#1229](https://github.com/orca-so/whirlpools/pull/1229) [`e5f089b`](https://github.com/orca-so/whirlpools/commit/e5f089bc5c49b01f5c8abb43c78457ab6c440568) Thanks [@josh-orca](https://github.com/josh-orca)! - add increase liquidity by token amounts instruction
+
 ## 0.18.0
 
 ### Minor Changes

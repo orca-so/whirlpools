@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_client"
-version = "7.1.0"
+version = "7.2.0"
 description = "Rust client to interact with Orca's on-chain Whirlpool program."
 include = ["src/*"]
 documentation = "https://dev.orca.so/"

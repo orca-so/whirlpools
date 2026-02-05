@@ -26,6 +26,8 @@ jobs:
         with:
           node-version: 22
           cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          always-auth: true
       - name: Setup Rust
         run: |
           rustup toolchain install 1.86.0 --profile minimal

@@ -15,8 +15,8 @@ import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import type { WhirlpoolContext } from "../context";
 import type {
+  ByTokenAmountsParams,
   DecreaseLiquidityInput,
-  IncreaseLiquidityInput,
 } from "../instructions";
 import {
   collectFeesIx,
@@ -25,8 +25,7 @@ import {
   collectRewardV2Ix,
   decreaseLiquidityIx,
   decreaseLiquidityV2Ix,
-  increaseLiquidityIx,
-  increaseLiquidityV2Ix,
+  increaseLiquidityByTokenAmountsV2Ix,
   lockPositionIx,
   resetPositionRangeIx,
   updateFeesAndRewardsIx,
@@ -113,7 +112,7 @@ export class PositionImpl implements Position {
   }
 
   async increaseLiquidity(
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     resolveATA = true,
     sourceWallet?: Address,
     positionWallet?: Address,
@@ -228,25 +227,13 @@ export class PositionImpl implements Position {
       positionAuthority: positionWalletKey,
     };
     // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
-    const increaseIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
-      ? increaseLiquidityIx(this.ctx.program, baseParams)
-      : increaseLiquidityV2Ix(this.ctx.program, {
-          ...baseParams,
-          tokenMintA: whirlpool.tokenMintA,
-          tokenMintB: whirlpool.tokenMintB,
-          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-            this.ctx.connection,
-            tokenExtensionCtx,
-            baseParams.tokenOwnerAccountA,
-            baseParams.tokenVaultA,
-            baseParams.positionAuthority,
-            baseParams.tokenOwnerAccountB,
-            baseParams.tokenVaultB,
-            baseParams.positionAuthority,
-          )),
-        });
+    const increaseIx = increaseLiquidityByTokenAmountsV2Ix(this.ctx.program, {
+      ...baseParams,
+      tokenMintA: whirlpool.tokenMintA,
+      tokenMintB: whirlpool.tokenMintB,
+      tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+      tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+    });
     txBuilder.addInstruction(increaseIx);
     return txBuilder;
   }

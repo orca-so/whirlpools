@@ -3,14 +3,17 @@ import type { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import type { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
-import type { ByTokenAmountsParams, DevFeeSwapInput, SwapInput } from "./instructions";
+import type {
+  ByTokenAmountsParams,
+  DevFeeSwapInput,
+  SwapInput,
+} from "./instructions";
 import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "./network/public/fetcher";
 import type {
   DecreaseLiquidityInput,
-  IncreaseLiquidityInput,
   LockConfigData,
   LockTypeData,
   PositionData,

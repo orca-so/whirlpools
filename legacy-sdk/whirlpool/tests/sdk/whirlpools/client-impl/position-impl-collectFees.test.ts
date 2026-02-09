@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
@@ -10,6 +10,8 @@ import Decimal from "decimal.js";
 import type { WhirlpoolClient, WhirlpoolContext } from "../../../../src";
 import {
   PDAUtil,
+  PoolUtil,
+  PriceMath,
   WhirlpoolIx,
   buildWhirlpoolClient,
   collectFeesQuote,
@@ -17,7 +19,6 @@ import {
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
-  MAX_U64,
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
   ZERO_BN,
@@ -41,6 +42,7 @@ describe("PositionImpl#collectFees()", () => {
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
   const liquidityAmount = new BN(10_000_000);
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
 
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
@@ -255,15 +257,28 @@ describe("PositionImpl#collectFees()", () => {
       const pool = await testCtx.whirlpoolClient.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
       );
+      let poolData = pool.getData();
+      const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+        poolData.sqrtPrice,
+        priceDeviation,
+      );
+      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+        liquidityAmount,
+        poolData.sqrtPrice,
+        PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
+        PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+        true,
+      );
 
       // open TokenExtensions based position
       const positionWithTokenExtensions = await pool.openPosition(
         tickLowerIndex,
         tickUpperIndex,
         {
-          liquidityAmount,
-          tokenMaxA: MAX_U64,
-          tokenMaxB: MAX_U64,
+          tokenMaxA: tokenA,
+          tokenMaxB: tokenB,
+          minSqrtPrice: lowerBound[0],
+          maxSqrtPrice: upperBound[0],
         },
         undefined,
         undefined,
@@ -291,7 +306,7 @@ describe("PositionImpl#collectFees()", () => {
 
       const otherWallet = anchor.web3.Keypair.generate();
 
-      const poolData = await pool.refreshData();
+      poolData = await pool.refreshData();
       const positionData = await position.refreshData();
       const tickLowerData = position.getLowerTickData();
       const tickUpperData = position.getLowerTickData();

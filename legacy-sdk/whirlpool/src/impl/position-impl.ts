@@ -233,6 +233,16 @@ export class PositionImpl implements Position {
       tokenMintB: whirlpool.tokenMintB,
       tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
       tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+      ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+        this.ctx.connection,
+        tokenExtensionCtx,
+        baseParams.tokenOwnerAccountA,
+        baseParams.tokenVaultA,
+        baseParams.positionAuthority,
+        baseParams.tokenOwnerAccountB,
+        baseParams.tokenVaultB,
+        baseParams.positionAuthority,
+      )),
     });
     txBuilder.addInstruction(increaseIx);
     return txBuilder;

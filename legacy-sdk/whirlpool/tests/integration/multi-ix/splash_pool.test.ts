@@ -16,7 +16,7 @@ import {
   TickUtil,
   WhirlpoolIx,
   buildWhirlpoolClient,
-  increaseLiquidityQuoteByInputToken,
+  increaseLiquidityQuoteByInputTokenUsingPriceDeviation,
   increaseLiquidityQuoteByLiquidityWithParams,
   swapQuoteByOutputToken,
   swapQuoteWithParams,
@@ -323,6 +323,13 @@ describe("splash pool tests", () => {
         const pool = await testCtx.whirlpoolClient.getPool(
           whirlpoolPda.publicKey,
         );
+        const poolData = pool.getData();
+        const priceDeviation = Percentage.fromFraction(1, 10_000);
+        const { lowerBound, upperBound } =
+          PriceMath.getSlippageBoundForSqrtPrice(
+            poolData.sqrtPrice,
+            priceDeviation,
+          );
 
         // SplashPool has only 2 TickArrays for negative and positive ticks
         await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
@@ -335,17 +342,17 @@ describe("splash pool tests", () => {
         const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
           liquidity: poolLiquidity,
           slippageTolerance: Percentage.fromFraction(0, 100),
-          sqrtPrice: pool.getData().sqrtPrice,
-          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          sqrtPrice: poolData.sqrtPrice,
+          tickCurrentIndex: poolData.tickCurrentIndex,
           tickLowerIndex: fullRange[0],
           tickUpperIndex: fullRange[1],
           tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
         });
-        const txAndMint = await pool.openPosition(
-          fullRange[0],
-          fullRange[1],
-          depositQuote,
-        );
+        const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], {
+          ...depositQuote,
+          minSqrtPrice: lowerBound[0],
+          maxSqrtPrice: upperBound[0],
+        });
         await txAndMint.tx.buildAndExecute();
         await pool.refreshData(); // reflect new liquidity
 
@@ -517,6 +524,12 @@ describe("splash pool tests", () => {
       const pool = await testCtx.whirlpoolClient.getPool(
         whirlpoolPda.publicKey,
       );
+      const poolData = pool.getData();
+      const priceDeviation = Percentage.fromFraction(1, 10_000);
+      const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+        poolData.sqrtPrice,
+        priceDeviation,
+      );
 
       await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
 
@@ -528,17 +541,17 @@ describe("splash pool tests", () => {
       const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
         liquidity: poolLiquidity,
         slippageTolerance: Percentage.fromFraction(0, 100),
-        sqrtPrice: pool.getData().sqrtPrice,
-        tickCurrentIndex: pool.getData().tickCurrentIndex,
+        sqrtPrice: poolData.sqrtPrice,
+        tickCurrentIndex: poolData.tickCurrentIndex,
         tickLowerIndex: fullRange[0],
         tickUpperIndex: fullRange[1],
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
       });
-      const txAndMint = await pool.openPosition(
-        fullRange[0],
-        fullRange[1],
-        depositQuote,
-      );
+      const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], {
+        ...depositQuote,
+        minSqrtPrice: lowerBound[0],
+        maxSqrtPrice: upperBound[0],
+      });
       await txAndMint.tx.buildAndExecute();
       await pool.refreshData(); // reflect new liquidity
 
@@ -636,6 +649,12 @@ describe("splash pool tests", () => {
       const pool = await testCtx.whirlpoolClient.getPool(
         whirlpoolPda.publicKey,
       );
+      const poolData = pool.getData();
+      const priceDeviation = Percentage.fromFraction(1, 10_000);
+      const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+        poolData.sqrtPrice,
+        priceDeviation,
+      );
 
       await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
 
@@ -647,17 +666,17 @@ describe("splash pool tests", () => {
       const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
         liquidity: poolLiquidity,
         slippageTolerance: Percentage.fromFraction(0, 100),
-        sqrtPrice: pool.getData().sqrtPrice,
-        tickCurrentIndex: pool.getData().tickCurrentIndex,
+        sqrtPrice: poolData.sqrtPrice,
+        tickCurrentIndex: poolData.tickCurrentIndex,
         tickLowerIndex: fullRange[0],
         tickUpperIndex: fullRange[1],
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
       });
-      const txAndMint = await pool.openPosition(
-        fullRange[0],
-        fullRange[1],
-        depositQuote,
-      );
+      const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], {
+        ...depositQuote,
+        minSqrtPrice: lowerBound[0],
+        maxSqrtPrice: upperBound[0],
+      });
       await txAndMint.tx.buildAndExecute();
       await pool.refreshData(); // reflect new liquidity
 
@@ -759,6 +778,13 @@ describe("splash pool tests", () => {
       const pool = await testCtx.whirlpoolClient.getPool(
         whirlpoolPda.publicKey,
       );
+      const poolData = pool.getData();
+      const priceDeviation = Percentage.fromFraction(1, 10_000);
+      const { lowerBound: _lowerBound, upperBound: _upperBound } =
+        PriceMath.getSlippageBoundForSqrtPrice(
+          poolData.sqrtPrice,
+          priceDeviation,
+        );
 
       // [-2,894,848   ][0            ][
       await (await pool.initTickArrayForTicks([
@@ -771,15 +797,16 @@ describe("splash pool tests", () => {
       );
 
       // create 2 position (small & large)
-      const depositQuoteSmall = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintB,
-        DecimalUtil.fromBN(new BN(1), 0), // very thin liquidity
-        fullRange[0],
-        fullRange[1],
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuoteSmall =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(1), 0), // very thin liquidity
+          fullRange[0],
+          fullRange[1],
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       const small = await pool.openPosition(
         fullRange[0],
         fullRange[1],
@@ -787,15 +814,16 @@ describe("splash pool tests", () => {
       );
       await small.tx.buildAndExecute();
 
-      const depositQuoteLarge = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintB,
-        DecimalUtil.fromBN(new BN(1_000_000_000), 0), // extremely larger than small position
-        fullRange[0],
-        fullRange[1],
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuoteLarge =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(1_000_000_000), 0), // extremely larger than small position
+          fullRange[0],
+          fullRange[1],
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       const large = await pool.openPosition(
         fullRange[0],
         fullRange[1],

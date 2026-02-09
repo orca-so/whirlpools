@@ -481,6 +481,16 @@ export class WhirlpoolImpl implements Whirlpool {
       tokenMintB: whirlpool.tokenMintB,
       tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
       tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+      ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+        this.ctx.connection,
+        tokenExtensionCtx,
+        baseParams.tokenOwnerAccountA,
+        baseParams.tokenVaultA,
+        baseParams.positionAuthority,
+        baseParams.tokenOwnerAccountB,
+        baseParams.tokenVaultB,
+        baseParams.positionAuthority,
+      )),
     });
     txBuilder.addInstruction(liquidityIx);
 

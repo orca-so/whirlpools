@@ -12,7 +12,7 @@ import {
   POSITION_BUNDLE_SIZE,
   WhirlpoolIx,
   buildWhirlpoolClient,
-  increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage,
+  increaseLiquidityQuoteByInputTokenWithParamsUsingPriceDeviation,
   toTx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -58,6 +58,7 @@ describe("close_bundled_position", () => {
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
   let poolInitInfo: InitPoolParams;
   let whirlpoolPda: PDA;
   const funderKeypair = anchor.web3.Keypair.generate();
@@ -288,22 +289,26 @@ describe("close_bundled_position", () => {
       IGNORE_CACHE,
     );
     const quote =
-      increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage({
-        tokenMintA: poolInitInfo.tokenMintA,
-        tokenMintB: poolInitInfo.tokenMintB,
-        sqrtPrice: pool.getData().sqrtPrice,
-        slippageTolerance: Percentage.fromFraction(0, 100),
-        tickLowerIndex,
-        tickUpperIndex,
-        tickCurrentIndex: pool.getData().tickCurrentIndex,
-        inputTokenMint: poolInitInfo.tokenMintB,
-        inputTokenAmount: new BN(1_000_000),
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
-          fetcher,
-          pool.getData(),
-          IGNORE_CACHE,
-        ),
-      });
+      increaseLiquidityQuoteByInputTokenWithParamsUsingPriceDeviation(
+        {
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          sqrtPrice: pool.getData().sqrtPrice,
+          slippageTolerance: Percentage.fromFraction(0, 100),
+          tickLowerIndex,
+          tickUpperIndex,
+          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          inputTokenMint: poolInitInfo.tokenMintB,
+          inputTokenAmount: new BN(1_000_000),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              pool.getData(),
+              IGNORE_CACHE,
+            ),
+        },
+        priceDeviation,
+      );
 
     await mintTokensToTestAccount(
       provider,

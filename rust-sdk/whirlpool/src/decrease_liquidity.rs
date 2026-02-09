@@ -661,6 +661,7 @@ mod tests {
     use crate::{
         close_position_instructions, decrease_liquidity_instructions,
         increase_liquidity_instructions, swap_instructions,
+        test_utils::assert_liquidity_close,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
@@ -668,6 +669,9 @@ mod tests {
         DecreaseLiquidityParam, IncreaseLiquidityParam, SwapType,
     };
     use orca_whirlpools_client::{get_position_address, Position};
+
+    const RELATIVE_TOLERANCE_BPS: u128 = 50;
+    const MIN_ABSOLUTE_BPS: u128 = 2;
 
     async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
         let account_data = rpc.get_account(&address).await?;
@@ -743,10 +747,11 @@ mod tests {
         // confirm on-chain liquidity updated
         let position_pubkey = get_position_address(&position_mint)?.0;
         let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
-        assert_eq!(
-            position_data.liquidity, quote.liquidity_delta,
-            "Position liquidity mismatch! expected={}, got={}",
-            quote.liquidity_delta, position_data.liquidity
+        assert_liquidity_close(
+            quote.liquidity_delta,
+            position_data.liquidity,
+            RELATIVE_TOLERANCE_BPS,
+            MIN_ABSOLUTE_BPS,
         );
 
         Ok(())

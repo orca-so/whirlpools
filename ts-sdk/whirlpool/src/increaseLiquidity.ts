@@ -328,10 +328,10 @@ async function internalOpenPositionInstructions(
 
   const [mintA, mintB] =
     cachedMints ??
-    await fetchAllMint(rpc, [
+    (await fetchAllMint(rpc, [
       whirlpool.data.tokenMintA,
       whirlpool.data.tokenMintB,
-    ]);
+    ]));
   assert(mintA && mintB, "Unable to fetch mint accounts for the pool");
   const currentEpoch = await rpc.getEpochInfo().send();
   const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);

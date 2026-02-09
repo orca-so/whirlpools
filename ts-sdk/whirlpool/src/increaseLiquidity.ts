@@ -97,7 +97,7 @@ export type IncreaseLiquidityInstructions = {
   instructions: Instruction[];
 };
 
-function getIncreaseLiquidityQuote(
+export function getIncreaseLiquidityQuote(
   param: IncreaseLiquidityQuoteParam,
   pool: Whirlpool,
   tickLowerIndex: number,
@@ -299,10 +299,10 @@ async function internalOpenPositionInstructions(
   param: IncreaseLiquidityQuoteParam,
   lowerTickIndex: number,
   upperTickIndex: number,
-  mintA: Account<Mint>,
-  mintB: Account<Mint>,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  withTokenMetadataExtension: boolean = true,
   funder: TransactionSigner<string> = FUNDER,
+  cachedMints?: [Account<Mint>, Account<Mint>],
 ): Promise<OpenPositionInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -326,6 +326,13 @@ async function internalOpenPositionInstructions(
     true,
   );
 
+  const [mintA, mintB] =
+    cachedMints ??
+    await fetchAllMint(rpc, [
+      whirlpool.data.tokenMintA,
+      whirlpool.data.tokenMintB,
+    ]);
+  assert(mintA && mintB, "Unable to fetch mint accounts for the pool");
   const currentEpoch = await rpc.getEpochInfo().send();
   const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
@@ -431,7 +438,7 @@ async function internalOpenPositionInstructions(
       metadataUpdateAuth: address(
         "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
       ),
-      withTokenMetadataExtension: true,
+      withTokenMetadataExtension,
     }),
   );
 
@@ -477,6 +484,7 @@ async function internalOpenPositionInstructions(
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
+ * @param {boolean} [withTokenMetadataExtension=true] - Whether to include the token metadata extension.
  * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing the instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
@@ -509,23 +517,20 @@ export async function openFullRangePositionInstructions(
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  withTokenMetadataExtension: boolean = true,
   funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
-  const [mintA, mintB] = await fetchAllMint(rpc, [
-    whirlpool.data.tokenMintA,
-    whirlpool.data.tokenMintB,
-  ]);
+
   return internalOpenPositionInstructions(
     rpc,
     whirlpool,
     param,
     tickRange.tickLowerIndex,
     tickRange.tickUpperIndex,
-    mintA,
-    mintB,
     slippageToleranceBps,
+    withTokenMetadataExtension,
     funder,
   );
 }
@@ -542,6 +547,7 @@ export async function openFullRangePositionInstructions(
  * @param {number} lowerPrice - The lower bound of the price range for the position.
  * @param {number} upperPrice - The upper bound of the price range for the position.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
+ * @param {boolean} [withTokenMetadataExtension=true] - Whether to include the token metadata extension.
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
  *
  * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
@@ -567,6 +573,7 @@ export async function openFullRangePositionInstructions(
  *   lowerPrice,
  *   upperPrice,
  *   100,
+ *   true,
  *   wallet
  * );
  */
@@ -582,6 +589,7 @@ export async function openPositionInstructions(
   lowerPrice: number,
   upperPrice: number,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  withTokenMetadataExtension: boolean = true,
   funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
@@ -589,23 +597,101 @@ export async function openPositionInstructions(
     whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING,
     "Splash pools only support full range positions",
   );
+
   const [mintA, mintB] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
     whirlpool.data.tokenMintB,
   ]);
+  assert(mintA && mintB, "Unable to fetch mint accounts for the pool");
   const decimalsA = mintA.data.decimals;
   const decimalsB = mintB.data.decimals;
   const lowerTickIndex = priceToTickIndex(lowerPrice, decimalsA, decimalsB);
   const upperTickIndex = priceToTickIndex(upperPrice, decimalsA, decimalsB);
+
   return internalOpenPositionInstructions(
     rpc,
     whirlpool,
     param,
     lowerTickIndex,
     upperTickIndex,
-    mintA,
-    mintB,
     slippageToleranceBps,
+    withTokenMetadataExtension,
+    funder,
+    [mintA, mintB],
+  );
+}
+
+/**
+ * Opens a new position in a concentrated liquidity pool within a specific tick range.
+ * This function allows you to provide liquidity for the specified range of ticks and adjust liquidity parameters accordingly.
+ *
+ * **Note:** This function cannot be used with Splash Pools.
+ *
+ * @param {SolanaRpc} rpc - A Solana RPC client used to interact with the blockchain.
+ * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
+ * @param {number} lowerTickIndex - The lower bound of the tick range for the position.
+ * @param {number} upperTickIndex - The upper bound of the tick range for the position.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
+ * @param {boolean} [withTokenMetadataExtension=true] - Whether to include the token metadata extension.
+ * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
+ *
+ * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
+ *
+ * @example
+ * import { openPositionInstructionsWithTickBounds, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+ *
+ * await setWhirlpoolsConfig('solanaDevnet');
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+ *
+ * const whirlpoolAddress = address("POOL_ADDRESS");
+ *
+ * const param = { tokenA: 1_000_000n };
+ * const lowerTickIndex = -44320;
+ * const upperTickIndex = -22160;
+ *
+ * const { quote, instructions, initializationCost, positionMint } = await openPositionInstructionsWithTickBounds(
+ *   devnetRpc,
+ *   whirlpoolAddress,
+ *   param,
+ *   lowerTickIndex,
+ *   upperTickIndex,
+ *   100,
+ *   true,
+ *   wallet
+ * );
+ */
+export async function openPositionInstructionsWithTickBounds(
+  rpc: Rpc<
+    GetAccountInfoApi &
+      GetMultipleAccountsApi &
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
+  >,
+  poolAddress: Address,
+  param: IncreaseLiquidityQuoteParam,
+  lowerTickIndex: number,
+  upperTickIndex: number,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  withTokenMetadataExtension: boolean = true,
+  funder: TransactionSigner<string> = FUNDER,
+): Promise<OpenPositionInstructions> {
+  const whirlpool = await fetchWhirlpool(rpc, poolAddress);
+  assert(
+    whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING,
+    "Splash pools only support full range positions",
+  );
+
+  return internalOpenPositionInstructions(
+    rpc,
+    whirlpool,
+    param,
+    lowerTickIndex,
+    upperTickIndex,
+    slippageToleranceBps,
+    withTokenMetadataExtension,
     funder,
   );
 }
@@ -622,4 +708,8 @@ export const openFullRangePosition = wrapFunctionWithExecution(
 
 export const openConcentratedPosition = wrapFunctionWithExecution(
   openPositionInstructions,
+);
+
+export const openConcentratedPositionWithTickBounds = wrapFunctionWithExecution(
+  openPositionInstructionsWithTickBounds,
 );

@@ -1,32 +1,32 @@
-import { describe, it, beforeAll } from "vitest";
+import {
+  fetchMaybePosition,
+  getOpenPositionWithTokenExtensionsInstructionDataDecoder,
+  getPositionAddress,
+  OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
+} from "@orca-so/whirlpools-client";
+import {
+  getFullRangeTickIndexes,
+  getInitializableTickIndex,
+  priceToTickIndex,
+} from "@orca-so/whirlpools-core";
 import type { Address } from "@solana/kit";
 import { assertAccountExists } from "@solana/kit";
-import { setupAta, setupMint } from "./utils/token";
-import {
-  setupAtaTE,
-  setupMintTE,
-  setupMintTEFee,
-} from "./utils/tokenExtensions";
-import { setupWhirlpool } from "./utils/program";
+import assert from "assert";
+import { beforeAll, describe, it } from "vitest";
+import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import {
   openFullRangePositionInstructions,
   openPositionInstructions,
   openPositionInstructionsWithTickBounds,
 } from "../src/increaseLiquidity";
 import { rpc, sendTransaction } from "./utils/mockRpc";
+import { setupWhirlpool } from "./utils/program";
+import { setupAta, setupMint } from "./utils/token";
 import {
-  fetchMaybePosition,
-  getPositionAddress,
-  getOpenPositionWithTokenExtensionsInstructionDataDecoder,
-  OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
-} from "@orca-so/whirlpools-client";
-import assert from "assert";
-import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import {
-  getFullRangeTickIndexes,
-  getInitializableTickIndex,
-  priceToTickIndex,
-} from "@orca-so/whirlpools-core";
+  setupAtaTE,
+  setupMintTE,
+  setupMintTEFee,
+} from "./utils/tokenExtensions";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -283,21 +283,21 @@ describe("Open Position Instructions", () => {
       false,
     );
 
-    const maybeCreatePositionIx = instructions.filter(({ data }) => {
-      if (!data || data.length < 8) {
-        return false;
-      }
-
-      return OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR.every(
-        (byte, index) => data[index] === byte,
+    const openPositionIxs = instructions.filter(({ data }) => {
+      return (
+        data &&
+        data.length >= 8 &&
+        OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR.every(
+          (byte, index) => data[index] === byte,
+        )
       );
     });
 
-    assert.strictEqual(maybeCreatePositionIx.length, 1);
-    const createPositionIx = maybeCreatePositionIx[0];
+    assert.strictEqual(openPositionIxs.length, 1);
+    const openPositionIx = openPositionIxs[0];
     const instructionData =
       getOpenPositionWithTokenExtensionsInstructionDataDecoder().decode(
-        createPositionIx.data!,
+        openPositionIx.data!,
       );
     assert.strictEqual(instructionData.withTokenMetadataExtension, false);
   });

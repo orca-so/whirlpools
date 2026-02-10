@@ -299,10 +299,11 @@ async function internalOpenPositionInstructions(
   param: IncreaseLiquidityQuoteParam,
   lowerTickIndex: number,
   upperTickIndex: number,
+  mintA: Account<Mint>,
+  mintB: Account<Mint>,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
   withTokenMetadataExtension: boolean = true,
   funder: TransactionSigner<string> = FUNDER,
-  cachedMints?: [Account<Mint>, Account<Mint>],
 ): Promise<OpenPositionInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -326,13 +327,6 @@ async function internalOpenPositionInstructions(
     true,
   );
 
-  const [mintA, mintB] =
-    cachedMints ??
-    (await fetchAllMint(rpc, [
-      whirlpool.data.tokenMintA,
-      whirlpool.data.tokenMintB,
-    ]));
-  assert(mintA && mintB, "Unable to fetch mint accounts for the pool");
   const currentEpoch = await rpc.getEpochInfo().send();
   const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
@@ -523,12 +517,19 @@ export async function openFullRangePositionInstructions(
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
 
+  const [mintA, mintB] = await fetchAllMint(rpc, [
+    whirlpool.data.tokenMintA,
+    whirlpool.data.tokenMintB,
+  ]);
+
   return internalOpenPositionInstructions(
     rpc,
     whirlpool,
     param,
     tickRange.tickLowerIndex,
     tickRange.tickUpperIndex,
+    mintA,
+    mintB,
     slippageToleranceBps,
     withTokenMetadataExtension,
     funder,
@@ -593,16 +594,12 @@ export async function openPositionInstructions(
   funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
-  assert(
-    whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING,
-    "Splash pools only support full range positions",
-  );
+  assertWhirlpoolSupportsConcentratedPosition(whirlpool.data);
 
   const [mintA, mintB] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
     whirlpool.data.tokenMintB,
   ]);
-  assert(mintA && mintB, "Unable to fetch mint accounts for the pool");
   const decimalsA = mintA.data.decimals;
   const decimalsB = mintB.data.decimals;
   const lowerTickIndex = priceToTickIndex(lowerPrice, decimalsA, decimalsB);
@@ -614,10 +611,11 @@ export async function openPositionInstructions(
     param,
     lowerTickIndex,
     upperTickIndex,
+    mintA,
+    mintB,
     slippageToleranceBps,
     withTokenMetadataExtension,
     funder,
-    [mintA, mintB],
   );
 }
 
@@ -679,10 +677,12 @@ export async function openPositionInstructionsWithTickBounds(
   funder: TransactionSigner<string> = FUNDER,
 ): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
-  assert(
-    whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING,
-    "Splash pools only support full range positions",
-  );
+  assertWhirlpoolSupportsConcentratedPosition(whirlpool.data);
+
+  const [mintA, mintB] = await fetchAllMint(rpc, [
+    whirlpool.data.tokenMintA,
+    whirlpool.data.tokenMintB,
+  ]);
 
   return internalOpenPositionInstructions(
     rpc,
@@ -690,9 +690,18 @@ export async function openPositionInstructionsWithTickBounds(
     param,
     lowerTickIndex,
     upperTickIndex,
+    mintA,
+    mintB,
     slippageToleranceBps,
     withTokenMetadataExtension,
     funder,
+  );
+}
+
+function assertWhirlpoolSupportsConcentratedPosition(whirlpool: Whirlpool) {
+  assert(
+    whirlpool.tickSpacing !== SPLASH_POOL_TICK_SPACING,
+    "Splash pools only support full range positions",
   );
 }
 

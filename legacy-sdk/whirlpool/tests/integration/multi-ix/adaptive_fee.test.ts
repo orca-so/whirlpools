@@ -64,6 +64,7 @@ describe("adaptive fee tests", () => {
   let program: anchor.Program;
   let testCtx: SharedTestContext;
   let admin: Keypair;
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
 
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
@@ -2065,6 +2066,11 @@ describe("adaptive fee tests", () => {
     const pool = await testCtx.whirlpoolClient.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
     );
+    const poolData = pool.getData();
+    const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+      poolData.sqrtPrice,
+      priceDeviation,
+    );
     await (await pool.initTickArrayForTicks(
       TickUtil.getFullRangeTickIndex(tickSpacing),
     ))!.buildAndExecute();
@@ -2088,17 +2094,17 @@ describe("adaptive fee tests", () => {
     const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
       liquidity: poolLiquidity,
       slippageTolerance: Percentage.fromFraction(0, 100),
-      sqrtPrice: pool.getData().sqrtPrice,
-      tickCurrentIndex: pool.getData().tickCurrentIndex,
+      sqrtPrice: poolData.sqrtPrice,
+      tickCurrentIndex: poolData.tickCurrentIndex,
       tickLowerIndex: fullRange[0],
       tickUpperIndex: fullRange[1],
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
     });
-    const txAndMint = await pool.openPosition(
-      fullRange[0],
-      fullRange[1],
-      depositQuote,
-    );
+    const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], {
+      ...depositQuote,
+      minSqrtPrice: lowerBound[0],
+      maxSqrtPrice: upperBound[0],
+    });
     await txAndMint.tx.buildAndExecute();
 
     return {
@@ -2296,6 +2302,18 @@ describe("adaptive fee tests", () => {
     const poolTwo = await testCtx.whirlpoolClient.getPool(
       whirlpoolPdaTwo.publicKey,
     );
+    const poolOneData = poolOne.getData();
+    const poolTwoData = poolTwo.getData();
+    const { lowerBound: lowerBoundOne, upperBound: upperBoundOne } =
+      PriceMath.getSlippageBoundForSqrtPrice(
+        poolOneData.sqrtPrice,
+        priceDeviation,
+      );
+    const { lowerBound: lowerBoundTwo, upperBound: upperBoundTwo } =
+      PriceMath.getSlippageBoundForSqrtPrice(
+        poolTwoData.sqrtPrice,
+        priceDeviation,
+      );
     await (await poolOne.initTickArrayForTicks(fullRange))!.buildAndExecute();
     await (await poolTwo.initTickArrayForTicks(fullRange))!.buildAndExecute();
 
@@ -2303,8 +2321,8 @@ describe("adaptive fee tests", () => {
     const depositQuoteOne = increaseLiquidityQuoteByLiquidityWithParams({
       liquidity: poolLiquidity,
       slippageTolerance: Percentage.fromFraction(0, 100),
-      sqrtPrice: poolOne.getData().sqrtPrice,
-      tickCurrentIndex: poolOne.getData().tickCurrentIndex,
+      sqrtPrice: poolOneData.sqrtPrice,
+      tickCurrentIndex: poolOneData.tickCurrentIndex,
       tickLowerIndex: fullRange[0],
       tickUpperIndex: fullRange[1],
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
@@ -2312,8 +2330,8 @@ describe("adaptive fee tests", () => {
     const depositQuoteTwo = increaseLiquidityQuoteByLiquidityWithParams({
       liquidity: poolLiquidity,
       slippageTolerance: Percentage.fromFraction(0, 100),
-      sqrtPrice: poolTwo.getData().sqrtPrice,
-      tickCurrentIndex: poolTwo.getData().tickCurrentIndex,
+      sqrtPrice: poolTwoData.sqrtPrice,
+      tickCurrentIndex: poolTwoData.tickCurrentIndex,
       tickLowerIndex: fullRange[0],
       tickUpperIndex: fullRange[1],
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
@@ -2322,13 +2340,21 @@ describe("adaptive fee tests", () => {
     const txAndMintOne = await poolOne.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuoteOne,
+      {
+        ...depositQuoteOne,
+        minSqrtPrice: lowerBoundOne[0],
+        maxSqrtPrice: upperBoundOne[0],
+      },
     );
     await txAndMintOne.tx.buildAndExecute();
     const txAndMintTwo = await poolTwo.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuoteTwo,
+      {
+        ...depositQuoteTwo,
+        minSqrtPrice: lowerBoundTwo[0],
+        maxSqrtPrice: upperBoundTwo[0],
+      },
     );
     await txAndMintTwo.tx.buildAndExecute();
 

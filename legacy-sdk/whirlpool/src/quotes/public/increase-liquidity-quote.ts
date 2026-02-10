@@ -65,6 +65,11 @@ type IncreaseLiquidityEstimate = {
   };
 };
 
+export type IncreaseLiquidityQuoteWithPriceBounds = IncreaseLiquidityQuote & {
+  minSqrtPrice: BN;
+  maxSqrtPrice: BN;
+};
+
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
  * This new version calculates slippage based on price percentage movement, rather than setting the percentage threshold based on token estimates.
@@ -114,6 +119,60 @@ export function increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
     tokenExtensionCtx,
     ...data,
   });
+}
+
+/**
+ * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
+ * This version allows specifying a price deviation bound to set min/max sqrt price.
+ *
+ * @category Quotes
+ * @param inputTokenAmount - The amount of input tokens to deposit.
+ * @param inputTokenMint - The mint of the input token the user would like to deposit.
+ * @param tickLower - The lower index of the position that we are depositing into.
+ * @param tickUpper - The upper index of the position that we are depositing into.
+ * @param priceDeviation - The maximum price deviation allowed.
+ * @param whirlpool - A Whirlpool helper class to help interact with the Whirlpool account.
+ * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
+ */
+export function increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+  inputTokenMint: Address,
+  inputTokenAmount: Decimal,
+  tickLower: number,
+  tickUpper: number,
+  priceDeviation: Percentage,
+  whirlpool: Whirlpool,
+  tokenExtensionCtx: TokenExtensionContextForPool,
+): IncreaseLiquidityQuoteWithPriceBounds {
+  const data = whirlpool.getData();
+  const tokenAInfo = whirlpool.getTokenAInfo();
+  const tokenBInfo = whirlpool.getTokenBInfo();
+
+  const inputMint = AddressUtil.toPubKey(inputTokenMint);
+  const inputTokenInfo = inputMint.equals(tokenAInfo.mint)
+    ? tokenAInfo
+    : tokenBInfo;
+
+  return increaseLiquidityQuoteByInputTokenWithParamsUsingPriceDeviation(
+    {
+      inputTokenMint: inputMint,
+      inputTokenAmount: DecimalUtil.toBN(
+        inputTokenAmount,
+        inputTokenInfo.decimals,
+      ),
+      tickLowerIndex: TickUtil.getInitializableTickIndex(
+        tickLower,
+        data.tickSpacing,
+      ),
+      tickUpperIndex: TickUtil.getInitializableTickIndex(
+        tickUpper,
+        data.tickSpacing,
+      ),
+      slippageTolerance: priceDeviation,
+      tokenExtensionCtx,
+      ...data,
+    },
+    priceDeviation,
+  );
 }
 
 /**
@@ -168,6 +227,32 @@ export function increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage(
     slippageTolerance: param.slippageTolerance,
     tokenExtensionCtx: param.tokenExtensionCtx,
   });
+}
+
+/**
+ * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
+ * This version allows specifying a price deviation bound to set min/max sqrt price.
+ *
+ * @category Quotes
+ * @param param IncreaseLiquidityQuoteParam
+ * @param priceDeviation - The maximum price deviation allowed.
+ * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
+ */
+export function increaseLiquidityQuoteByInputTokenWithParamsUsingPriceDeviation(
+  param: IncreaseLiquidityQuoteParam,
+  priceDeviation: Percentage,
+): IncreaseLiquidityQuoteWithPriceBounds {
+  const quote = increaseLiquidityQuoteByInputTokenWithParams(param);
+  const {
+    lowerBound: [minSqrtPrice],
+    upperBound: [maxSqrtPrice],
+  } = PriceMath.getSlippageBoundForSqrtPrice(param.sqrtPrice, priceDeviation);
+
+  return {
+    ...quote,
+    minSqrtPrice,
+    maxSqrtPrice,
+  };
 }
 
 function getLiquidityFromInputToken(params: IncreaseLiquidityQuoteParam) {

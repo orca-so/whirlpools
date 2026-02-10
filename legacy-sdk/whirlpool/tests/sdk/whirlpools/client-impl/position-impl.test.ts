@@ -9,7 +9,7 @@ import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   decreaseLiquidityQuoteByLiquidity,
-  increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
+  increaseLiquidityQuoteByInputTokenUsingPriceDeviation,
   LockConfigUtil,
   PriceMath,
   TickUtil,
@@ -74,6 +74,7 @@ describe("position-impl", () => {
     }, tokenTraitB: ${
       tokenTraits.tokenTraitB.isToken2022 ? "Token2022" : "Token"
     }`, () => {
+      const priceDeviation = Percentage.fromFraction(1, 10_000);
       it("increase and decrease liquidity on position", async () => {
         const { poolInitInfo } = await initTestPoolV2(
           ctx,
@@ -132,12 +133,12 @@ describe("position-impl", () => {
         );
         const preIncreaseData = position.getData();
         const increase_quote =
-          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
             poolInitInfo.tokenMintB,
             new Decimal(70),
             lowerTick,
             upperTick,
-            Percentage.fromFraction(1, 100),
+            priceDeviation,
             pool,
             await TokenExtensionUtil.buildTokenExtensionContext(
               fetcher,
@@ -253,12 +254,12 @@ describe("position-impl", () => {
         );
         const preIncreaseData = position.getData();
         const increase_quote =
-          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
             poolInitInfo.tokenMintB,
             new Decimal(70),
             lowerTick,
             upperTick,
-            Percentage.fromFraction(1, 100),
+            priceDeviation,
             pool,
             await TokenExtensionUtil.buildTokenExtensionContext(
               fetcher,
@@ -327,12 +328,12 @@ describe("position-impl", () => {
           otherWallet.publicKey,
         );
         const increaseQuoteFromOtherWallet =
-          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
             poolInitInfo.tokenMintB,
             new Decimal(80),
             lowerTick,
             upperTick,
-            Percentage.fromFraction(1, 100),
+            priceDeviation,
             pool,
             await TokenExtensionUtil.buildTokenExtensionContext(
               fetcher,
@@ -445,12 +446,12 @@ describe("position-impl", () => {
 
         const preIncreaseData = position.getData();
         const increase_quote =
-          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
             poolInitInfo.tokenMintB,
             new Decimal(70),
             lowerTick,
             upperTick,
-            Percentage.fromFraction(1, 100),
+            priceDeviation,
             pool,
             await TokenExtensionUtil.buildTokenExtensionContext(
               fetcher,

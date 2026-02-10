@@ -18,8 +18,7 @@ import {
   collectFeesQuote,
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity,
-  increaseLiquidityQuoteByInputToken,
-  increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
+  increaseLiquidityQuoteByInputTokenUsingPriceDeviation,
   swapQuoteByInputToken,
   toTx,
 } from "../../../../src";
@@ -145,7 +144,7 @@ describe("whirlpool-impl", () => {
         );
 
         const inputTokenMint = poolData.tokenMintA;
-        const quote = increaseLiquidityQuoteByInputToken(
+        const quote = increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
           inputTokenMint,
           new Decimal(50),
           tickLower,
@@ -299,7 +298,7 @@ describe("whirlpool-impl", () => {
 
         const inputTokenMint = poolData.tokenMintA;
         const depositAmount = new Decimal(50);
-        const quote = increaseLiquidityQuoteByInputToken(
+        const quote = increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
           inputTokenMint,
           depositAmount,
           tickLower,
@@ -507,7 +506,7 @@ describe("whirlpool-impl", () => {
         );
 
         const inputTokenMint = poolData.tokenMintA;
-        const quote = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+        const quote = increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
           inputTokenMint,
           new Decimal(50),
           tickLower,
@@ -661,7 +660,7 @@ describe("whirlpool-impl", () => {
 
         const inputTokenMint = poolData.tokenMintA;
         const depositAmount = new Decimal(50);
-        const quote = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+        const quote = increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
           inputTokenMint,
           depositAmount,
           tickLower,
@@ -1173,7 +1172,7 @@ describe("whirlpool-impl", () => {
           );
 
           const inputTokenMint = poolData.tokenMintA;
-          const quote = increaseLiquidityQuoteByInputToken(
+          const quote = increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
             inputTokenMint,
             new Decimal(50),
             tickLower,

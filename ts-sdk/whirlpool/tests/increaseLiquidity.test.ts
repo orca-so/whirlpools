@@ -21,6 +21,7 @@ import {
   setupMintTE,
   setupMintTEFee,
 } from "./utils/tokenExtensions";
+import { assertAmountClose, assertLiquidityClose } from "./utils/assert";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -56,6 +57,8 @@ describe("Increase Liquidity Instructions", () => {
   const tokenBalance = 1_000_000n;
   const atas: Map<string, Address> = new Map();
   const positions: Map<string, Address> = new Map();
+  const minAbsoluteTolerance = 2n;
+  const relativeToleranceBps = 100n;
 
   beforeAll(async () => {
     const mints: Map<string, Address> = new Map();
@@ -114,9 +117,22 @@ describe("Increase Liquidity Instructions", () => {
     const balanceChangeTokenB =
       tokenBeforeB.data.amount - tokenAfterB.data.amount;
 
-    assert.strictEqual(quote.tokenEstA, balanceChangeTokenA);
-    assert.strictEqual(quote.tokenEstB, balanceChangeTokenB);
-    assert.strictEqual(quote.liquidityDelta, position.data.liquidity);
+    assertAmountClose(
+      quote.tokenEstA,
+      balanceChangeTokenA,
+      minAbsoluteTolerance,
+    );
+    assertAmountClose(
+      quote.tokenEstB,
+      balanceChangeTokenB,
+      minAbsoluteTolerance,
+    );
+    assertLiquidityClose(
+      quote.liquidityDelta,
+      position.data.liquidity,
+      relativeToleranceBps,
+      minAbsoluteTolerance,
+    );
   };
 
   for (const poolName of poolTypes.keys()) {

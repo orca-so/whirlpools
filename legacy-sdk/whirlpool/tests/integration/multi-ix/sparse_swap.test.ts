@@ -21,7 +21,7 @@ import {
   TickUtil,
   WhirlpoolIx,
   buildWhirlpoolClient,
-  increaseLiquidityQuoteByInputToken,
+  increaseLiquidityQuoteByInputTokenUsingPriceDeviation,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
   swapQuoteWithParams,
@@ -78,6 +78,7 @@ describe("sparse swap tests", () => {
 
   const tickSpacing64 = 64;
   const tickSpacing8192 = 8192;
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
 
   /**
    * Helper function to wait for tick arrays to be synced in LiteSVM for a single pool
@@ -170,15 +171,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit [-9984, 2944], 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintB,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        -9984,
-        2944,
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -9984,
+          2944,
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(-9984, 2944, depositQuote)
       ).tx.buildAndExecute();
@@ -239,15 +241,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit [-2944, 9984], 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintA,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        -2944,
-        9984,
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintA,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -2944,
+          9984,
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(-2944, 9984, depositQuote)
       ).tx.buildAndExecute();
@@ -308,15 +311,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit [-9984, -128], 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintB,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        -9984,
-        -128,
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -9984,
+          -128,
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(-9984, -128, depositQuote)
       ).tx.buildAndExecute();
@@ -403,15 +407,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit [-9984, -5760], 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintB,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        -9984,
-        -5760,
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -9984,
+          -5760,
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(-9984, -5760, depositQuote)
       ).tx.buildAndExecute();
@@ -493,15 +498,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit [128, 9984], 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintA,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        128,
-        9984,
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintA,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          128,
+          9984,
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(128, 9984, depositQuote)
       ).tx.buildAndExecute();
@@ -588,15 +594,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit [5760, 9984], 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintA,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        5760,
-        9984,
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintA,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          5760,
+          9984,
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(5760, 9984, depositQuote)
       ).tx.buildAndExecute();
@@ -682,15 +689,16 @@ describe("sparse swap tests", () => {
 
       // deposit FullRange, 100_000_000
       const fullrange = TickUtil.getFullRangeTickIndex(tickSpacing8192);
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintA,
-        DecimalUtil.fromBN(new BN(100_000), 0),
-        fullrange[0],
-        fullrange[1],
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintA,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          fullrange[0],
+          fullrange[1],
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(fullrange[0], fullrange[1], depositQuote)
       ).tx.buildAndExecute();
@@ -790,15 +798,16 @@ describe("sparse swap tests", () => {
         ]))!.buildAndExecute();
 
         // deposit [-9984, 2944], 100_000
-        const depositQuote = increaseLiquidityQuoteByInputToken(
-          poolInitInfo.tokenMintB,
-          DecimalUtil.fromBN(new BN(100_000), 0),
-          -9984,
-          2944,
-          Percentage.fromFraction(0, 100),
-          pool,
-          NO_TOKEN_EXTENSION_CONTEXT,
-        );
+        const depositQuote =
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+            poolInitInfo.tokenMintB,
+            DecimalUtil.fromBN(new BN(100_000), 0),
+            -9984,
+            2944,
+            priceDeviation,
+            pool,
+            NO_TOKEN_EXTENSION_CONTEXT,
+          );
         await (
           await pool.openPosition(-9984, 2944, depositQuote)
         ).tx.buildAndExecute();
@@ -1174,15 +1183,16 @@ describe("sparse swap tests", () => {
       ]))!.buildAndExecute();
 
       // deposit FullRange, 100_000_000
-      const depositQuote = increaseLiquidityQuoteByInputToken(
-        poolInitInfo.tokenMintA,
-        DecimalUtil.fromBN(new BN(100_000_000), 0),
-        fullrange[0],
-        fullrange[1],
-        Percentage.fromFraction(0, 100),
-        pool,
-        NO_TOKEN_EXTENSION_CONTEXT,
-      );
+      const depositQuote =
+        increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+          poolInitInfo.tokenMintA,
+          DecimalUtil.fromBN(new BN(100_000_000), 0),
+          fullrange[0],
+          fullrange[1],
+          priceDeviation,
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
       await (
         await pool.openPosition(fullrange[0], fullrange[1], depositQuote)
       ).tx.buildAndExecute();
@@ -2264,15 +2274,16 @@ describe("sparse swap tests", () => {
         ]))!.buildAndExecute();
 
         // deposit [-9984, 2944], 100_000_000
-        const depositQuote = increaseLiquidityQuoteByInputToken(
-          poolInitInfo.tokenMintB,
-          DecimalUtil.fromBN(new BN(100_000), 0),
-          -9984,
-          2944,
-          Percentage.fromFraction(0, 100),
-          pool,
-          NO_TOKEN_EXTENSION_CONTEXT,
-        );
+        const depositQuote =
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+            poolInitInfo.tokenMintB,
+            DecimalUtil.fromBN(new BN(100_000), 0),
+            -9984,
+            2944,
+            priceDeviation,
+            pool,
+            NO_TOKEN_EXTENSION_CONTEXT,
+          );
         await (
           await pool.openPosition(-9984, 2944, depositQuote)
         ).tx.buildAndExecute();
@@ -2486,15 +2497,16 @@ describe("sparse swap tests", () => {
         ]))!.buildAndExecute();
 
         // deposit [-9984, 2944], 100_000
-        const depositQuote = increaseLiquidityQuoteByInputToken(
-          poolInitInfo.tokenMintB,
-          DecimalUtil.fromBN(new BN(100_000), 0),
-          -9984,
-          2944,
-          Percentage.fromFraction(0, 100),
-          pool,
-          NO_TOKEN_EXTENSION_CONTEXT,
-        );
+        const depositQuote =
+          increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
+            poolInitInfo.tokenMintB,
+            DecimalUtil.fromBN(new BN(100_000), 0),
+            -9984,
+            2944,
+            priceDeviation,
+            pool,
+            NO_TOKEN_EXTENSION_CONTEXT,
+          );
         await (
           await pool.openPosition(-9984, 2944, depositQuote)
         ).tx.buildAndExecute();

@@ -697,6 +697,24 @@ async function openPositionWithTokenExtensions(
   return { txId, params, mint };
 }
 
+export async function initTickArrayIfNeeded(
+  ctx: WhirlpoolContext,
+  whirlpool: anchor.web3.PublicKey,
+  startTick: number,
+) {
+  const tickArrayPda = PDAUtil.getTickArray(
+    ctx.program.programId,
+    whirlpool,
+    startTick,
+  ).publicKey;
+
+  const tickArrayAccount = await ctx.connection.getAccountInfo(tickArrayPda);
+  if (tickArrayAccount !== null) {
+    return;
+  }
+  await initTickArray(ctx, whirlpool, startTick);
+}
+
 export async function initTickArray(
   ctx: WhirlpoolContext,
   whirlpool: PublicKey,

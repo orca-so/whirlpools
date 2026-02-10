@@ -1,6 +1,14 @@
 use anchor_lang::prelude::*;
 
 #[event]
+pub struct PositionOpened {
+    pub whirlpool: Pubkey,
+    pub position: Pubkey,
+    pub tick_lower_index: i32,
+    pub tick_upper_index: i32,
+}
+
+#[event]
 pub struct PoolInitialized {
     pub whirlpool: Pubkey,
     pub whirlpools_config: Pubkey,
@@ -52,4 +60,26 @@ pub struct Traded {
     pub output_transfer_fee: u64,
     pub lp_fee: u64,
     pub protocol_fee: u64,
+}
+
+#[event]
+pub struct LiquidityRepositioned {
+    pub whirlpool: Pubkey,
+    pub position: Pubkey,
+    pub existing_range_tick_lower_index: i32,
+    pub existing_range_tick_upper_index: i32,
+    pub new_range_tick_lower_index: i32,
+    pub new_range_tick_upper_index: i32,
+    pub existing_range_liquidity: u128,
+    pub new_range_liquidity: u128,
+    pub existing_range_token_a_amount: u64,
+    pub existing_range_token_b_amount: u64,
+    pub new_range_token_a_amount: u64,
+    pub new_range_token_b_amount: u64,
+    pub token_a_transfer_amount: u64,
+    pub token_a_transfer_fee: u64,
+    pub is_token_a_transfer_from_owner: bool,
+    pub token_b_transfer_amount: u64,
+    pub token_b_transfer_fee: u64,
+    pub is_token_b_transfer_from_owner: bool,
 }

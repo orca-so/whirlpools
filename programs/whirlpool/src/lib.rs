@@ -2,6 +2,11 @@ use anchor_lang::prelude::*;
 
 declare_id!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
 
+mod entrypoint;
+
+#[doc(hidden)]
+pub mod pinocchio;
+
 #[doc(hidden)]
 pub mod auth;
 #[doc(hidden)]
@@ -238,13 +243,14 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    #[allow(unused_variables)]
     pub fn increase_liquidity(
         ctx: Context<ModifyLiquidity>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
     ) -> Result<()> {
-        instructions::increase_liquidity::handler(ctx, liquidity_amount, token_max_a, token_max_b)
+        unreachable!(); // Pinocchio
     }
 
     /// Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -261,13 +267,14 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
+    #[allow(unused_variables)]
     pub fn decrease_liquidity(
         ctx: Context<ModifyLiquidity>,
         liquidity_amount: u128,
         token_min_a: u64,
         token_min_b: u64,
     ) -> Result<()> {
-        instructions::decrease_liquidity::handler(ctx, liquidity_amount, token_min_a, token_min_b)
+        unreachable!(); // Pinocchio
     }
 
     /// Update the accrued fees and rewards for a position.
@@ -872,6 +879,49 @@ pub mod whirlpool {
         instructions::set_fee_rate_by_delegated_fee_authority::handler(ctx, fee_rate)
     }
 
+    /// Sets specific adaptive fee constants for a pool. Only the provided constants will be updated,
+    /// others remain unchanged. Caller should avoid invoking this instruction when a pool's adaptive
+    /// fee is high to prevent LP revenue loss
+    ///
+    /// ### Authority
+    /// - `fee_authority` - Set authority in the WhirlpoolsConfig
+    ///
+    /// ### Parameters
+    /// All parameters are optional. Only provided values will be updated.
+    /// - `filter_period` - Period determine high frequency trading time window. (seconds)
+    /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)
+    /// - `reduction_factor` - Adaptive fee rate decrement rate.
+    /// - `adaptive_fee_control_factor` - Adaptive fee control factor.
+    /// - `max_volatility_accumulator` - Max volatility accumulator.
+    /// - `tick_group_size` - Tick group size to define tick group index.
+    /// - `major_swap_threshold_ticks` - Major swap threshold ticks to define major swap.
+    ///
+    /// #### Special Errors
+    /// - `InvalidAdaptiveFeeConstants` - If the resulting constants are invalid for the pool's tick_spacing.
+    /// - `AdaptiveFeeConstantsUnchanged` - If the provided adaptive fee constants are unchanged from the existing constants.
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_adaptive_fee_constants(
+        ctx: Context<SetAdaptiveFeeConstants>,
+        filter_period: Option<u16>,
+        decay_period: Option<u16>,
+        reduction_factor: Option<u16>,
+        adaptive_fee_control_factor: Option<u32>,
+        max_volatility_accumulator: Option<u32>,
+        tick_group_size: Option<u16>,
+        major_swap_threshold_ticks: Option<u16>,
+    ) -> Result<()> {
+        instructions::adaptive_fee::set_adaptive_fee_constants::handler(
+            ctx,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+            major_swap_threshold_ticks,
+        )
+    }
+
     /// Sets the feature flag for a WhirlpoolConfig.
     ///
     /// ### Authority
@@ -950,6 +1000,7 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
+    #[allow(unused_variables)]
     pub fn decrease_liquidity_v2<'info>(
         ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
@@ -957,13 +1008,7 @@ pub mod whirlpool {
         token_min_b: u64,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        instructions::v2::decrease_liquidity::handler(
-            ctx,
-            liquidity_amount,
-            token_min_a,
-            token_min_b,
-            remaining_accounts_info,
-        )
+        unreachable!(); // Pinocchio
     }
 
     /// Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -981,6 +1026,7 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    #[allow(unused_variables)]
     pub fn increase_liquidity_v2<'info>(
         ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
@@ -988,13 +1034,35 @@ pub mod whirlpool {
         token_max_b: u64,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
-        instructions::v2::increase_liquidity::handler(
-            ctx,
-            liquidity_amount,
-            token_max_a,
-            token_max_b,
-            remaining_accounts_info,
-        )
+        unreachable!(); // Pinocchio
+    }
+
+    /// Add liquidity to a position by specifying token maxima, not liquidity.
+    /// This instruction works with both Token and Token-2022.
+    ///
+    /// NOTE: This instruction is only implemented in Pinocchio, not Anchor.
+    ///
+    /// ### Authority
+    /// - `position_authority` - authority that owns the token corresponding to this desired position.
+    ///
+    /// ### Parameters
+    /// - `token_max_a` - The maximum amount of tokenA the user is willing to deposit.
+    /// - `token_max_b` - The maximum amount of tokenB the user is willing to deposit.        
+    /// - `min_sqrt_price` - The minimum sqrt price allowed.
+    /// - `max_sqrt_price` - The maximum sqrt price allowed.
+    ///
+    ///
+    /// #### Special Errors
+    /// - `LiquidityZero` - Computed liquidity amount is zero.
+    /// - `LiquidityTooHigh` - Computed liquidity exceeds u128::max.
+    /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    #[allow(unused_variables)]
+    pub fn increase_liquidity_by_token_amounts_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
+        method: IncreaseLiquidityMethod,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        unreachable!(); // Pinocchio only
     }
 
     /// Initializes a Whirlpool account.
@@ -1153,6 +1221,46 @@ pub mod whirlpool {
             sqrt_price_limit_two,
             remaining_accounts_info,
         )
+    }
+
+    /// An atomic instruction that repositions liquidity for a position through the following steps:
+    /// - Withdraws liquidity from the current position range
+    /// - Resets the position to a new tick range
+    /// - Adds liquidity to the new position range
+    /// - Restores fees and rewards
+    ///
+    /// This instruction works with both Token and Token-2022.
+    ///
+    /// ### Authority
+    /// - `position_authority` - authority that owns the token corresponding to this desired position.
+    ///
+    /// ### Parameters
+    /// - `new_tick_lower_index` - The new tick index for the lower end of the position range.
+    /// - `new_tick_upper_index` - The new tick index for the upper end of the position range.
+    /// - `new_liquidity_amount` - The total amount of Liquidity the user is willing to deposit.
+    /// - `existing_range_token_min_a` - The minimum amount of tokenA the user is willing to withdraw from the existing range.
+    /// - `existing_range_token_min_b` - The minimum amount of tokenB the user is willing to withdraw from the existing range.
+    /// - `new_range_token_max_a` - The maximum amount of tokenA the user is willing to deposit into the new range.
+    /// - `new_range_token_max_b` - The maximum amount of tokenB the user is willing to deposit into the new range.
+    ///
+    /// #### Special Errors
+    /// - `LiquidityZero` - Provided liquidity amount is zero.
+    /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
+    /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
+    /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    /// - `SameTickRangeNotAllowed` - The provided tick range is the same as the current tick range.
+    #[allow(unused_variables)]
+    pub fn reposition_liquidity_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, RepositionLiquidityV2<'info>>,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+        method: RepositionLiquidityMethod,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        // pinocchio implementation should be used
+        unreachable!()
     }
 
     /// Initializes a WhirlpoolConfigExtension account that hosts info & authorities.

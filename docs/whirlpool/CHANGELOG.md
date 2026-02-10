@@ -1,5 +1,19 @@
 # @orca-so/whirlpools-docs
 
+## 0.2.9
+
+### Patch Changes
+
+- [#1211](https://github.com/orca-so/whirlpools/pull/1211) [`966d952`](https://github.com/orca-so/whirlpools/commit/966d952110016d6e3eb72590f47ac4d64a5af13d) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update tx-sender version in example, fix formatting issue
+
+## 0.2.8
+
+### Patch Changes
+
+- [#1201](https://github.com/orca-so/whirlpools/pull/1201) [`cdac31a`](https://github.com/orca-so/whirlpools/commit/cdac31ab3b2f0a53d303e7beda1144bb09e48e37) Thanks [@amanmunda-collab](https://github.com/amanmunda-collab)! - fixed the wrong imports for setRpc, setPayerFromBytes which are from @orca-so/whirlpools
+
+## 0.2.7
+
 ## 0.2.6
 
 ### Patch Changes

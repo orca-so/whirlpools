@@ -29,6 +29,7 @@ import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
+  PriceMath,
   WHIRLPOOL_NFT_UPDATE_AUTH,
   WhirlpoolIx,
   toTx,
@@ -39,12 +40,17 @@ import {
   ZERO_BN,
   initializeLiteSVMEnvironment,
   systemTransferTx,
+  SENTINEL_MIN,
+  SENTINEL_MAX,
+  snapTickDown,
+  snapTickUp,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
 import type { OpenPositionWithTokenExtensionsParams } from "../../../src/instructions";
 import { useMaxCU } from "../../utils/v2/init-utils-v2";
+import { pollForCondition } from "../../utils/litesvm";
 
 describe("open_position_with_token_extensions", () => {
   let provider: anchor.AnchorProvider;
@@ -56,6 +62,64 @@ describe("open_position_with_token_extensions", () => {
     provider = env.provider;
     ctx = env.ctx;
     fetcher = env.fetcher;
+  });
+
+  it("emit PositionOpened event (token-2022)", async () => {
+    const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
+    const { whirlpoolPda } = poolInitInfo;
+    const lower = 0;
+    const upper = 128;
+    const hasEvent =
+      Array.isArray(ctx.program.idl?.events) &&
+      ctx.program.idl.events.some((e) => e.name === "positionOpened");
+
+    const { params, mint } =
+      await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        whirlpoolPda.publicKey,
+        true,
+        lower,
+        upper,
+        provider.wallet.publicKey,
+      );
+
+    // event verification
+    let eventVerified = false;
+    let detectedSignature: string | null = null;
+    const listener = ctx.program.addEventListener(
+      "positionOpened",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.ok(event.position.equals(params.positionPda.publicKey));
+        assert.strictEqual(event.tickLowerIndex, lower);
+        assert.strictEqual(event.tickUpperIndex, upper);
+        eventVerified = true;
+      },
+    );
+
+    const signature = await toTx(
+      ctx,
+      WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+    )
+      .addSigner(mint)
+      .buildAndExecute();
+
+    if (!hasEvent) {
+      // IDL not updated yet; accept execution without event assertion.
+      ctx.program.removeEventListener(listener);
+      return;
+    }
+
+    await pollForCondition(
+      async () => ({ detectedSignature, eventVerified }),
+      (r) => r.detectedSignature === signature && r.eventVerified,
+      { maxRetries: 200, delayMs: 5 },
+    );
+    assert.equal(signature, detectedSignature);
+    assert.ok(eventVerified);
+    ctx.program.removeEventListener(listener);
   });
 
   const tickLowerIndex = 0;
@@ -82,7 +146,7 @@ describe("open_position_with_token_extensions", () => {
   ) {
     const WP_2022_METADATA_NAME_PREFIX = "OWP";
     const WP_2022_METADATA_SYMBOL = "OWP";
-    const WP_2022_METADATA_URI_BASE = "https://position-nft.orca.so/meta";
+    const WP_2022_METADATA_URI_BASE = "https://metadata.orca.so/positions";
 
     const mintAddress = positionMint.toBase58();
     const name =
@@ -92,12 +156,7 @@ describe("open_position_with_token_extensions", () => {
       "..." +
       mintAddress.slice(-4);
 
-    const uri =
-      WP_2022_METADATA_URI_BASE +
-      "/" +
-      poolAddress.toBase58() +
-      "/" +
-      positionAddress.toBase58();
+    const uri = WP_2022_METADATA_URI_BASE + "/" + positionAddress.toBase58();
 
     assert.ok(tokenMetadata.mint.equals(positionMint));
     assert.ok(tokenMetadata.name === name);
@@ -510,6 +569,201 @@ describe("open_position_with_token_extensions", () => {
       builder.buildAndExecute(),
       /0x5/, // the total supply of this token is fixed
     );
+  });
+
+  describe("one-sided (sentinel) open position with token-2022", () => {
+    it("snaps correctly when current price is exactly on an initializable tick (token-2022)", async () => {
+      // Initialize a fresh pool where sqrt price is exactly on tick 0
+      const onTickSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(0);
+      const { poolInitInfo: onTickPool } = await initTestPool(
+        ctx,
+        TickSpacing.Standard,
+        onTickSqrtPrice,
+      );
+
+      const whirlpool = await fetcher.getPool(
+        onTickPool.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      // When on-tick, ceil(current) === current and floor(current) === current
+      const expectedLower = snapTickUp(curr, spacing);
+      const expectedUpper = snapTickDown(curr, spacing);
+      assert.strictEqual(expectedLower, 0);
+      assert.strictEqual(expectedUpper, 0);
+
+      // Lower sentinel case: expect lower snapped to ceil(current)
+      {
+        const upper = expectedLower + spacing;
+        const { params, mint } =
+          await generateDefaultOpenPositionWithTokenExtensionsParams(
+            ctx,
+            onTickPool.whirlpoolPda.publicKey,
+            true,
+            SENTINEL_MIN,
+            upper,
+            ctx.wallet.publicKey,
+          );
+        await toTx(
+          ctx,
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+        )
+          .addSigner(mint)
+          .buildAndExecute();
+        const position = (await fetcher.getPosition(
+          params.positionPda.publicKey,
+        )) as PositionData;
+        assert.strictEqual(position.tickLowerIndex, expectedLower);
+        assert.strictEqual(position.tickUpperIndex, upper);
+      }
+
+      // Upper sentinel case: expect upper snapped to floor(current)
+      {
+        const lower = expectedUpper - spacing;
+        const { params, mint } =
+          await generateDefaultOpenPositionWithTokenExtensionsParams(
+            ctx,
+            onTickPool.whirlpoolPda.publicKey,
+            true,
+            lower,
+            SENTINEL_MAX,
+            ctx.wallet.publicKey,
+          );
+        await toTx(
+          ctx,
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+        )
+          .addSigner(mint)
+          .buildAndExecute();
+        const position = (await fetcher.getPosition(
+          params.positionPda.publicKey,
+        )) as PositionData;
+        assert.strictEqual(position.tickLowerIndex, lower);
+        assert.strictEqual(position.tickUpperIndex, expectedUpper);
+      }
+    });
+
+    it("snaps lower to ceil(current) when lower sentinel is used (token-2022)", async () => {
+      const whirlpool = await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedLower = snapTickUp(curr, spacing);
+      const upper = expectedLower + spacing;
+
+      const { params, mint } =
+        await generateDefaultOpenPositionWithTokenExtensionsParams(
+          ctx,
+          whirlpoolPda.publicKey,
+          true,
+          SENTINEL_MIN,
+          upper,
+          ctx.wallet.publicKey,
+        );
+      await toTx(
+        ctx,
+        WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      )
+        .addSigner(mint)
+        .buildAndExecute();
+
+      const position = (await fetcher.getPosition(
+        params.positionPda.publicKey,
+      )) as PositionData;
+      assert.strictEqual(position.tickLowerIndex, expectedLower);
+      assert.strictEqual(position.tickUpperIndex, upper);
+    });
+
+    it("snaps upper to floor(current) when upper sentinel is used (token-2022)", async () => {
+      const whirlpool = await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedUpper = snapTickDown(curr, spacing);
+      const lower = expectedUpper - spacing;
+
+      const { params, mint } =
+        await generateDefaultOpenPositionWithTokenExtensionsParams(
+          ctx,
+          whirlpoolPda.publicKey,
+          true,
+          lower,
+          SENTINEL_MAX,
+          ctx.wallet.publicKey,
+        );
+      await toTx(
+        ctx,
+        WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      )
+        .addSigner(mint)
+        .buildAndExecute();
+
+      const position = (await fetcher.getPosition(
+        params.positionPda.publicKey,
+      )) as PositionData;
+      assert.strictEqual(position.tickLowerIndex, lower);
+      assert.strictEqual(position.tickUpperIndex, expectedUpper);
+    });
+
+    it("fails if both sentinels are used (token-2022)", async () => {
+      const { params, mint } =
+        await generateDefaultOpenPositionWithTokenExtensionsParams(
+          ctx,
+          whirlpoolPda.publicKey,
+          true,
+          SENTINEL_MIN,
+          SENTINEL_MAX,
+          ctx.wallet.publicKey,
+        );
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+        )
+          .addSigner(mint)
+          .buildAndExecute(),
+        /0x177a/, // InvalidTickIndex
+      );
+    });
+
+    it("fails if snapped range collapses (lower >= upper) (token-2022)", async () => {
+      const whirlpool = await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      if (!whirlpool) throw new Error("whirlpool not found");
+      const spacing = whirlpool.tickSpacing;
+      const curr = whirlpool.tickCurrentIndex;
+      const expectedLower = snapTickUp(curr, spacing);
+      const upperEqualsLower = expectedLower;
+
+      const { params, mint } =
+        await generateDefaultOpenPositionWithTokenExtensionsParams(
+          ctx,
+          whirlpoolPda.publicKey,
+          true,
+          SENTINEL_MIN,
+          upperEqualsLower,
+          ctx.wallet.publicKey,
+        );
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+        )
+          .addSigner(mint)
+          .buildAndExecute(),
+        /0x177a/, // InvalidTickIndex
+      );
+    });
   });
 
   describe("should be failed: invalid ticks", () => {

@@ -59,10 +59,23 @@ pub struct TickArrayUpdate {
 
 pub fn get_tick_rent_amount() -> Result<u64> {
     let rent = Rent::get()?;
-    let amount = ((TICK_INITIALIZATION_SIZE as u64 * rent.lamports_per_byte_year) as f64
-        * rent.exemption_threshold)
-        .ceil() as u64;
-    Ok(amount)
+    match (
+        TICK_INITIALIZATION_SIZE,
+        rent.lamports_per_byte_year,
+        rent.exemption_threshold.to_bits(),
+    ) {
+        // floating point number operation is high cost, so we hardcode a precalculated value here
+        // see also: https://github.com/anza-xyz/solana-sdk/blob/5390fa973897e969c5adea858079c7de1fa67d07/rent/src/lib.rs#L55-L59
+        // - 3480u64 = 1_000_000_000 / 100 * 365 / (1024 * 1024)
+        // - 0x40_00_00_00_00_00_00_00u64 = 2.0f64 in u64 bits representation
+        (112, 3480u64, 0x40_00_00_00_00_00_00_00u64) => Ok(779520u64), // Solana
+        _ => {
+            let amount = ((TICK_INITIALIZATION_SIZE as u64 * rent.lamports_per_byte_year) as f64
+                * rent.exemption_threshold)
+                .ceil() as u64;
+            Ok(amount)
+        }
+    }
 }
 
 pub fn calculate_modify_tick_array(
@@ -203,14 +216,14 @@ fn transfer_rent_to_position<'info>(
 fn increase_tick_array_size(tick_array_account: &AccountInfo) -> Result<()> {
     let tick_array_account_info = tick_array_account.to_account_info();
     let required_size = tick_array_account_info.data_len() + TICK_INITIALIZATION_SIZE;
-    tick_array_account_info.realloc(required_size, true)?;
+    tick_array_account_info.resize(required_size)?;
     Ok(())
 }
 
 fn decrease_tick_array_size(tick_array_account: &AccountInfo) -> Result<()> {
     let tick_array_account_info = tick_array_account.to_account_info();
     let required_size = tick_array_account_info.data_len() - TICK_INITIALIZATION_SIZE;
-    tick_array_account_info.realloc(required_size, true)?;
+    tick_array_account_info.resize(required_size)?;
     Ok(())
 }
 

@@ -1,5 +1,25 @@
 # @orca-so/whirlpools-client
 
+## 6.2.0
+
+### Minor Changes
+
+- [#1227](https://github.com/orca-so/whirlpools/pull/1227) [`6017e1d`](https://github.com/orca-so/whirlpools/commit/6017e1df57c1f9f14ec6895d0008a429749c0552) Thanks [@josh-orca](https://github.com/josh-orca)! - add optimized reposition liquidity instruction
+
+- [#1229](https://github.com/orca-so/whirlpools/pull/1229) [`e5f089b`](https://github.com/orca-so/whirlpools/commit/e5f089bc5c49b01f5c8abb43c78457ab6c440568) Thanks [@josh-orca](https://github.com/josh-orca)! - add increase liquidity by token amounts instruction
+
+## 6.1.0
+
+### Minor Changes
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
+## 6.0.0
+
+### Major Changes
+
+- [#1163](https://github.com/orca-so/whirlpools/pull/1163) [`c2c96da`](https://github.com/orca-so/whirlpools/commit/c2c96dae47cf0102afc2ec41d9ba5cf0c99fa340) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update solana ts dependencies, migrate from tests from bankrun to litesvm
+
 ## 5.0.0
 
 ### Major Changes

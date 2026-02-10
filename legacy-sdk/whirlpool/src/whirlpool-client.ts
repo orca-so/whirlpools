@@ -268,6 +268,7 @@ export interface Whirlpool {
    * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @param positionMint - the mint address of the position token to be created. If null, a new mint address will be created.
    * @param tokenProgramId - the token program id to use for the position token. The default is TOKEN_PROGRAM_ID.
+   * @param resolveATA - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary. (RPC call required)
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPositionWithMetadata: (
@@ -278,6 +279,7 @@ export interface Whirlpool {
     funder?: Address,
     positionMint?: PublicKey,
     tokenProgramId?: PublicKey,
+    resolveATA?: boolean,
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**

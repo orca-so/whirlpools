@@ -1,5 +1,19 @@
 # @orca-so/whirlpools-rust
 
+## 6.1.0
+
+### Minor Changes
+
+- [#1216](https://github.com/orca-so/whirlpools/pull/1216) [`eaee66f`](https://github.com/orca-so/whirlpools/commit/eaee66f814943158ea00a72acb170c08fb69d7b7) Thanks [@jshiohaha](https://github.com/jshiohaha)! - expose new open_position_with_tick_bounds function to whirlpools high level rust sdk
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
+## 6.0.0
+
+### Major Changes
+
+- [#1162](https://github.com/orca-so/whirlpools/pull/1162) [`14c5655`](https://github.com/orca-so/whirlpools/commit/14c5655b664b1a7484b5a630ed65c7b13965ab5e) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update solana rust dependencies from v2 to v3. Fix some compilation warnings.
+
 ## 5.0.2
 
 ### Patch Changes

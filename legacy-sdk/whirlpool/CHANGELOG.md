@@ -1,5 +1,51 @@
 # @orca-so/whirlpools-sdk
 
+## 0.19.0
+
+### Minor Changes
+
+- [#1226](https://github.com/orca-so/whirlpools/pull/1226) [`822f213`](https://github.com/orca-so/whirlpools/commit/822f21312d2f0020e9b4f9cfcc6c68e9c200016f) Thanks [@josh-orca](https://github.com/josh-orca)! - Pinocchio Updates
+
+- [#1227](https://github.com/orca-so/whirlpools/pull/1227) [`6017e1d`](https://github.com/orca-so/whirlpools/commit/6017e1df57c1f9f14ec6895d0008a429749c0552) Thanks [@josh-orca](https://github.com/josh-orca)! - add optimized reposition liquidity instruction
+
+- [#1229](https://github.com/orca-so/whirlpools/pull/1229) [`e5f089b`](https://github.com/orca-so/whirlpools/commit/e5f089bc5c49b01f5c8abb43c78457ab6c440568) Thanks [@josh-orca](https://github.com/josh-orca)! - add increase liquidity by token amounts instruction
+
+## 0.18.0
+
+### Minor Changes
+
+- [#1189](https://github.com/orca-so/whirlpools/pull/1189) [`a9d760d`](https://github.com/orca-so/whirlpools/commit/a9d760d980f1552deb7a722ec88c8d31ff74efdf) Thanks [@josh-orca](https://github.com/josh-orca)! - Add open one-sided position logic to open position instructions
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
+### Patch Changes
+
+- [#1218](https://github.com/orca-so/whirlpools/pull/1218) [`9c8479a`](https://github.com/orca-so/whirlpools/commit/9c8479a9ae9e8861d5f2df023d20355ec72ac679) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update position NFT metadata handling to support dynamic position NFTs
+
+## 0.17.4
+
+### Patch Changes
+
+- [#1202](https://github.com/orca-so/whirlpools/pull/1202) [`9d7e56d`](https://github.com/orca-so/whirlpools/commit/9d7e56da10bb951bd7603bf14303664d3de2e252) Thanks [@parhim](https://github.com/parhim)! - Exposed an optional 'resolveATA' param for openPositionWithMetadata on whirlpoolClient
+
+## 0.17.3
+
+### Patch Changes
+
+- [#1200](https://github.com/orca-so/whirlpools/pull/1200) [`2c2c266`](https://github.com/orca-so/whirlpools/commit/2c2c266f616d29b32efa544b7ffb6fb6d008131d) Thanks [@calintje](https://github.com/calintje)! - Fix: export missing InitializeRewardV2WithPubkeyParams
+
+## 0.17.2
+
+### Patch Changes
+
+- [#1194](https://github.com/orca-so/whirlpools/pull/1194) [`0b2389e`](https://github.com/orca-so/whirlpools/commit/0b2389ea186c8e8c4da2f2fecb5faff0fc3bbee9) Thanks [@calintje](https://github.com/calintje)! - Add overloaded initializeRewardV2 params and builders so callers can either pass a vault keypair (SDK signs) or an existing vault PublicKey for external signing, without changing existing behavior.
+
+## 0.17.1
+
+### Patch Changes
+
+- [#1192](https://github.com/orca-so/whirlpools/pull/1192) [`8b2c0f9`](https://github.com/orca-so/whirlpools/commit/8b2c0f9c311998ed0f118f0de76dc9925457d2d7) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update CollectFeesQuoteParam and CollectRewardsQuoteParam to accept TickData or DynamicTickData"
+
 ## 0.17.0
 
 ### Minor Changes

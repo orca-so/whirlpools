@@ -43,6 +43,7 @@ export type {
   IncreaseLiquidityV2Params,
   InitPoolV2Params,
   InitializeRewardV2Params,
+  InitializeRewardV2WithPubkeyParams,
   SetRewardEmissionsV2Params,
   SwapV2Params,
   TwoHopSwapV2Params,

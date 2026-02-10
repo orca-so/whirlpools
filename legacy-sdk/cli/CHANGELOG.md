@@ -1,5 +1,18 @@
 # @orca-so/whirlpools-sdk-cli
 
+## 0.5.0
+
+### Minor Changes
+
+- [#1169](https://github.com/orca-so/whirlpools/pull/1169) [`f42f65e`](https://github.com/orca-so/whirlpools/commit/f42f65edbf5ed9b1f5293195502f6c7ecaeb4672) Thanks [@wjthieme](https://github.com/wjthieme)! - Add export mode to whirlpools cli
+
+### Patch Changes
+
+- [#1182](https://github.com/orca-so/whirlpools/pull/1182) [`84e602b`](https://github.com/orca-so/whirlpools/commit/84e602b34a3287b1d91c0edfc2d4df442b31642c) Thanks [@wjthieme](https://github.com/wjthieme)! - Add set_config_extension_authority and set_default_fee_rate commands
+
+- Updated dependencies [[`8b2c0f9`](https://github.com/orca-so/whirlpools/commit/8b2c0f9c311998ed0f118f0de76dc9925457d2d7)]:
+  - @orca-so/whirlpools-sdk@0.17.1
+
 ## 0.4.0
 
 ### Minor Changes

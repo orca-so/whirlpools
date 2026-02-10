@@ -1,5 +1,5 @@
 import type { Program } from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
+import type { PDA, Instruction } from "@orca-so/common-sdk";
 import type { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
@@ -728,6 +728,22 @@ export class WhirlpoolIx {
   }
 
   /**
+   * Sets specific adaptive fee constants for a pool.
+   * Only the provided constants will be updated, others remain unchanged.
+   *
+   * @category Instructions
+   * @param program - Program object containing the Whirlpool IDL
+   * @param params - SetAdaptiveFeeConstantsParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static setAdaptiveFeeConstantsIx(
+    program: Program<Whirlpool>,
+    params: ix.SetAdaptiveFeeConstantsParams,
+  ) {
+    return ix.setAdaptiveFeeConstantsIx(program, params);
+  }
+
+  /**
    * Reset a position's range. Requires liquidity to be zero.
    *
    * #### Special Errors
@@ -816,6 +832,13 @@ export class WhirlpoolIx {
     return ix.increaseLiquidityV2Ix(program, params);
   }
 
+  public static increaseLiquidityByTokenAmountsV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.IncreaseLiquidityByTokenAmountsV2Params,
+  ) {
+    return ix.increaseLiquidityByTokenAmountsV2Ix(program, params);
+  }
+
   public static initializePoolV2Ix(
     program: Program<Whirlpool>,
     params: ix.InitPoolV2Params,
@@ -825,8 +848,11 @@ export class WhirlpoolIx {
 
   public static initializeRewardV2Ix(
     program: Program<Whirlpool>,
-    params: ix.InitializeRewardV2Params,
-  ) {
+    params: ix.InitializeRewardV2Params | ix.InitializeRewardV2WithPubkeyParams,
+  ): Instruction {
+    if ("rewardVaultKeypair" in params) {
+      return ix.initializeRewardV2Ix(program, params);
+    }
     return ix.initializeRewardV2Ix(program, params);
   }
 
@@ -853,6 +879,13 @@ export class WhirlpoolIx {
     params: ix.TwoHopSwapV2Params,
   ) {
     return ix.twoHopSwapV2Ix(program, params);
+  }
+
+  public static repositionLiquidityV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.RepositionLiquidityV2Params,
+  ) {
+    return ix.repositionLiquidityV2Ix(program, params);
   }
 
   // V2 instructions (TokenBadge related)

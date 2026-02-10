@@ -1,5 +1,23 @@
 # @orca-so/whirlpools-program
 
+## 0.9.0
+
+### Minor Changes
+
+- [#1226](https://github.com/orca-so/whirlpools/pull/1226) [`822f213`](https://github.com/orca-so/whirlpools/commit/822f21312d2f0020e9b4f9cfcc6c68e9c200016f) Thanks [@josh-orca](https://github.com/josh-orca)! - Pinocchio Updates
+
+## 0.8.0
+
+### Minor Changes
+
+- [#1189](https://github.com/orca-so/whirlpools/pull/1189) [`a9d760d`](https://github.com/orca-so/whirlpools/commit/a9d760d980f1552deb7a722ec88c8d31ff74efdf) Thanks [@josh-orca](https://github.com/josh-orca)! - Add open one-sided position logic to open position instructions
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
+### Patch Changes
+
+- [#1218](https://github.com/orca-so/whirlpools/pull/1218) [`9c8479a`](https://github.com/orca-so/whirlpools/commit/9c8479a9ae9e8861d5f2df023d20355ec72ac679) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update position NFT metadata handling to support dynamic position NFTs
+
 ## 0.7.0
 
 ### Minor Changes

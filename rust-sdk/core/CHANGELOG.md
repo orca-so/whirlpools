@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-rust-core
 
+## 2.0.1
+
+### Patch Changes
+
+- [#1168](https://github.com/orca-so/whirlpools/pull/1168) [`ebf9e96`](https://github.com/orca-so/whirlpools/commit/ebf9e96f474b41bec46d388c812eaad4fbacca00) Thanks [@calintje](https://github.com/calintje)! - **Hardening**: Add tests to tick.rs
+
+- [#1162](https://github.com/orca-so/whirlpools/pull/1162) [`14c5655`](https://github.com/orca-so/whirlpools/commit/14c5655b664b1a7484b5a630ed65c7b13965ab5e) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update solana rust dependencies from v2 to v3. Fix some compilation warnings.
+
 ## 2.0.0
 
 ### Major Changes

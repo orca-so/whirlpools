@@ -1,5 +1,29 @@
 # @orca-so/whirlpools-rust-client
 
+## 7.2.0
+
+### Minor Changes
+
+- [#1226](https://github.com/orca-so/whirlpools/pull/1226) [`822f213`](https://github.com/orca-so/whirlpools/commit/822f21312d2f0020e9b4f9cfcc6c68e9c200016f) Thanks [@josh-orca](https://github.com/josh-orca)! - Pinocchio Updates
+
+- [#1227](https://github.com/orca-so/whirlpools/pull/1227) [`6017e1d`](https://github.com/orca-so/whirlpools/commit/6017e1df57c1f9f14ec6895d0008a429749c0552) Thanks [@josh-orca](https://github.com/josh-orca)! - add optimized reposition liquidity instruction
+
+- [#1229](https://github.com/orca-so/whirlpools/pull/1229) [`e5f089b`](https://github.com/orca-so/whirlpools/commit/e5f089bc5c49b01f5c8abb43c78457ab6c440568) Thanks [@josh-orca](https://github.com/josh-orca)! - add increase liquidity by token amounts instruction
+
+## 7.1.0
+
+### Minor Changes
+
+- [#1189](https://github.com/orca-so/whirlpools/pull/1189) [`a9d760d`](https://github.com/orca-so/whirlpools/commit/a9d760d980f1552deb7a722ec88c8d31ff74efdf) Thanks [@josh-orca](https://github.com/josh-orca)! - Add open one-sided position logic to open position instructions
+
+- [#1187](https://github.com/orca-so/whirlpools/pull/1187) [`f9f3a43`](https://github.com/orca-so/whirlpools/commit/f9f3a43ecf67c0d5984ba607e191e99a9d218fef) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `set_adaptive_fee_constants` instruction to set individual adaptive fee constants for a pool
+
+## 7.0.0
+
+### Major Changes
+
+- [#1162](https://github.com/orca-so/whirlpools/pull/1162) [`14c5655`](https://github.com/orca-so/whirlpools/commit/14c5655b664b1a7484b5a630ed65c7b13965ab5e) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Update solana rust dependencies from v2 to v3. Fix some compilation warnings.
+
 ## 6.0.0
 
 ### Major Changes

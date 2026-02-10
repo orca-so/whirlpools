@@ -28,6 +28,7 @@ import {
   type ParsedDeletePositionBundleInstruction,
   type ParsedDeleteTokenBadgeInstruction,
   type ParsedIdlIncludeInstruction,
+  type ParsedIncreaseLiquidityByTokenAmountsV2Instruction,
   type ParsedIncreaseLiquidityInstruction,
   type ParsedIncreaseLiquidityV2Instruction,
   type ParsedInitializeAdaptiveFeeTierInstruction,
@@ -50,7 +51,9 @@ import {
   type ParsedOpenPositionInstruction,
   type ParsedOpenPositionWithMetadataInstruction,
   type ParsedOpenPositionWithTokenExtensionsInstruction,
+  type ParsedRepositionLiquidityV2Instruction,
   type ParsedResetPositionRangeInstruction,
+  type ParsedSetAdaptiveFeeConstantsInstruction,
   type ParsedSetCollectProtocolFeesAuthorityInstruction,
   type ParsedSetConfigExtensionAuthorityInstruction,
   type ParsedSetConfigFeatureFlagInstruction,
@@ -254,6 +257,7 @@ export enum WhirlpoolInstruction {
   DeleteTokenBadge,
   IdlInclude,
   IncreaseLiquidity,
+  IncreaseLiquidityByTokenAmountsV2,
   IncreaseLiquidityV2,
   InitializeAdaptiveFeeTier,
   InitializeConfig,
@@ -275,7 +279,9 @@ export enum WhirlpoolInstruction {
   OpenPosition,
   OpenPositionWithMetadata,
   OpenPositionWithTokenExtensions,
+  RepositionLiquidityV2,
   ResetPositionRange,
+  SetAdaptiveFeeConstants,
   SetCollectProtocolFeesAuthority,
   SetConfigExtensionAuthority,
   SetConfigFeatureFlag,
@@ -472,6 +478,17 @@ export function identifyWhirlpoolInstruction(
     )
   ) {
     return WhirlpoolInstruction.IncreaseLiquidity;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([239, 251, 9, 124, 210, 198, 53, 43]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.IncreaseLiquidityByTokenAmountsV2;
   }
   if (
     containsBytes(
@@ -708,12 +725,34 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([191, 169, 224, 11, 131, 19, 158, 253]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.RepositionLiquidityV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([164, 123, 180, 141, 194, 100, 160, 175]),
       ),
       0,
     )
   ) {
     return WhirlpoolInstruction.ResetPositionRange;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([133, 158, 212, 189, 237, 12, 73, 39]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.SetAdaptiveFeeConstants;
   }
   if (
     containsBytes(
@@ -1055,6 +1094,9 @@ export type ParsedWhirlpoolInstruction<
       instructionType: WhirlpoolInstruction.IncreaseLiquidity;
     } & ParsedIncreaseLiquidityInstruction<TProgram>)
   | ({
+      instructionType: WhirlpoolInstruction.IncreaseLiquidityByTokenAmountsV2;
+    } & ParsedIncreaseLiquidityByTokenAmountsV2Instruction<TProgram>)
+  | ({
       instructionType: WhirlpoolInstruction.IncreaseLiquidityV2;
     } & ParsedIncreaseLiquidityV2Instruction<TProgram>)
   | ({
@@ -1118,8 +1160,14 @@ export type ParsedWhirlpoolInstruction<
       instructionType: WhirlpoolInstruction.OpenPositionWithTokenExtensions;
     } & ParsedOpenPositionWithTokenExtensionsInstruction<TProgram>)
   | ({
+      instructionType: WhirlpoolInstruction.RepositionLiquidityV2;
+    } & ParsedRepositionLiquidityV2Instruction<TProgram>)
+  | ({
       instructionType: WhirlpoolInstruction.ResetPositionRange;
     } & ParsedResetPositionRangeInstruction<TProgram>)
+  | ({
+      instructionType: WhirlpoolInstruction.SetAdaptiveFeeConstants;
+    } & ParsedSetAdaptiveFeeConstantsInstruction<TProgram>)
   | ({
       instructionType: WhirlpoolInstruction.SetCollectProtocolFeesAuthority;
     } & ParsedSetCollectProtocolFeesAuthorityInstruction<TProgram>)

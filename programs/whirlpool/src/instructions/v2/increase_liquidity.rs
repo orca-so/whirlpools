@@ -193,3 +193,13 @@ pub fn handler<'info>(
 
     Ok(())
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Eq, PartialEq)]
+pub enum IncreaseLiquidityMethod {
+    ByTokenAmounts {
+        token_max_a: u64,
+        token_max_b: u64,
+        min_sqrt_price: u128,
+        max_sqrt_price: u128,
+    },
+}

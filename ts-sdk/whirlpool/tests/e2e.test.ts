@@ -22,9 +22,16 @@ import {
   fetchWhirlpool,
   getPositionAddress,
 } from "@orca-so/whirlpools-client";
+import {
+  getFullRangeTickIndexes,
+  increaseLiquidityQuote,
+  increaseLiquidityQuoteA,
+  increaseLiquidityQuoteB,
+} from "@orca-so/whirlpools-core";
 import assert from "assert";
 import { setupAta, setupMint } from "./utils/token";
 import { assertAmountClose, assertLiquidityClose } from "./utils/assert";
+import { getConstrainingQuote } from "./utils/quote";
 
 describe("e2e", () => {
   let mintA: Address;
@@ -72,14 +79,33 @@ describe("e2e", () => {
     return poolAddress;
   };
 
+  const param = {
+    tokenMaxA: 100_000_000n,
+    tokenMaxB: 100_000_000n,
+  };
+  const slippageToleranceBps = 100;
+
   const testOpenPosition = async (poolAddress: Address) => {
     const tokenABefore = await fetchToken(rpc, ataA);
     const tokenBBefore = await fetchToken(rpc, ataB);
 
-    const { instructions, positionMint, quote } =
-      await openFullRangePositionInstructions(rpc, poolAddress, {
-        liquidity: 1000000000n,
-      });
+    const whirlpool = await fetchWhirlpool(rpc, poolAddress);
+    const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
+    const quote = getConstrainingQuote(
+      param,
+      slippageToleranceBps,
+      whirlpool.data.sqrtPrice,
+      tickRange.tickLowerIndex,
+      tickRange.tickUpperIndex,
+    );
+
+    const { instructions, positionMint } =
+      await openFullRangePositionInstructions(
+        rpc,
+        poolAddress,
+        param,
+        slippageToleranceBps,
+      );
     await sendTransaction(instructions);
 
     const positionAfter = await fetchPositionByMint(positionMint);
@@ -92,17 +118,22 @@ describe("e2e", () => {
       minAbsoluteTolerance,
     );
     assertAmountClose(
-      -quote.tokenEstA,
-      tokenAAfter.data.amount - tokenABefore.data.amount,
+      quote.tokenEstA,
+      tokenABefore.data.amount - tokenAAfter.data.amount,
       minAbsoluteTolerance,
     );
     assertAmountClose(
-      -quote.tokenEstB,
-      tokenBAfter.data.amount - tokenBBefore.data.amount,
+      quote.tokenEstB,
+      tokenBBefore.data.amount - tokenBAfter.data.amount,
       minAbsoluteTolerance,
     );
 
     return positionMint;
+  };
+
+  const paramIncrease = {
+    tokenMaxA: 10_000n,
+    tokenMaxB: 10_000n,
   };
 
   const testIncreaseLiquidity = async (positionMint: Address) => {
@@ -110,10 +141,40 @@ describe("e2e", () => {
     const tokenABefore = await fetchToken(rpc, ataA);
     const tokenBBefore = await fetchToken(rpc, ataB);
 
-    const { instructions, quote } = await increaseLiquidityInstructions(
+    const position = await fetchPositionByMint(positionMint);
+    const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
+    const quoteArgs = [
+      slippageToleranceBps,
+      whirlpool.data.sqrtPrice,
+      position.data.tickLowerIndex,
+      position.data.tickUpperIndex,
+    ] as const;
+
+    const quoteA = increaseLiquidityQuoteA(
+      paramIncrease.tokenMaxA,
+      ...quoteArgs,
+    );
+    const quoteB = increaseLiquidityQuoteB(
+      paramIncrease.tokenMaxB,
+      ...quoteArgs,
+    );
+    const liquidityA = quoteA.liquidityDelta;
+    const liquidityB = quoteB.liquidityDelta;
+    const liquidity =
+      liquidityA === 0n
+        ? liquidityB
+        : liquidityB === 0n
+          ? liquidityA
+          : liquidityA < liquidityB
+            ? liquidityA
+            : liquidityB;
+    const quote = increaseLiquidityQuote(liquidity, ...quoteArgs);
+
+    const { instructions } = await increaseLiquidityInstructions(
       rpc,
       positionMint,
-      { liquidity: 10000n },
+      paramIncrease,
+      slippageToleranceBps,
     );
     await sendTransaction(instructions);
 
@@ -127,13 +188,13 @@ describe("e2e", () => {
       minAbsoluteTolerance,
     );
     assertAmountClose(
-      -quote.tokenEstA,
-      tokenAAfter.data.amount - tokenABefore.data.amount,
+      quote.tokenEstA,
+      tokenABefore.data.amount - tokenAAfter.data.amount,
       minAbsoluteTolerance,
     );
     assertAmountClose(
-      -quote.tokenEstB,
-      tokenBAfter.data.amount - tokenBBefore.data.amount,
+      quote.tokenEstB,
+      tokenBBefore.data.amount - tokenBAfter.data.amount,
       minAbsoluteTolerance,
     );
   };

@@ -76,18 +76,19 @@ describe("Open Position Instructions", () => {
     }
   });
 
+  const increaseLiquidityParam = { tokenMaxA: 10_000n, tokenMaxB: 10_000n };
+
   const testOpenPositionInstructions = async (
     poolName: string,
     lowerPrice: number,
     upperPrice: number,
   ) => {
     const whirlpool = pools.get(poolName)!;
-    const param = { liquidity: 10_000n };
 
     const { instructions, positionMint } = await openPositionInstructions(
       rpc,
       whirlpool,
-      param,
+      increaseLiquidityParam,
       lowerPrice,
       upperPrice,
     );
@@ -126,10 +127,13 @@ describe("Open Position Instructions", () => {
 
   const testOpenFullRangePositionInstructions = async (poolName: string) => {
     const whirlpool = pools.get(poolName)!;
-    const param = { liquidity: 10_000n };
 
     const { instructions, positionMint } =
-      await openFullRangePositionInstructions(rpc, whirlpool, param);
+      await openFullRangePositionInstructions(
+        rpc,
+        whirlpool,
+        increaseLiquidityParam,
+      );
 
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
@@ -173,12 +177,10 @@ describe("Open Position Instructions", () => {
   }
 
   it("Should compute correct initialization costs if both tick arrays are already initialized", async () => {
-    const param = { liquidity: 10_000n };
-
     const { initializationCost } = await openPositionInstructions(
       rpc,
       pools.get("A-B")!,
-      param,
+      increaseLiquidityParam,
       0.95,
       1.05,
     );
@@ -187,12 +189,10 @@ describe("Open Position Instructions", () => {
   });
 
   it("Should compute correct initialization costs if 1 tick array is already initialized", async () => {
-    const param = { liquidity: 10_000n };
-
     const { initializationCost } = await openPositionInstructions(
       rpc,
       pools.get("A-B")!,
-      param,
+      increaseLiquidityParam,
       0.05,
       1.05,
     );
@@ -205,12 +205,10 @@ describe("Open Position Instructions", () => {
   });
 
   it("Should compute correct initialization costs if no tick arrays are already initialized", async () => {
-    const param = { liquidity: 10_000n };
-
     const { initializationCost } = await openPositionInstructions(
       rpc,
       pools.get("A-B")!,
-      param,
+      increaseLiquidityParam,
       0.01,
       5,
     );
@@ -223,7 +221,6 @@ describe("Open Position Instructions", () => {
   });
 
   it("Open position with tick bounds should result in correct tick bounds", async () => {
-    const param = { liquidity: 10_000n };
     const whirlpool = pools.get("A-B")!;
 
     const expectedTickLowerIndex = -64;
@@ -232,7 +229,7 @@ describe("Open Position Instructions", () => {
       await openPositionInstructionsWithTickBounds(
         rpc,
         whirlpool,
-        param,
+        increaseLiquidityParam,
         expectedTickLowerIndex,
         expectedTickUpperIndex,
         100,
@@ -270,13 +267,12 @@ describe("Open Position Instructions", () => {
   });
 
   it("Should support explicit token extensions metadata flag", async () => {
-    const param = { liquidity: 10_000n };
     const whirlpool = pools.get("A-B")!;
 
     const { instructions } = await openPositionInstructions(
       rpc,
       whirlpool,
-      param,
+      increaseLiquidityParam,
       0.95,
       1.05,
       100,
@@ -303,7 +299,6 @@ describe("Open Position Instructions", () => {
   });
 
   it("Should throw an error if openPositionInstructions is called on a splash pool", async () => {
-    const param = { liquidity: 10_000n };
     const splashPool = await setupWhirlpool(
       mints.get("A")!,
       mints.get("B")!,
@@ -311,7 +306,13 @@ describe("Open Position Instructions", () => {
     );
 
     await assert.rejects(
-      openPositionInstructions(rpc, splashPool, param, 0.01, 5),
+      openPositionInstructions(
+        rpc,
+        splashPool,
+        increaseLiquidityParam,
+        0.01,
+        5,
+      ),
     );
   });
 });

@@ -11,10 +11,7 @@ import {
   getDynamicTickArrayMinSize,
   increaseLiquidityMethod,
 } from "@orca-so/whirlpools-client";
-import type {
-  IncreaseLiquidityQuote,
-  TransferFee,
-} from "@orca-so/whirlpools-core";
+import type { IncreaseLiquidityQuote } from "@orca-so/whirlpools-core";
 import {
   _MAX_TICK_INDEX,
   _MIN_TICK_INDEX,
@@ -67,6 +64,14 @@ import { wrapFunctionWithExecution } from "./actionHelpers";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
+
+/** RPC client for increase-liquidity operations. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi, GetEpochInfoApi */
+type IncreaseLiquidityRpc = Rpc<
+  GetAccountInfoApi &
+    GetMultipleAccountsApi &
+    GetMinimumBalanceForRentExemptionApi &
+    GetEpochInfoApi
+>;
 
 /**
  * Represents the parameters for increasing liquidity.
@@ -141,9 +146,12 @@ function getIncreaseLiquidityQuote(
   tickLowerIndex: number,
   tickUpperIndex: number,
   slippageToleranceBps: number,
-  transferFeeA: TransferFee | undefined,
-  transferFeeB: TransferFee | undefined,
+  mintA: Account<Mint>,
+  mintB: Account<Mint>,
+  epoch: bigint,
 ): IncreaseLiquidityQuote {
+  const transferFeeA = getCurrentTransferFee(mintA, epoch);
+  const transferFeeB = getCurrentTransferFee(mintB, epoch);
   if ("liquidity" in param) {
     return increaseLiquidityQuote(
       param.liquidity,
@@ -178,9 +186,85 @@ function getIncreaseLiquidityQuote(
 }
 
 /**
+ * Builds token account setup, increase liquidity, and cleanup instructions from a quote and position params.
+ */
+async function getIncreaseLiquidityInstructions(
+  rpc: IncreaseLiquidityRpc,
+  {
+    whirlpool: {
+      address: whirlpoolAddress,
+      data: { sqrtPrice, tokenMintA, tokenMintB, ...tokenVaults },
+    },
+    mintA,
+    mintB,
+    slippageToleranceBps,
+    authority,
+    quote,
+    ...rest
+  }: {
+    whirlpool: Account<Whirlpool>;
+    position: Address;
+    positionTokenAccount: Address;
+    tickArrayLower: Address;
+    tickArrayUpper: Address;
+    tickLowerIndex: number;
+    tickUpperIndex: number;
+    mintA: Account<Mint>;
+    mintB: Account<Mint>;
+    param: IncreaseLiquidityQuoteParam;
+    slippageToleranceBps: number;
+    authority: TransactionSigner<string>;
+    quote: IncreaseLiquidityQuote;
+  },
+): Promise<{
+  createTokenAccountInstructions: Instruction[];
+  increaseLiquidityInstruction: Instruction;
+  cleanupInstructions: Instruction[];
+}> {
+  const { minSqrtPrice, maxSqrtPrice } = getSqrtPriceSlippageBounds(
+    sqrtPrice,
+    slippageToleranceBps,
+  );
+  const {
+    createInstructions: createTokenAccountInstructions,
+    cleanupInstructions,
+    tokenAccountAddresses,
+  } = await prepareTokenAccountsInstructions(rpc, authority, {
+    [tokenMintA]: quote.tokenMaxA,
+    [tokenMintB]: quote.tokenMaxB,
+  });
+  const increaseLiquidityInstruction =
+    getIncreaseLiquidityByTokenAmountsV2Instruction({
+      whirlpool: whirlpoolAddress,
+      positionAuthority: authority,
+      tokenOwnerAccountA: tokenAccountAddresses[tokenMintA],
+      tokenOwnerAccountB: tokenAccountAddresses[tokenMintB],
+      tokenMintA,
+      tokenMintB,
+      tokenProgramA: mintA.programAddress,
+      tokenProgramB: mintB.programAddress,
+      method: increaseLiquidityMethod("ByTokenAmounts", {
+        tokenMaxA: quote.tokenMaxA,
+        tokenMaxB: quote.tokenMaxB,
+        minSqrtPrice,
+        maxSqrtPrice,
+      }),
+      memoProgram: MEMO_PROGRAM_ADDRESS,
+      remainingAccountsInfo: null,
+      ...tokenVaults,
+      ...rest,
+    });
+  return {
+    createTokenAccountInstructions,
+    increaseLiquidityInstruction,
+    cleanupInstructions,
+  };
+}
+
+/**
  * Generates instructions to increase liquidity for an existing position.
  *
- * @param {SolanaRpc} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi, GetEpochInfoApi
  * @param {Address} positionMintAddress - The mint address of the NFT that represents the position.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
@@ -208,12 +292,7 @@ function getIncreaseLiquidityQuote(
  * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function increaseLiquidityInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
+  rpc: IncreaseLiquidityRpc,
   positionMintAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
@@ -228,29 +307,11 @@ export async function increaseLiquidityInstructions(
   const position = await fetchPosition(rpc, positionAddress[0]);
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
 
-  const currentEpoch = await rpc.getEpochInfo().send();
   const [mintA, mintB, positionMint] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
     whirlpool.data.tokenMintB,
     positionMintAddress,
   ]);
-  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
-
-  const quote = getIncreaseLiquidityQuote(
-    param,
-    whirlpool.data,
-    position.data.tickLowerIndex,
-    position.data.tickUpperIndex,
-    slippageToleranceBps,
-    transferFeeA,
-    transferFeeB,
-  );
-  const { minSqrtPrice, maxSqrtPrice } = getSqrtPriceSlippageBounds(
-    whirlpool.data.sqrtPrice,
-    slippageToleranceBps,
-  );
-  const instructions: Instruction[] = [];
 
   const lowerTickArrayStartIndex = getTickArrayStartTickIndex(
     position.data.tickLowerIndex,
@@ -276,44 +337,44 @@ export async function increaseLiquidityInstructions(
       ),
     ]);
 
-  const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
-    await prepareTokenAccountsInstructions(rpc, authority, {
-      [whirlpool.data.tokenMintA]: quote.tokenMaxA,
-      [whirlpool.data.tokenMintB]: quote.tokenMaxB,
-    });
+  const currentEpoch = await rpc.getEpochInfo().send();
 
-  instructions.push(...createInstructions);
-
-  // Since position exists tick arrays must also already exist
-
-  instructions.push(
-    getIncreaseLiquidityByTokenAmountsV2Instruction({
-      whirlpool: whirlpool.address,
-      positionAuthority: authority,
-      position: position.address,
-      positionTokenAccount,
-      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-      tokenVaultA: whirlpool.data.tokenVaultA,
-      tokenVaultB: whirlpool.data.tokenVaultB,
-      tokenMintA: whirlpool.data.tokenMintA,
-      tokenMintB: whirlpool.data.tokenMintB,
-      tokenProgramA: mintA.programAddress,
-      tokenProgramB: mintB.programAddress,
-      tickArrayLower,
-      tickArrayUpper,
-      method: increaseLiquidityMethod("ByTokenAmounts", {
-        tokenMaxA: quote.tokenEstA,
-        tokenMaxB: quote.tokenEstB,
-        minSqrtPrice,
-        maxSqrtPrice,
-      }),
-      memoProgram: MEMO_PROGRAM_ADDRESS,
-      remainingAccountsInfo: null,
-    }),
+  const quote = getIncreaseLiquidityQuote(
+    param,
+    whirlpool.data,
+    position.data.tickLowerIndex,
+    position.data.tickUpperIndex,
+    slippageToleranceBps,
+    mintA,
+    mintB,
+    currentEpoch.epoch,
   );
 
-  instructions.push(...cleanupInstructions);
+  const {
+    createTokenAccountInstructions,
+    increaseLiquidityInstruction,
+    cleanupInstructions,
+  } = await getIncreaseLiquidityInstructions(rpc, {
+    whirlpool,
+    position: position.address,
+    positionTokenAccount,
+    tickArrayLower,
+    tickArrayUpper,
+    tickLowerIndex: position.data.tickLowerIndex,
+    tickUpperIndex: position.data.tickUpperIndex,
+    mintA,
+    mintB,
+    param,
+    slippageToleranceBps,
+    authority,
+    quote,
+  });
+
+  const instructions: Instruction[] = [
+    ...createTokenAccountInstructions,
+    increaseLiquidityInstruction,
+    ...cleanupInstructions,
+  ];
 
   return {
     quote,
@@ -334,12 +395,7 @@ export type OpenPositionInstructions = IncreaseLiquidityInstructions & {
 };
 
 async function internalOpenPositionInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
+  rpc: IncreaseLiquidityRpc,
   whirlpool: Account<Whirlpool>,
   param: IncreaseLiquidityQuoteParam,
   lowerTickIndex: number,
@@ -370,24 +426,6 @@ async function internalOpenPositionInstructions(
     tickRange.tickUpperIndex,
     whirlpool.data.tickSpacing,
     true,
-  );
-
-  const currentEpoch = await rpc.getEpochInfo().send();
-  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
-
-  const quote = getIncreaseLiquidityQuote(
-    param,
-    whirlpool.data,
-    initializableLowerTickIndex,
-    initializableUpperTickIndex,
-    slippageToleranceBps,
-    transferFeeA,
-    transferFeeB,
-  );
-  const { minSqrtPrice, maxSqrtPrice } = getSqrtPriceSlippageBounds(
-    whirlpool.data.sqrtPrice,
-    slippageToleranceBps,
   );
 
   const positionMint = await generateKeyPairSigner();
@@ -421,13 +459,39 @@ async function internalOpenPositionInstructions(
     ),
   ]);
 
-  const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
-    await prepareTokenAccountsInstructions(rpc, funder, {
-      [whirlpool.data.tokenMintA]: quote.tokenMaxA,
-      [whirlpool.data.tokenMintB]: quote.tokenMaxB,
-    });
+  const currentEpoch = await rpc.getEpochInfo().send();
 
-  instructions.push(...createInstructions);
+  const quote = getIncreaseLiquidityQuote(
+    param,
+    whirlpool.data,
+    initializableLowerTickIndex,
+    initializableUpperTickIndex,
+    slippageToleranceBps,
+    mintA,
+    mintB,
+    currentEpoch.epoch,
+  );
+  const {
+    createTokenAccountInstructions,
+    increaseLiquidityInstruction,
+    cleanupInstructions,
+  } = await getIncreaseLiquidityInstructions(rpc, {
+    whirlpool,
+    position: positionAddress[0],
+    positionTokenAccount,
+    tickArrayLower: lowerTickArrayAddress,
+    tickArrayUpper: upperTickArrayAddress,
+    tickLowerIndex: initializableLowerTickIndex,
+    tickUpperIndex: initializableUpperTickIndex,
+    mintA,
+    mintB,
+    param,
+    slippageToleranceBps,
+    authority: funder,
+    quote,
+  });
+
+  instructions.push(...createTokenAccountInstructions);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
     lowerTickArrayAddress,
@@ -485,33 +549,7 @@ async function internalOpenPositionInstructions(
     }),
   );
 
-  instructions.push(
-    getIncreaseLiquidityByTokenAmountsV2Instruction({
-      whirlpool: whirlpool.address,
-      positionAuthority: funder,
-      position: positionAddress[0],
-      positionTokenAccount,
-      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-      tokenVaultA: whirlpool.data.tokenVaultA,
-      tokenVaultB: whirlpool.data.tokenVaultB,
-      tokenMintA: whirlpool.data.tokenMintA,
-      tokenMintB: whirlpool.data.tokenMintB,
-      tokenProgramA: mintA.programAddress,
-      tokenProgramB: mintB.programAddress,
-      tickArrayLower: lowerTickArrayAddress,
-      tickArrayUpper: upperTickArrayAddress,
-      method: increaseLiquidityMethod("ByTokenAmounts", {
-        tokenMaxA: quote.tokenEstA,
-        tokenMaxB: quote.tokenEstB,
-        minSqrtPrice,
-        maxSqrtPrice,
-      }),
-      memoProgram: MEMO_PROGRAM_ADDRESS,
-      remainingAccountsInfo: null,
-    }),
-  );
-
+  instructions.push(increaseLiquidityInstruction);
   instructions.push(...cleanupInstructions);
 
   return {
@@ -525,7 +563,7 @@ async function internalOpenPositionInstructions(
 /**
  * Opens a full-range position for a pool, typically used for Splash Pools or other full-range liquidity provisioning.
  *
- * @param {SolanaRpc} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi, GetEpochInfoApi
  * @param {Address} poolAddress - The address of the liquidity pool.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
@@ -554,12 +592,7 @@ async function internalOpenPositionInstructions(
  * );
  */
 export async function openFullRangePositionInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
+  rpc: IncreaseLiquidityRpc,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
@@ -594,7 +627,7 @@ export async function openFullRangePositionInstructions(
  *
  * **Note:** This function cannot be used with Splash Pools.
  *
- * @param {SolanaRpc} rpc - A Solana RPC client used to interact with the blockchain.
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi, GetEpochInfoApi
  * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
  * @param {number} lowerPrice - The lower bound of the price range for the position.
@@ -631,12 +664,7 @@ export async function openFullRangePositionInstructions(
  * );
  */
 export async function openPositionInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
+  rpc: IncreaseLiquidityRpc,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   lowerPrice: number,
@@ -677,7 +705,7 @@ export async function openPositionInstructions(
  *
  * **Note:** This function cannot be used with Splash Pools.
  *
- * @param {SolanaRpc} rpc - A Solana RPC client used to interact with the blockchain.
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi, GetEpochInfoApi
  * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
  * @param {number} lowerTickIndex - The lower bound of the tick range for the position.
@@ -714,12 +742,7 @@ export async function openPositionInstructions(
  * );
  */
 export async function openPositionInstructionsWithTickBounds(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi &
-      GetEpochInfoApi
-  >,
+  rpc: IncreaseLiquidityRpc,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   lowerTickIndex: number,

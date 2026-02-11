@@ -572,7 +572,10 @@ mod tests {
             let liq_ix = increase_liquidity_instructions(
                 &ctx.rpc,
                 position_mint,
-                IncreaseLiquidityParam::Liquidity(1_000_000),
+                IncreaseLiquidityParam {
+                    token_max_a: 1_000_000,
+                    token_max_b: 1_000_000,
+                },
                 Some(100), // 1% slippage
                 Some(ctx.signer.pubkey()),
             )

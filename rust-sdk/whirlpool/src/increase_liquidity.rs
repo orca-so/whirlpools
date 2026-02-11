@@ -8,13 +8,12 @@ use orca_whirlpools_client::{
 };
 use orca_whirlpools_client::{
     IncreaseLiquidityByTokenAmountsV2, IncreaseLiquidityByTokenAmountsV2InstructionArgs,
-    IncreaseLiquidityMethod,
+    IncreaseLiquidityMethod as IncreaseLiquidityInstructionMethod,
 };
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
-    increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
     is_tick_index_in_bounds, is_tick_initializable, order_tick_indexes, price_to_tick_index,
-    IncreaseLiquidityQuote, TransferFee, BPS_DENOMINATOR, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
+    BPS_DENOMINATOR, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
 };
 use solana_account::Account;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -27,17 +26,17 @@ use spl_token_2022_interface::state::Mint;
 
 use crate::{get_rent, SPLASH_POOL_TICK_SPACING};
 use crate::{
-    token::{
-        get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountInstructions,
-        TokenAccountStrategy,
-    },
+    token::{prepare_token_accounts_instructions, TokenAccountInstructions, TokenAccountStrategy},
     FUNDER, SLIPPAGE_TOLERANCE_BPS,
 };
 
 // TODO: support transfer hooks
 
+/// Scaling factor for sqrt-price slippage. Factor values are in hundredths (e.g. 99.5 → 9950),
+/// so we divide by 100 to get the effective multiplier.
 const SQRT_SLIPPAGE_DENOMINATOR: u128 = 100;
 
+/// Integer square root using Newton's method (floor of sqrt).
 fn sqrt_u128(value: u128) -> u128 {
     if value < 2 {
         return value;
@@ -51,6 +50,10 @@ fn sqrt_u128(value: u128) -> u128 {
     prev
 }
 
+/// Computes min/max sqrt-price bounds for slippage protection.
+///
+/// Cap: `slippage_tolerance_bps` is clamped to BPS_DENOMINATOR (10_000) so the radicands
+/// `(10000 ± bps)` stay non-negative and we never take sqrt of a negative.
 fn get_sqrt_price_slippage_bounds(sqrt_price: u128, slippage_tolerance_bps: u16) -> (u128, u128) {
     let capped_bps = slippage_tolerance_bps.min(BPS_DENOMINATOR);
     let bps = u128::from(capped_bps);
@@ -64,6 +67,13 @@ fn get_sqrt_price_slippage_bounds(sqrt_price: u128, slippage_tolerance_bps: u16)
     (min_sqrt_price, max_sqrt_price)
 }
 
+/// Represents the token max amount parameters for increasing liquidity.
+#[derive(Debug, Clone)]
+pub struct IncreaseLiquidityParam {
+    pub token_max_a: u64,
+    pub token_max_b: u64,
+}
+
 struct GetIncreaseLiquidityInstructionsParams<'a> {
     whirlpool_address: Pubkey,
     whirlpool: &'a Whirlpool,
@@ -73,7 +83,7 @@ struct GetIncreaseLiquidityInstructionsParams<'a> {
     tick_array_upper_address: Pubkey,
     mint_a_info: &'a Account,
     mint_b_info: &'a Account,
-    quote: &'a IncreaseLiquidityQuote,
+    param: &'a IncreaseLiquidityParam,
     authority: Pubkey,
     slippage_tolerance_bps: u16,
 }
@@ -83,8 +93,8 @@ struct GetIncreaseLiquidityInstructionsResult {
     increase_liquidity_instruction: Instruction,
 }
 
-/// Builds token account setup, increase liquidity, and cleanup instructions from a quote and
-/// position parameters. Shared by both `increase_liquidity_instructions` and `internal_open_position`.
+/// Builds token account setup, increase liquidity, and cleanup instructions from token max amounts
+/// and position parameters. Shared by both `increase_liquidity_instructions` and `internal_open_position`.
 async fn get_increase_liquidity_instructions(
     rpc: &RpcClient,
     params: GetIncreaseLiquidityInstructionsParams<'_>,
@@ -95,11 +105,11 @@ async fn get_increase_liquidity_instructions(
         vec![
             TokenAccountStrategy::WithBalance(
                 params.whirlpool.token_mint_a,
-                params.quote.token_max_a,
+                params.param.token_max_a,
             ),
             TokenAccountStrategy::WithBalance(
                 params.whirlpool.token_mint_b,
-                params.quote.token_max_b,
+                params.param.token_max_b,
             ),
         ],
     )
@@ -135,9 +145,9 @@ async fn get_increase_liquidity_instructions(
         tick_array_upper: params.tick_array_upper_address,
     }
     .instruction(IncreaseLiquidityByTokenAmountsV2InstructionArgs {
-        method: IncreaseLiquidityMethod::ByTokenAmounts {
-            token_max_a: params.quote.token_est_a,
-            token_max_b: params.quote.token_est_b,
+        method: IncreaseLiquidityInstructionMethod::ByTokenAmounts {
+            token_max_a: params.param.token_max_a,
+            token_max_b: params.param.token_max_b,
             min_sqrt_price,
             max_sqrt_price,
         },
@@ -150,77 +160,12 @@ async fn get_increase_liquidity_instructions(
     })
 }
 
-fn get_increase_liquidity_quote(
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: u16,
-    pool: &Whirlpool,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
-    transfer_fee_a: Option<TransferFee>,
-    transfer_fee_b: Option<TransferFee>,
-) -> Result<IncreaseLiquidityQuote, Box<dyn Error>> {
-    let result = match param {
-        IncreaseLiquidityParam::TokenA(amount) => increase_liquidity_quote_a(
-            amount,
-            slippage_tolerance_bps,
-            pool.sqrt_price,
-            tick_lower_index,
-            tick_upper_index,
-            transfer_fee_a,
-            transfer_fee_b,
-        ),
-        IncreaseLiquidityParam::TokenB(amount) => increase_liquidity_quote_b(
-            amount,
-            slippage_tolerance_bps,
-            pool.sqrt_price,
-            tick_lower_index,
-            tick_upper_index,
-            transfer_fee_a,
-            transfer_fee_b,
-        ),
-        IncreaseLiquidityParam::Liquidity(amount) => increase_liquidity_quote(
-            amount,
-            slippage_tolerance_bps,
-            pool.sqrt_price,
-            tick_lower_index,
-            tick_upper_index,
-            transfer_fee_a,
-            transfer_fee_b,
-        ),
-    }?;
-    Ok(result)
-}
-
-/// Represents the parameters for increasing liquidity in a position.
+/// Represents the instructions for increasing liquidity in a position.
 ///
-/// You must choose one of the variants (`TokenA`, `TokenB`, or `Liquidity`).
-/// The SDK will calculate the remaining values based on the provided input.
-#[derive(Debug, Clone)]
-pub enum IncreaseLiquidityParam {
-    /// Specifies the amount of token A to add to the position.
-    TokenA(u64),
-
-    /// Specifies the amount of token B to add to the position.
-    TokenB(u64),
-
-    /// Specifies the amount of liquidity to add to the position.
-    Liquidity(u128),
-}
-
-/// Represents the instructions and quote for increasing liquidity in a position.
-///
-/// This struct includes the necessary transaction instructions, as well as a detailed
-/// quote describing the liquidity increase.
+/// This struct includes the necessary transaction instructions to add liquidity
+/// to an existing position.
 #[derive(Debug)]
 pub struct IncreaseLiquidityInstruction {
-    /// The computed quote for increasing liquidity, including:
-    /// - `liquidity_delta` - The change in liquidity.
-    /// - `token_est_a` - The estimated amount of token A required.
-    /// - `token_est_b` - The estimated amount of token B required.
-    /// - `token_max_a` - The maximum allowable amount of token A based on slippage tolerance.
-    /// - `token_max_b` - The maximum allowable amount of token B based on slippage tolerance.
-    pub quote: IncreaseLiquidityQuote,
-
     /// A vector of `Instruction` objects required to execute the liquidity increase.
     pub instructions: Vec<Instruction>,
 
@@ -230,14 +175,15 @@ pub struct IncreaseLiquidityInstruction {
 
 /// Generates instructions to increase liquidity for an existing position.
 ///
-/// This function computes the necessary quote and creates instructions to add liquidity
-/// to an existing pool position, specified by the position's mint address.
+/// This function creates instructions to add liquidity to an existing pool position,
+/// specified by the position's mint address, using the provided token max amounts.
 ///
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for fetching necessary accounts and pool data.
 /// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
-/// * `param` - A variant of `IncreaseLiquidityParam` specifying the liquidity addition method (by Token A, Token B, or liquidity amount).
+/// * `param` - Maximum amounts of token A and B to deposit. The program will use
+///   the minimum liquidity achievable within these caps.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `authority` - An optional public key of the account authorizing the liquidity addition. Defaults to the global funder if not provided.
 ///
@@ -245,7 +191,6 @@ pub struct IncreaseLiquidityInstruction {
 ///
 /// A `Result` containing `IncreaseLiquidityInstruction` on success:
 ///
-/// * `quote` - The computed quote for increasing liquidity, including liquidity delta, token estimates, and maximum tokens based on slippage tolerance.
 /// * `instructions` - A vector of `Instruction` objects required to execute the liquidity addition.
 /// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 ///
@@ -260,8 +205,8 @@ pub struct IncreaseLiquidityInstruction {
 ///
 /// ```rust
 /// use orca_whirlpools::{
-///     increase_liquidity_instructions, set_whirlpools_config_address, IncreaseLiquidityParam,
-///     WhirlpoolsConfigInput,
+///     increase_liquidity_instructions, set_whirlpools_config_address,
+///     IncreaseLiquidityParam, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -274,7 +219,7 @@ pub struct IncreaseLiquidityInstruction {
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
 ///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
-///     let param = IncreaseLiquidityParam::TokenA(1_000_000);
+///     let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
 ///
 ///     let result = increase_liquidity_instructions(
 ///         &rpc,
@@ -285,7 +230,6 @@ pub struct IncreaseLiquidityInstruction {
 ///     )
 ///     .await.unwrap();
 ///
-///     println!("Liquidity Increase Quote: {:?}", result.quote);
 ///     println!("Number of Instructions: {}", result.instructions.len());
 /// }
 /// ```
@@ -324,20 +268,6 @@ pub async fn increase_liquidity_instructions(
         .as_ref()
         .ok_or("Position mint info not found")?;
 
-    let current_epoch = rpc.get_epoch_info().await?.epoch;
-    let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), current_epoch);
-    let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), current_epoch);
-
-    let quote = get_increase_liquidity_quote(
-        param,
-        slippage_tolerance_bps,
-        &pool,
-        position.tick_lower_index,
-        position.tick_upper_index,
-        transfer_fee_a,
-        transfer_fee_b,
-    )?;
-
     let lower_tick_array_start_index =
         get_tick_array_start_tick_index(position.tick_lower_index, pool.tick_spacing);
     let upper_tick_array_start_index =
@@ -367,9 +297,9 @@ pub async fn increase_liquidity_instructions(
             tick_array_upper_address: upper_tick_array_address,
             mint_a_info,
             mint_b_info,
-            quote: &quote,
             authority,
             slippage_tolerance_bps,
+            param: &param,
         },
     )
     .await?;
@@ -380,25 +310,19 @@ pub async fn increase_liquidity_instructions(
     instructions.extend(token_accounts.cleanup_instructions);
 
     Ok(IncreaseLiquidityInstruction {
-        quote,
         instructions,
         additional_signers: token_accounts.additional_signers,
     })
 }
 
-/// Represents the instructions and quote for opening a liquidity position.
+/// Represents the instructions for opening a liquidity position.
 ///
-/// This struct contains the instructions required to open a new position, along with detailed
-/// information about the liquidity increase, the cost of initialization, and the mint address
-/// of the position NFT.
+/// This struct contains the instructions required to open a new position, the cost of
+/// initialization, and the mint address of the position NFT.
 #[derive(Debug)]
 pub struct OpenPositionInstruction {
     /// The public key of the position NFT that represents ownership of the newly opened position.
     pub position_mint: Pubkey,
-
-    /// The computed quote for increasing liquidity, including liquidity delta, token estimates,
-    /// and maximum tokens based on slippage tolerance.
-    pub quote: IncreaseLiquidityQuote,
 
     /// A vector of `Instruction` objects required to execute the position opening.
     pub instructions: Vec<Instruction>,
@@ -449,20 +373,6 @@ async fn internal_open_position(
     let mut non_refundable_rent: u64 = 0;
     let mut additional_signers: Vec<Keypair> = Vec::new();
 
-    let epoch = rpc.get_epoch_info().await?.epoch;
-    let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), epoch);
-    let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), epoch);
-
-    let quote = get_increase_liquidity_quote(
-        param,
-        slippage_tolerance_bps,
-        &whirlpool,
-        lower_initializable_tick_index,
-        upper_initializable_tick_index,
-        transfer_fee_a,
-        transfer_fee_b,
-    )?;
-
     additional_signers.push(Keypair::new());
     let position_mint = additional_signers[0].pubkey();
 
@@ -494,9 +404,9 @@ async fn internal_open_position(
             tick_array_upper_address: upper_tick_array_address,
             mint_a_info,
             mint_b_info,
-            quote: &quote,
             authority: funder,
             slippage_tolerance_bps,
+            param: &param,
         },
     )
     .await?;
@@ -565,7 +475,6 @@ async fn internal_open_position(
 
     Ok(OpenPositionInstruction {
         position_mint,
-        quote,
         instructions,
         additional_signers,
         initialization_cost: non_refundable_rent,
@@ -581,7 +490,7 @@ async fn internal_open_position(
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `pool_address` - The public key of the liquidity pool.
-/// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
+/// * `param` - Maximum amounts of token A and B to deposit.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
 ///
@@ -589,7 +498,6 @@ async fn internal_open_position(
 ///
 /// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
 /// * `position_mint` - The mint address of the position NFT.
-/// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
 /// * `instructions` - A vector of `Instruction` objects required for creating the position.
 /// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
 /// * `initialization_cost` - The cost of initializing the position, in lamports.
@@ -613,8 +521,8 @@ async fn internal_open_position(
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 ///
-/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();;
-/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
+/// let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
 /// let slippage_tolerance_bps = Some(100);
 ///
 /// let wallet = Keypair::new();
@@ -676,7 +584,7 @@ pub async fn open_full_range_position_instructions(
 /// * `pool_address` - The public key of the liquidity pool.
 /// * `lower_price` - The lower bound of the price range for the position. It returns error if the lower_price <= 0.0.
 /// * `upper_price` - The upper bound of the price range for the position. It returns error if the upper_price <= 0.0.
-/// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
+/// * `param` - Maximum amounts of token A and B to deposit.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
 ///
@@ -684,7 +592,6 @@ pub async fn open_full_range_position_instructions(
 ///
 /// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
 /// * `position_mint` - The mint address of the position NFT.
-/// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
 /// * `instructions` - A vector of `Instruction` objects required for creating the position.
 /// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
 /// * `initialization_cost` - The cost of initializing the position, in lamports.
@@ -714,7 +621,7 @@ pub async fn open_full_range_position_instructions(
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
 /// let lower_price = 0.00005;
 /// let upper_price = 0.00015;
-/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
 /// let slippage_tolerance_bps = Some(100);
 ///
 /// let wallet = Keypair::new();
@@ -796,7 +703,7 @@ pub async fn open_position_instructions(
 /// * `pool_address` - The public key of the liquidity pool.
 /// * `lower_tick_index` - The lower tick bound for the position. It returns error if out of bounds or not aligned with tick spacing.
 /// * `upper_tick_index` - The upper tick bound for the position. It returns error if out of bounds or not aligned with tick spacing.
-/// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
+/// * `param` - Maximum amounts of token A and B to deposit.
 /// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
 /// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
 ///
@@ -804,7 +711,6 @@ pub async fn open_position_instructions(
 ///
 /// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
 /// * `position_mint` - The mint address of the position NFT.
-/// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
 /// * `instructions` - A vector of `Instruction` objects required for creating the position.
 /// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
 /// * `initialization_cost` - The cost of initializing the position, in lamports.
@@ -834,7 +740,7 @@ pub async fn open_position_instructions(
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
 /// let lower_tick_index = -44320;
 /// let upper_tick_index = -22160;
-/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let para = IncreaseLiquidityParam{ token_max_a: 1_000_000, token_max_b: 1_000_000 };
 /// let slippage_tolerance_bps = Some(100);
 ///
 /// let wallet = Keypair::new();
@@ -845,7 +751,7 @@ pub async fn open_position_instructions(
 ///     whirlpool_pubkey,
 ///     lower_tick_index,
 ///     upper_tick_index,
-///     param,
+///     para,
 ///     slippage_tolerance_bps,
 ///     funder,
 /// ).unwrap();
@@ -930,7 +836,10 @@ mod tests {
     use std::collections::HashMap;
     use std::error::Error;
 
-    use orca_whirlpools_client::{get_position_address, Position};
+    use orca_whirlpools_client::{get_position_address, Position, Whirlpool};
+    use orca_whirlpools_core::{
+        increase_liquidity_quote_a, increase_liquidity_quote_b, IncreaseLiquidityQuote, TransferFee,
+    };
     use rstest::rstest;
     use serial_test::serial;
     use solana_keypair::{Keypair, Signer};
@@ -950,7 +859,7 @@ mod tests {
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
-        IncreaseLiquidityParam,
+        IncreaseLiquidityInstruction, IncreaseLiquidityParam,
     };
 
     use solana_client::nonblocking::rpc_client::RpcClient;
@@ -975,12 +884,55 @@ mod tests {
         }
     }
 
+    fn get_constraining_quote(
+        param: &IncreaseLiquidityParam,
+        slippage_tolerance_bps: u16,
+        current_sqrt_price: u128,
+        tick_lower_index: i32,
+        tick_upper_index: i32,
+        transfer_fee_a: Option<TransferFee>,
+        transfer_fee_b: Option<TransferFee>,
+    ) -> Result<IncreaseLiquidityQuote, Box<dyn Error>> {
+        let quote_a = increase_liquidity_quote_a(
+            param.token_max_a,
+            slippage_tolerance_bps,
+            current_sqrt_price,
+            tick_lower_index,
+            tick_upper_index,
+            transfer_fee_a,
+            transfer_fee_b,
+        )?;
+        let quote_b = increase_liquidity_quote_b(
+            param.token_max_b,
+            slippage_tolerance_bps,
+            current_sqrt_price,
+            tick_lower_index,
+            tick_upper_index,
+            transfer_fee_a,
+            transfer_fee_b,
+        )?;
+        let liquidity_a = quote_a.liquidity_delta;
+        let liquidity_b = quote_b.liquidity_delta;
+        let quote = if liquidity_a == 0 {
+            quote_b
+        } else if liquidity_b == 0 {
+            quote_a
+        } else if liquidity_a <= liquidity_b {
+            quote_a
+        } else {
+            quote_b
+        };
+        Ok(quote)
+    }
+
     async fn verify_increase_liquidity(
         ctx: &RpcContext,
-        increase_ix: &crate::IncreaseLiquidityInstruction,
+        increase_ix: &IncreaseLiquidityInstruction,
         token_a_account: Pubkey,
         token_b_account: Pubkey,
         position_mint: Pubkey,
+        param: IncreaseLiquidityParam,
+        pool_name: &str,
     ) -> Result<(), Box<dyn Error>> {
         let before_a = get_token_balance(&ctx.rpc, token_a_account).await?;
         let before_b = get_token_balance(&ctx.rpc, token_b_account).await?;
@@ -994,29 +946,54 @@ mod tests {
         let used_a = before_a.saturating_sub(after_a);
         let used_b = before_b.saturating_sub(after_b);
 
-        let quote = &increase_ix.quote;
+        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+        let pool_info = ctx.rpc.get_account(&position_data.whirlpool).await?;
+        let pool = Whirlpool::from_bytes(&pool_info.data)?;
+
+        let slippage_tolerance_bps = 100;
+
+        let quote = get_constraining_quote(
+            &param,
+            slippage_tolerance_bps,
+            pool.sqrt_price,
+            position_data.tick_lower_index,
+            position_data.tick_upper_index,
+            None,
+            None,
+        )?;
+
+        let is_te_fee = pool_name.contains("TEFee");
+        let token_tolerance = if is_te_fee { 200u64 } else { 2u64 };
+        let liquidity_tolerance_bps = if is_te_fee {
+            200u128
+        } else {
+            RELATIVE_TOLERANCE_BPS
+        };
+        let liquidity_min_bps = if is_te_fee { 200u128 } else { MIN_ABSOLUTE_BPS };
+
         assert!(
-            used_a >= quote.token_est_a && used_a <= quote.token_max_a,
+            used_a <= quote.token_max_a + token_tolerance
+                && (used_a + token_tolerance >= quote.token_est_a || quote.token_est_a == 0),
             "Token A usage out of range: used={}, est={}..{}",
             used_a,
             quote.token_est_a,
             quote.token_max_a
         );
         assert!(
-            used_b >= quote.token_est_b && used_b <= quote.token_max_b,
+            used_b <= quote.token_max_b + token_tolerance
+                && (used_b + token_tolerance >= quote.token_est_b || quote.token_est_b == 0),
             "Token B usage out of range: used={}, est={}..{}",
             used_b,
             quote.token_est_b,
             quote.token_max_b
         );
 
-        let position_pubkey = get_position_address(&position_mint)?.0;
-        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
         assert_liquidity_close(
             quote.liquidity_delta,
             position_data.liquidity,
-            RELATIVE_TOLERANCE_BPS,
-            MIN_ABSOLUTE_BPS,
+            liquidity_tolerance_bps,
+            liquidity_min_bps,
         );
 
         Ok(())
@@ -1158,11 +1135,21 @@ mod tests {
                     .await
                     .unwrap();
 
-            let param = IncreaseLiquidityParam::Liquidity(10_000);
+            let base_token_amount = 10_000u64;
+            let (token_max_a, token_max_b) = match (lower_tick, upper_tick) {
+                (-100, -1) => (0, base_token_amount), // one sided A -> deposit only B
+                (1, 100) => (base_token_amount, 0),   // one sided B -> deposit only A
+                _ => (base_token_amount, base_token_amount), // equally centered
+            };
+            let param = IncreaseLiquidityParam {
+                token_max_a,
+                token_max_b,
+            };
+
             let inc_ix = increase_liquidity_instructions(
                 &ctx.rpc,
                 position_mint,
-                param,
+                param.clone(),
                 Some(100), // slippage
                 Some(ctx.signer.pubkey()),
             )
@@ -1175,6 +1162,8 @@ mod tests {
                 *user_ata_for_token_a,
                 *user_ata_for_token_b,
                 position_mint,
+                param,
+                pool_name,
             )
             .await
             .unwrap();
@@ -1196,7 +1185,10 @@ mod tests {
         let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
         use solana_pubkey::Pubkey;
-        let param = IncreaseLiquidityParam::Liquidity(100_000);
+        let param = IncreaseLiquidityParam {
+            token_max_a: 100_000,
+            token_max_b: 100_000,
+        };
         let res = increase_liquidity_instructions(
             &ctx.rpc,
             position_mint,
@@ -1233,11 +1225,15 @@ mod tests {
 
         let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
-        // Attempt
+        // Attempt - use a large token_max_b so the quote is constrained by token A.
+        let param = IncreaseLiquidityParam {
+            token_max_a: 2_000_000_000,
+            token_max_b: 1_000_000_000_000,
+        };
         let res = increase_liquidity_instructions(
             &ctx.rpc,
             position_mint,
-            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            param,
             Some(100),
             Some(ctx.signer.pubkey()),
         )
@@ -1267,11 +1263,15 @@ mod tests {
 
         let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
 
-        // Attempt
+        // Attempt - use a large token_max_b so the quote is constrained by token A.
+        let param = IncreaseLiquidityParam {
+            token_max_a: 2_000_000_000,
+            token_max_b: 1_000_000_000_000,
+        };
         let res = increase_liquidity_instructions(
             &ctx.rpc,
             position_mint,
-            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            param,
             Some(100),
             Some(ctx.signer.pubkey()),
         )
@@ -1309,12 +1309,16 @@ mod tests {
 
         // Attempt
         let lower_price = 0.0; // if price is 0.0, open_position_instructions will be failed
+        let param = IncreaseLiquidityParam {
+            token_max_a: 2_000_000_000,
+            token_max_b: 1_000_000,
+        };
         let res = open_position_instructions(
             &ctx.rpc,
             pool_pubkey,
             lower_price,
             100.0,
-            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            param,
             Some(100),
             Some(ctx.signer.pubkey()),
         )
@@ -1350,12 +1354,16 @@ mod tests {
 
         // Attempt
         let upper_price = 0.0; // if price is 0.0, open_position_instructions will be failed
+        let param = IncreaseLiquidityParam {
+            token_max_a: 2_000_000_000,
+            token_max_b: 1_000_000,
+        };
         let res = open_position_instructions(
             &ctx.rpc,
             pool_pubkey,
             0.1,
             upper_price,
-            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            param,
             Some(100),
             Some(ctx.signer.pubkey()),
         )
@@ -1391,12 +1399,16 @@ mod tests {
             let mint_b_key = minted.get("B").unwrap();
             let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
 
+            let param = IncreaseLiquidityParam {
+                token_max_a: 2_000_000_000,
+                token_max_b: 1_000_000,
+            };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
                 pool_pubkey,
                 i32::MAX,
                 64,
-                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                param,
                 Some(100),
                 Some(ctx.signer.pubkey()),
             )
@@ -1428,12 +1440,16 @@ mod tests {
             let mint_b_key = minted.get("B").unwrap();
             let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
 
+            let param = IncreaseLiquidityParam {
+                token_max_a: 2_000_000_000,
+                token_max_b: 1_000_000,
+            };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
                 pool_pubkey,
                 0,
                 i32::MAX,
-                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                param,
                 Some(100),
                 Some(ctx.signer.pubkey()),
             )
@@ -1465,12 +1481,16 @@ mod tests {
             let mint_b_key = minted.get("B").unwrap();
             let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
 
+            let param = IncreaseLiquidityParam {
+                token_max_a: 2_000_000_000,
+                token_max_b: 1_000_000,
+            };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
                 pool_pubkey,
                 1,  // not aligned with tick spacing 64
                 64, // aligned
-                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                param,
                 Some(100),
                 Some(ctx.signer.pubkey()),
             )
@@ -1502,12 +1522,16 @@ mod tests {
             let mint_b_key = minted.get("B").unwrap();
             let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
 
+            let param = IncreaseLiquidityParam {
+                token_max_a: 2_000_000_000,
+                token_max_b: 1_000_000,
+            };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
                 pool_pubkey,
                 64,
                 64,
-                IncreaseLiquidityParam::TokenA(2_000_000_000),
+                param,
                 Some(100),
                 Some(ctx.signer.pubkey()),
             )

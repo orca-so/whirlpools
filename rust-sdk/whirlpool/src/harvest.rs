@@ -546,7 +546,10 @@ mod tests {
             let inc_liq_ix = increase_liquidity_instructions(
                 &ctx.rpc,
                 position_mint,
-                IncreaseLiquidityParam::Liquidity(50_000),
+                IncreaseLiquidityParam {
+                    token_max_a: 50_000,
+                    token_max_b: 50_000,
+                },
                 Some(100),
                 Some(ctx.signer.pubkey()),
             )

@@ -712,6 +712,9 @@ mod tests {
         token_b_account: Pubkey,
         position_mint: Pubkey,
     ) -> Result<(), Box<dyn Error>> {
+        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_before = fetch_position(&ctx.rpc, position_pubkey).await?;
+
         // pre
         let before_a = get_token_balance(&ctx.rpc, token_a_account).await?;
         let before_b = get_token_balance(&ctx.rpc, token_b_account).await?;
@@ -744,12 +747,14 @@ mod tests {
             quote.token_est_b
         );
 
-        // confirm on-chain liquidity updated
-        let position_pubkey = get_position_address(&position_mint)?.0;
-        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+        // confirm on-chain liquidity updated: remaining should be original - delta
+        let position_after = fetch_position(&ctx.rpc, position_pubkey).await?;
+        let expected_remaining = position_before
+            .liquidity
+            .saturating_sub(quote.liquidity_delta);
         assert_liquidity_close(
-            quote.liquidity_delta,
-            position_data.liquidity,
+            expected_remaining,
+            position_after.liquidity,
             RELATIVE_TOLERANCE_BPS,
             MIN_ABSOLUTE_BPS,
         );
@@ -877,7 +882,10 @@ mod tests {
             let inc_ix = increase_liquidity_instructions(
                 &ctx.rpc,
                 position_mint,
-                IncreaseLiquidityParam::Liquidity(100_000),
+                IncreaseLiquidityParam {
+                    token_max_a: 100_000,
+                    token_max_b: 100_000,
+                },
                 Some(100),
                 Some(ctx.signer.pubkey()),
             )
@@ -959,7 +967,10 @@ mod tests {
         let inc_ix = increase_liquidity_instructions(
             &ctx.rpc,
             position_mint,
-            IncreaseLiquidityParam::Liquidity(100_000),
+            IncreaseLiquidityParam {
+                token_max_a: 100_000,
+                token_max_b: 100_000,
+            },
             Some(100),
             Some(ctx.signer.pubkey()),
         )

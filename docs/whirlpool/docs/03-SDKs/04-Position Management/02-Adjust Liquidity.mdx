@@ -14,7 +14,10 @@ This guide explains how to use the SDK functions to increase and decrease the li
 
 export const overviewText = `
 ## 1. Overview of Adjusting Liquidity
-The SDK functions for increasing or decreasing liquidity work similarly, enabling you to modify the liquidity of an existing position. You can specify the liquidity directly or provide amounts of token A or token B to increase or decrease liquidity.
+The SDK provides separate functions for increasing and decreasing liquidity:
+
+- **Increase liquidity**: Specify \`tokenMaxA\` and \`tokenMaxB\` — the maximum amounts you are willing to deposit. The program uses the minimum liquidity achievable within these caps. Use \`0\` for one-sided deposits.
+- **Decrease liquidity**: Specify one of \`liquidity\`, \`tokenA\`, or \`tokenB\` — the amount to withdraw. The SDK computes the others from your input.
 
 With these functions, you can:
 - Increase liquidity to potentially earn more fees as trading volume grows.
@@ -28,10 +31,9 @@ Adjusting liquidity in an existing position can be done as follows:
 
 1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
 2. **Position Mint**: Provide the mint address of the NFT representing your position. This NFT serves as proof of ownership of the position you want to adjust.
-3. **Liquidity Parameters**: Choose how you want to adjust liquidity. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the current price of the pool and the price range of the position:
-  - \`liquidity\`: Specify the liquidity value to add or remove.
-  - \`tokenA\`: Specify the amount of token A to add or withdraw.
-  - \`tokenB\`: Specify the amount of token B to add or withdraw.
+3. **Liquidity Parameters**:
+  - **Increase**: Specify \`tokenMaxA\` and \`tokenMaxB\` (max amounts to deposit; use \`0\` for one-sided).
+  - **Decrease**: Specify one of \`liquidity\`, \`tokenA\`, or \`tokenB\`; the function computes the others.
 4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected token amounts added or removed when adjusting liquidity and the actual amounts that are ultimately deposited or withdrawn. A lower slippage tolerance reduces the risk of depositing or withdrawing more or fewer tokens than intended, but it may lead to failed transactions if the market moves too quickly.
 5. **Funder**: This can be your wallet, which will fund the pool initialization. If a funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
 6. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
@@ -66,28 +68,27 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
 
     ```rust
     use orca_whirlpools::{
-        decrease_liquidity_instructions, increase_liquidity_instructions, set_whirlpools_config_address, DecreaseLiquidityParam, IncreaseLiquidityParam, WhirlpoolsConfigInput
+        decrease_liquidity_instructions, increase_liquidity_instructions,
+        set_whirlpools_config_address, DecreaseLiquidityParam, IncreaseLiquidityParam,
+        WhirlpoolsConfigInput
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
-    use std::str::FromStr;
     use solana_sdk::signature::Signer;
-    use orca_tx_sender::{
-        build_and_send_transaction,
-        set_rpc, get_rpc_client
-    };
+    use solana_sdk::signer::keypair::Keypair;
+    use std::str::FromStr;
+    use orca_tx_sender::{build_and_send_transaction, set_rpc, get_rpc_client};
     use solana_sdk::commitment_config::CommitmentLevel;
-    use crate::utils::load_wallet;
 
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         set_rpc("https://api.devnet.solana.com").await?;
         set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-        let wallet = load_wallet();
-        let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
-        let increase_param = IncreaseLiquidityParam::TokenA(1_000_000);
-        let decrease_param = DecreaseLiquidityParam::TokenA(1_000_000);
+        let wallet = Keypair::new(); // Replace with your wallet loader
         let rpc = get_rpc_client()?;
+        let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
+        let increase_param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 0 };
+        let decrease_param = DecreaseLiquidityParam::TokenA(1_000_000);
 
         let increase_result = increase_liquidity_instructions(
             &rpc,
@@ -98,24 +99,18 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         )
         .await?;
 
-        // The instructions may include new token accounts that need to be created
-        // and signed for with its corresponding Keypair.
         let mut signers_increase: Vec<&dyn Signer> = vec![&wallet];
         signers_increase.extend(increase_result.additional_signers.iter().map(|kp| kp as &dyn Signer));
-        println!("Signers: {:?}", signers_increase);
 
-        println!("Liquidity Increase Quote: {:?}", increase_result.quote);
-        println!("Number of Instructions: {}", increase_result.instructions.len());
-        
         let increase_signature = build_and_send_transaction(
             increase_result.instructions,
             &signers_increase,
             Some(CommitmentLevel::Confirmed),
-            None, // No address lookup tables
+            None,
         ).await?;
-        
+
         println!("Increase liquidity transaction sent: {}", increase_signature);
-        
+
         let decrease_result = decrease_liquidity_instructions(
             &rpc,
             position_mint_address,
@@ -125,21 +120,18 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         )
         .await?;
 
-        // The instructions may include new token accounts that need to be created
-        // and signed for with their corresponding Keypair.
         let mut signers_decrease: Vec<&dyn Signer> = vec![&wallet];
         signers_decrease.extend(decrease_result.additional_signers.iter().map(|kp| kp as &dyn Signer));
 
-        println!("Liquidity Decrease Quote: {:?}", decrease_result.quote);
-        println!("Signers: {:?}", signers_decrease);
-        
+        println!("Decrease quote: {:?}", decrease_result.quote);
+
         let decrease_signature = build_and_send_transaction(
             decrease_result.instructions,
             &signers_decrease,
             Some(CommitmentLevel::Confirmed),
-            None, // No address lookup tables
+            None,
         ).await?;
-        
+
         println!("Decrease liquidity transaction sent: {}", decrease_signature);
         Ok(())
     }
@@ -159,42 +151,37 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     <ReactMarkdown>{startingGuideText}</ReactMarkdown>
 
     ```tsx
-    import { decreaseLiquidity, increaseLiquidity, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address, setRpc, setPayerFromBytes } from '@solana/kit';
-    import secret from "wallet.json";
+    import { decreaseLiquidityInstructions, increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address, generateKeyPairSigner } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
-    await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await generateKeyPairSigner();
 
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
-    const param = { tokenA: 10n };
-    
-    const { quote: increaseQuote, instructions: increaseInstructions, callback: sendTxIncrease } = await increaseLiquidity(
+
+    // Increase: specify tokenMaxA and tokenMaxB; use 0n for one-sided
+    const increaseParam = { tokenMaxA: 10_000_000n, tokenMaxB: 0n };
+    const { instructions: increaseInstructions } = await increaseLiquidityInstructions(
         devnetRpc,
         positionMint,
-        param,
+        increaseParam,
         100,
-        signer
+        wallet
     );
 
-    const { quote: decreaseQuote, instructions: decreaseInstructions, callback: sendTxDecrease } = await decreaseLiquidity(
+    // Decrease: specify one of tokenA, tokenB, or liquidity
+    const decreaseParam = { tokenA: 10n };
+    const { quote: decreaseQuote, instructions: decreaseInstructions } = await decreaseLiquidityInstructions(
         devnetRpc,
         positionMint,
-        param,
+        decreaseParam,
         100,
-        signer
+        wallet
     );
 
-    console.log(`Increase quote estimated token B: ${increaseQuote.tokenEstB}`);
     console.log(`Decrease quote estimated token B: ${decreaseQuote.tokenEstB}`);
-
-    // Use the callback to submit the transaction
-    const txIdIncrease = await sendTxIncrease();
-    console.log(`Transaction ID: ${txIdIncrease}`);
-
-    const txIdDecrease = await sendTxDecrease();
-    console.log(`Transaction ID: ${txIdDecrease}`);
+    // Build and send transactions using your preferred method
     ```
 
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>

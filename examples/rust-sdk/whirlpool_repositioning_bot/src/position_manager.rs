@@ -82,15 +82,26 @@ pub async fn run_position_manager(
         let new_lower_price = current_price - (position_upper_price - position_lower_price) / 2.0;
         let new_upper_price = current_price + (position_upper_price - position_lower_price) / 2.0;
 
-        let increase_liquidity_param =
-            IncreaseLiquidityParam::Liquidity(close_position_instructions.quote.liquidity_delta);
+        let total_a = close_position_instructions
+            .quote
+            .token_est_a
+            .saturating_add(close_position_instructions.fees_quote.fee_owed_a);
+        let total_b = close_position_instructions
+            .quote
+            .token_est_b
+            .saturating_add(close_position_instructions.fees_quote.fee_owed_b);
+        let param = IncreaseLiquidityParam {
+            token_max_a: total_a,
+            token_max_b: total_b,
+        };
+
         let open_position_instructions = open_position_instructions(
             rpc,
             whirlpool_address,
             new_lower_price,
             new_upper_price,
-            increase_liquidity_param,
-            Some(100),
+            param,
+            Some(args.slippage_tolerance_bps),
             None,
         )
         .await

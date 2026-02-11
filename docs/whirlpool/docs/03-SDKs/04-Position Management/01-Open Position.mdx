@@ -36,10 +36,7 @@ For more details, refer to our [Environment Setup Guide](../02-Environment%20Set
 export const splashPoolOpeningSteps = `
 ### Opening a Position in Splash Pools
 1. **Pool Address**: Provide the address of the Splash Pool where you want to open a position.
-2. **Liquidity Parameters**: Choose how you want to provide liquidity. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the current price of the pool:
-  - \`liquidity\`: Specify the liquidity value to provide.
-  - \`tokenA\`: Specify the amount of token A (first token in the pool).
-  - \`tokenB\`: Specify the amount of token B (second token in the pool).
+2. **Liquidity Parameters**: Specify \`tokenMaxA\` and \`tokenMaxB\` — the maximum amounts of each token you are willing to deposit. The program will use the minimum liquidity achievable within these caps. Use \`0\` for one-sided liquidity (e.g., \`tokenMaxB: 0\` to deposit only token A).
 3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
 4. **Funder**: This will be your wallet, which will fund the transaction.
 5. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
@@ -48,10 +45,7 @@ export const splashPoolOpeningSteps = `
 export const concentratedPoolOpeningSteps = `
 ### Opening a Position in Concentrated Liquidity Pools
 1. **Pool Address**: Provide the address of the Concentrated Liquidity Pool where you want to open a position.
-2. **Liquidity Parameters**: Choose how you want to provide liquidity. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the price range and the current price of the pool:
-  - \`liquidity\`: Specify the liquidity value to provide.
-  - \`tokenA\`: Specify the amount of token A (first token in the pool).
-  - \`tokenB\`: Specify the amount of token B (second token in the pool).
+2. **Liquidity Parameters**: Specify \`tokenMaxA\` and \`tokenMaxB\` — the maximum amounts of each token you are willing to deposit. The program will use the minimum liquidity achievable within these caps. Use \`0\` for one-sided liquidity.
 3. **Price Range**: Set the lower and upper bounds of the price range within which your liquidity will be active. The current price and the specified price range will influence the quote amounts. If the current price is in the middle of your price range, the ratio of token A to token B will reflect that price. However, if the current price is outside your range, you will only deposit one token, resulting in one-sided liquidity. Note that your position will only earn fees when the price falls within your selected price range, so it's important to choose a range where you expect the price to remain active.
 3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected token amounts and the actual amounts deposited into the liquidity pool. A lower slippage tolerance reduces the risk of depositing more tokens than expected but may lead to failed transactions if the market moves too quickly. For example, if you expect to deposit 100 units of Token A and 1,000 units of Token B, with a 1% slippage tolerance, the maximum amounts would be 101 Token A and 1,010 Token B.
 4. **Funder**: This can be your wallet, which will fund the pool initialization. If the funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
@@ -95,27 +89,25 @@ After opening a position, you can:
 
     ```rust
     use orca_whirlpools::{
-      open_full_range_position_instructions, set_whirlpools_config_address, IncreaseLiquidityParam, WhirlpoolsConfigInput
+      open_full_range_position_instructions, set_whirlpools_config_address,
+      IncreaseLiquidityParam, WhirlpoolsConfigInput
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
-    use std::str::FromStr;
     use solana_sdk::signature::Signer;
-    use orca_tx_sender::{
-        build_and_send_transaction,
-        set_rpc, get_rpc_client
-    };
+    use solana_sdk::signer::keypair::Keypair;
+    use std::str::FromStr;
+    use orca_tx_sender::{build_and_send_transaction, set_rpc, get_rpc_client};
     use solana_sdk::commitment_config::CommitmentLevel;
-    use crate::utils::load_wallet;
 
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
       set_rpc("https://api.devnet.solana.com").await?;
       set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-      let wallet = load_wallet();
-      let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
-      let param = IncreaseLiquidityParam::TokenA(10);
+      let wallet = Keypair::new(); // Replace with your wallet loader
       let rpc = get_rpc_client()?;
+      let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+      let param = IncreaseLiquidityParam { token_max_a: 10_000_000, token_max_b: 0 };
 
       let result = open_full_range_position_instructions(
         &rpc,
@@ -125,23 +117,19 @@ After opening a position, you can:
         Some(wallet.pubkey())
       ).await?;
 
-      // The instructions include the position mint and potentially a new token 
-      // account that needs to be created for WSOL.
       let mut signers: Vec<&dyn Signer> = vec![&wallet];
       signers.extend(result.additional_signers.iter().map(|kp| kp as &dyn Signer));
-      println!("Signers: {:?}", signers);
 
-      println!("Quote token mac B: {:?}", result.quote.token_max_b);
       println!("Initialization cost: {:?}", result.initialization_cost);
       println!("Position mint: {:?}", result.position_mint);
-      
+
       let signature = build_and_send_transaction(
           result.instructions,
           &signers,
           Some(CommitmentLevel::Confirmed),
-          None, // No address lookup tables
+          None,
       ).await?;
-      
+
       println!("Transaction sent: {}", signature);
       Ok(())
     }
@@ -151,27 +139,25 @@ After opening a position, you can:
 
     ```rust
     use orca_whirlpools::{
-      open_position_instructions, set_whirlpools_config_address, IncreaseLiquidityParam, WhirlpoolsConfigInput
+      open_position_instructions, set_whirlpools_config_address,
+      IncreaseLiquidityParam, WhirlpoolsConfigInput
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
-    use std::str::FromStr;
     use solana_sdk::signature::Signer;
-    use orca_tx_sender::{
-        build_and_send_transaction,
-        set_rpc, get_rpc_client
-    };
+    use solana_sdk::signer::keypair::Keypair;
+    use std::str::FromStr;
+    use orca_tx_sender::{build_and_send_transaction, set_rpc, get_rpc_client};
     use solana_sdk::commitment_config::CommitmentLevel;
-    use crate::utils::load_wallet;
 
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
       set_rpc("https://api.devnet.solana.com").await?;
       set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-      let wallet = load_wallet();
-      let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
-      let param = IncreaseLiquidityParam::TokenA(10);
+      let wallet = Keypair::new(); // Replace with your wallet loader
       let rpc = get_rpc_client()?;
+      let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+      let param = IncreaseLiquidityParam { token_max_a: 10_000_000, token_max_b: 0 };
 
       let result = open_position_instructions(
         &rpc,
@@ -183,23 +169,19 @@ After opening a position, you can:
         Some(wallet.pubkey())
       ).await?;
 
-      // The instructions include the position mint and potentially new token 
-      // accounts that need to be created and signed for with their corresponding Keypair.
       let mut signers: Vec<&dyn Signer> = vec![&wallet];
       signers.extend(result.additional_signers.iter().map(|kp| kp as &dyn Signer));
 
-      println!("Quote token max B: {:?}", result.quote.token_est_b);
       println!("Initialization cost: {:?}", result.initialization_cost);
       println!("Position mint: {:?}", result.position_mint);
-      println!("Signers: {:?}", signers);
 
       let signature = build_and_send_transaction(
           result.instructions,
           &signers,
           Some(CommitmentLevel::Confirmed),
-          None, // No address lookup tables
+          None,
       ).await?;
-      
+
       println!("Transaction sent: {}", signature);
       Ok(())
     }
@@ -224,67 +206,61 @@ After opening a position, you can:
     <ReactMarkdown>{splashPoolOpeningSteps}</ReactMarkdown>
 
     ```tsx
-    import { openFullRangePosition, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/kit';
-    import { loadWallet } from './utils';
+    import { openFullRangePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address, generateKeyPairSigner } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await loadWallet(); // load your wallet
+    const wallet = await generateKeyPairSigner();
 
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt"); // SOL/devUSDC
 
-    const param = { tokenA: 10n };
+    // tokenMaxA and tokenMaxB are max amounts to deposit; use 0n for one-sided liquidity
+    const param = { tokenMaxA: 10_000_000n, tokenMaxB: 0n };
 
-    const { quote, instructions, initializationCost, positionMint, callback: sendTx } = await openFullRangePosition(
+    const { instructions, initializationCost, positionMint } = await openFullRangePositionInstructions(
       devnetRpc,
       whirlpoolAddress,
       param,
       100,
+      true,
       wallet
     );
 
-    // Use the callback to submit the transaction
-    const txId = await sendTx();
-
-    console.log(`Quote token max B: ${quote.tokenMaxB}`);
+    // Build and send the transaction using your preferred method
     console.log(`Initialization cost: ${initializationCost}`);
     console.log(`Position mint: ${positionMint}`);
-    console.log(`Transaction ID: ${txId}`);
     ```
 
     <ReactMarkdown>{concentratedPoolOpeningSteps}</ReactMarkdown>
 
     ```tsx
-    import { openPosition, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address, setRpc, setPayerFromBytes } from '@solana/kit';
-    import secret from "wallet.json";
+    import { openPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address, generateKeyPairSigner } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
-    await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await generateKeyPairSigner();
 
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt"); // SOL/devUSDC
+    const lowerPrice = 0.001;
+    const upperPrice = 100.0;
 
-    const param = { tokenA: 10n };
+    const param = { tokenMaxA: 10_000_000n, tokenMaxB: 0n };
 
-    const { quote, instructions, initializationCost, positionMint, callback: sendTx } = await openPosition(
+    const { instructions, initializationCost, positionMint } = await openPositionInstructions(
       devnetRpc,
       whirlpoolAddress,
       param,
-      0.001,
-      100.0,
+      lowerPrice,
+      upperPrice,
       100,
+      true,
       wallet
-      );
+    );
 
-    // Use the callback to submit the transaction
-    const txId = await sendTx();
-
-    console.log(`Quote token max B: ${quote.tokenEstB}`);
     console.log(`Initialization cost: ${initializationCost}`);
     console.log(`Position mint: ${positionMint}`);
-    console.log(`Transaction ID: ${txId}`);
     ```
 
     <ReactMarkdown>{concentratedPoolNote}</ReactMarkdown>

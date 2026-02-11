@@ -27,7 +27,10 @@ use spl_token_2022_interface::state::Mint;
 
 use crate::{get_rent, SPLASH_POOL_TICK_SPACING};
 use crate::{
-    token::{get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountStrategy},
+    token::{
+        get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountInstructions,
+        TokenAccountStrategy,
+    },
     FUNDER, SLIPPAGE_TOLERANCE_BPS,
 };
 
@@ -59,6 +62,92 @@ fn get_sqrt_price_slippage_bounds(sqrt_price: u128, slippage_tolerance_bps: u16)
     let min_sqrt_price = scale(lower_factor).max(MIN_SQRT_PRICE);
     let max_sqrt_price = scale(upper_factor).min(MAX_SQRT_PRICE);
     (min_sqrt_price, max_sqrt_price)
+}
+
+struct GetIncreaseLiquidityInstructionsParams<'a> {
+    whirlpool_address: Pubkey,
+    whirlpool: &'a Whirlpool,
+    position_address: Pubkey,
+    position_token_account_address: Pubkey,
+    tick_array_lower_address: Pubkey,
+    tick_array_upper_address: Pubkey,
+    mint_a_info: &'a Account,
+    mint_b_info: &'a Account,
+    quote: &'a IncreaseLiquidityQuote,
+    authority: Pubkey,
+    slippage_tolerance_bps: u16,
+}
+
+struct GetIncreaseLiquidityInstructionsResult {
+    token_accounts: TokenAccountInstructions,
+    increase_liquidity_instruction: Instruction,
+}
+
+/// Builds token account setup, increase liquidity, and cleanup instructions from a quote and
+/// position parameters. Shared by both `increase_liquidity_instructions` and `internal_open_position`.
+async fn get_increase_liquidity_instructions(
+    rpc: &RpcClient,
+    params: GetIncreaseLiquidityInstructionsParams<'_>,
+) -> Result<GetIncreaseLiquidityInstructionsResult, Box<dyn Error>> {
+    let token_accounts = prepare_token_accounts_instructions(
+        rpc,
+        params.authority,
+        vec![
+            TokenAccountStrategy::WithBalance(
+                params.whirlpool.token_mint_a,
+                params.quote.token_max_a,
+            ),
+            TokenAccountStrategy::WithBalance(
+                params.whirlpool.token_mint_b,
+                params.quote.token_max_b,
+            ),
+        ],
+    )
+    .await?;
+
+    let token_owner_account_a = token_accounts
+        .token_account_addresses
+        .get(&params.whirlpool.token_mint_a)
+        .ok_or("Token A owner account not found")?;
+    let token_owner_account_b = token_accounts
+        .token_account_addresses
+        .get(&params.whirlpool.token_mint_b)
+        .ok_or("Token B owner account not found")?;
+
+    let (min_sqrt_price, max_sqrt_price) =
+        get_sqrt_price_slippage_bounds(params.whirlpool.sqrt_price, params.slippage_tolerance_bps);
+
+    let increase_liquidity_instruction = IncreaseLiquidityByTokenAmountsV2 {
+        whirlpool: params.whirlpool_address,
+        token_program_a: params.mint_a_info.owner,
+        token_program_b: params.mint_b_info.owner,
+        memo_program: spl_memo_interface::v3::ID,
+        position_authority: params.authority,
+        position: params.position_address,
+        position_token_account: params.position_token_account_address,
+        token_mint_a: params.whirlpool.token_mint_a,
+        token_mint_b: params.whirlpool.token_mint_b,
+        token_owner_account_a: *token_owner_account_a,
+        token_owner_account_b: *token_owner_account_b,
+        token_vault_a: params.whirlpool.token_vault_a,
+        token_vault_b: params.whirlpool.token_vault_b,
+        tick_array_lower: params.tick_array_lower_address,
+        tick_array_upper: params.tick_array_upper_address,
+    }
+    .instruction(IncreaseLiquidityByTokenAmountsV2InstructionArgs {
+        method: IncreaseLiquidityMethod::ByTokenAmounts {
+            token_max_a: params.quote.token_est_a,
+            token_max_b: params.quote.token_est_b,
+            min_sqrt_price,
+            max_sqrt_price,
+        },
+        remaining_accounts_info: None,
+    });
+
+    Ok(GetIncreaseLiquidityInstructionsResult {
+        token_accounts,
+        increase_liquidity_instruction,
+    })
 }
 
 fn get_increase_liquidity_quote(
@@ -249,8 +338,6 @@ pub async fn increase_liquidity_instructions(
         transfer_fee_b,
     )?;
 
-    let mut instructions: Vec<Instruction> = Vec::new();
-
     let lower_tick_array_start_index =
         get_tick_array_start_tick_index(position.tick_lower_index, pool.tick_spacing);
     let upper_tick_array_start_index =
@@ -266,59 +353,30 @@ pub async fn increase_liquidity_instructions(
     let upper_tick_array_address =
         get_tick_array_address(&position.whirlpool, upper_tick_array_start_index)?.0;
 
-    let token_accounts = prepare_token_accounts_instructions(
+    let GetIncreaseLiquidityInstructionsResult {
+        token_accounts,
+        increase_liquidity_instruction,
+    } = get_increase_liquidity_instructions(
         rpc,
-        authority,
-        vec![
-            TokenAccountStrategy::WithBalance(pool.token_mint_a, quote.token_max_a),
-            TokenAccountStrategy::WithBalance(pool.token_mint_b, quote.token_max_b),
-        ],
+        GetIncreaseLiquidityInstructionsParams {
+            whirlpool_address: position.whirlpool,
+            whirlpool: &pool,
+            position_address,
+            position_token_account_address,
+            tick_array_lower_address: lower_tick_array_address,
+            tick_array_upper_address: upper_tick_array_address,
+            mint_a_info,
+            mint_b_info,
+            quote: &quote,
+            authority,
+            slippage_tolerance_bps,
+        },
     )
     .await?;
 
+    let mut instructions: Vec<Instruction> = Vec::new();
     instructions.extend(token_accounts.create_instructions);
-
-    let token_owner_account_a = token_accounts
-        .token_account_addresses
-        .get(&pool.token_mint_a)
-        .ok_or("Token A owner account not found")?;
-    let token_owner_account_b = token_accounts
-        .token_account_addresses
-        .get(&pool.token_mint_b)
-        .ok_or("Token B owner account not found")?;
-
-    let (min_sqrt_price, max_sqrt_price) =
-        get_sqrt_price_slippage_bounds(pool.sqrt_price, slippage_tolerance_bps);
-
-    instructions.push(
-        IncreaseLiquidityByTokenAmountsV2 {
-            whirlpool: position.whirlpool,
-            token_program_a: mint_a_info.owner,
-            token_program_b: mint_b_info.owner,
-            memo_program: spl_memo_interface::v3::ID,
-            position_authority: authority,
-            position: position_address,
-            position_token_account: position_token_account_address,
-            token_mint_a: pool.token_mint_a,
-            token_mint_b: pool.token_mint_b,
-            token_owner_account_a: *token_owner_account_a,
-            token_owner_account_b: *token_owner_account_b,
-            token_vault_a: pool.token_vault_a,
-            token_vault_b: pool.token_vault_b,
-            tick_array_lower: lower_tick_array_address,
-            tick_array_upper: upper_tick_array_address,
-        }
-        .instruction(IncreaseLiquidityByTokenAmountsV2InstructionArgs {
-            method: IncreaseLiquidityMethod::ByTokenAmounts {
-                token_max_a: quote.token_est_a,
-                token_max_b: quote.token_est_b,
-                min_sqrt_price,
-                max_sqrt_price,
-            },
-            remaining_accounts_info: None,
-        }),
-    );
-
+    instructions.push(increase_liquidity_instruction);
     instructions.extend(token_accounts.cleanup_instructions);
 
     Ok(IncreaseLiquidityInstruction {
@@ -422,13 +480,24 @@ async fn internal_open_position(
     let lower_tick_array_address = get_tick_array_address(&pool_address, lower_tick_start_index)?.0;
     let upper_tick_array_address = get_tick_array_address(&pool_address, upper_tick_start_index)?.0;
 
-    let token_accounts = prepare_token_accounts_instructions(
+    let GetIncreaseLiquidityInstructionsResult {
+        token_accounts,
+        increase_liquidity_instruction,
+    } = get_increase_liquidity_instructions(
         rpc,
-        funder,
-        vec![
-            TokenAccountStrategy::WithBalance(whirlpool.token_mint_a, quote.token_max_a),
-            TokenAccountStrategy::WithBalance(whirlpool.token_mint_b, quote.token_max_b),
-        ],
+        GetIncreaseLiquidityInstructionsParams {
+            whirlpool_address: pool_address,
+            whirlpool: &whirlpool,
+            position_address,
+            position_token_account_address,
+            tick_array_lower_address: lower_tick_array_address,
+            tick_array_upper_address: upper_tick_array_address,
+            mint_a_info,
+            mint_b_info,
+            quote: &quote,
+            authority: funder,
+            slippage_tolerance_bps,
+        },
     )
     .await?;
 
@@ -471,15 +540,6 @@ async fn internal_open_position(
         non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
-    let token_owner_account_a = token_accounts
-        .token_account_addresses
-        .get(&whirlpool.token_mint_a)
-        .ok_or("Token A owner account not found")?;
-    let token_owner_account_b = token_accounts
-        .token_account_addresses
-        .get(&whirlpool.token_mint_b)
-        .ok_or("Token B owner account not found")?;
-
     instructions.push(
         OpenPositionWithTokenExtensions {
             funder,
@@ -500,38 +560,7 @@ async fn internal_open_position(
         }),
     );
 
-    let (min_sqrt_price, max_sqrt_price) =
-        get_sqrt_price_slippage_bounds(whirlpool.sqrt_price, slippage_tolerance_bps);
-
-    instructions.push(
-        IncreaseLiquidityByTokenAmountsV2 {
-            whirlpool: pool_address,
-            token_program_a: mint_a_info.owner,
-            token_program_b: mint_b_info.owner,
-            memo_program: spl_memo_interface::v3::ID,
-            position_authority: funder,
-            position: position_address,
-            position_token_account: position_token_account_address,
-            token_mint_a: whirlpool.token_mint_a,
-            token_mint_b: whirlpool.token_mint_b,
-            token_owner_account_a: *token_owner_account_a,
-            token_owner_account_b: *token_owner_account_b,
-            token_vault_a: whirlpool.token_vault_a,
-            token_vault_b: whirlpool.token_vault_b,
-            tick_array_lower: lower_tick_array_address,
-            tick_array_upper: upper_tick_array_address,
-        }
-        .instruction(IncreaseLiquidityByTokenAmountsV2InstructionArgs {
-            method: IncreaseLiquidityMethod::ByTokenAmounts {
-                token_max_a: quote.token_est_a,
-                token_max_b: quote.token_est_b,
-                min_sqrt_price,
-                max_sqrt_price,
-            },
-            remaining_accounts_info: None,
-        }),
-    );
-
+    instructions.push(increase_liquidity_instruction);
     instructions.extend(token_accounts.cleanup_instructions);
 
     Ok(OpenPositionInstruction {

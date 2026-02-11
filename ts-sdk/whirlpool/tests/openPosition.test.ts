@@ -1,29 +1,32 @@
-import { describe, it, beforeAll } from "vitest";
+import {
+  fetchMaybePosition,
+  getOpenPositionWithTokenExtensionsInstructionDataDecoder,
+  getPositionAddress,
+  OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
+} from "@orca-so/whirlpools-client";
+import {
+  getFullRangeTickIndexes,
+  getInitializableTickIndex,
+  priceToTickIndex,
+} from "@orca-so/whirlpools-core";
 import type { Address } from "@solana/kit";
 import { assertAccountExists } from "@solana/kit";
+import assert from "assert";
+import { beforeAll, describe, it } from "vitest";
+import { SPLASH_POOL_TICK_SPACING } from "../src/config";
+import {
+  openFullRangePositionInstructions,
+  openPositionInstructions,
+  openPositionInstructionsWithTickBounds,
+} from "../src/increaseLiquidity";
+import { rpc, sendTransaction } from "./utils/mockRpc";
+import { setupWhirlpool } from "./utils/program";
 import { setupAta, setupMint } from "./utils/token";
 import {
   setupAtaTE,
   setupMintTE,
   setupMintTEFee,
 } from "./utils/tokenExtensions";
-import { setupWhirlpool } from "./utils/program";
-import {
-  openFullRangePositionInstructions,
-  openPositionInstructions,
-} from "../src/increaseLiquidity";
-import { rpc, sendTransaction } from "./utils/mockRpc";
-import {
-  fetchMaybePosition,
-  getPositionAddress,
-} from "@orca-so/whirlpools-client";
-import assert from "assert";
-import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import {
-  getFullRangeTickIndexes,
-  getInitializableTickIndex,
-  priceToTickIndex,
-} from "@orca-so/whirlpools-core";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -217,6 +220,86 @@ describe("Open Position Instructions", () => {
     // difference: 0.068486400 SOL / tick array
     // assert.strictEqual(initializationCost, 140814720n); // Fixed tick array
     assert.strictEqual(initializationCost, 3841920n); // Dynamic tick array
+  });
+
+  it("Open position with tick bounds should result in correct tick bounds", async () => {
+    const param = { liquidity: 10_000n };
+    const whirlpool = pools.get("A-B")!;
+
+    const expectedTickLowerIndex = -64;
+    const expectedTickUpperIndex = 64;
+    const { instructions, positionMint } =
+      await openPositionInstructionsWithTickBounds(
+        rpc,
+        whirlpool,
+        param,
+        expectedTickLowerIndex,
+        expectedTickUpperIndex,
+        100,
+        false,
+      );
+
+    const positionAddress = await getPositionAddress(positionMint);
+    const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
+
+    await sendTransaction(instructions);
+
+    const positionAfter = await fetchMaybePosition(rpc, positionAddress[0]);
+    assert.strictEqual(positionBefore.exists, false);
+    assertAccountExists(positionAfter);
+
+    const initializableLowerTickIndex = getInitializableTickIndex(
+      expectedTickLowerIndex,
+      tickSpacing,
+      false,
+    );
+    const initializableUpperTickIndex = getInitializableTickIndex(
+      expectedTickUpperIndex,
+      tickSpacing,
+      true,
+    );
+
+    assert.strictEqual(
+      positionAfter.data.tickLowerIndex,
+      initializableLowerTickIndex,
+    );
+    assert.strictEqual(
+      positionAfter.data.tickUpperIndex,
+      initializableUpperTickIndex,
+    );
+  });
+
+  it("Should support explicit token extensions metadata flag", async () => {
+    const param = { liquidity: 10_000n };
+    const whirlpool = pools.get("A-B")!;
+
+    const { instructions } = await openPositionInstructions(
+      rpc,
+      whirlpool,
+      param,
+      0.95,
+      1.05,
+      100,
+      false,
+    );
+
+    const openPositionIxs = instructions.filter(({ data }) => {
+      return (
+        data &&
+        data.length >= 8 &&
+        OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR.every(
+          (byte, index) => data[index] === byte,
+        )
+      );
+    });
+
+    assert.strictEqual(openPositionIxs.length, 1);
+    const openPositionIx = openPositionIxs[0];
+    const instructionData =
+      getOpenPositionWithTokenExtensionsInstructionDataDecoder().decode(
+        openPositionIx.data!,
+      );
+    assert.strictEqual(instructionData.withTokenMetadataExtension, false);
   });
 
   it("Should throw an error if openPositionInstructions is called on a splash pool", async () => {

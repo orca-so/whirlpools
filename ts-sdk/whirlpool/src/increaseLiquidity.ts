@@ -3,12 +3,13 @@ import {
   fetchAllMaybeTickArray,
   fetchPosition,
   fetchWhirlpool,
-  getIncreaseLiquidityV2Instruction,
+  getIncreaseLiquidityByTokenAmountsV2Instruction,
   getInitializeDynamicTickArrayInstruction,
   getOpenPositionWithTokenExtensionsInstruction,
   getPositionAddress,
   getTickArrayAddress,
   getDynamicTickArrayMinSize,
+  increaseLiquidityMethod,
 } from "@orca-so/whirlpools-client";
 import type {
   IncreaseLiquidityQuote,
@@ -97,7 +98,44 @@ export type IncreaseLiquidityInstructions = {
   instructions: Instruction[];
 };
 
-export function getIncreaseLiquidityQuote(
+const SLIPPAGE_BPS_DENOMINATOR = 10_000n;
+const SQRT_SLIPPAGE_DENOMINATOR = 100n;
+
+function sqrtBigInt(value: bigint): bigint {
+  if (value < 0n) {
+    throw new Error("sqrtBigInt value must be non-negative");
+  }
+  if (value < 2n) {
+    return value;
+  }
+  let prev = value / 2n;
+  let next = (prev + value / prev) / 2n;
+  while (next < prev) {
+    prev = next;
+    next = (prev + value / prev) / 2n;
+  }
+  return prev;
+}
+
+function getSqrtPriceSlippageBounds(
+  sqrtPrice: bigint,
+  slippageToleranceBps: number,
+): { minSqrtPrice: bigint; maxSqrtPrice: bigint } {
+  const boundedBps = BigInt(
+    Math.max(
+      0,
+      Math.min(slippageToleranceBps, Number(SLIPPAGE_BPS_DENOMINATOR)),
+    ),
+  );
+  const lowerFactor = sqrtBigInt(SLIPPAGE_BPS_DENOMINATOR - boundedBps);
+  const upperFactor = sqrtBigInt(SLIPPAGE_BPS_DENOMINATOR + boundedBps);
+  return {
+    minSqrtPrice: (sqrtPrice * lowerFactor) / SQRT_SLIPPAGE_DENOMINATOR,
+    maxSqrtPrice: (sqrtPrice * upperFactor) / SQRT_SLIPPAGE_DENOMINATOR,
+  };
+}
+
+function getIncreaseLiquidityQuote(
   param: IncreaseLiquidityQuoteParam,
   pool: Whirlpool,
   tickLowerIndex: number,
@@ -208,6 +246,10 @@ export async function increaseLiquidityInstructions(
     transferFeeA,
     transferFeeB,
   );
+  const { minSqrtPrice, maxSqrtPrice } = getSqrtPriceSlippageBounds(
+    whirlpool.data.sqrtPrice,
+    slippageToleranceBps,
+  );
   const instructions: Instruction[] = [];
 
   const lowerTickArrayStartIndex = getTickArrayStartTickIndex(
@@ -245,7 +287,7 @@ export async function increaseLiquidityInstructions(
   // Since position exists tick arrays must also already exist
 
   instructions.push(
-    getIncreaseLiquidityV2Instruction({
+    getIncreaseLiquidityByTokenAmountsV2Instruction({
       whirlpool: whirlpool.address,
       positionAuthority: authority,
       position: position.address,
@@ -260,9 +302,12 @@ export async function increaseLiquidityInstructions(
       tokenProgramB: mintB.programAddress,
       tickArrayLower,
       tickArrayUpper,
-      liquidityAmount: quote.liquidityDelta,
-      tokenMaxA: quote.tokenMaxA,
-      tokenMaxB: quote.tokenMaxB,
+      method: increaseLiquidityMethod("ByTokenAmounts", {
+        tokenMaxA: quote.tokenEstA,
+        tokenMaxB: quote.tokenEstB,
+        minSqrtPrice,
+        maxSqrtPrice,
+      }),
       memoProgram: MEMO_PROGRAM_ADDRESS,
       remainingAccountsInfo: null,
     }),
@@ -339,6 +384,10 @@ async function internalOpenPositionInstructions(
     slippageToleranceBps,
     transferFeeA,
     transferFeeB,
+  );
+  const { minSqrtPrice, maxSqrtPrice } = getSqrtPriceSlippageBounds(
+    whirlpool.data.sqrtPrice,
+    slippageToleranceBps,
   );
 
   const positionMint = await generateKeyPairSigner();
@@ -437,7 +486,7 @@ async function internalOpenPositionInstructions(
   );
 
   instructions.push(
-    getIncreaseLiquidityV2Instruction({
+    getIncreaseLiquidityByTokenAmountsV2Instruction({
       whirlpool: whirlpool.address,
       positionAuthority: funder,
       position: positionAddress[0],
@@ -452,9 +501,12 @@ async function internalOpenPositionInstructions(
       tokenProgramB: mintB.programAddress,
       tickArrayLower: lowerTickArrayAddress,
       tickArrayUpper: upperTickArrayAddress,
-      liquidityAmount: quote.liquidityDelta,
-      tokenMaxA: quote.tokenMaxA,
-      tokenMaxB: quote.tokenMaxB,
+      method: increaseLiquidityMethod("ByTokenAmounts", {
+        tokenMaxA: quote.tokenEstA,
+        tokenMaxB: quote.tokenEstB,
+        minSqrtPrice,
+        maxSqrtPrice,
+      }),
       memoProgram: MEMO_PROGRAM_ADDRESS,
       remainingAccountsInfo: null,
     }),

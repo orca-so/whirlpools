@@ -3,14 +3,17 @@ import type { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import type { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
-import type { DevFeeSwapInput, SwapInput } from "./instructions";
+import type {
+  ByTokenAmountsParams,
+  DevFeeSwapInput,
+  SwapInput,
+} from "./instructions";
 import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "./network/public/fetcher";
 import type {
   DecreaseLiquidityInput,
-  IncreaseLiquidityInput,
   LockConfigData,
   LockTypeData,
   PositionData,
@@ -247,7 +250,7 @@ export interface Whirlpool {
   openPosition: (
     tickLower: number,
     tickUpper: number,
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     wallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
@@ -274,7 +277,7 @@ export interface Whirlpool {
   openPositionWithMetadata: (
     tickLower: number,
     tickUpper: number,
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     wallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
@@ -392,7 +395,7 @@ export interface Position {
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   increaseLiquidity: (
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     resolveATA?: boolean,
     wallet?: Address,
     positionWallet?: Address,

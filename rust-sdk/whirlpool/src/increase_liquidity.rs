@@ -6,12 +6,15 @@ use orca_whirlpools_client::{
     InitializeDynamicTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
     OpenPositionWithTokenExtensionsInstructionArgs, Position, Whirlpool,
 };
-use orca_whirlpools_client::{IncreaseLiquidityV2, IncreaseLiquidityV2InstructionArgs};
+use orca_whirlpools_client::{
+    IncreaseLiquidityByTokenAmountsV2, IncreaseLiquidityByTokenAmountsV2InstructionArgs,
+    IncreaseLiquidityMethod,
+};
 use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
     increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
     is_tick_index_in_bounds, is_tick_initializable, order_tick_indexes, price_to_tick_index,
-    IncreaseLiquidityQuote, TransferFee,
+    IncreaseLiquidityQuote, TransferFee, BPS_DENOMINATOR, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
 };
 use solana_account::Account;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -29,6 +32,34 @@ use crate::{
 };
 
 // TODO: support transfer hooks
+
+const SQRT_SLIPPAGE_DENOMINATOR: u128 = 100;
+
+fn sqrt_u128(value: u128) -> u128 {
+    if value < 2 {
+        return value;
+    }
+    let mut prev = value / 2;
+    let mut next = (prev + value / prev) / 2;
+    while next < prev {
+        prev = next;
+        next = (prev + value / prev) / 2;
+    }
+    prev
+}
+
+fn get_sqrt_price_slippage_bounds(sqrt_price: u128, slippage_tolerance_bps: u16) -> (u128, u128) {
+    let capped_bps = slippage_tolerance_bps.min(BPS_DENOMINATOR);
+    let bps = u128::from(capped_bps);
+    let bps_denominator = u128::from(BPS_DENOMINATOR);
+    let lower_factor = sqrt_u128(bps_denominator - bps);
+    let upper_factor = sqrt_u128(bps_denominator + bps);
+
+    let scale = |factor: u128| sqrt_price.saturating_mul(factor) / SQRT_SLIPPAGE_DENOMINATOR;
+    let min_sqrt_price = scale(lower_factor).max(MIN_SQRT_PRICE);
+    let max_sqrt_price = scale(upper_factor).min(MAX_SQRT_PRICE);
+    (min_sqrt_price, max_sqrt_price)
+}
 
 fn get_increase_liquidity_quote(
     param: IncreaseLiquidityParam,
@@ -256,8 +287,11 @@ pub async fn increase_liquidity_instructions(
         .get(&pool.token_mint_b)
         .ok_or("Token B owner account not found")?;
 
+    let (min_sqrt_price, max_sqrt_price) =
+        get_sqrt_price_slippage_bounds(pool.sqrt_price, slippage_tolerance_bps);
+
     instructions.push(
-        IncreaseLiquidityV2 {
+        IncreaseLiquidityByTokenAmountsV2 {
             whirlpool: position.whirlpool,
             token_program_a: mint_a_info.owner,
             token_program_b: mint_b_info.owner,
@@ -274,10 +308,13 @@ pub async fn increase_liquidity_instructions(
             tick_array_lower: lower_tick_array_address,
             tick_array_upper: upper_tick_array_address,
         }
-        .instruction(IncreaseLiquidityV2InstructionArgs {
-            liquidity_amount: quote.liquidity_delta,
-            token_max_a: quote.token_max_a,
-            token_max_b: quote.token_max_b,
+        .instruction(IncreaseLiquidityByTokenAmountsV2InstructionArgs {
+            method: IncreaseLiquidityMethod::ByTokenAmounts {
+                token_max_a: quote.token_est_a,
+                token_max_b: quote.token_est_b,
+                min_sqrt_price,
+                max_sqrt_price,
+            },
             remaining_accounts_info: None,
         }),
     );
@@ -463,8 +500,11 @@ async fn internal_open_position(
         }),
     );
 
+    let (min_sqrt_price, max_sqrt_price) =
+        get_sqrt_price_slippage_bounds(whirlpool.sqrt_price, slippage_tolerance_bps);
+
     instructions.push(
-        IncreaseLiquidityV2 {
+        IncreaseLiquidityByTokenAmountsV2 {
             whirlpool: pool_address,
             token_program_a: mint_a_info.owner,
             token_program_b: mint_b_info.owner,
@@ -481,10 +521,13 @@ async fn internal_open_position(
             tick_array_lower: lower_tick_array_address,
             tick_array_upper: upper_tick_array_address,
         }
-        .instruction(IncreaseLiquidityV2InstructionArgs {
-            liquidity_amount: quote.liquidity_delta,
-            token_max_a: quote.token_max_a,
-            token_max_b: quote.token_max_b,
+        .instruction(IncreaseLiquidityByTokenAmountsV2InstructionArgs {
+            method: IncreaseLiquidityMethod::ByTokenAmounts {
+                token_max_a: quote.token_est_a,
+                token_max_b: quote.token_est_b,
+                min_sqrt_price,
+                max_sqrt_price,
+            },
             remaining_accounts_info: None,
         }),
     );
@@ -873,6 +916,7 @@ mod tests {
 
     use crate::{
         increase_liquidity_instructions, open_position_instructions,
+        test_utils::assert_liquidity_close,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
@@ -881,6 +925,10 @@ mod tests {
     };
 
     use solana_client::nonblocking::rpc_client::RpcClient;
+
+    const RELATIVE_TOLERANCE_BPS: u128 = 50;
+    const MIN_ABSOLUTE_BPS: u128 = 2;
+
     async fn fetch_position(rpc: &RpcClient, address: Pubkey) -> Result<Position, Box<dyn Error>> {
         let account = rpc.get_account(&address).await?;
         Position::from_bytes(&account.data).map_err(|e| e.into())
@@ -935,10 +983,11 @@ mod tests {
 
         let position_pubkey = get_position_address(&position_mint)?.0;
         let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
-        assert_eq!(
-            position_data.liquidity, quote.liquidity_delta,
-            "Position liquidity mismatch! expected={}, got={}",
-            quote.liquidity_delta, position_data.liquidity
+        assert_liquidity_close(
+            quote.liquidity_delta,
+            position_data.liquidity,
+            RELATIVE_TOLERANCE_BPS,
+            MIN_ABSOLUTE_BPS,
         );
 
         Ok(())

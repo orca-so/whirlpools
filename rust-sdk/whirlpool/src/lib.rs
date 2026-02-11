@@ -7,6 +7,8 @@ mod increase_liquidity;
 mod pool;
 mod position;
 mod swap;
+#[cfg(test)]
+mod test_utils;
 mod token;
 mod utils;
 

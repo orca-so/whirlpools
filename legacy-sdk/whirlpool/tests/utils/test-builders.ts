@@ -25,7 +25,7 @@ import {
   PDAUtil,
   PoolUtil,
   PriceMath,
-  increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
+  increaseLiquidityQuoteByInputTokenUsingPriceDeviation,
 } from "../../src";
 import type { WhirlpoolContext } from "../../src/context";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
@@ -363,6 +363,7 @@ export async function initPosition(
   sourceWallet?: Keypair,
   withTokenExtensions: boolean = false,
 ) {
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
   const sourceWalletKey = sourceWallet
     ? sourceWallet.publicKey
     : ctx.wallet.publicKey;
@@ -381,12 +382,12 @@ export async function initPosition(
     tokenBDecimal,
     tickSpacing,
   );
-  const quote = await increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+  const quote = await increaseLiquidityQuoteByInputTokenUsingPriceDeviation(
     inputTokenMint,
     new Decimal(inputTokenAmount),
     lowerTick,
     upperTick,
-    Percentage.fromFraction(1, 100),
+    priceDeviation,
     pool,
     await TokenExtensionUtil.buildTokenExtensionContext(
       ctx.fetcher,

@@ -1,5 +1,5 @@
 import type { Address } from "@coral-xyz/anchor";
-import { BN, translateAddress } from "@coral-xyz/anchor";
+import { translateAddress } from "@coral-xyz/anchor";
 import type { Instruction, Percentage } from "@orca-so/common-sdk";
 import {
   AddressUtil,
@@ -19,15 +19,14 @@ import { Keypair } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import type { WhirlpoolContext } from "../context";
 import type {
+  ByTokenAmountsParams,
   DevFeeSwapInput,
-  IncreaseLiquidityInput,
   SwapInput,
 } from "../instructions";
 import {
   closePositionIx,
   closePositionWithTokenExtensionsIx,
-  increaseLiquidityIx,
-  increaseLiquidityV2Ix,
+  increaseLiquidityByTokenAmountsV2Ix,
   initDynamicTickArrayIx,
   initTickArrayIx,
   openPositionIx,
@@ -115,7 +114,7 @@ export class WhirlpoolImpl implements Whirlpool {
   async openPosition(
     tickLower: number,
     tickUpper: number,
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     wallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
@@ -140,7 +139,7 @@ export class WhirlpoolImpl implements Whirlpool {
   async openPositionWithMetadata(
     tickLower: number,
     tickUpper: number,
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     sourceWallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
@@ -324,7 +323,7 @@ export class WhirlpoolImpl implements Whirlpool {
   async getOpenPositionWithOptMetadataTx(
     tickLower: number,
     tickUpper: number,
-    liquidityInput: IncreaseLiquidityInput,
+    liquidityInput: ByTokenAmountsParams,
     wallet: PublicKey,
     funder: PublicKey,
     tokenProgramId: PublicKey,
@@ -346,9 +345,7 @@ export class WhirlpoolImpl implements Whirlpool {
       "tokenProgramId must be either TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID",
     );
 
-    const { liquidityAmount: liquidity, tokenMaxA, tokenMaxB } = liquidityInput;
-
-    invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
+    const { minSqrtPrice, maxSqrtPrice, tokenMaxA, tokenMaxB } = liquidityInput;
 
     const whirlpool = await this.ctx.fetcher.getPool(
       this.address,
@@ -462,7 +459,8 @@ export class WhirlpoolImpl implements Whirlpool {
     );
 
     const baseParams = {
-      liquidityAmount: liquidity,
+      minSqrtPrice,
+      maxSqrtPrice,
       tokenMaxA,
       tokenMaxB,
       whirlpool: this.address,
@@ -477,27 +475,23 @@ export class WhirlpoolImpl implements Whirlpool {
       tickArrayUpper: tickArrayUpperPda.publicKey,
     };
     // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
-    const liquidityIx = !TokenExtensionUtil.isV2IxRequiredPool(
-      tokenExtensionCtx,
-    )
-      ? increaseLiquidityIx(this.ctx.program, baseParams)
-      : increaseLiquidityV2Ix(this.ctx.program, {
-          ...baseParams,
-          tokenMintA: whirlpool.tokenMintA,
-          tokenMintB: whirlpool.tokenMintB,
-          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-            this.ctx.connection,
-            tokenExtensionCtx,
-            baseParams.tokenOwnerAccountA,
-            baseParams.tokenVaultA,
-            baseParams.positionAuthority,
-            baseParams.tokenOwnerAccountB,
-            baseParams.tokenVaultB,
-            baseParams.positionAuthority,
-          )),
-        });
+    const liquidityIx = increaseLiquidityByTokenAmountsV2Ix(this.ctx.program, {
+      ...baseParams,
+      tokenMintA: whirlpool.tokenMintA,
+      tokenMintB: whirlpool.tokenMintB,
+      tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+      tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+      ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+        this.ctx.connection,
+        tokenExtensionCtx,
+        baseParams.tokenOwnerAccountA,
+        baseParams.tokenVaultA,
+        baseParams.positionAuthority,
+        baseParams.tokenOwnerAccountB,
+        baseParams.tokenVaultB,
+        baseParams.positionAuthority,
+      )),
+    });
     txBuilder.addInstruction(liquidityIx);
 
     return {

@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
@@ -11,12 +11,13 @@ import type { WhirlpoolClient, WhirlpoolContext } from "../../../../src";
 import {
   NUM_REWARDS,
   PDAUtil,
+  PoolUtil,
+  PriceMath,
   buildWhirlpoolClient,
   collectRewardsQuote,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
-  MAX_U64,
   TEST_TOKEN_2022_PROGRAM_ID,
   TickSpacing,
   warpClock,
@@ -40,6 +41,7 @@ describe("PositionImpl#collectRewards()", () => {
   const vaultStartBalance = 1_000_000;
   const tickSpacing = TickSpacing.Standard;
   const liquidityAmount = new BN(10_000_000);
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
 
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
@@ -178,15 +180,28 @@ describe("PositionImpl#collectRewards()", () => {
       const pool = await testCtx.whirlpoolClient.getPool(
         poolInitInfo.whirlpoolPda.publicKey,
       );
+      const poolData = pool.getData();
+      const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+        poolData.sqrtPrice,
+        priceDeviation,
+      );
+      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+        liquidityAmount,
+        poolData.sqrtPrice,
+        PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
+        PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+        true,
+      );
 
       // open TokenExtensions based position
       const positionWithTokenExtensions = await pool.openPosition(
         tickLowerIndex,
         tickUpperIndex,
         {
-          liquidityAmount,
-          tokenMaxA: MAX_U64,
-          tokenMaxB: MAX_U64,
+          tokenMaxA: tokenA,
+          tokenMaxB: tokenB,
+          minSqrtPrice: lowerBound[0],
+          maxSqrtPrice: upperBound[0],
         },
         undefined,
         undefined,

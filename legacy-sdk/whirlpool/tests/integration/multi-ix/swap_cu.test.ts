@@ -2,13 +2,15 @@ import * as anchor from "@coral-xyz/anchor";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
-import type { IncreaseLiquidityInput, WhirlpoolClient } from "../../../src";
+import { Percentage } from "@orca-so/common-sdk";
+import type { WhirlpoolClient } from "../../../src";
 import {
   PDAUtil,
   PriceMath,
   TickUtil,
   buildWhirlpoolClient,
 } from "../../../src";
+import { PoolUtil } from "../../../src/utils/public/pool-utils";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { initTestPoolWithTokens, useMaxCU } from "../../utils/init-utils";
@@ -17,6 +19,7 @@ import {
   getLiteSVM,
   initializeLiteSVMEnvironment,
 } from "../../utils/litesvm";
+import type { ByTokenAmountsParams } from "../../../src/instructions";
 
 const TICK_SPACING = 1;
 
@@ -55,6 +58,19 @@ describe("Swap CUs", () => {
       TickUtil.getFullRangeTickIndex(TICK_SPACING);
 
     const pool = await client.getPool(whirlpool);
+    const poolData = pool.getData();
+    const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+      poolData.sqrtPrice,
+      Percentage.fromFraction(1, 10_000),
+    );
+    const liquidityAmount = new BN(1_000_000_000);
+    const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+      liquidityAmount,
+      poolData.sqrtPrice,
+      PriceMath.tickIndexToSqrtPriceX64(fullRangeLowerTick),
+      PriceMath.tickIndexToSqrtPriceX64(fullRangeUpperTick),
+      true,
+    );
 
     // Init 3 TAs and full range tick array
     const initTickArraysTx = await pool.initTickArrayForTicks(
@@ -67,10 +83,11 @@ describe("Swap CUs", () => {
     await initTickArraysTx!.buildAndExecute();
 
     // Init Full range position
-    const liquidityInput: IncreaseLiquidityInput = {
-      liquidityAmount: new BN(1000000000),
-      tokenMaxA: new BN(10).pow(new BN(18)),
-      tokenMaxB: new BN(10).pow(new BN(18)),
+    const liquidityInput: ByTokenAmountsParams = {
+      tokenMaxA: tokenA,
+      tokenMaxB: tokenB,
+      minSqrtPrice: lowerBound[0],
+      maxSqrtPrice: upperBound[0],
     };
 
     const position = await pool.openPosition(
@@ -85,16 +102,29 @@ describe("Swap CUs", () => {
   // Initialze all ticks in range
   const initAllTicks = async () => {
     const pool = await client.getPool(whirlpool);
+    const poolData = pool.getData();
+    const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+      poolData.sqrtPrice,
+      Percentage.fromFraction(1, 10_000),
+    );
 
     for (let i = 0; i < 132; i++) {
-      const liquidityInput: IncreaseLiquidityInput = {
-        liquidityAmount: new BN(1),
-        tokenMaxA: new BN(10).pow(new BN(18)),
-        tokenMaxB: new BN(10).pow(new BN(18)),
-      };
-
       const lowerTick = i * TICK_SPACING;
       const upperTick = 264 - (i + 1) * TICK_SPACING;
+      const liquidityAmount = new BN(1);
+      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+        liquidityAmount,
+        poolData.sqrtPrice,
+        PriceMath.tickIndexToSqrtPriceX64(lowerTick),
+        PriceMath.tickIndexToSqrtPriceX64(upperTick),
+        true,
+      );
+      const liquidityInput: ByTokenAmountsParams = {
+        tokenMaxA: tokenA,
+        tokenMaxB: tokenB,
+        minSqrtPrice: lowerBound[0],
+        maxSqrtPrice: upperBound[0],
+      };
 
       const positionTx = await pool.openPosition(
         lowerTick,

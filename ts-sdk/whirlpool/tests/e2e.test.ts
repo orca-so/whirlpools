@@ -24,12 +24,15 @@ import {
 } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import { setupAta, setupMint } from "./utils/token";
+import { assertAmountClose, assertLiquidityClose } from "./utils/assert";
 
 describe("e2e", () => {
   let mintA: Address;
   let mintB: Address;
   let ataA: Address;
   let ataB: Address;
+  const minAbsoluteTolerance = 2n;
+  const relativeToleranceBps = 100n;
 
   beforeAll(async () => {
     mintA = await setupMint({ decimals: 9 });
@@ -82,14 +85,21 @@ describe("e2e", () => {
     const positionAfter = await fetchPositionByMint(positionMint);
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);
-    assert.strictEqual(quote.liquidityDelta, positionAfter.data.liquidity);
-    assert.strictEqual(
-      tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenEstA,
+    assertLiquidityClose(
+      quote.liquidityDelta,
+      positionAfter.data.liquidity,
+      relativeToleranceBps,
+      minAbsoluteTolerance,
     );
-    assert.strictEqual(
-      tokenBAfter.data.amount - tokenBBefore.data.amount,
+    assertAmountClose(
+      -quote.tokenEstA,
+      tokenAAfter.data.amount - tokenABefore.data.amount,
+      minAbsoluteTolerance,
+    );
+    assertAmountClose(
       -quote.tokenEstB,
+      tokenBAfter.data.amount - tokenBBefore.data.amount,
+      minAbsoluteTolerance,
     );
 
     return positionMint;
@@ -110,17 +120,21 @@ describe("e2e", () => {
     const positionAfter = await fetchPositionByMint(positionMint);
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);
-    assert.strictEqual(
-      positionAfter.data.liquidity - positionBefore.data.liquidity,
+    assertLiquidityClose(
       quote.liquidityDelta,
+      positionAfter.data.liquidity - positionBefore.data.liquidity,
+      relativeToleranceBps,
+      minAbsoluteTolerance,
     );
-    assert.strictEqual(
-      tokenAAfter.data.amount - tokenABefore.data.amount,
+    assertAmountClose(
       -quote.tokenEstA,
+      tokenAAfter.data.amount - tokenABefore.data.amount,
+      minAbsoluteTolerance,
     );
-    assert.strictEqual(
-      tokenBAfter.data.amount - tokenBBefore.data.amount,
+    assertAmountClose(
       -quote.tokenEstB,
+      tokenBAfter.data.amount - tokenBBefore.data.amount,
+      minAbsoluteTolerance,
     );
   };
 

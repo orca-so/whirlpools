@@ -40,6 +40,7 @@ describe("set_adaptive_fee_constants", () => {
 
   const tickSpacing = 64;
   const feeTierIndex = 1024 + tickSpacing;
+  const priceDeviation = Percentage.fromFraction(1, 10_000);
 
   it("sets specific constants", async () => {
     const initialPresetAdaptiveFeeConstants: AdaptiveFeeConstantsData = {
@@ -143,11 +144,19 @@ describe("set_adaptive_fee_constants", () => {
       tickUpperIndex: fullRange[1],
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
     });
+    const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+      pool.getData().sqrtPrice,
+      priceDeviation,
+    );
 
     const { tx: openPositionTx } = await pool.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuote,
+      {
+        ...depositQuote,
+        minSqrtPrice: lowerBound[0],
+        maxSqrtPrice: upperBound[0],
+      },
     );
     await openPositionTx.buildAndExecute();
 
@@ -369,11 +378,19 @@ describe("set_adaptive_fee_constants", () => {
       tickUpperIndex: fullRange[1],
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
     });
+    const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+      pool.getData().sqrtPrice,
+      priceDeviation,
+    );
 
     const { tx: openPositionTx } = await pool.openPosition(
       fullRange[0],
       fullRange[1],
-      depositQuote,
+      {
+        ...depositQuote,
+        minSqrtPrice: lowerBound[0],
+        maxSqrtPrice: upperBound[0],
+      },
     );
     await openPositionTx.buildAndExecute();
 

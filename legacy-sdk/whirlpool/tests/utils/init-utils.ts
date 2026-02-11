@@ -938,6 +938,8 @@ export interface FundedPositionInfo {
   tickArrayUpper: PublicKey;
 }
 
+const ALLOWABLE_PRICE_DEVIATION = 0.0001; // 1 b.p.
+
 export async function fundPositionsWithClient(
   client: WhirlpoolClient,
   whirlpoolKey: PublicKey,
@@ -945,6 +947,27 @@ export async function fundPositionsWithClient(
 ) {
   const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
   const whirlpoolData = whirlpool.getData();
+  const ctx = client.getContext();
+  const tokenDecimalsA =
+    (await ctx.fetcher.getMintInfo(whirlpoolData.tokenMintA))?.decimals ?? 0;
+  const tokenDecimalsB =
+    (await ctx.fetcher.getMintInfo(whirlpoolData.tokenMintB))?.decimals ?? 0;
+  const currentPrice = PriceMath.sqrtPriceX64ToPrice(
+    whirlpoolData.sqrtPrice,
+    tokenDecimalsA,
+    tokenDecimalsB,
+  );
+  const deviation = new Decimal(ALLOWABLE_PRICE_DEVIATION);
+  const minSqrtPrice = PriceMath.priceToSqrtPriceX64(
+    currentPrice.mul(new Decimal(1).minus(deviation)),
+    tokenDecimalsA,
+    tokenDecimalsB,
+  );
+  const maxSqrtPrice = PriceMath.priceToSqrtPriceX64(
+    currentPrice.mul(new Decimal(1).plus(deviation)),
+    tokenDecimalsA,
+    tokenDecimalsB,
+  );
   // Execute fundings sequentially to avoid AccountBorrowFailed errors in LiteSVM
   for (const param of fundParams) {
     const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
@@ -964,9 +987,10 @@ export async function fundPositionsWithClient(
       param.tickLowerIndex,
       param.tickUpperIndex,
       {
-        liquidityAmount: param.liquidityAmount,
         tokenMaxA: tokenA,
         tokenMaxB: tokenB,
+        minSqrtPrice,
+        maxSqrtPrice,
       },
       undefined,
       undefined,

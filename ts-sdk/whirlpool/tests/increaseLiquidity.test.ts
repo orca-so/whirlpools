@@ -1,4 +1,8 @@
-import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
+import {
+  fetchPosition,
+  fetchWhirlpool,
+  getPositionAddress,
+} from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token-2022";
 import type { Address } from "@solana/kit";
 import assert from "assert";
@@ -22,6 +26,7 @@ import {
   setupMintTEFee,
 } from "./utils/tokenExtensions";
 import { assertAmountClose, assertLiquidityClose } from "./utils/assert";
+import { getConstrainingQuote } from "./utils/quote";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -89,6 +94,9 @@ describe("Increase Liquidity Instructions", () => {
     }
   });
 
+  const slippageToleranceBps = 100;
+  const baseTokenAmount = 10_000n;
+
   const testIncreaseLiquidity = async (
     positionName: string,
     poolName: string,
@@ -97,19 +105,42 @@ describe("Increase Liquidity Instructions", () => {
     const [mintAKey, mintBKey] = poolName.split("-");
     const ataA = atas.get(mintAKey)!;
     const ataB = atas.get(mintBKey)!;
-    const param = { liquidity: 10_000n };
 
-    const { quote, instructions } = await increaseLiquidityInstructions(
+    const isOneSidedA = positionName.includes("one sided A");
+    const isOneSidedB = positionName.includes("one sided B");
+    // One-sided A: range below price (ticks -100 to -1) -> deposit only token B
+    // One-sided B: range above price (ticks 1 to 100) -> deposit only token A
+    const param = {
+      tokenMaxA: isOneSidedA ? 0n : baseTokenAmount,
+      tokenMaxB: isOneSidedB ? 0n : baseTokenAmount,
+    };
+
+    const positionAddress = await getPositionAddress(positionMint);
+    const position = await fetchPosition(rpc, positionAddress[0]);
+    const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
+    const { sqrtPrice } = whirlpool.data;
+    const tickLower = position.data.tickLowerIndex;
+    const tickUpper = position.data.tickUpperIndex;
+
+    const quote = getConstrainingQuote(
+      param,
+      slippageToleranceBps,
+      sqrtPrice,
+      tickLower,
+      tickUpper,
+    );
+
+    const { instructions } = await increaseLiquidityInstructions(
       rpc,
       positionMint,
       param,
+      slippageToleranceBps,
     );
 
     const tokenBeforeA = await fetchToken(rpc, ataA);
     const tokenBeforeB = await fetchToken(rpc, ataB);
     await sendTransaction(instructions);
-    const positionAddress = await getPositionAddress(positionMint);
-    const position = await fetchPosition(rpc, positionAddress[0]);
+    const positionAfter = await fetchPosition(rpc, positionAddress[0]);
     const tokenAfterA = await fetchToken(rpc, ataA);
     const tokenAfterB = await fetchToken(rpc, ataB);
     const balanceChangeTokenA =
@@ -117,19 +148,23 @@ describe("Increase Liquidity Instructions", () => {
     const balanceChangeTokenB =
       tokenBeforeB.data.amount - tokenAfterB.data.amount;
 
+    const toleranceA = poolName.includes("TEFee") ? 200n : minAbsoluteTolerance;
+    const toleranceB = poolName.includes("TEFee") ? 200n : minAbsoluteTolerance;
     assertAmountClose(
       quote.tokenEstA,
       balanceChangeTokenA,
-      minAbsoluteTolerance,
+      toleranceA,
+      "token A",
     );
     assertAmountClose(
       quote.tokenEstB,
       balanceChangeTokenB,
-      minAbsoluteTolerance,
+      toleranceB,
+      "token B",
     );
     assertLiquidityClose(
       quote.liquidityDelta,
-      position.data.liquidity,
+      positionAfter.data.liquidity,
       relativeToleranceBps,
       minAbsoluteTolerance,
     );
@@ -149,13 +184,15 @@ describe("Increase Liquidity Instructions", () => {
   }
 
   it("Should throw error if authority is default address", async () => {
-    const liquidity = 100_000n;
+    const tokenAAmount = 1_000_000n;
+    const tokenBAmount = 1_000_000n;
     setDefaultFunder(DEFAULT_FUNDER);
     const postiionMintAddress = positions.entries().next().value?.[1];
     assert(postiionMintAddress, "Position mint address is not found");
     await assert.rejects(
       increaseLiquidityInstructions(rpc, postiionMintAddress, {
-        liquidity,
+        tokenMaxA: tokenAAmount,
+        tokenMaxB: tokenBAmount,
       }),
     );
     setDefaultFunder(signer);
@@ -163,13 +200,15 @@ describe("Increase Liquidity Instructions", () => {
 
   it("Should throw error increase liquidity amount by token is equal or greater than the token balance", async () => {
     const tokenAAmount = 1_000_000n;
+    const tokenBAmount = 1_000_000n;
     // By default, the balance check is skipped. We must enable the check to trigger the rejection.
     setEnforceTokenBalanceCheck(true);
     const postiionMintAddress = positions.entries().next().value?.[1];
     assert(postiionMintAddress, "Position mint address is not found");
     await assert.rejects(
       increaseLiquidityInstructions(rpc, postiionMintAddress, {
-        tokenA: tokenAAmount,
+        tokenMaxA: tokenAAmount,
+        tokenMaxB: tokenBAmount,
       }),
     );
     setEnforceTokenBalanceCheck(false);

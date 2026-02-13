@@ -2155,9 +2155,9 @@ dependencies = [
 
 [[package]]
 name = "litesvm-token"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c643347d7f08566efa47559928b163b53fbef1081272ba9e93e8aa9da651111"
+checksum = "cd04fe1c0ffeccf2ed201e2b189fe0bf66f887cae5c73495182abbb2bb3753b1"
 dependencies = [
  "litesvm",
  "smallvec",
@@ -3595,9 +3595,9 @@ dependencies = [
 
 [[package]]
 name = "solana-account"
-version = "3.2.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "014dcb9293341241dd153b35f89ea906e4170914f4a347a95e7fb07ade47cd6f"
+checksum = "f885ce7f937871ecb56aadbeaaec963b234a580b7d6ebbdb8fa4249a36f92433"
 dependencies = [
  "bincode",
  "serde",

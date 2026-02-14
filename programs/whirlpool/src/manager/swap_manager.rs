@@ -281,7 +281,7 @@ fn calculate_fees(
     if protocol_fee_rate > 0 {
         let delta = calculate_protocol_fee(global_fee, protocol_fee_rate);
         global_fee -= delta;
-        next_protocol_fee = next_protocol_fee.wrapping_add(delta);
+        next_protocol_fee = next_protocol_fee.saturating_add(delta);
     }
 
     if curr_liquidity > 0 {

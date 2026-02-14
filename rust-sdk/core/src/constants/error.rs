@@ -12,6 +12,9 @@ pub const TICK_ARRAY_NOT_EVENLY_SPACED: CoreError = "Tick array not evenly space
 pub const TICK_INDEX_OUT_OF_BOUNDS: CoreError = "Tick index out of bounds";
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
+pub const TICK_INDEX_OUT_OF_TICK_ARRAY_BOUNDS: CoreError = "Tick index out of tick array bounds";
+
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub const INVALID_TICK_INDEX: CoreError = "Invalid tick index";
 
 #[cfg_attr(feature = "wasm", wasm_expose)]

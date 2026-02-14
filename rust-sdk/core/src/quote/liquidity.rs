@@ -101,14 +101,14 @@ pub fn decrease_liquidity_quote_a(
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
-    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
+    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index)?.into();
+    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index)?.into();
 
     let position_status = position_status(
         current_sqrt_price.into(),
         tick_range.tick_lower_index,
         tick_range.tick_upper_index,
-    );
+    )?;
 
     let liquidity: u128 = match position_status {
         PositionStatus::PriceBelowRange => {
@@ -163,14 +163,14 @@ pub fn decrease_liquidity_quote_b(
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
-    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
+    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index)?.into();
+    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index)?.into();
 
     let position_status = position_status(
         current_sqrt_price.into(),
         tick_range.tick_lower_index,
         tick_range.tick_upper_index,
-    );
+    )?;
 
     let liquidity: u128 = match position_status {
         PositionStatus::Invalid | PositionStatus::PriceBelowRange => 0,
@@ -287,10 +287,10 @@ pub fn increase_liquidity_quote_a(
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
-    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
+    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index)?.into();
+    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index)?.into();
 
-    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2);
+    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2)?;
 
     let liquidity: u128 = match position_status {
         PositionStatus::PriceBelowRange => {
@@ -344,10 +344,10 @@ pub fn increase_liquidity_quote_b(
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
-    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
+    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index)?.into();
+    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index)?.into();
 
-    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2);
+    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2)?;
 
     let liquidity: u128 = match position_status {
         PositionStatus::Invalid | PositionStatus::PriceBelowRange => 0,
@@ -392,14 +392,14 @@ pub fn try_get_token_estimates_from_liquidity(
         return Ok((0, 0));
     }
 
-    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index).into();
-    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index).into();
+    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index)?.into();
+    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index)?.into();
 
     let position_status = position_status(
         current_sqrt_price.into(),
         tick_lower_index,
         tick_upper_index,
-    );
+    )?;
 
     match position_status {
         PositionStatus::PriceBelowRange => {

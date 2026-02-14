@@ -1,7 +1,7 @@
 use crate::{
     CoreError, TickArrayFacade, TickFacade, INVALID_TICK_ARRAY_SEQUENCE, INVALID_TICK_INDEX,
     MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE,
-    TICK_INDEX_OUT_OF_BOUNDS, TICK_SEQUENCE_EMPTY,
+    TICK_INDEX_OUT_OF_TICK_ARRAY_BOUNDS, TICK_SEQUENCE_EMPTY,
 };
 
 use super::{
@@ -64,7 +64,7 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
 
     pub fn tick(&self, tick_index: i32) -> Result<&TickFacade, CoreError> {
         if (tick_index < self.start_index()) || (tick_index > self.end_index()) {
-            return Err(TICK_INDEX_OUT_OF_BOUNDS);
+            return Err(TICK_INDEX_OUT_OF_TICK_ARRAY_BOUNDS);
         }
         if (tick_index % self.tick_spacing as i32) != 0 {
             return Err(INVALID_TICK_INDEX);
@@ -89,7 +89,7 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         }
         let mut next_index = tick_index;
         loop {
-            next_index = get_next_initializable_tick_index(next_index, self.tick_spacing);
+            next_index = get_next_initializable_tick_index(next_index, self.tick_spacing)?;
             // If at the end of the sequence, we don't have tick info but can still return the next tick index
             if next_index > array_end_index {
                 return Ok((None, array_end_index));
@@ -110,7 +110,7 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
             return Err(INVALID_TICK_ARRAY_SEQUENCE);
         }
         let mut prev_index =
-            get_initializable_tick_index(tick_index, self.tick_spacing, Some(false));
+            get_initializable_tick_index(tick_index, self.tick_spacing, Some(false))?;
         loop {
             // If at the start of the sequence, we don't have tick info but can still return the previous tick index
             if prev_index < array_start_index {
@@ -120,7 +120,7 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
             if tick.initialized {
                 return Ok((Some(tick), prev_index));
             }
-            prev_index = get_prev_initializable_tick_index(prev_index, self.tick_spacing);
+            prev_index = get_prev_initializable_tick_index(prev_index, self.tick_spacing)?;
         }
     }
 }
@@ -257,11 +257,14 @@ mod tests {
         let out_out_bounds_lower = sequence.tick(-1409);
         assert!(matches!(
             out_out_bounds_lower,
-            Err(TICK_INDEX_OUT_OF_BOUNDS)
+            Err(TICK_INDEX_OUT_OF_TICK_ARRAY_BOUNDS)
         ));
 
         let out_of_bounds_upper = sequence.tick(2817);
-        assert!(matches!(out_of_bounds_upper, Err(TICK_INDEX_OUT_OF_BOUNDS)));
+        assert!(matches!(
+            out_of_bounds_upper,
+            Err(TICK_INDEX_OUT_OF_TICK_ARRAY_BOUNDS)
+        ));
 
         let invalid_tick_index = sequence.tick(1);
         assert!(matches!(invalid_tick_index, Err(INVALID_TICK_INDEX)));

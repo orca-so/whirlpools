@@ -51,6 +51,7 @@ import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
 import { wrapFunctionWithExecution } from "./actionHelpers";
+import { getSqrtPriceSlippageBounds } from "./math";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -77,43 +78,6 @@ export type IncreaseLiquidityInstructions = {
   /** List of Solana transaction instructions to execute. */
   instructions: Instruction[];
 };
-
-const SLIPPAGE_BPS_DENOMINATOR = 10_000n;
-const SQRT_SLIPPAGE_DENOMINATOR = 100n;
-
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) {
-    throw new Error("sqrtBigInt value must be non-negative");
-  }
-  if (value < 2n) {
-    return value;
-  }
-  let prev = value / 2n;
-  let next = (prev + value / prev) / 2n;
-  while (next < prev) {
-    prev = next;
-    next = (prev + value / prev) / 2n;
-  }
-  return prev;
-}
-
-function getSqrtPriceSlippageBounds(
-  sqrtPrice: bigint,
-  slippageToleranceBps: number,
-): { minSqrtPrice: bigint; maxSqrtPrice: bigint } {
-  const boundedBps = BigInt(
-    Math.max(
-      0,
-      Math.min(slippageToleranceBps, Number(SLIPPAGE_BPS_DENOMINATOR)),
-    ),
-  );
-  const lowerFactor = sqrtBigInt(SLIPPAGE_BPS_DENOMINATOR - boundedBps);
-  const upperFactor = sqrtBigInt(SLIPPAGE_BPS_DENOMINATOR + boundedBps);
-  return {
-    minSqrtPrice: (sqrtPrice * lowerFactor) / SQRT_SLIPPAGE_DENOMINATOR,
-    maxSqrtPrice: (sqrtPrice * upperFactor) / SQRT_SLIPPAGE_DENOMINATOR,
-  };
-}
 
 /**
  * Builds token account setup, increase liquidity, and cleanup instructions from token max amounts and position params.

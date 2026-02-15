@@ -11,9 +11,9 @@ use orca_whirlpools_client::{
     IncreaseLiquidityMethod as IncreaseLiquidityInstructionMethod,
 };
 use orca_whirlpools_core::{
-    get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
-    is_tick_index_in_bounds, is_tick_initializable, order_tick_indexes, price_to_tick_index,
-    BPS_DENOMINATOR, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
+    get_full_range_tick_indexes, get_initializable_tick_index, get_sqrt_price_slippage_bounds,
+    get_tick_array_start_tick_index, is_tick_index_in_bounds, is_tick_initializable,
+    order_tick_indexes, price_to_tick_index,
 };
 use solana_account::Account;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -31,41 +31,6 @@ use crate::{
 };
 
 // TODO: support transfer hooks
-
-/// Scaling factor for sqrt-price slippage. Factor values are in hundredths (e.g. 99.5 → 9950),
-/// so we divide by 100 to get the effective multiplier.
-const SQRT_SLIPPAGE_DENOMINATOR: u128 = 100;
-
-/// Integer square root using Newton's method (floor of sqrt).
-fn sqrt_u128(value: u128) -> u128 {
-    if value < 2 {
-        return value;
-    }
-    let mut prev = value / 2;
-    let mut next = (prev + value / prev) / 2;
-    while next < prev {
-        prev = next;
-        next = (prev + value / prev) / 2;
-    }
-    prev
-}
-
-/// Computes min/max sqrt-price bounds for slippage protection.
-///
-/// Cap: `slippage_tolerance_bps` is clamped to BPS_DENOMINATOR (10_000) so the radicands
-/// `(10000 ± bps)` stay non-negative and we never take sqrt of a negative.
-fn get_sqrt_price_slippage_bounds(sqrt_price: u128, slippage_tolerance_bps: u16) -> (u128, u128) {
-    let capped_bps = slippage_tolerance_bps.min(BPS_DENOMINATOR);
-    let bps = u128::from(capped_bps);
-    let bps_denominator = u128::from(BPS_DENOMINATOR);
-    let lower_factor = sqrt_u128(bps_denominator - bps);
-    let upper_factor = sqrt_u128(bps_denominator + bps);
-
-    let scale = |factor: u128| sqrt_price.saturating_mul(factor) / SQRT_SLIPPAGE_DENOMINATOR;
-    let min_sqrt_price = scale(lower_factor).max(MIN_SQRT_PRICE);
-    let max_sqrt_price = scale(upper_factor).min(MAX_SQRT_PRICE);
-    (min_sqrt_price, max_sqrt_price)
-}
 
 /// Represents the token max amount parameters for increasing liquidity.
 #[derive(Debug, Clone)]
@@ -124,8 +89,10 @@ async fn get_increase_liquidity_instructions(
         .get(&params.whirlpool.token_mint_b)
         .ok_or("Token B owner account not found")?;
 
-    let (min_sqrt_price, max_sqrt_price) =
+    let bounds =
         get_sqrt_price_slippage_bounds(params.whirlpool.sqrt_price, params.slippage_tolerance_bps);
+    let min_sqrt_price = bounds.min_sqrt_price;
+    let max_sqrt_price = bounds.max_sqrt_price;
 
     let increase_liquidity_instruction = IncreaseLiquidityByTokenAmountsV2 {
         whirlpool: params.whirlpool_address,

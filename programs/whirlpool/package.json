@@ -2,10 +2,10 @@
   "name": "@orca-so/whirlpools-program",
   "version": "0.9.0",
   "scripts": {
-    "build": "anchor build -p whirlpool",
+    "build": "anchor build -p whirlpool && node compress-idl.mjs",
     "test": "cargo test -p whirlpool --lib",
     "format": "cargo clippy -p whirlpool --fix --allow-dirty --allow-staged && cargo fmt -p whirlpool",
     "lint": "cargo clippy -p whirlpool && cargo fmt --check -p whirlpool",
-    "clean": "anchor clean"
+    "clean": "rm -f ../../target/idl/whirlpool-compressed.json.gz && anchor clean"
   }
 }

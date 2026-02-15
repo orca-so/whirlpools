@@ -4,6 +4,7 @@ mod create_pool;
 mod decrease_liquidity;
 mod harvest;
 mod increase_liquidity;
+mod math;
 mod pool;
 mod position;
 mod swap;

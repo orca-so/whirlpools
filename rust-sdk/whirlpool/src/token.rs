@@ -9,7 +9,7 @@ use solana_pubkey::Pubkey;
 use solana_sha256_hasher::hashv;
 use solana_system_interface::instruction::{create_account, create_account_with_seed, transfer};
 use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
-use spl_associated_token_account_interface::instruction::create_associated_token_account;
+use spl_associated_token_account_interface::instruction::create_associated_token_account_idempotent;
 use spl_token_2022_interface::extension::transfer_fee::TransferFeeConfig;
 use spl_token_2022_interface::extension::{
     BaseStateWithExtensions, ExtensionType, StateWithExtensions,
@@ -93,10 +93,12 @@ pub(crate) async fn prepare_token_accounts_instructions(
             continue;
         }
 
-        create_instructions.push(create_associated_token_account(
-            // ATA address will be derived in the function
-            &owner, // funder
-            &owner, // owner
+        // NOTE: both create and create idempotent instructions use the same accounts.
+        // the main difference is that create idempotent will consume more CUs if the account already exists.
+        // https://github.com/solana-program/associated-token-account/blob/ecc069c5e9182d55ff1809258a9de4d73943b2ff/interface/src/instruction.rs#L20-L40
+        create_instructions.push(create_associated_token_account_idempotent(
+            &owner,
+            &owner,
             &mint_address,
             &mint_account_infos[i].owner,
         ));

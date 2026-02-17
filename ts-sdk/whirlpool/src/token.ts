@@ -3,7 +3,6 @@ import {
   fetchAllMint,
   findAssociatedTokenPda,
   getCloseAccountInstruction,
-  getCreateAssociatedTokenInstruction,
   getInitializeAccount3Instruction,
   getSyncNativeInstruction,
   TOKEN_PROGRAM_ADDRESS,
@@ -37,6 +36,7 @@ import {
 } from "@solana-program/system";
 import { getTokenSize } from "@solana-program/token";
 import {
+  getCreateAssociatedTokenIdempotentInstruction,
   getTokenSize as getTokenSizeWithExtensions,
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
@@ -126,7 +126,7 @@ export async function prepareTokenAccountsInstructions(
       continue;
     }
     createInstructions.push(
-      getCreateAssociatedTokenInstruction({
+      getCreateAssociatedTokenIdempotentInstruction({
         payer: owner,
         owner: owner.address,
         ata: tokenAccount.address,

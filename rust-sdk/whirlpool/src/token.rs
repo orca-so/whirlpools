@@ -97,8 +97,8 @@ pub(crate) async fn prepare_token_accounts_instructions(
         // the main difference is that create idempotent will consume more CUs if the account already exists.
         // https://github.com/solana-program/associated-token-account/blob/ecc069c5e9182d55ff1809258a9de4d73943b2ff/interface/src/instruction.rs#L20-L40
         create_instructions.push(create_associated_token_account_idempotent(
-            &owner,
-            &owner,
+            &owner, // funder
+            &owner, // owner
             &mint_address,
             &mint_account_infos[i].owner,
         ));

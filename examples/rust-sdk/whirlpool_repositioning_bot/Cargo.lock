@@ -1711,9 +1711,9 @@ dependencies = [
 
 [[package]]
 name = "keccak"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
+checksum = "cb26cec98cce3a3d96cbb7bced3c4b16e3d13f27ec56dbd62cbc8f39cfb9d653"
 dependencies = [
  "cpufeatures",
 ]
@@ -2016,7 +2016,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "6.1.0"
+version = "7.0.1"
 dependencies = [
  "bincode",
  "bs58",
@@ -2069,7 +2069,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "ethnum",
  "libm",
@@ -5418,7 +5418,7 @@ dependencies = [
 
 [[package]]
 name = "whirlpool_repositioning_bot"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "colored",

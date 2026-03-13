@@ -21,12 +21,13 @@ export async function fetchDecodedProgramAccounts<T extends object>(
     })
     .send();
   const encoder = getBase64Encoder();
-  const datas = accountInfos.map((x) => encoder.encode(x.account.data[0]));
-  const decoded = datas.map((x) => decoder.decode(x));
-  return decoded.map((data, i) => ({
-    ...accountInfos[i].account,
-    address: accountInfos[i].pubkey,
-    programAddress: programAddress,
-    data,
-  }));
+  return accountInfos.map((accountInfo) => {
+    const [base64Data, _encoding] = accountInfo.account.data;
+    return {
+      ...accountInfo.account,
+      address: accountInfo.pubkey,
+      programAddress,
+      data: decoder.decode(encoder.encode(base64Data)),
+    };
+  });
 }

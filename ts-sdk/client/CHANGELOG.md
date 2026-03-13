@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-client
 
+## 6.2.1
+
+### Patch Changes
+
+- [#1266](https://github.com/orca-so/whirlpools/pull/1266) [`be8bd95`](https://github.com/orca-so/whirlpools/commit/be8bd9581705f75db31d2e589e69f84ee785fafb) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Remove unchecked index access in ts-sdk, update package lockfiles based on version bumps
+
 ## 6.2.0
 
 ### Minor Changes

@@ -1,5 +1,7 @@
 # @orca-so/whirlpools-docs-legacy
 
+## 0.3.1
+
 ## 0.3.0
 
 ## 0.2.9

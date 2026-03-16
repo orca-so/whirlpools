@@ -1,7 +1,0 @@
-
-[0m[2m[35m$[0m [2m[1mtsc --noEmit[0m
-[91merror[0m[90m TS18003: [0mNo inputs were found in config file '/Users/macbookpro/code/rhiva/whirlpools/rust-sdk/integration/tsconfig.json'. Specified 'include' paths were '[]' and 'exclude' paths were '["/Users/macbookpro/code/rhiva/whirlpools/rust-sdk/integration/dist"]'.
-
-
-Found 1 error.
-

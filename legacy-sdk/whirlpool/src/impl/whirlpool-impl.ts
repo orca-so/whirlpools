@@ -428,7 +428,7 @@ export class WhirlpoolImpl implements Whirlpool {
       ],
       () => this.ctx.fetcher.getAccountRentExempt(),
       funder,
-      undefined, // use default
+      true,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
       this.ctx.accountResolverOpts.createWrappedSolAccountMethod,
     );

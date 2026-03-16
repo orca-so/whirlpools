@@ -1,6 +1,0 @@
-
-[0m[2m[35m$[0m [2m[1mcargo build[0m
-[1m[92m    Blocking[0m waiting for file lock on package cache
-[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 2.51s
-[1m[33mwarning[0m: the following packages contain code that will be rejected by a future version of Rust: solana-client v2.0.25
-[1m[92mnote[0m: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`

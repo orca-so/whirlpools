@@ -83,7 +83,7 @@ import {
 } from "../instructions";
 
 export const WHIRLPOOL_PROGRAM_ADDRESS =
-  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc" as Address<"whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc">;
+  "81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2" as Address<"81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2">;
 
 export enum WhirlpoolAccount {
   AdaptiveFeeTier,
@@ -1046,7 +1046,7 @@ export function identifyWhirlpoolInstruction(
 }
 
 export type ParsedWhirlpoolInstruction<
-  TProgram extends string = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+  TProgram extends string = "81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2",
 > =
   | ({
       instructionType: WhirlpoolInstruction.CloseBundledPosition;

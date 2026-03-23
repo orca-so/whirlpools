@@ -27,7 +27,7 @@ import {
 /**
  * Represents the instructions for resetting a position range.
  */
-export type ResetPositionRageInstructions = {
+export type ResetPositionRangeInstructions = {
   instructions: Instruction[];
 };
 
@@ -39,7 +39,7 @@ export type ResetPositionRageInstructions = {
  * @param {number} newLowerPrice - The new lower price of the position.
  * @param {number} newUpperPrice - The new upper price of the position.
  * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction. Defaults to a predefined funder.
- * @returns {Promise<ResetPositionRageInstructions>} A promise that resolves to an object containing instructions.
+ * @returns {Promise<ResetPositionRangeInstructions>} A promise that resolves to an object containing instructions.
  *
  * @example
  * import { resetPositionRangeInstructions } from "@orca-so/whirlpools";
@@ -67,7 +67,7 @@ export async function resetPositionRangeInstructions(
   newLowerPrice: number,
   newUpperPrice: number,
   authority: TransactionSigner<string> = FUNDER,
-): Promise<ResetPositionRageInstructions> {
+): Promise<ResetPositionRangeInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
     "Either supply an authority or set the default funder",

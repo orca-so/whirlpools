@@ -209,7 +209,7 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   );
   // Load the Whirlpool program
   const programId = new PublicKey(
-    "81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2",
+    "iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN",
   );
   const programPath = path.resolve(
     __dirname,

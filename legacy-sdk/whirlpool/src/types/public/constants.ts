@@ -6,7 +6,7 @@ import { PublicKey } from "@solana/web3.js";
  * @category Constants
  */
 export const ORCA_WHIRLPOOL_PROGRAM_ID = new PublicKey(
-  "81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2",
+  "iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN",
 );
 
 /**

@@ -3,7 +3,7 @@ use anchor_lang::prelude::Pubkey;
 
 #[cfg(test)]
 pub fn test_program_id() -> Pubkey {
-    "81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2"
+    "iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN"
         .parse()
         .unwrap()
 }

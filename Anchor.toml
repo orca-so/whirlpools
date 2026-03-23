@@ -3,7 +3,7 @@
 # External programs and preloaded accounts are configured in litesvm.ts.
 
 [programs.localnet]
-whirlpool = "81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2"
+whirlpool = "iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN"
 
 [registry]
 url = "https://anchor.projectserum.com"

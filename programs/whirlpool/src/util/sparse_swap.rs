@@ -247,7 +247,7 @@ mod sparse_swap_tick_sequence_tests {
             pubkey!("HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ"), // well-known whirlpool key (SOL/USDC(ts=64))
             64,
             0,
-            Some(pubkey!("81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2")),
+            Some(pubkey!("iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN")),
         );
         let account_info = account_info_mock.to_account_info(false);
         let whirlpool_account = Account::<Whirlpool>::try_from(&account_info).unwrap();

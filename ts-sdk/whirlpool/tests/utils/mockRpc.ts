@@ -69,7 +69,7 @@ export async function getTestContext(): Promise<LiteSVM> {
       path.join(process.cwd(), "../../target/deploy/whirlpool.so"),
     );
     _testContext.addProgram(
-      toPublicKey(address("81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2")),
+      toPublicKey(address("iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN")),
       whirlpoolProgram,
     );
 

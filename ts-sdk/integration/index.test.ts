@@ -22,7 +22,7 @@ describe("Integration", () => {
         const output = execSync(command).toString();
         assert(output.includes("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"));
         assert(output.includes("256"));
-        assert(output.includes("81LuXSmetvxPcWjDPfa35Xw6denXvfj1zJd1HmRS8HX2"));
+        assert(output.includes("iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN"));
       });
     });
   });

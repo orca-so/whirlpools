@@ -19,11 +19,13 @@ pub const ADMINS: [Pubkey; 2] = [
 ];
 
 #[cfg(feature = "mainnet")]
-pub const ADMINS: [Pubkey; 2] = [
+pub const ADMINS: [Pubkey; 3] = [
     // program upgrade authority, multi-sig (Solana)
     pubkey!("GwH3Hiv5mACLX3ufTw1pFsrhSPon5tdw252DBs4Rx4PV"),
     // fee authority of FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv (Eclipse)
     pubkey!("AqiJTdr9jLPDAk5prGhWFHtSM1qJszAsdZVV7oeinxhh"),
+    // temporary admin to boot immutable whirlpool program (MUST BE REMOVED BEFORE MAKING THE PROGRAM IMMUTABLE)
+    pubkey!("r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6"),
 ];
 
 pub fn is_admin_key(maybe_admin: &Pubkey) -> bool {

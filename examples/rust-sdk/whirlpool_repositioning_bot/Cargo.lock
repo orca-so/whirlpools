@@ -2016,7 +2016,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "orca_whirlpools"
-version = "7.0.1"
+version = "7.0.2"
 dependencies = [
  "bincode",
  "bs58",
@@ -5418,7 +5418,7 @@ dependencies = [
 
 [[package]]
 name = "whirlpool_repositioning_bot"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "clap",
  "colored",

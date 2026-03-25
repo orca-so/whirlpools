@@ -31,6 +31,9 @@ export type ResetPositionRangeInstructions = {
   instructions: Instruction[];
 };
 
+/** @deprecated Use {@link ResetPositionRangeInstructions} instead. */
+export type ResetPositionRageInstructions = ResetPositionRangeInstructions;
+
 /**
  * Generates instructions to reset a position range.
  *

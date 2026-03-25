@@ -2515,7 +2515,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "7.0.1"
+version = "7.0.2"
 dependencies = [
  "agave-feature-set",
  "approx",

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools
 
+## 7.0.2
+
+### Patch Changes
+
+- [#1273](https://github.com/orca-so/whirlpools/pull/1273) [`357eed6`](https://github.com/orca-so/whirlpools/commit/357eed6f14a77357110e45855656ad8adb7ad18b) Thanks [@jshiohaha](https://github.com/jshiohaha)! - fix typo: Rage -> Range
+
 ## 7.0.1
 
 ### Patch Changes

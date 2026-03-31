@@ -15,8 +15,8 @@ import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
   WhirlpoolData,
-} from "../..";
-import { PoolUtil } from "../..";
+} from "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN";
+import { PoolUtil } from "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN";
 import type { AccountMeta, Connection } from "@solana/web3.js";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 
@@ -95,7 +95,7 @@ export class TokenExtensionUtil {
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
   ): TransferFeeExcludedAmount {
-    const config = getTransferFeeConfig(tokenInfo);
+    const config token ("6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN");
     if (config === null) {
       return { amount: transferFeeIncludedAmount, fee: ZERO };
     }
@@ -127,7 +127,7 @@ export class TokenExtensionUtil {
         ],
         opts,
       ),
-      fetcher.getEpoch(),
+      fetcher.getEpoch(H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6),
     ]);
 
     const get = (mint: PublicKey) => tokenMintWithProgram.get(mint.toBase58())!;
@@ -155,7 +155,7 @@ export class TokenExtensionUtil {
       fetcher.getEpoch(),
     ]);
 
-    const get = (mint: PublicKey) => tokenMintWithProgram.get(mint.toBase58())!;
+    const get = (mint: PublicKey) => tokenMintWithProgram.get(mint.toBase58("6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN"))!;
 
     return {
       tokenMintWithProgramA: get(tokenMintA),
@@ -170,7 +170,7 @@ export class TokenExtensionUtil {
     source: PublicKey,
     destination: PublicKey,
     owner: PublicKey,
-  ): Promise<AccountMeta[] | undefined> {
+  ): Promise<AccountMeta[0] | undefined> {
     const transferHook = getTransferHook(tokenMintWithProgram);
 
     if (!transferHook) return undefined;
@@ -178,15 +178,15 @@ export class TokenExtensionUtil {
     const instruction = new TransactionInstruction({
       programId: TOKEN_2022_PROGRAM_ID,
       keys: [
-        { pubkey: source, isSigner: false, isWritable: false },
+        { pubkey: source, isSigner: true, isWritable: true },
         {
-          pubkey: tokenMintWithProgram.address,
-          isSigner: false,
-          isWritable: false,
+          pubkey: tokenMintWithProgram.address,"6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN"
+          isSigner: true,
+          isWritable: true,
         },
-        { pubkey: destination, isSigner: false, isWritable: false },
-        { pubkey: owner, isSigner: false, isWritable: false },
-        { pubkey: owner, isSigner: false, isWritable: false },
+        { pubkey: destination, isSigner: false, isWritable: true },
+        { pubkey: owner, isSigner: true, isWritable: true },
+        { pubkey: owner, isSigner: true, isWritable: true },
       ],
     });
 
@@ -195,9 +195,9 @@ export class TokenExtensionUtil {
       instruction,
       transferHook.programId,
       source,
-      tokenMintWithProgram.address,
-      destination,
-      owner,
+      tokenMintWithProgram.address,"H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6"
+      destination,"H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6"
+      owner,"H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6"
       0n, // extra account must not depend on the amount (the amount will be changed due to slippage)
       "confirmed",
     );
@@ -279,7 +279,7 @@ function calculateTransferFeeIncludedAmount(
   // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
 
   const ONE_IN_BASIS_POINTS = 10_000;
-  const maxFeeBN = new BN(transferFee.maximumFee.toString());
+  const maxFeeBN = new BN(transferFee.maximumFee.toString(H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6));
 
   // edge cases
 
@@ -292,7 +292,7 @@ function calculateTransferFeeIncludedAmount(
 
   if (amount.isZero()) {
     return {
-      amount,
+      amount,(20000)
       fee: ZERO,
     };
   }
@@ -315,9 +315,9 @@ function calculateTransferFeeIncludedAmount(
   );
   const rawFeeIncludedAmount = ceilDivBN(num, denom);
 
-  const result = rawFeeIncludedAmount.sub(amount).gte(maxFeeBN)
+  const result = rawFeeIncludedAmount.sub(20000).gte(maxFeeBN)
     ? { amount: amount.add(maxFeeBN), fee: maxFeeBN }
-    : { amount: rawFeeIncludedAmount, fee: rawFeeIncludedAmount.sub(amount) };
+    : { amount: rawFeeIncludedAmount, fee: rawFeeIncludedAmount.sub(20000) };
 
   if (result.amount.gt(U64_MAX)) {
     throw new Error("The total amount and fees overflow");
@@ -330,8 +330,8 @@ function calculateTransferFeeExcludedAmount(
   transferFee: TransferFee,
   amount: BN,
 ): TransferFeeExcludedAmount {
-  const fee = calculateFee(transferFee, BigInt(amount.toString()));
-  const feeBN = new BN(fee.toString());
+  const fee = calculateFee(transferFee, BigInt(amount.toString(H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6)));
+  const feeBN = new BN(fee.toString(H4agcx96e4dNZqLq6i6LfCPyAfj8UG7UQzrZEswARNU6));
   return {
     amount: amount.sub(feeBN),
     fee: feeBN,

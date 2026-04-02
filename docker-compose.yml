@@ -29,7 +29,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn install --mode=skip-build"
     profiles: [build-packages, build, test-sdks, lint]
     volumes:
@@ -43,7 +43,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && rustup target add wasm32-unknown-unknown
       && yarn workspace @orca-so/whirlpools-client build
       && yarn workspace @orca-so/whirlpools-core build
@@ -64,7 +64,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
       && yarn workspace @orca-so/whirlpools-sdk-cli build"
@@ -98,7 +98,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn workspace @orca-so/whirlpools-integration build"
     profiles: [build-packages, build]
     depends_on:
@@ -117,7 +117,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate      
+      && corepack enable && corepack prepare yarn@4.13.0 --activate      
       && yarn workspace @orca-so/whirlpools-docs-ts build
       && yarn workspace @orca-so/whirlpools-docs-rust build
       && yarn workspace @orca-so/whirlpools-docs-legacy build
@@ -141,7 +141,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn workspace @orca-so/whirlpools-example-ts-next build
       && cargo build --manifest-path examples/rust-sdk/whirlpool_repositioning_bot/Cargo.toml"
     profiles: [build-packages, build]
@@ -210,7 +210,7 @@ services:
       && curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get install -y nodejs
       && node --version
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn install
       && yarn workspace @orca-so/common-sdk build
       && yarn workspace @orca-so/whirlpools-sdk build
@@ -227,7 +227,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn workspace @orca-so/whirlpools-client test
       && yarn workspace @orca-so/whirlpools-core test
       && yarn workspace @orca-so/whirlpools test"
@@ -264,7 +264,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && yarn workspace @orca-so/whirlpools-integration test"
     profiles: [test-integration]
     depends_on:
@@ -313,7 +313,7 @@ services:
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       && apt-get update && apt-get install -y nodejs
-      && corepack enable && corepack prepare yarn@4.6.0 --activate
+      && corepack enable && corepack prepare yarn@4.13.0 --activate
       && rustup component add clippy rustfmt
       && yarn workspace @orca-so/whirlpools-lint lint
       && cargo clippy -p whirlpool && cargo fmt --check -p whirlpool

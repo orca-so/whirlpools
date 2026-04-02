@@ -6,7 +6,7 @@ set -euo pipefail
 # =============================================================================
 NVM_VERSION="v0.40.3"
 NODE_VERSION="22"
-YARN_VERSION="4.6.0"
+YARN_VERSION="4.13.0"
 SOLANA_VERSION="v2.2.1"
 ANCHOR_VERSION="v0.32.1"
 RUST_VERSION_FOR_PROJECT="1.86.0"

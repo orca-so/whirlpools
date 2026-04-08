@@ -23,7 +23,7 @@ use super::increase_liquidity::ModifyLiquidityV2;
   Removes liquidity from an existing Whirlpool Position.
 */
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, ModifyLiquidityV2<'info>>,
+    ctx: Context<'info, ModifyLiquidityV2<'info>>,
     liquidity_amount: u128,
     token_min_a: u64,
     token_min_b: u64,

@@ -7,7 +7,6 @@ pub struct AccountInfoMock {
     pub lamports: u64,
     pub data: Vec<u8>,
     pub owner: Pubkey,
-    pub rent_epoch: u64,
     pub executable: bool,
 }
 
@@ -18,7 +17,6 @@ impl AccountInfoMock {
             lamports: 0,
             data,
             owner,
-            rent_epoch: 0,
             executable: false,
         }
     }
@@ -114,8 +112,8 @@ impl AccountInfoMock {
             lamports: std::rc::Rc::new(RefCell::new(&mut self.lamports)),
             data: std::rc::Rc::new(RefCell::new(&mut self.data)),
             owner: &self.owner,
-            rent_epoch: self.rent_epoch,
             executable: self.executable,
+            _unused: 0,
         }
     }
 }

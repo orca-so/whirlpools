@@ -108,9 +108,7 @@ mod data_layout_tests {
         token_badge_data[offset..offset + 32].copy_from_slice(&token_badge_token_mint.to_bytes());
         offset += 32;
         token_badge_data[offset..offset + 1].copy_from_slice(
-            &token_badge_attribute_require_non_transferable_position
-                .try_to_vec()
-                .unwrap(),
+            &borsh::to_vec(&token_badge_attribute_require_non_transferable_position).unwrap(),
         );
         offset += 1;
         token_badge_data[offset..offset + token_badge_reserved.len()]

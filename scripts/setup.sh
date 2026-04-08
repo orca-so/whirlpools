@@ -7,9 +7,9 @@ set -euo pipefail
 NVM_VERSION="v0.40.3"
 NODE_VERSION="22"
 YARN_VERSION="4.13.0"
-SOLANA_VERSION="v2.2.1"
-ANCHOR_VERSION="v0.32.1"
-RUST_VERSION_FOR_PROJECT="1.86.0"
+SOLANA_VERSION="v3.1.10"
+ANCHOR_VERSION="v1.0.0"
+RUST_VERSION_FOR_PROJECT="1.89.0"
 
 # Resolve repo root from this script's directory
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -64,7 +64,7 @@ source "$HOME/.profile" || true
 solana -V
 
 echo "=== Installing Anchor (${ANCHOR_VERSION}) ==="
-cargo install --git https://github.com/coral-xyz/anchor --tag ${ANCHOR_VERSION} anchor-cli --force
+cargo install --git https://github.com/solana-foundation/anchor --tag ${ANCHOR_VERSION} anchor-cli --locked --force
 export PATH="$HOME/.cargo/bin:$PATH"
 cd "$REPO_ROOT"
 

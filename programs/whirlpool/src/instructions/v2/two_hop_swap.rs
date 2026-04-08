@@ -30,11 +30,11 @@ pub struct TwoHopSwapV2<'info> {
     pub whirlpool_two: Box<Account<'info, Whirlpool>>,
 
     #[account(address = whirlpool_one.input_token_mint(a_to_b_one))]
-    pub token_mint_input: InterfaceAccount<'info, Mint>,
+    pub token_mint_input: Box<InterfaceAccount<'info, Mint>>,
     #[account(address = whirlpool_one.output_token_mint(a_to_b_one))]
-    pub token_mint_intermediate: InterfaceAccount<'info, Mint>,
+    pub token_mint_intermediate: Box<InterfaceAccount<'info, Mint>>,
     #[account(address = whirlpool_two.output_token_mint(a_to_b_two))]
-    pub token_mint_output: InterfaceAccount<'info, Mint>,
+    pub token_mint_output: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(address = *token_mint_input.to_account_info().owner)]
     pub token_program_input: Interface<'info, TokenInterface>,
@@ -102,7 +102,7 @@ pub struct TwoHopSwapV2<'info> {
 
 #[allow(clippy::too_many_arguments)]
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, TwoHopSwapV2<'info>>,
+    ctx: Context<'info, TwoHopSwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
     amount_specified_is_input: bool,

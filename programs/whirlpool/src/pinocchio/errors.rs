@@ -1,6 +1,6 @@
 use anchor_lang::error::Error as AnchorError;
-use anchor_lang::prelude::borsh::maybestd::io::Error as BorshIoError;
 use pinocchio::program_error::ProgramError as PinocchioProgramError;
+use std::io::Error as BorshIoError;
 
 pub use crate::errors::ErrorCode as WhirlpoolErrorCode;
 pub use anchor_lang::error::ErrorCode as AnchorErrorCode;

@@ -408,7 +408,7 @@ pub struct WhirlpoolExtensionSegmentSecondary {
 impl WhirlpoolExtensionSegmentPrimary {
     pub fn to_bytes(&self) -> [u8; 32] {
         // We can ensure that the serialization will always produce 32 bytes
-        self.try_to_vec()
+        borsh::to_vec(self)
             .expect("Failed to serialize WhirlpoolExtensionSegmentPrimary")
             .try_into()
             .expect("Serialized data length mismatch")
@@ -429,7 +429,7 @@ impl WhirlpoolExtensionSegmentPrimary {
 impl WhirlpoolExtensionSegmentSecondary {
     pub fn to_bytes(&self) -> [u8; 32] {
         // We can ensure that the serialization will always produce 32 bytes
-        self.try_to_vec()
+        borsh::to_vec(self)
             .expect("Failed to serialize WhirlpoolExtensionSegmentSecondary")
             .try_into()
             .expect("Serialized data length mismatch")

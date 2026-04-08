@@ -56,7 +56,7 @@ pub struct CollectRewardV2<'info> {
 /// - `Err`: `RewardNotInitialized` if the specified reward has not been initialized
 ///          `InvalidRewardIndex` if the reward index is not 0, 1, or 2
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, CollectRewardV2<'info>>,
+    ctx: Context<'info, CollectRewardV2<'info>>,
     reward_index: u8,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {

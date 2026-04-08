@@ -15,21 +15,21 @@ pub struct CollectProtocolFeesV2<'info> {
     pub collect_protocol_fees_authority: Signer<'info>,
 
     #[account(address = whirlpool.token_mint_a)]
-    pub token_mint_a: InterfaceAccount<'info, Mint>,
+    pub token_mint_a: Box<InterfaceAccount<'info, Mint>>,
     #[account(address = whirlpool.token_mint_b)]
-    pub token_mint_b: InterfaceAccount<'info, Mint>,
+    pub token_mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(mut, address = whirlpool.token_vault_a)]
-    pub token_vault_a: InterfaceAccount<'info, TokenAccount>,
+    pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, address = whirlpool.token_vault_b)]
-    pub token_vault_b: InterfaceAccount<'info, TokenAccount>,
+    pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, constraint = token_destination_a.mint == whirlpool.token_mint_a)]
-    pub token_destination_a: InterfaceAccount<'info, TokenAccount>,
+    pub token_destination_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, constraint = token_destination_b.mint == whirlpool.token_mint_b)]
-    pub token_destination_b: InterfaceAccount<'info, TokenAccount>,
+    pub token_destination_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = *token_mint_a.to_account_info().owner)]
     pub token_program_a: Interface<'info, TokenInterface>,
@@ -42,7 +42,7 @@ pub struct CollectProtocolFeesV2<'info> {
 }
 
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, CollectProtocolFeesV2<'info>>,
+    ctx: Context<'info, CollectProtocolFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;

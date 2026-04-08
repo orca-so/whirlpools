@@ -38,7 +38,7 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
             u64::from(epoch_transfer_fee.maximum_fee),
         );
         memo::build_memo(
-            CpiContext::new(memo_program.to_account_info(), BuildMemo {}),
+            CpiContext::new(memo_program.key(), BuildMemo {}),
             transfer_fee_memo.as_bytes(),
         )?;
     }
@@ -114,17 +114,14 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
             u64::from(epoch_transfer_fee.maximum_fee),
         );
         memo::build_memo(
-            CpiContext::new(memo_program.to_account_info(), BuildMemo {}),
+            CpiContext::new(memo_program.key(), BuildMemo {}),
             transfer_fee_memo.as_bytes(),
         )?;
     }
 
     // MemoTransfer extension
     if is_transfer_memo_required(token_owner_account)? {
-        memo::build_memo(
-            CpiContext::new(memo_program.to_account_info(), BuildMemo {}),
-            memo,
-        )?;
+        memo::build_memo(CpiContext::new(memo_program.key(), BuildMemo {}), memo)?;
     }
 
     let mut instruction = spl_token_2022::instruction::transfer_checked(
@@ -676,7 +673,6 @@ mod fuzz_tests {
             let key = Pubkey::default();
             let mut lamports = 0u64;
             let owner = anchor_spl::token_2022::ID;
-            let rent_epoch = 0;
             let is_signer = false;
             let is_writable = false;
             let executable = false;
@@ -688,7 +684,6 @@ mod fuzz_tests {
                 &mut data,
                 &owner,
                 executable,
-                rent_epoch
             );
 
             let interface_account_mint = InterfaceAccount::<Mint>::try_from(&account_info).unwrap();

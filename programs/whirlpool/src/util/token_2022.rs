@@ -10,7 +10,6 @@ use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token202
 use anchor_spl::token_2022_extensions::spl_token_metadata_interface;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use solana_program::program::{invoke, invoke_signed};
-use solana_program::system_instruction::transfer;
 
 use crate::constants::{
     WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL, WP_2022_METADATA_URI_BASE,
@@ -158,7 +157,7 @@ pub fn initialize_token_metadata_extension<'info>(
 
     // transfer additional rent
     invoke(
-        &transfer(funder.key, position_mint.key, additional_rent),
+        &system_instruction::transfer(funder.key, position_mint.key, additional_rent),
         &[
             funder.to_account_info(),
             position_mint.to_account_info(),
@@ -201,7 +200,7 @@ pub fn initialize_position_token_account_2022<'info>(
     associated_token_program: &Program<'info, AssociatedToken>,
 ) -> Result<()> {
     associated_token::create(CpiContext::new(
-        associated_token_program.to_account_info(),
+        associated_token_program.key(),
         associated_token::Create {
             payer: funder.to_account_info(),
             associated_token: position_token_account.to_account_info(),
@@ -474,7 +473,7 @@ pub fn initialize_vault_token_account<'info>(
     // so we specify ImmutableOwner explicitly.
     let space = get_account_data_size(
         CpiContext::new(
-            token_program.to_account_info(),
+            token_program.key(),
             GetAccountDataSize {
                 mint: vault_mint.to_account_info(),
             },

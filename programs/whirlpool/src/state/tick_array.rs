@@ -301,8 +301,6 @@ mod fuzz_tests {
 mod fixed_tick_array_tests {
     use std::{mem, ops::Deref};
 
-    use solana_program::clock::Epoch;
-
     use crate::state::tick_array_builder::TickArrayBuilder;
 
     use super::*;
@@ -337,7 +335,6 @@ mod fixed_tick_array_tests {
             &mut tick_array_data_with_discriminator,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array(&account, &tick_array.whirlpool()).unwrap();
@@ -383,7 +380,6 @@ mod fixed_tick_array_tests {
             &mut tick_array_data_with_discriminator,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array_mut(&account, &tick_array.whirlpool()).unwrap();
@@ -429,7 +425,6 @@ mod fixed_tick_array_tests {
             &mut tick_array_data_with_discriminator,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let other_whirlpool = Pubkey::new_unique();
@@ -470,7 +465,6 @@ mod fixed_tick_array_tests {
             &mut tick_array_data_with_discriminator,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let other_whirlpool = Pubkey::new_unique();
@@ -484,8 +478,6 @@ mod fixed_tick_array_tests {
 #[cfg(test)]
 mod dynamic_tick_array_tests {
     use std::ops::Deref;
-
-    use solana_program::clock::Epoch;
 
     use crate::state::{DynamicTick, DynamicTickData};
 
@@ -529,7 +521,6 @@ mod dynamic_tick_array_tests {
             &mut tick_array_data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array(&account, &whirlpool).unwrap();
@@ -586,7 +577,6 @@ mod dynamic_tick_array_tests {
             &mut tick_array_data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array_mut(&account, &whirlpool).unwrap();
@@ -641,7 +631,6 @@ mod dynamic_tick_array_tests {
             &mut tick_array_data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let other_whirlpool = Pubkey::new_unique();
@@ -687,7 +676,6 @@ mod dynamic_tick_array_tests {
             &mut tick_array_data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let other_whirlpool = Pubkey::new_unique();
@@ -700,8 +688,6 @@ mod dynamic_tick_array_tests {
 
 #[cfg(test)]
 mod tick_array_misc_tests {
-    use solana_program::clock::Epoch;
-
     use super::*;
 
     #[test]
@@ -717,7 +703,6 @@ mod tick_array_misc_tests {
             &mut data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array(&account, &Pubkey::new_unique());
@@ -739,7 +724,6 @@ mod tick_array_misc_tests {
             &mut data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array_mut(&account, &Pubkey::new_unique());
@@ -761,7 +745,6 @@ mod tick_array_misc_tests {
             &mut data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array(&account, &Pubkey::new_unique());
@@ -783,7 +766,6 @@ mod tick_array_misc_tests {
             &mut data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array_mut(&account, &Pubkey::new_unique());
@@ -805,7 +787,6 @@ mod tick_array_misc_tests {
             &mut data,
             &anchor_spl::token::spl_token::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array(&account, &Pubkey::new_unique());
@@ -827,7 +808,6 @@ mod tick_array_misc_tests {
             &mut data,
             &anchor_spl::token::spl_token::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array_mut(&account, &Pubkey::new_unique());
@@ -849,7 +829,6 @@ mod tick_array_misc_tests {
             &mut data,
             &crate::ID,
             true,
-            Epoch::default(),
         );
         let account = UncheckedAccount::try_from(&account_info);
         let tick_array_ref = load_tick_array_mut(&account, &Pubkey::new_unique());

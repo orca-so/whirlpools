@@ -20,7 +20,7 @@ pub struct LockPosition<'info> {
         bump,
         has_one = whirlpool,
     )]
-    pub position: Account<'info, Position>,
+    pub position: Box<Account<'info, Position>>,
 
     #[account(address = position.position_mint, owner = token_2022_program.key())]
     pub position_mint: InterfaceAccount<'info, Mint>,
@@ -40,7 +40,7 @@ pub struct LockPosition<'info> {
     )]
     pub lock_config: Box<Account<'info, LockConfig>>,
 
-    pub whirlpool: Account<'info, Whirlpool>,
+    pub whirlpool: Box<Account<'info, Whirlpool>>,
 
     #[account(address = token_2022::ID)]
     pub token_2022_program: Program<'info, Token2022>,

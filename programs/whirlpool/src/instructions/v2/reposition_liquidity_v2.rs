@@ -7,7 +7,7 @@ use crate::state::*;
 #[derive(Accounts)]
 pub struct RepositionLiquidityV2<'info> {
     #[account(mut)]
-    pub whirlpool: Account<'info, Whirlpool>,
+    pub whirlpool: Box<Account<'info, Whirlpool>>,
 
     #[account(address = *token_mint_a.to_account_info().owner)]
     pub token_program_a: Interface<'info, TokenInterface>,
@@ -23,7 +23,7 @@ pub struct RepositionLiquidityV2<'info> {
     pub funder: Signer<'info>,
 
     #[account(mut, has_one = whirlpool)]
-    pub position: Account<'info, Position>,
+    pub position: Box<Account<'info, Position>>,
 
     #[account(
         constraint = position_token_account.mint == position.position_mint,
@@ -32,10 +32,10 @@ pub struct RepositionLiquidityV2<'info> {
     pub position_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = whirlpool.token_mint_a)]
-    pub token_mint_a: InterfaceAccount<'info, Mint>,
+    pub token_mint_a: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(address = whirlpool.token_mint_b)]
-    pub token_mint_b: InterfaceAccount<'info, Mint>,
+    pub token_mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
     pub token_owner_account_a: Box<InterfaceAccount<'info, TokenAccount>>,

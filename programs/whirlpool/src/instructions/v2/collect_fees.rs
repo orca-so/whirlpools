@@ -49,7 +49,7 @@ pub struct CollectFeesV2<'info> {
 }
 
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, CollectFeesV2<'info>>,
+    ctx: Context<'info, CollectFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     verify_position_authority_interface(

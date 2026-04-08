@@ -21,7 +21,7 @@ pub fn transfer_from_owner_to_vault<'info>(
 ) -> Result<()> {
     token::transfer(
         CpiContext::new(
-            token_program.to_account_info(),
+            token_program.key(),
             Transfer {
                 from: token_owner_account.to_account_info(),
                 to: token_vault.to_account_info(),
@@ -41,7 +41,7 @@ pub fn transfer_from_vault_to_owner<'info>(
 ) -> Result<()> {
     token::transfer(
         CpiContext::new_with_signer(
-            token_program.to_account_info(),
+            token_program.key(),
             Transfer {
                 from: token_vault.to_account_info(),
                 to: token_owner_account.to_account_info(),
@@ -139,7 +139,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     let metadata_mint_auth_account = whirlpool;
     metadata::create_metadata_accounts_v3(
         CpiContext::new_with_signer(
-            metadata_program.to_account_info(),
+            metadata_program.key(),
             CreateMetadataAccountsV3 {
                 metadata: position_metadata_account.to_account_info(),
                 mint: position_mint.to_account_info(),
@@ -274,7 +274,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
 
     metadata::create_metadata_accounts_v3(
         CpiContext::new_with_signer(
-            metadata_program.to_account_info(),
+            metadata_program.key(),
             CreateMetadataAccountsV3 {
                 metadata: position_bundle_metadata.to_account_info(),
                 mint: position_bundle_mint.to_account_info(),

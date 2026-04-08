@@ -15,7 +15,7 @@ name: whirlpools
 services:
   build-solana-program:
     platform: linux/amd64
-    image: solanafoundation/anchor:v0.32.1
+    image: solanafoundation/anchor:v1.0.0
     working_dir: /usr/src/whirlpools
     command: >
       anchor build
@@ -24,7 +24,7 @@ services:
       - ./:/usr/src/whirlpools
 
   yarn-install:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -38,7 +38,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache
 
   build-ts-sdk:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -59,7 +59,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-legacy-sdk:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -78,7 +78,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-rust-sdk:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "rustup component add clippy rustfmt
@@ -93,7 +93,7 @@ services:
       - ./:/usr/src/whirlpools
 
   build-integration:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -112,7 +112,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-docs:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -136,7 +136,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   build-examples:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -194,7 +194,7 @@ services:
       - ./:/usr/src/whirlpools
 
   test-program:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       cargo test -p whirlpool
@@ -222,7 +222,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-ts-sdk:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -243,7 +243,7 @@ services:
       - yarn_cache:/usr/src/whirlpools/.yarn/cache:ro
 
   test-rust-sdk:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "apt-get update
@@ -259,7 +259,7 @@ services:
       - ./:/usr/src/whirlpools
 
   test-integration:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -308,7 +308,7 @@ services:
       - ./:/usr/src/whirlpools
 
   lint:
-    image: rust:1.86.0
+    image: rust:1.89.0
     working_dir: /usr/src/whirlpools
     command: >
       sh -c "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -

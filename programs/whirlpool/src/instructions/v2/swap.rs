@@ -66,7 +66,7 @@ pub struct SwapV2<'info> {
 }
 
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, SwapV2<'info>>,
+    ctx: Context<'info, SwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
     sqrt_price_limit: u128,

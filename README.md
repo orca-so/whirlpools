@@ -37,8 +37,9 @@ This monorepo contains all the code needed to build, deploy and interact with th
 
 ### Requirements
 
-- Anchor v0.32.1
-- Solana v2.1.0
+- Rust 1.89.0
+- Anchor v1.0.0
+- Solana v3.1.10
 
 ### Getting Started
 
@@ -111,4 +112,3 @@ Have problems integrating with the SDK? Pop by over to the Orca [Discord](https:
 ### Feedback
 
 Got ideas on how to improve the system? Open up an issue on github and let's brainstorm more about it together!
-

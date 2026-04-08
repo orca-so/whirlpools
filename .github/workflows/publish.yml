@@ -25,13 +25,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "yarn"
+          registry-url: "https://registry.npmjs.org"
           always-auth: true
       - name: Setup Rust
         run: |
-          rustup toolchain install 1.86.0 --profile minimal
-          rustup default 1.86.0
+          rustup toolchain install 1.89.0 --profile minimal
+          rustup default 1.89.0
           rustup component add rustfmt clippy
       - name: Install dependencies
         run: yarn install

@@ -3,9 +3,9 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
+import type { InitConfigExtensionParams } from "../../../dist/instructions";
 import type { WhirlpoolContext } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
-import type { InitConfigExtensionParams } from "../../../dist/instructions";
 import { getLocalnetAdminKeypair0 } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 
@@ -345,7 +345,8 @@ describe("initialize_config_extension", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
   });

@@ -161,12 +161,8 @@ describe("migrate_repurpose_reward_authority_space", () => {
       ctx,
       migrateRepurposeRewardAuthoritySpace(preloadWhirlpoolAddress),
     );
-    // NOTE: the actual anchor log reads like
-    // > Program log: panicked at programs/whirlpool/src/instructions/migrate_repurpose_reward_authority_space.rs:19:9:\\nWhirlpool has been migrated already",
     await assert.rejects(migrateAgainTx.buildAndExecute(), (err: Error) => {
-      return /panicked at.*Whirlpool has been migrated already/s.test(
-        err.message,
-      );
+      return /Whirlpool has been migrated already/.test(err.message);
     });
   });
 
@@ -180,12 +176,8 @@ describe("migrate_repurpose_reward_authority_space", () => {
       ctx,
       migrateRepurposeRewardAuthoritySpace(poolInitInfo.whirlpoolPda.publicKey),
     );
-    // NOTE: the actual anchor log reads like
-    // > Program log: panicked at programs/whirlpool/src/instructions/migrate_repurpose_reward_authority_space.rs:19:9:\\nWhirlpool has been migrated already",
     await assert.rejects(migrateAgainTx.buildAndExecute(), (err: Error) => {
-      return /panicked at.*Whirlpool has been migrated already/s.test(
-        err.message,
-      );
+      return /Whirlpool has been migrated already/.test(err.message);
     });
   });
 });

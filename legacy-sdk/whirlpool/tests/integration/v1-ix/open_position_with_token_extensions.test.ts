@@ -2,22 +2,22 @@ import * as anchor from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   ExtensionType,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  createMint,
   createMintToInstruction,
   getAssociatedTokenAddressSync,
   getExtensionData,
   getExtensionTypes,
   getMetadataPointerState,
   getMintCloseAuthority,
-  createMint,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { unpack as unpackTokenMetadata } from "@solana/spl-token-metadata";
 import type { TokenMetadata } from "@solana/spl-token-metadata";
-import { Keypair, SystemProgram } from "@solana/web3.js";
+import { unpack as unpackTokenMetadata } from "@solana/spl-token-metadata";
 import type { PublicKey } from "@solana/web3.js";
+import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import type {
   InitPoolParams,
@@ -34,23 +34,23 @@ import {
   WhirlpoolIx,
   toTx,
 } from "../../../src";
+import type { OpenPositionWithTokenExtensionsParams } from "../../../src/instructions";
 import {
   ONE_SOL,
+  SENTINEL_MAX,
+  SENTINEL_MIN,
   TickSpacing,
   ZERO_BN,
   initializeLiteSVMEnvironment,
-  systemTransferTx,
-  SENTINEL_MIN,
-  SENTINEL_MAX,
   snapTickDown,
   snapTickUp,
+  systemTransferTx,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
-import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
-import type { OpenPositionWithTokenExtensionsParams } from "../../../src/instructions";
-import { useMaxCU } from "../../utils/v2/init-utils-v2";
 import { pollForCondition } from "../../utils/litesvm";
+import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../../utils/test-builders";
+import { useMaxCU } from "../../utils/v2/init-utils-v2";
 
 describe("open_position_with_token_extensions", () => {
   let provider: anchor.AnchorProvider;
@@ -1099,7 +1099,8 @@ describe("open_position_with_token_extensions", () => {
         })
           .addSigner(defaultMint)
           .buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
 

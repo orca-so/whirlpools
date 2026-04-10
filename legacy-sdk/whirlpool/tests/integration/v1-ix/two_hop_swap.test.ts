@@ -3,6 +3,7 @@ import { Percentage, U64_MAX } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
 import type { InitPoolParams, WhirlpoolContext } from "../../../src";
 import {
   buildWhirlpoolClient,
@@ -22,11 +23,6 @@ import {
 import type { TwoHopSwapParams } from "../../../src/instructions";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { getTokenBalance, TickSpacing, warpClock } from "../../utils";
-import {
-  pollForCondition,
-  initializeLiteSVMEnvironment,
-  resetAndInitializeLiteSVMEnvironment,
-} from "../../utils/litesvm";
 import type {
   FundedPositionParams,
   InitAquariumParams,
@@ -36,13 +32,20 @@ import {
   getDefaultAquarium,
   getTokenAccsForPools,
 } from "../../utils/init-utils";
-import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
+import {
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+  resetAndInitializeLiteSVMEnvironment,
+} from "../../utils/litesvm";
+import { createTokenAccount } from "../../utils/token";
 
 describe("two-hop swap", () => {
   let provider: anchor.AnchorProvider;
   let ctx: WhirlpoolContext;
   let fetcher: WhirlpoolContext["fetcher"];
   let client: ReturnType<typeof buildWhirlpoolClient>;
+  let invalidWhirlpoolOne: PublicKey;
+  let nonDuplicateTokenAccount: PublicKey;
 
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
@@ -127,13 +130,22 @@ describe("two-hop swap", () => {
         ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
         tokenAuthority: ctx.wallet.publicKey,
       };
+
+      invalidWhirlpoolOne = (await buildTestAquariums(ctx, [aqConfig]))[0]
+        .pools[0].whirlpoolPda.publicKey;
+
+      nonDuplicateTokenAccount = await createTokenAccount(
+        provider,
+        pools[0].tokenMintB,
+        ctx.wallet.publicKey,
+      );
     });
 
     it("fails invalid whirlpool", async () => {
       await rejectParams(
         {
           ...baseIxParams,
-          whirlpoolOne: baseIxParams.whirlpoolTwo,
+          whirlpoolOne: invalidWhirlpoolOne,
         },
         /0x7d3/, // ConstraintRaw
       );
@@ -143,7 +155,7 @@ describe("two-hop swap", () => {
       await rejectParams(
         {
           ...baseIxParams,
-          tokenOwnerAccountOneA: baseIxParams.tokenOwnerAccountOneB,
+          tokenOwnerAccountOneA: nonDuplicateTokenAccount, // baseIxParams.tokenOwnerAccountOneB,
         },
         /0x7d3/, // ConstraintRaw
       );
@@ -153,7 +165,7 @@ describe("two-hop swap", () => {
       await rejectParams(
         {
           ...baseIxParams,
-          tokenVaultOneA: baseIxParams.tokenVaultOneB,
+          tokenVaultOneA: nonDuplicateTokenAccount, // baseIxParams.tokenVaultOneB,
         },
         /0x7dc/, // ConstraintAddress
       );

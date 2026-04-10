@@ -3,13 +3,13 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
+import type { InitializeTokenBadgeParams } from "../../..//dist/instructions";
 import type { WhirlpoolContext } from "../../../src";
 import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolIx } from "../../../src";
-import type { InitializeTokenBadgeParams } from "../../..//dist/instructions";
-import { createMintV2 } from "../../utils/v2/token-2022";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { getLocalnetAdminKeypair0 } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
+import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+import { createMintV2 } from "../../utils/v2/token-2022";
 
 describe("initialize_token_badge", () => {
   let provider: anchor.AnchorProvider;
@@ -692,7 +692,8 @@ describe("initialize_token_badge", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
   });

@@ -3,10 +3,11 @@ import { Percentage, U64_MAX } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 import type {
   InitPoolParams,
-  WhirlpoolData,
   WhirlpoolContext,
+  WhirlpoolData,
 } from "../../../../src";
 import {
   buildWhirlpoolClient,
@@ -29,16 +30,23 @@ import type {
 } from "../../../../src/instructions";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
+  NO_TOKEN_EXTENSION_CONTEXT,
+  TokenExtensionUtil,
+} from "../../../../src/utils/public/token-extension-util";
+import {
   getTokenBalance,
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+  resetAndInitializeLiteSVMEnvironment,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   warpClock,
-  pollForCondition,
-  initializeLiteSVMEnvironment,
-  resetAndInitializeLiteSVMEnvironment,
 } from "../../../utils";
-import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
+import type {
+  InitAquariumV2Params,
+  TestAquarium,
+} from "../../../utils/v2/aquarium-v2";
 import {
   buildTestAquariumsV2,
   getDefaultAquariumV2,
@@ -50,19 +58,22 @@ import type {
 } from "../../../utils/v2/init-utils-v2";
 import {
   asyncAssertOwnerProgram,
+  createTokenAccountV2,
   createMintV2,
 } from "../../../utils/v2/token-2022";
-import {
-  NO_TOKEN_EXTENSION_CONTEXT,
-  TokenExtensionUtil,
-} from "../../../../src/utils/public/token-extension-util";
-import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 
 describe("two_hop_swap_v2", () => {
   let provider: anchor.AnchorProvider;
   let ctx: WhirlpoolContext;
   let fetcher: WhirlpoolContext["fetcher"];
   let client: ReturnType<typeof buildWhirlpoolClient>;
+
+  let aquarium: TestAquarium;
+  let invalidWhirlpoolOne: PublicKey;
+  let poolOneNonVaultTokenAAccount: PublicKey;
+  let poolOneNonVaultTokenBAccount: PublicKey;
+  let poolTwoNonVaultTokenAAccount: PublicKey;
+  let poolTwoNonVaultTokenBAccount: PublicKey;
 
   // LiteSVM is now reset in beforeEach hooks for each test suite
 
@@ -169,7 +180,7 @@ describe("two_hop_swap_v2", () => {
         describe("fails [2] with two-hop swap, invalid accounts", () => {
           let baseIxParams: TwoHopSwapV2Params;
           beforeEach(async () => {
-            const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
+            aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
             const { tokenAccounts, mintKeys, pools } = aquarium;
 
             await asyncAssertOwnerProgram(
@@ -302,32 +313,95 @@ describe("two_hop_swap_v2", () => {
               ),
               tokenAuthority: ctx.wallet.publicKey,
             };
+
+            const tokenTraitForMint = (mint: PublicKey): TokenTrait => {
+              const tokenAccount = tokenAccounts.find((account) =>
+                account.mint.equals(mint),
+              );
+              assert.ok(tokenAccount, `Missing token trait for mint ${mint.toBase58()}`);
+              return tokenAccount!.tokenTrait;
+            };
+
+            invalidWhirlpoolOne = (
+              await buildTestAquariumsV2(ctx, [aqConfig])
+            )[0].pools[0].whirlpoolPda.publicKey;
+
+            poolOneNonVaultTokenAAccount = await createTokenAccountV2(
+              provider,
+              tokenTraitForMint(pools[0].tokenMintA),
+              pools[0].tokenMintA,
+              ctx.wallet.publicKey,
+            );
+
+            poolOneNonVaultTokenBAccount = await createTokenAccountV2(
+              provider,
+              tokenTraitForMint(pools[0].tokenMintB),
+              pools[0].tokenMintB,
+              ctx.wallet.publicKey,
+            );
+
+            poolTwoNonVaultTokenAAccount = await createTokenAccountV2(
+              provider,
+              tokenTraitForMint(pools[1].tokenMintA),
+              pools[1].tokenMintA,
+              ctx.wallet.publicKey,
+            );
+
+            poolTwoNonVaultTokenBAccount = await createTokenAccountV2(
+              provider,
+              tokenTraitForMint(pools[1].tokenMintB),
+              pools[1].tokenMintB,
+              ctx.wallet.publicKey,
+            );
           });
 
           it("fails invalid whirlpool", async () => {
             await rejectParams(
               {
                 ...baseIxParams,
-                whirlpoolOne: baseIxParams.whirlpoolTwo,
+                whirlpoolOne: invalidWhirlpoolOne,
               },
-              ///0x7d3/ // ConstraintRaw
-              // V2 has token_mint_one_a and it has address constraint
               /0x7dc/, // ConstraintAddress
             );
           });
 
           it("fails invalid token account", async () => {
+            const outputMint =
+              baseIxParams.tokenMintInput === aquarium.pools[0].tokenMintA
+                ? aquarium.pools[0].tokenMintB
+                : aquarium.pools[0].tokenMintA;
+            const tokenOwnerAccountOutput = await createTokenAccountV2(
+              provider,
+              aquarium.tokenAccounts.find((account) => account.mint.equals(outputMint))!
+                .tokenTrait,
+              outputMint,
+              ctx.wallet.publicKey,
+            );
+
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
+                tokenOwnerAccountInput: tokenOwnerAccountOutput, // baseIxParams.tokenOwnerAccountOutput,
               },
               /0x7d3/, // ConstraintRaw
             );
+
+            const inputMint =
+              baseIxParams.tokenMintInput === aquarium.pools[0].tokenMintA
+                ? aquarium.pools[0].tokenMintA
+                : aquarium.pools[0].tokenMintB;
+            const tokenOwnerAccountInput = await createTokenAccountV2(
+              provider,
+              aquarium.tokenAccounts.find((account) => account.mint.equals(inputMint))!
+                .tokenTrait,
+              inputMint,
+              ctx.wallet.publicKey,
+            );
+
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
+                tokenOwnerAccountOutput: tokenOwnerAccountInput,
               },
               /0x7d3/, // ConstraintRaw
             );
@@ -337,28 +411,28 @@ describe("two_hop_swap_v2", () => {
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenVaultOneInput: baseIxParams.tokenVaultOneIntermediate,
+                tokenVaultOneInput: poolOneNonVaultTokenAAccount,
               },
               /0x7dc/, // ConstraintAddress
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenVaultOneIntermediate: baseIxParams.tokenVaultOneInput,
+                tokenVaultOneIntermediate: poolOneNonVaultTokenBAccount,
               },
               /0x7dc/, // ConstraintAddress
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenVaultTwoIntermediate: baseIxParams.tokenVaultTwoOutput,
+                tokenVaultTwoIntermediate: poolTwoNonVaultTokenAAccount,
               },
               /0x7dc/, // ConstraintAddress
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenVaultTwoOutput: baseIxParams.tokenVaultTwoIntermediate,
+                tokenVaultTwoOutput: poolTwoNonVaultTokenBAccount,
               },
               /0x7dc/, // ConstraintAddress
             );
@@ -803,9 +877,25 @@ describe("two_hop_swap_v2", () => {
 
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
+          const tokenTraitForMint = (mint: PublicKey): TokenTrait => {
+            const tokenAccount = tokenAccounts.find((account) =>
+              account.mint.equals(mint),
+            );
+            assert.ok(tokenAccount, `Missing token trait for mint ${mint.toBase58()}`);
+            return tokenAccount!.tokenTrait;
+          };
 
           let tokenBalances = await getTokenBalances(
             tokenAccounts.map((acc) => acc.account),
+          );
+          const extraOutputTokenAccount = await createTokenAccountV2(
+            provider,
+            tokenTraitForMint(mintKeys[0]),
+            mintKeys[0],
+            ctx.wallet.publicKey,
+          );
+          const extraOutputTokenBalanceBefore = new anchor.BN(
+            await getTokenBalance(provider, extraOutputTokenAccount),
           );
 
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
@@ -918,6 +1008,7 @@ describe("two_hop_swap_v2", () => {
                 [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
                 tokenAccounts,
               ),
+              tokenOwnerAccountOutput: extraOutputTokenAccount,
               tokenAuthority: ctx.wallet.publicKey,
             }),
           ).buildAndExecute();
@@ -935,14 +1026,16 @@ describe("two_hop_swap_v2", () => {
           );
 
           assert.deepEqual(tokenBalances, [
-            prevTbs[0]
-              .sub(quote.estimatedAmountIn)
-              .add(quote2.estimatedAmountOut),
+            prevTbs[0].sub(quote.estimatedAmountIn),
             prevTbs[1]
               .add(quote.estimatedAmountOut)
               .sub(quote2.estimatedAmountIn),
             prevTbs[2],
           ]);
+          assert.deepEqual(
+            new anchor.BN(await getTokenBalance(provider, extraOutputTokenAccount)),
+            extraOutputTokenBalanceBefore.add(quote2.estimatedAmountOut),
+          );
         });
 
         it("fails swaps [2] with top-hop swap, amountSpecifiedIsInput=true, slippage", async () => {

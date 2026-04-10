@@ -769,6 +769,11 @@ describe("collect_reward", () => {
       rewards[0].rewardMint,
       provider.wallet.publicKey,
     );
+    const fakeRewardVault = await createTokenAccount(
+      provider,
+      rewards[0].rewardMint,
+      provider.wallet.publicKey,
+    );
     await assert.rejects(
       toTx(
         ctx,
@@ -778,7 +783,7 @@ describe("collect_reward", () => {
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
           rewardOwnerAccount,
-          rewardVault: rewardOwnerAccount,
+          rewardVault: fakeRewardVault,
           rewardIndex: 0,
         }),
       ).buildAndExecute(),

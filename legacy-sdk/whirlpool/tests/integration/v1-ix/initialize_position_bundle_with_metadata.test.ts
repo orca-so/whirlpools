@@ -19,8 +19,8 @@ import {
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createMintInstructions, mintToDestination } from "../../utils";
-import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initializePositionBundleWithMetadata } from "../../utils/init-utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { MetaplexHttpClient } from "../../utils/metaplex";
 
 describe("initialize_position_bundle_with_metadata", () => {
@@ -389,7 +389,8 @@ describe("initialize_position_bundle_with_metadata", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
 

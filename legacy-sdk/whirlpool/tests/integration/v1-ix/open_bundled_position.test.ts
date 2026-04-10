@@ -17,8 +17,8 @@ import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
-  PriceMath,
   POSITION_BUNDLE_SIZE,
+  PriceMath,
   TickUtil,
   toTx,
   WhirlpoolIx,
@@ -27,17 +27,17 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   approveToken,
   createAssociatedTokenAccount,
+  expireBlockhash,
+  initializeLiteSVMEnvironment,
   ONE_SOL,
+  SENTINEL_MAX,
+  SENTINEL_MIN,
+  snapTickDown,
+  snapTickUp,
   systemTransferTx,
   TickSpacing,
   transferToken,
   ZERO_BN,
-  expireBlockhash,
-  initializeLiteSVMEnvironment,
-  SENTINEL_MIN,
-  SENTINEL_MAX,
-  snapTickDown,
-  snapTickUp,
 } from "../../utils";
 import { TICK_RENT_AMOUNT } from "../../utils/const";
 import {
@@ -733,7 +733,8 @@ describe("open_bundled_position", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
 

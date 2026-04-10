@@ -8130,6 +8130,18 @@ describe("TokenExtension/TransferFee", () => {
             transferFeeMid!.maximumFee === BigInt(U64_MAX.toString());
           if (inputWithoutCap || midWithoutCap) {
             // we cannot determine input size because all amount will be collected as transfer fee
+            const invalidInputTokenAccount = await createTokenAccountV2(
+              provider,
+              inputTokenTrait,
+              inputToken,
+              ctx.wallet.publicKey,
+            );
+            const invalidOutputTokenAccount = await createTokenAccountV2(
+              provider,
+              outputTokenTrait,
+              outputToken,
+              ctx.wallet.publicKey,
+            );
             const tickArraysOne = await SwapUtils.getTickArrays(
               whirlpoolDataOne.tickCurrentIndex,
               whirlpoolDataOne.tickSpacing,
@@ -8183,12 +8195,8 @@ describe("TokenExtension/TransferFee", () => {
                   tokenVaultTwoOutput: aToBTwo
                     ? whirlpoolDataTwo.tokenVaultB
                     : whirlpoolDataTwo.tokenVaultA,
-                  tokenOwnerAccountInput: aToBOne
-                    ? pools[0].tokenVaultAKeypair.publicKey
-                    : pools[0].tokenVaultBKeypair.publicKey,
-                  tokenOwnerAccountOutput: aToBTwo
-                    ? pools[1].tokenVaultBKeypair.publicKey
-                    : pools[1].tokenVaultAKeypair.publicKey,
+                  tokenOwnerAccountInput: invalidInputTokenAccount,
+                  tokenOwnerAccountOutput: invalidOutputTokenAccount,
                   tickArrayOne0: tickArraysOne[0].address,
                   tickArrayOne1: tickArraysOne[0].address,
                   tickArrayOne2: tickArraysOne[0].address,
@@ -8580,6 +8588,18 @@ describe("TokenExtension/TransferFee", () => {
             transferFeeMid!.maximumFee === BigInt(U64_MAX.toString());
           if (inputWithoutCap || midWithoutCap) {
             // we cannot determine input size because all amount will be collected as transfer fee
+            const invalidInputTokenAccount = await createTokenAccountV2(
+              provider,
+              inputTokenTrait,
+              inputToken,
+              ctx.wallet.publicKey,
+            );
+            const invalidOutputTokenAccount = await createTokenAccountV2(
+              provider,
+              outputTokenTrait,
+              outputToken,
+              ctx.wallet.publicKey,
+            );
             const tickArraysOne = await SwapUtils.getTickArrays(
               whirlpoolDataOne.tickCurrentIndex,
               whirlpoolDataOne.tickSpacing,
@@ -8633,12 +8653,8 @@ describe("TokenExtension/TransferFee", () => {
                   tokenVaultTwoOutput: aToBOne
                     ? whirlpoolDataOne.tokenVaultB
                     : whirlpoolDataOne.tokenVaultA,
-                  tokenOwnerAccountInput: aToBTwo
-                    ? pools[1].tokenVaultAKeypair.publicKey
-                    : pools[1].tokenVaultBKeypair.publicKey,
-                  tokenOwnerAccountOutput: aToBOne
-                    ? pools[0].tokenVaultBKeypair.publicKey
-                    : pools[0].tokenVaultAKeypair.publicKey,
+                  tokenOwnerAccountInput: invalidInputTokenAccount,
+                  tokenOwnerAccountOutput: invalidOutputTokenAccount,
                   tickArrayOne0: tickArraysTwo[0].address,
                   tickArrayOne1: tickArraysTwo[0].address,
                   tickArrayOne2: tickArraysTwo[0].address,
@@ -9030,6 +9046,18 @@ describe("TokenExtension/TransferFee", () => {
             transferFeeOutput!.maximumFee === BigInt(U64_MAX.toString());
           if (inputWithoutCap || outputWithoutCap || midWithoutCap) {
             // we cannot determine input/output size because all amount will be collected as transfer fee
+            const invalidInputTokenAccount = await createTokenAccountV2(
+              provider,
+              inputTokenTrait,
+              inputToken,
+              ctx.wallet.publicKey,
+            );
+            const invalidOutputTokenAccount = await createTokenAccountV2(
+              provider,
+              outputTokenTrait,
+              outputToken,
+              ctx.wallet.publicKey,
+            );
             const tickArraysOne = await SwapUtils.getTickArrays(
               whirlpoolDataOne.tickCurrentIndex,
               whirlpoolDataOne.tickSpacing,
@@ -9083,12 +9111,8 @@ describe("TokenExtension/TransferFee", () => {
                   tokenVaultTwoOutput: aToBTwo
                     ? whirlpoolDataTwo.tokenVaultB
                     : whirlpoolDataTwo.tokenVaultA,
-                  tokenOwnerAccountInput: aToBOne
-                    ? pools[0].tokenVaultAKeypair.publicKey
-                    : pools[0].tokenVaultBKeypair.publicKey,
-                  tokenOwnerAccountOutput: aToBTwo
-                    ? pools[1].tokenVaultBKeypair.publicKey
-                    : pools[1].tokenVaultAKeypair.publicKey,
+                  tokenOwnerAccountInput: invalidInputTokenAccount,
+                  tokenOwnerAccountOutput: invalidOutputTokenAccount,
                   tickArrayOne0: tickArraysOne[0].address,
                   tickArrayOne1: tickArraysOne[0].address,
                   tickArrayOne2: tickArraysOne[0].address,
@@ -9485,6 +9509,18 @@ describe("TokenExtension/TransferFee", () => {
             transferFeeOutput!.maximumFee === BigInt(U64_MAX.toString());
           if (inputWithoutCap || outputWithoutCap || midWithoutCap) {
             // we cannot determine input/output size because all amount will be collected as transfer fee
+            const invalidInputTokenAccount = await createTokenAccountV2(
+              provider,
+              inputTokenTrait,
+              inputToken,
+              ctx.wallet.publicKey,
+            );
+            const invalidOutputTokenAccount = await createTokenAccountV2(
+              provider,
+              outputTokenTrait,
+              outputToken,
+              ctx.wallet.publicKey,
+            );
             const tickArraysOne = await SwapUtils.getTickArrays(
               whirlpoolDataOne.tickCurrentIndex,
               whirlpoolDataOne.tickSpacing,
@@ -9538,12 +9574,8 @@ describe("TokenExtension/TransferFee", () => {
                   tokenVaultTwoOutput: aToBOne
                     ? whirlpoolDataOne.tokenVaultB
                     : whirlpoolDataOne.tokenVaultA,
-                  tokenOwnerAccountInput: aToBTwo
-                    ? pools[1].tokenVaultAKeypair.publicKey
-                    : pools[1].tokenVaultBKeypair.publicKey,
-                  tokenOwnerAccountOutput: aToBOne
-                    ? pools[0].tokenVaultBKeypair.publicKey
-                    : pools[0].tokenVaultAKeypair.publicKey,
+                  tokenOwnerAccountInput: invalidInputTokenAccount,
+                  tokenOwnerAccountOutput: invalidOutputTokenAccount,
                   tickArrayOne0: tickArraysTwo[0].address,
                   tickArrayOne1: tickArraysTwo[0].address,
                   tickArrayOne2: tickArraysTwo[0].address,

@@ -32,12 +32,12 @@ pub struct TwoHopSwap<'info> {
     #[account(mut, address = whirlpool_one.token_vault_b)]
     pub token_vault_one_b: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_two_a.mint == whirlpool_two.token_mint_a)]
+    #[account(mut, dup, constraint = token_owner_account_two_a.mint == whirlpool_two.token_mint_a)]
     pub token_owner_account_two_a: Box<Account<'info, TokenAccount>>,
     #[account(mut, address = whirlpool_two.token_vault_a)]
     pub token_vault_two_a: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_two_b.mint == whirlpool_two.token_mint_b)]
+    #[account(mut, dup, constraint = token_owner_account_two_b.mint == whirlpool_two.token_mint_b)]
     pub token_owner_account_two_b: Box<Account<'info, TokenAccount>>,
     #[account(mut, address = whirlpool_two.token_vault_b)]
     pub token_vault_two_b: Box<Account<'info, TokenAccount>>,

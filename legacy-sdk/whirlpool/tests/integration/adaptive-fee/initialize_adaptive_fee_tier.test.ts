@@ -1,4 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import type {
   AdaptiveFeeConstantsData,
@@ -19,15 +21,13 @@ import {
   rewritePubkey,
   systemTransferTx,
 } from "../../utils";
-import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import {
   initAdaptiveFeeTier,
   initFeeTier,
   initializeConfigWithDefaultConfigParams,
 } from "../../utils/init-utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("initialize_adaptive_fee_tier", () => {
   let provider: anchor.AnchorProvider;
@@ -672,7 +672,8 @@ describe("initialize_adaptive_fee_tier", () => {
 
     await assert.rejects(
       tx.buildAndExecute(),
-      /0xbc0/, // InvalidProgramId
+      // /0xbc0/, // InvalidProgramId
+      /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
     );
   });
 

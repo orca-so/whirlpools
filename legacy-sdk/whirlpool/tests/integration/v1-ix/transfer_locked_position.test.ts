@@ -395,7 +395,7 @@ describe("transfer_locked_position", () => {
         positionParams.positionTokenAccount,
         ctx.wallet.publicKey,
       ),
-      /0x7d3/, // ConstraintRaw
+      /0x7f8/, // ConstraintDuplicateMutableAccount
     );
   });
 

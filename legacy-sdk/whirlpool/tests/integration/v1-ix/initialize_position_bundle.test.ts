@@ -12,8 +12,8 @@ import type { PositionBundleData, WhirlpoolContext } from "../../../src";
 import { PDAUtil, POSITION_BUNDLE_SIZE, toTx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createMintInstructions, mintToDestination } from "../../utils";
-import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initializePositionBundle } from "../../utils/init-utils";
+import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 
 describe("initialize_position_bundle", () => {
   let provider: anchor.AnchorProvider;
@@ -299,7 +299,8 @@ describe("initialize_position_bundle", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
 

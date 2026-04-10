@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import Decimal from "decimal.js";
 import { MathUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import {
   ExtensionType,
@@ -8,15 +7,19 @@ import {
   TOKEN_PROGRAM_ID,
   getExtensionTypes,
 } from "@solana/spl-token";
-import { Keypair, SystemProgram } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
+import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
+import Decimal from "decimal.js";
 import type {
   InitPoolParams,
   LockConfigData,
+  LockPositionParams,
+  OpenPositionWithTokenExtensionsParams,
   PositionBundleData,
-  WhirlpoolData,
+  PositionData,
   WhirlpoolContext,
+  WhirlpoolData,
 } from "../../../src";
 import {
   IGNORE_CACHE,
@@ -36,25 +39,20 @@ import {
   transferToken,
 } from "../../utils";
 import {
-  initializeLiteSVMEnvironment,
-  pollForCondition,
-} from "../../utils/litesvm";
-import { getCurrentTimestamp } from "../../utils/litesvm";
-import {
   initializePositionBundle,
   openBundledPosition,
 } from "../../utils/init-utils";
 import {
+  getCurrentTimestamp,
+  initializeLiteSVMEnvironment,
+  pollForCondition,
+} from "../../utils/litesvm";
+import {
   generateDefaultOpenPositionParams,
   generateDefaultOpenPositionWithTokenExtensionsParams,
 } from "../../utils/test-builders";
-import type {
-  PositionData,
-  LockPositionParams,
-  OpenPositionWithTokenExtensionsParams,
-} from "../../../src";
-import { useMaxCU } from "../../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
+import { useMaxCU } from "../../utils/v2/init-utils-v2";
 import {
   approveTokenV2,
   createTokenAccountV2,
@@ -1690,7 +1688,8 @@ describe("lock_position", () => {
           cleanupInstructions: [],
           signers: [],
         }).buildAndExecute(),
-        /0xbc0/, // InvalidProgramId
+        // /0xbc0/, // InvalidProgramId
+        /Unknown program/, // Program account must be included, LiteSVM surfaces MissingAccount before Anchor account validation
       );
     });
 

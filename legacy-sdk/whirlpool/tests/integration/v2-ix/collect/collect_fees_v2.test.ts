@@ -650,6 +650,9 @@ describe("collect_fees_v2", () => {
               ),
           });
 
+          console.log("expectation.feeOwedA", expectation.feeOwedA);
+          console.log("expectation.feeOwedB", expectation.feeOwedB);
+
           assert.ok(expectation.feeOwedA.gt(ZERO_BN));
           assert.ok(expectation.feeOwedB.gt(ZERO_BN));
 
@@ -675,6 +678,8 @@ describe("collect_fees_v2", () => {
             positions[0].publicKey,
             IGNORE_CACHE,
           )) as PositionData;
+
+          console.log("positionAfterCollect", positionAfterCollect);
 
           assert.ok(positionAfterCollect.feeOwedA.eq(ZERO_BN));
           assert.ok(positionAfterCollect.feeOwedB.eq(ZERO_BN));

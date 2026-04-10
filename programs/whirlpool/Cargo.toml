@@ -32,7 +32,7 @@ solana-security-txt = { version = "=1.1.1" }
 bytemuck = { version = "=1.25.0", features = ["derive", "min_const_generics"] }
 num_enum = { version = "=0.7.4" }
 bitflags = { version = "=2.8.0" }
-borsh = { version = "=0.10.4" }
+borsh = { version = "=1.5.7" }
 arrayvec = { version = "=0.7.6" }
 
 [dev-dependencies]
@@ -43,3 +43,13 @@ serde_json = "=1.0.149"
 [dev-dependencies.serde_with]
 version = "=2.3.3"
 features = ["json"]
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+# These are cfg values emitted by Anchor/Solana proc macros on newer Rust toolchains.
+# We mark them as expected for check-cfg so they stop warning, without adding them as
+# real crate features that could change Cargo feature resolution or compilation behavior.
+check-cfg = [
+    'cfg(feature, values("anchor-debug", "no-log-ix-name"))',
+    'cfg(target_os, values("solana"))',
+]

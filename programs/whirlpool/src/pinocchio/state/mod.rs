@@ -2,6 +2,7 @@ pub use pinocchio::pubkey::Pubkey;
 
 pub type COption<T> = ([u8; 4], T);
 pub type BytesU16 = [u8; 2];
+#[allow(dead_code)]
 pub type BytesU32 = [u8; 4];
 pub type BytesU64 = [u8; 8];
 pub type BytesU128 = [u8; 16];

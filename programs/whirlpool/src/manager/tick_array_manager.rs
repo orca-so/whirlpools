@@ -57,6 +57,12 @@ pub struct TickArrayUpdate {
     pub size_update: TickArraySizeUpdate,
 }
 
+// NOTE: some fields will be renamed in solana-rent v4. Further, SIMD-0194 deprecates rent exemption threshold
+// and will obviate the need for this optimized calculation. It was only activated in epoch 943, so we will wait to
+// remove this code until it has run on mainnet for a longer period of time.
+//
+// Use the following command to see the SIMD-0194 feature status on a specific cluster:
+// `solana feature status rent6iVy6PDoViPBeJ6k5EJQrkj62h7DPyLbWGHwjrC`
 pub fn get_tick_rent_amount() -> Result<u64> {
     let rent = Rent::get()?;
     match (

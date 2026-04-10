@@ -17,7 +17,7 @@ use crate::util::{
 #[derive(Accounts)]
 pub struct ModifyLiquidity<'info> {
     #[account(mut)]
-    pub whirlpool: Account<'info, Whirlpool>,
+    pub whirlpool: Box<Account<'info, Whirlpool>>,
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
@@ -25,7 +25,7 @@ pub struct ModifyLiquidity<'info> {
     pub position_authority: Signer<'info>,
 
     #[account(mut, has_one = whirlpool)]
-    pub position: Account<'info, Position>,
+    pub position: Box<Account<'info, Position>>,
     #[account(
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1

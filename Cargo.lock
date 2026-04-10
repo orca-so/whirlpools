@@ -3301,7 +3301,7 @@ dependencies = [
  "arrayref",
  "arrayvec",
  "bitflags",
- "borsh 0.10.4",
+ "borsh 1.5.7",
  "bytemuck",
  "num_enum",
  "pinocchio",

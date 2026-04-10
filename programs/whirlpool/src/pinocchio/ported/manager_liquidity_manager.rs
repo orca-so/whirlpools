@@ -54,6 +54,7 @@ pub fn pino_calculate_modify_liquidity(
     )
 }
 
+#[allow(dead_code)]
 pub fn pino_calculate_fee_and_reward_growths(
     whirlpool: &MemoryMappedWhirlpool,
     position: &MemoryMappedPosition,

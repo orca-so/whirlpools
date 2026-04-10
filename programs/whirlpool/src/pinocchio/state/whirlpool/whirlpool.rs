@@ -11,6 +11,7 @@ pub struct MemoryMappedWhirlpoolRewardInfo {
     growth_global_x64: BytesU128,
 }
 
+#[allow(dead_code)]
 impl MemoryMappedWhirlpoolRewardInfo {
     #[inline(always)]
     pub fn mint(&self) -> &Pubkey {

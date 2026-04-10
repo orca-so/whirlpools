@@ -49,6 +49,7 @@ pub fn load_account_mut_unchecked<T: WhirlpoolProgramAccount>(
     }))
 }
 
+#[allow(dead_code)]
 pub fn load_account<T: WhirlpoolProgramAccount>(
     account_info: &'_ AccountInfo,
 ) -> Result<Ref<'_, T>> {
@@ -57,6 +58,7 @@ pub fn load_account<T: WhirlpoolProgramAccount>(
     load_account_unchecked(account_info)
 }
 
+#[allow(dead_code)]
 pub fn load_account_unchecked<T: WhirlpoolProgramAccount>(
     account_info: &'_ AccountInfo,
 ) -> Result<Ref<'_, T>> {
@@ -76,7 +78,7 @@ const LAST_BYTE_OF_TOKEN_2022_PROGRAM_ID: u8 = 0xfc;
 
 pub fn load_token_program_account<T: TokenProgramAccount>(
     account_info: &'_ AccountInfo,
-) -> Result<TokenProgramAccountWithExtensions<T>> {
+) -> Result<TokenProgramAccountWithExtensions<'_, T>> {
     let owner_program_id = account_info.owner();
     let is_token_2022 = match owner_program_id[31] {
         LAST_BYTE_OF_TOKEN_PROGRAM_ID => {
@@ -121,7 +123,7 @@ pub fn load_token_program_account<T: TokenProgramAccount>(
 
 pub fn load_token_program_account_unchecked<T: TokenProgramAccount>(
     account_info: &'_ AccountInfo,
-) -> Result<TokenProgramAccountWithExtensions<T>> {
+) -> Result<TokenProgramAccountWithExtensions<'_, T>> {
     let owner_program_id = account_info.owner();
     let is_token_2022 = owner_program_id[31] == LAST_BYTE_OF_TOKEN_2022_PROGRAM_ID;
     let bytes = account_info.try_borrow_data()?;

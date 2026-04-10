@@ -92,14 +92,17 @@ pub trait TickArray {
         }
     }
 
+    #[allow(dead_code)]
     fn is_min_tick_array(&self) -> bool {
         self.start_tick_index() <= MIN_TICK_INDEX
     }
 
+    #[allow(dead_code)]
     fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
         self.start_tick_index() + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
     }
 
+    #[allow(dead_code)]
     fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
         if tick_spacing == 0 {
             return Err(crate::errors::ErrorCode::InvalidTickSpacing.into());
@@ -113,6 +116,7 @@ pub trait TickArray {
     }
 }
 
+#[allow(dead_code)]
 fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isize {
     // TODO: replace with i32.div_floor once not experimental
     let lhs = tick_index - start_tick_index;

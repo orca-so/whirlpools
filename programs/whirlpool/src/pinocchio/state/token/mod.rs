@@ -10,6 +10,7 @@ pub static ZERO_EXTENSIONS_TLV_DATA: [u8; 0] = [];
 
 pub struct TokenProgramAccountWithExtensions<'a, T> {
     bytes: Ref<'a, [u8]>,
+    #[allow(dead_code)]
     is_token_2022: bool,
     phantom: core::marker::PhantomData<T>,
 }
@@ -33,6 +34,7 @@ impl<T> core::ops::Deref for TokenProgramAccountWithExtensions<'_, T> {
     }
 }
 
+#[allow(dead_code)]
 impl<T> TokenProgramAccountWithExtensions<'_, T> {
     #[inline(always)]
     pub fn is_token_2022(&self) -> bool {

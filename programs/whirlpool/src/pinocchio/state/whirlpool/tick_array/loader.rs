@@ -11,8 +11,10 @@ use pinocchio::account_info::{AccountInfo, Ref, RefMut};
 use pinocchio::pubkey::Pubkey;
 use std::ops::{Deref, DerefMut};
 
+#[allow(dead_code)]
 pub type LoadedTickArray<'a> = Ref<'a, dyn TickArray + 'a>;
 
+#[allow(dead_code)]
 pub fn load_tick_array<'a>(
     account: &'a AccountInfo,
     whirlpool: &Pubkey,

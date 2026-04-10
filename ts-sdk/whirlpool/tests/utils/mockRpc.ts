@@ -19,10 +19,10 @@ import {
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
 } from "@solana/kit";
-import { PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import assert from "assert";
 import { randomUUID } from "crypto";
-import { FailedTransactionMetadata, FeatureSet, LiteSVM } from "litesvm";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { LOCALNET_ADMIN_KEYPAIR_0, LOCALNET_ADMIN_KEYPAIR_1 } from "./admin";
 import { getNextKeypair } from "./keypair";
@@ -45,19 +45,17 @@ const accountsCache = new Map<
 let _testContext: LiteSVM | null = null;
 export async function getTestContext(): Promise<LiteSVM> {
   if (_testContext == null) {
-    _testContext = new LiteSVM()
-      .withFeatureSet(new FeatureSet())
-      .withDefaultPrograms();
+    _testContext = new LiteSVM().withNativeMints().withDefaultPrograms();
 
     // Airdrop SOL to test accounts
-    _testContext.airdrop(toPublicKey(signer.address), BigInt(100e9));
+    _testContext.airdrop(signer.address, lamports(BigInt(100e9)));
     _testContext.airdrop(
-      toPublicKey(LOCALNET_ADMIN_KEYPAIR_0.address),
-      BigInt(100e9),
+      LOCALNET_ADMIN_KEYPAIR_0.address,
+      lamports(BigInt(100e9)),
     );
     _testContext.airdrop(
-      toPublicKey(LOCALNET_ADMIN_KEYPAIR_1.address),
-      BigInt(100e9),
+      LOCALNET_ADMIN_KEYPAIR_1.address,
+      lamports(BigInt(100e9)),
     );
 
     // Load programs
@@ -69,44 +67,9 @@ export async function getTestContext(): Promise<LiteSVM> {
       path.join(process.cwd(), "../../target/deploy/whirlpool.so"),
     );
     _testContext.addProgram(
-      toPublicKey(address("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")),
+      address("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"),
       whirlpoolProgram,
     );
-
-    // Create native SOL mint account
-    // This is the well-known native mint for wrapped SOL
-    const nativeMintAddress = address(
-      "So11111111111111111111111111111111111111112",
-    );
-    const TOKEN_PROGRAM_ID = address(
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-    );
-
-    // Create a minimal Mint account for native SOL
-    // Layout: mint_authority (36 bytes), supply (8 bytes), decimals (1 byte),
-    //         is_initialized (1 byte), freeze_authority (36 bytes)
-    const mintData = new Uint8Array(82);
-    // Set mint_authority to None (0 followed by 32 zero bytes)
-    mintData[0] = 0;
-    // supply = 0 (8 bytes, already zero)
-    // decimals = 9 (for SOL)
-    mintData[44] = 9;
-    // is_initialized = true
-    mintData[45] = 1;
-    // freeze_authority = None (0 followed by 32 zero bytes)
-    mintData[46] = 0;
-
-    const rentExemptBalance = _testContext.minimumBalanceForRentExemption(
-      BigInt(mintData.length),
-    );
-
-    _testContext.setAccount(toPublicKey(nativeMintAddress), {
-      lamports: Number(rentExemptBalance),
-      data: mintData,
-      owner: toPublicKey(TOKEN_PROGRAM_ID),
-      executable: false,
-      rentEpoch: 0,
-    });
 
     const configAddress = await setupConfigAndFeeTiers();
     setWhirlpoolsConfig(configAddress);
@@ -116,12 +79,13 @@ export async function getTestContext(): Promise<LiteSVM> {
 
 export async function deleteAccount(address: Address) {
   const testContext = await getTestContext();
-  testContext.setAccount(toPublicKey(address), {
-    lamports: 0,
+  testContext.setAccount({
+    address,
+    lamports: lamports(0n),
+    space: 0n,
     data: new Uint8Array(),
-    owner: toPublicKey(SYSTEM_PROGRAM_ADDRESS),
+    programAddress: SYSTEM_PROGRAM_ADDRESS,
     executable: false,
-    rentEpoch: 0,
   });
   accountsCache.delete(address);
 }
@@ -195,14 +159,18 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   assert(typeof address === "string");
   assertIsAddress(address);
   const testContext = await getTestContext();
-  const account = testContext.getAccount(toPublicKey(address));
+  const account = testContext.getAccount(address);
 
-  if (account == null || account.lamports === 0) {
+  if (
+    account == null ||
+    !account.exists ||
+    account.lamports === lamports(BigInt(0))
+  ) {
     return null as T;
   }
 
   // Cache account for getProgramAccounts
-  const ownerAddress = account.owner.toBase58() as Address;
+  const ownerAddress = account.programAddress;
   accountsCache.set(address, {
     owner: ownerAddress,
     data: account.data,
@@ -528,8 +496,7 @@ async function mockTransport<T>(
       const signature = getBase58Decoder().decode(
         signatureBytes ?? new Uint8Array(),
       );
-      const versionedTx = VersionedTransaction.deserialize(wireTransaction);
-      const result = testContext.sendTransaction(versionedTx);
+      const result = testContext.sendTransaction(transaction);
       if (result instanceof FailedTransactionMetadata) {
         assert.fail(result.toString());
       }

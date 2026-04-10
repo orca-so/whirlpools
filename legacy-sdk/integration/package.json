@@ -6,7 +6,7 @@
     "@orca-so/whirlpools-sdk": "*"
   },
   "scripts": {
-    "build": "anchor build",
+    "build": "anchor build -p whirlpool --ignore-keys",
     "test": "yarn workspace @orca-so/whirlpools-sdk test"
   }
 }

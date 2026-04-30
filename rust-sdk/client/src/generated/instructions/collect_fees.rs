@@ -90,7 +90,7 @@ impl CollectFees {
     let data = CollectFeesInstructionData::new().try_to_vec().unwrap();
     
     solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     }
@@ -379,7 +379,7 @@ impl<'a, 'b> CollectFeesCpi<'a, 'b> {
     let data = CollectFeesInstructionData::new().try_to_vec().unwrap();
     
     let instruction = solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     };

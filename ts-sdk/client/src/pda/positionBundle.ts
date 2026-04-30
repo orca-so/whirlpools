@@ -1,12 +1,12 @@
 import type { Address, ProgramDerivedAddress } from "@solana/kit";
 import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
+import { getWhirlpoolProgramAddress } from "../program";
 
 export async function getPositionBundleAddress(
   positionBundleMint: Address,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
-    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
+    programAddress: getWhirlpoolProgramAddress(),
     seeds: ["position_bundle", getAddressEncoder().encode(positionBundleMint)],
   });
 }
@@ -16,7 +16,7 @@ export async function getBundledPositionAddress(
   bundleIndex: number,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
-    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
+    programAddress: getWhirlpoolProgramAddress(),
     seeds: [
       "bundled_position",
       getAddressEncoder().encode(positionBundleAddress),

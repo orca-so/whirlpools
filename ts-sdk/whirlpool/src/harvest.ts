@@ -19,7 +19,13 @@ import type {
   GetEpochInfoApi,
   Signature,
 } from "@solana/kit";
-import { DEFAULT_ADDRESS, FUNDER, getPayer, getRpcConfig } from "./config";
+import {
+  DEFAULT_ADDRESS,
+  FUNDER,
+  getPayer,
+  getRpcConfig,
+  getWhirlpoolProgram,
+} from "./config";
 import {
   fetchAllTickArray,
   fetchPosition,
@@ -218,33 +224,39 @@ export async function harvestPositionInstructions(
 
   if (position.data.liquidity > 0n) {
     instructions.push(
-      getUpdateFeesAndRewardsInstruction({
-        whirlpool: whirlpool.address,
-        position: positionAddress[0],
-        tickArrayLower: lowerTickArrayAddress,
-        tickArrayUpper: upperTickArrayAddress,
-      }),
+      getUpdateFeesAndRewardsInstruction(
+        {
+          whirlpool: whirlpool.address,
+          position: positionAddress[0],
+          tickArrayLower: lowerTickArrayAddress,
+          tickArrayUpper: upperTickArrayAddress,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
   }
 
   if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
     instructions.push(
-      getCollectFeesV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-        tokenVaultA: whirlpool.data.tokenVaultA,
-        tokenVaultB: whirlpool.data.tokenVaultB,
-        tokenMintA: whirlpool.data.tokenMintA,
-        tokenMintB: whirlpool.data.tokenMintB,
-        tokenProgramA: mintA.programAddress,
-        tokenProgramB: mintB.programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getCollectFeesV2Instruction(
+        {
+          whirlpool: whirlpool.address,
+          positionAuthority: authority,
+          position: positionAddress[0],
+          positionTokenAccount,
+          tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+          tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+          tokenVaultA: whirlpool.data.tokenVaultA,
+          tokenVaultB: whirlpool.data.tokenVaultB,
+          tokenMintA: whirlpool.data.tokenMintA,
+          tokenMintB: whirlpool.data.tokenMintB,
+          tokenProgramA: mintA.programAddress,
+          tokenProgramB: mintB.programAddress,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
   }
 
@@ -255,19 +267,22 @@ export async function harvestPositionInstructions(
     const rewardMint = rewardMints[i];
     assert(rewardMint.exists, `Reward mint ${i} not found`);
     instructions.push(
-      getCollectRewardV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
-        rewardVault: whirlpool.data.rewardInfos[i].vault,
-        rewardIndex: i,
-        rewardMint: rewardMint.address,
-        rewardTokenProgram: rewardMint.programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getCollectRewardV2Instruction(
+        {
+          whirlpool: whirlpool.address,
+          positionAuthority: authority,
+          position: positionAddress[0],
+          positionTokenAccount,
+          rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
+          rewardVault: whirlpool.data.rewardInfos[i].vault,
+          rewardIndex: i,
+          rewardMint: rewardMint.address,
+          rewardTokenProgram: rewardMint.programAddress,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
   }
 

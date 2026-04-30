@@ -10,7 +10,7 @@ import type {
   TransactionSigner,
 } from "@solana/kit";
 import { AccountRole, lamports } from "@solana/kit";
-import { FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
+import { FUNDER, getWhirlpoolProgram, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
   ExactOutSwapQuote,
@@ -314,33 +314,36 @@ export async function swapInstructions<T extends SwapParams>(
   const otherAmountThreshold =
     "tokenMaxIn" in quote ? quote.tokenMaxIn : quote.tokenMinOut;
 
-  const swapInstruction = getSwapV2Instruction({
-    tokenProgramA: tokenA.programAddress,
-    tokenProgramB: tokenB.programAddress,
-    memoProgram: MEMO_PROGRAM_ADDRESS,
-    tokenAuthority: signer,
-    whirlpool: whirlpool.address,
-    tokenMintA: whirlpool.data.tokenMintA,
-    tokenMintB: whirlpool.data.tokenMintB,
-    tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-    tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-    tokenVaultA: whirlpool.data.tokenVaultA,
-    tokenVaultB: whirlpool.data.tokenVaultB,
-    tickArray0: tickArrays[0].address,
-    tickArray1: tickArrays[1].address,
-    tickArray2: tickArrays[2].address,
-    amount: specifiedAmount,
-    otherAmountThreshold,
-    sqrtPriceLimit: 0,
-    amountSpecifiedIsInput: specifiedInput,
-    aToB,
-    oracle: oracleAddress,
-    remainingAccountsInfo: {
-      slices: [
-        { accountsType: AccountsType.SupplementalTickArrays, length: 2 },
-      ],
+  const swapInstruction = getSwapV2Instruction(
+    {
+      tokenProgramA: tokenA.programAddress,
+      tokenProgramB: tokenB.programAddress,
+      memoProgram: MEMO_PROGRAM_ADDRESS,
+      tokenAuthority: signer,
+      whirlpool: whirlpool.address,
+      tokenMintA: whirlpool.data.tokenMintA,
+      tokenMintB: whirlpool.data.tokenMintB,
+      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+      tokenVaultA: whirlpool.data.tokenVaultA,
+      tokenVaultB: whirlpool.data.tokenVaultB,
+      tickArray0: tickArrays[0].address,
+      tickArray1: tickArrays[1].address,
+      tickArray2: tickArrays[2].address,
+      amount: specifiedAmount,
+      otherAmountThreshold,
+      sqrtPriceLimit: 0,
+      amountSpecifiedIsInput: specifiedInput,
+      aToB,
+      oracle: oracleAddress,
+      remainingAccountsInfo: {
+        slices: [
+          { accountsType: AccountsType.SupplementalTickArrays, length: 2 },
+        ],
+      },
     },
-  });
+    { programAddress: getWhirlpoolProgram() },
+  );
 
   swapInstruction.accounts.push(
     { address: tickArrays[3].address, role: AccountRole.WRITABLE },

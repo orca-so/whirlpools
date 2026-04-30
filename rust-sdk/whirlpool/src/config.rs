@@ -1,6 +1,9 @@
 use std::{error::Error, sync::Mutex};
 
-use orca_whirlpools_client::get_whirlpools_config_extension_address;
+use orca_whirlpools_client::{
+    current_whirlpool_id, get_whirlpools_config_extension_address, set_whirlpool_program_raw,
+    WhirlpoolProgram, WHIRLPOOL_IMMUTABLE_ID,
+};
 use solana_pubkey::Pubkey;
 
 /// The Whirlpools program's config account address for Solana Mainnet.
@@ -33,6 +36,12 @@ const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::new_f
     152, 57, 209, 52, 207, 240, 174, 74, 201, 7, 87, 54,
 ]);
 
+/// The Whirlpools config account address for the immutable Whirlpool program.
+const SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
+    116, 62, 1, 180, 69, 120, 160, 190, 89, 235, 62, 144, 64, 210, 160, 63, 11, 157, 46, 125, 206,
+    46, 108, 53, 135, 184, 54, 34, 43, 41, 184, 124,
+]);
+
 /// The currently selected address for the Whirlpools program's config account.
 pub static WHIRLPOOLS_CONFIG_ADDRESS: Mutex<Pubkey> =
     Mutex::new(SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS);
@@ -58,9 +67,13 @@ impl From<Pubkey> for WhirlpoolsConfigInput {
 
 impl From<WhirlpoolsConfigInput> for Pubkey {
     fn from(val: WhirlpoolsConfigInput) -> Self {
+        let program_id = current_whirlpool_id();
         match val {
             WhirlpoolsConfigInput::Address(pubkey) => pubkey,
-            WhirlpoolsConfigInput::SolanaMainnet => SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            WhirlpoolsConfigInput::SolanaMainnet => match program_id {
+                WHIRLPOOL_IMMUTABLE_ID => SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS,
+                _ => SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            },
             WhirlpoolsConfigInput::SolanaDevnet => SOLANA_DEVNET_WHIRLPOOLS_CONFIG_ADDRESS,
             WhirlpoolsConfigInput::EclipseMainnet => ECLIPSE_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
             WhirlpoolsConfigInput::EclipseTestnet => ECLIPSE_TESTNET_WHIRLPOOLS_CONFIG_ADDRESS,
@@ -71,9 +84,60 @@ impl From<WhirlpoolsConfigInput> for Pubkey {
 /// Sets the currently selected address for the Whirlpools program's config account.
 pub fn set_whirlpools_config_address(input: WhirlpoolsConfigInput) -> Result<(), Box<dyn Error>> {
     let address: Pubkey = input.into();
+
     *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = address;
     *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
         get_whirlpools_config_extension_address(&address)?.0;
+    Ok(())
+}
+
+/// High-level input for selecting which Whirlpool program the SDK targets.
+///
+/// `Mutable` and `Immutable` also reset the WhirlpoolsConfig + extension
+/// addresses to the canonical mainnet pair for that program. Use
+/// [`WhirlpoolProgramInput::Custom`] to set a program ID without touching the
+/// config addresses.
+pub enum WhirlpoolProgramInput {
+    /// The canonical (upgradable) Whirlpool program at `WHIRLPOOL_ID`.
+    Mutable,
+    /// The immutable Whirlpool program at `WHIRLPOOL_IMMUTABLE_ID`.
+    Immutable,
+    /// An arbitrary program address; leaves the config addresses unchanged.
+    Custom(Pubkey),
+}
+
+impl From<WhirlpoolProgramInput> for WhirlpoolProgram {
+    fn from(value: WhirlpoolProgramInput) -> Self {
+        match value {
+            WhirlpoolProgramInput::Mutable => WhirlpoolProgram::Mutable,
+            WhirlpoolProgramInput::Immutable => WhirlpoolProgram::Immutable,
+            WhirlpoolProgramInput::Custom(addr) => WhirlpoolProgram::Address(addr),
+        }
+    }
+}
+
+/// Sets the Whirlpool program ID used by every generated SDK builder and PDA
+/// helper. For the canonical variants this also points the config addresses at
+/// the matching mainnet config pair.
+pub fn set_whirlpool_program(input: WhirlpoolProgramInput) -> Result<(), Box<dyn Error>> {
+    let reset_config = matches!(
+        input,
+        WhirlpoolProgramInput::Mutable | WhirlpoolProgramInput::Immutable
+    );
+    let program: WhirlpoolProgram = input.into();
+    set_whirlpool_program_raw(program);
+
+    if reset_config {
+        let config_address: Pubkey = match program {
+            WhirlpoolProgram::Mutable => SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            WhirlpoolProgram::Immutable => SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS,
+            WhirlpoolProgram::Address(_) => return Ok(()),
+        };
+        *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = config_address;
+        *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
+            get_whirlpools_config_extension_address(&config_address)?.0;
+    }
+
     Ok(())
 }
 
@@ -159,6 +223,7 @@ pub fn set_enforce_token_balance_check(enforce_balance_check: bool) -> Result<()
 
 /// Resets the configuration to its default values.
 pub fn reset_configuration() -> Result<(), Box<dyn Error>> {
+    set_whirlpool_program_raw(WhirlpoolProgram::Mutable);
     *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS;
     *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
         SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
@@ -174,6 +239,16 @@ mod tests {
     use super::*;
     use serial_test::serial;
     use std::str::FromStr;
+
+    /// The Whirlpools config extension account address for the immutable
+    /// Whirlpool program (`4Bsw8VVuegLmKQh2reevMBr2xw5R76WaJRKCvvxgcQrN`). PDA
+    /// derived from (`SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS`,
+    /// immutable program).
+    const SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_EXTENSION_ADDRESS: Pubkey =
+        Pubkey::new_from_array([
+            47, 92, 117, 148, 42, 87, 137, 88, 104, 146, 158, 53, 223, 49, 8, 245, 130, 35, 230,
+            57, 235, 120, 98, 132, 169, 68, 45, 218, 64, 170, 126, 115,
+        ]);
 
     #[test]
     #[serial]
@@ -248,6 +323,142 @@ mod tests {
 
     #[test]
     #[serial]
+    fn test_set_whirlpool_program_immutable() {
+        use orca_whirlpools_client::{current_whirlpool_id, WHIRLPOOL_IMMUTABLE_ID};
+        set_whirlpool_program(WhirlpoolProgramInput::Immutable).unwrap();
+        assert_eq!(current_whirlpool_id(), WHIRLPOOL_IMMUTABLE_ID);
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_reset_configuration_restores_program() {
+        use orca_whirlpools_client::{current_whirlpool_id, WHIRLPOOL_ID};
+        set_whirlpool_program(WhirlpoolProgramInput::Immutable).unwrap();
+        reset_configuration().unwrap();
+        assert_eq!(current_whirlpool_id(), WHIRLPOOL_ID);
+    }
+
+    #[test]
+    #[serial]
+    fn test_set_whirlpool_program_mutable_resets_config_addresses() {
+        use orca_whirlpools_client::{current_whirlpool_id, WHIRLPOOL_ID};
+
+        // Pre-condition: drift the config addresses to non-mainnet so we can
+        // observe them being snapped back when the selector is set to Mutable.
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        assert_ne!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+        );
+
+        set_whirlpool_program(WhirlpoolProgramInput::Mutable).unwrap();
+        assert_eq!(current_whirlpool_id(), WHIRLPOOL_ID);
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+        );
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
+        );
+
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_set_whirlpool_program_immutable_resets_config_addresses() {
+        // Pre-condition: drift the config so we can observe the snap.
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+
+        set_whirlpool_program(WhirlpoolProgramInput::Immutable).unwrap();
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS,
+        );
+
+        // The extension must be the PDA of (immutable config, immutable program).
+        let expected_extension = get_whirlpools_config_extension_address(
+            &SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS,
+        )
+        .unwrap()
+        .0;
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            expected_extension,
+        );
+        // Sanity: the immutable pair must not collide with the mutable pair —
+        // they're separate programs with separate authority chains, so a
+        // collision would mean we wired the wrong constant.
+        assert_ne!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+        );
+        assert_ne!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
+        );
+
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    fn test_immutable_config_address_matches_canonical_pubkey() {
+        use std::str::FromStr;
+        assert_eq!(
+            SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS,
+            Pubkey::from_str("8pm8erUsaMpmZ47LttHAPgnDx7xGZUvxY4q47vTCs5Nj").unwrap(),
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_set_whirlpool_program_custom_does_not_touch_config() {
+        use orca_whirlpools_client::current_whirlpool_id;
+
+        // Drift the config addresses to a non-default value first.
+        let drifted_config =
+            Pubkey::from_str("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E").unwrap();
+        let drifted_extension =
+            Pubkey::from_str("Ez4MMUVb7VrKFcTSbi9Yz2ivXwdwCqJicnDaRHbe96Yk").unwrap();
+        set_whirlpools_config_address(drifted_config.into()).unwrap();
+        assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), drifted_config);
+
+        // Custom variant should swap the program ID without touching either
+        // config address — that's the contract `WhirlpoolProgramInput::Custom`
+        // documents and the only way to target a fork without losing the
+        // user's chosen WhirlpoolsConfig.
+        let custom_program = Pubkey::new_unique();
+        set_whirlpool_program(WhirlpoolProgramInput::Custom(custom_program)).unwrap();
+
+        assert_eq!(current_whirlpool_id(), custom_program);
+        assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), drifted_config);
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            drifted_extension,
+        );
+
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_repeated_program_switching_round_trips() {
+        use orca_whirlpools_client::{current_whirlpool_id, WHIRLPOOL_ID, WHIRLPOOL_IMMUTABLE_ID};
+
+        for _ in 0..3 {
+            set_whirlpool_program(WhirlpoolProgramInput::Immutable).unwrap();
+            assert_eq!(current_whirlpool_id(), WHIRLPOOL_IMMUTABLE_ID);
+            set_whirlpool_program(WhirlpoolProgramInput::Mutable).unwrap();
+            assert_eq!(current_whirlpool_id(), WHIRLPOOL_ID);
+        }
+
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    #[serial]
     fn test_reset_configuration() {
         let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
         let extension = Pubkey::from_str("777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH").unwrap();
@@ -267,5 +478,46 @@ mod tests {
             *ENFORCE_TOKEN_BALANCE_CHECK.lock().unwrap(),
             DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK
         );
+    }
+
+    #[test]
+    #[serial]
+    fn test_set_whirlpools_config_address_handles_immutable_properly() {
+        // Defaults are correct
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS
+        );
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS
+        );
+
+        // Immutables are correct
+        set_whirlpool_program(WhirlpoolProgramInput::Immutable).unwrap();
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS
+        );
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_EXTENSION_ADDRESS
+        );
+
+        // Immutables are correct after config change
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet).unwrap();
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS
+        );
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_EXTENSION_ADDRESS
+        );
+
+        // Restore default state — leaving the selector pointing at the
+        // immutable program would break later litesvm-based tests, which
+        // only have the mutable program loaded.
+        reset_configuration().unwrap();
     }
 }

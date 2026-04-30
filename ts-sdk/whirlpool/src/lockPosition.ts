@@ -5,6 +5,7 @@ import { getLockPositionInstruction } from "@orca-so/whirlpools-client";
 import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import { address } from "@solana/kit";
 import { SystemProgram } from "@solana/web3.js";
+import { getWhirlpoolProgram } from "./config";
 
 /**
  * Parameters to lock a position (TokenExtensions based position only).
@@ -78,18 +79,21 @@ export async function lockPositionInstructions(
   const instructions: Instruction[] = [];
 
   instructions.push(
-    getLockPositionInstruction({
-      funder: params.funder,
-      positionAuthority: params.positionAuthority,
-      position: params.position,
-      positionMint: params.positionMint,
-      positionTokenAccount: params.positionTokenAccount,
-      lockConfig: params.lockConfigPda,
-      whirlpool: params.whirlpool,
-      token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
-      systemProgram: address(SystemProgram.programId.toBase58()),
-      lockType: params.lockType,
-    }),
+    getLockPositionInstruction(
+      {
+        funder: params.funder,
+        positionAuthority: params.positionAuthority,
+        position: params.position,
+        positionMint: params.positionMint,
+        positionTokenAccount: params.positionTokenAccount,
+        lockConfig: params.lockConfigPda,
+        whirlpool: params.whirlpool,
+        token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
+        systemProgram: address(SystemProgram.programId.toBase58()),
+        lockType: params.lockType,
+      },
+      { programAddress: getWhirlpoolProgram() },
+    ),
   );
 
   return {

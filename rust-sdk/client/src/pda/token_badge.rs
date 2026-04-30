@@ -1,4 +1,4 @@
-use crate::generated::programs::WHIRLPOOL_ID;
+use crate::generated::programs::current_whirlpool_id;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
@@ -12,15 +12,18 @@ pub fn get_token_badge_address(
         token_mint.as_ref(),
     ];
 
-    Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, &current_whirlpool_id())
+        .ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::str::FromStr;
 
     #[test]
+    #[serial]
     fn test_get_token_badge_address() {
         let whirlpools_config =
             Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();

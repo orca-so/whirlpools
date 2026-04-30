@@ -117,7 +117,7 @@ pub fn fetch_all_maybe_whirlpools_config(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for WhirlpoolsConfig {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        crate::current_whirlpool_id()
       }
   }
 

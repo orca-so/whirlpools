@@ -125,7 +125,7 @@ pub fn fetch_all_maybe_adaptive_fee_tier(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for AdaptiveFeeTier {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        crate::current_whirlpool_id()
       }
   }
 

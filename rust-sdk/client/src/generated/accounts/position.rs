@@ -122,7 +122,7 @@ pub fn fetch_all_maybe_position(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for Position {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        crate::current_whirlpool_id()
       }
   }
 

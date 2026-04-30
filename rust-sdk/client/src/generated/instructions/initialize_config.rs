@@ -51,7 +51,7 @@ impl InitializeConfig {
       data.append(&mut args);
     
     solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     }
@@ -276,7 +276,7 @@ impl<'a, 'b> InitializeConfigCpi<'a, 'b> {
       data.append(&mut args);
     
     let instruction = solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     };

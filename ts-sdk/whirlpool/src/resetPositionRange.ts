@@ -12,7 +12,7 @@ import type {
   TransactionSigner,
   GetMultipleAccountsApi,
 } from "@solana/kit";
-import { DEFAULT_ADDRESS, FUNDER } from "./config";
+import { DEFAULT_ADDRESS, FUNDER, getWhirlpoolProgram } from "./config";
 import {
   fetchAllMint,
   fetchMaybeMint,
@@ -121,15 +121,18 @@ export async function resetPositionRangeInstructions(
   );
 
   instructions.push(
-    getResetPositionRangeInstruction({
-      funder: authority,
-      positionAuthority: authority,
-      position: position.address,
-      positionTokenAccount: positionTokenAccount[0],
-      newTickLowerIndex: newInitializableTickLowerIndex,
-      newTickUpperIndex: newInitializableTickUpperIndex,
-      whirlpool: position.data.whirlpool,
-    }),
+    getResetPositionRangeInstruction(
+      {
+        funder: authority,
+        positionAuthority: authority,
+        position: position.address,
+        positionTokenAccount: positionTokenAccount[0],
+        newTickLowerIndex: newInitializableTickLowerIndex,
+        newTickUpperIndex: newInitializableTickUpperIndex,
+        whirlpool: position.data.whirlpool,
+      },
+      { programAddress: getWhirlpoolProgram() },
+    ),
   );
 
   return {

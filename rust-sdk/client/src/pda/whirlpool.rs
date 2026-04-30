@@ -1,4 +1,4 @@
-use crate::generated::programs::WHIRLPOOL_ID;
+use crate::generated::programs::current_whirlpool_id;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
@@ -17,14 +17,19 @@ pub fn get_whirlpool_address(
         fee_tier_index_bytes.as_ref(),
     ];
 
-    Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, &current_whirlpool_id())
+        .ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::generated::programs::{set_whirlpool_program_raw, WhirlpoolProgram};
+    use serial_test::serial;
     use std::str::FromStr;
+
     #[test]
+    #[serial]
     fn test_get_whirlpool_address() {
         let whirlpools_config =
             Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
@@ -35,5 +40,28 @@ mod tests {
         let (address, _) =
             get_whirlpool_address(&whirlpools_config, &token_mint_a, &token_mint_b, 2).unwrap();
         assert_eq!(address, whirlpool);
+    }
+
+    #[test]
+    #[serial]
+    fn test_whirlpool_pda_changes_with_program_selector() {
+        let whirlpools_config =
+            Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
+        let token_mint_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
+        let token_mint_b =
+            Pubkey::from_str("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo").unwrap();
+
+        let prev = set_whirlpool_program_raw(WhirlpoolProgram::Mutable);
+        let (mutable_addr, _) =
+            get_whirlpool_address(&whirlpools_config, &token_mint_a, &token_mint_b, 2).unwrap();
+
+        set_whirlpool_program_raw(WhirlpoolProgram::Immutable);
+        let (immutable_addr, _) =
+            get_whirlpool_address(&whirlpools_config, &token_mint_a, &token_mint_b, 2).unwrap();
+
+        // Restore so we don't leak global state into other tests.
+        set_whirlpool_program_raw(WhirlpoolProgram::Address(prev));
+
+        assert_ne!(mutable_addr, immutable_addr);
     }
 }

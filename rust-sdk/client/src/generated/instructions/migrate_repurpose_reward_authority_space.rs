@@ -34,7 +34,7 @@ impl MigrateRepurposeRewardAuthoritySpace {
     let data = MigrateRepurposeRewardAuthoritySpaceInstructionData::new().try_to_vec().unwrap();
     
     solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     }
@@ -170,7 +170,7 @@ impl<'a, 'b> MigrateRepurposeRewardAuthoritySpaceCpi<'a, 'b> {
     let data = MigrateRepurposeRewardAuthoritySpaceInstructionData::new().try_to_vec().unwrap();
     
     let instruction = solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     };

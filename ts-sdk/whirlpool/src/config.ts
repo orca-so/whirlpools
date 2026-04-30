@@ -1,4 +1,11 @@
-import { getWhirlpoolsConfigExtensionAddress } from "@orca-so/whirlpools-client";
+import {
+  getWhirlpoolProgramAddress,
+  getWhirlpoolsConfigExtensionAddress,
+  resetWhirlpoolProgram,
+  setWhirlpoolProgram as setClientWhirlpoolProgram,
+  type WhirlpoolProgram,
+  WHIRLPOOL_IMMUTABLE_PROGRAM_ADDRESS,
+} from "@orca-so/whirlpools-client";
 import type { Address, TransactionSigner, KeyPairSigner } from "@solana/kit";
 import {
   address,
@@ -41,6 +48,21 @@ export const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = address(
 );
 
 /**
+ * The WhirlpoolsConfig address for the immutable Whirlpool program on Solana
+ * Mainnet.
+ */
+export const SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS = address(
+  "8pm8erUsaMpmZ47LttHAPgnDx7xGZUvxY4q47vTCs5Nj",
+);
+
+/**
+ * The WhirlpoolsConfigExtension address for the immutable Whirlpool program
+ * on Solana Mainnet.
+ */
+export const SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_EXTENSION_ADDRESS =
+  address("4Bsw8VVuegLmKQh2reevMBr2xw5R76WaJRKCvvxgcQrN");
+
+/**
  * The WhirlpoolsConfig address.
  */
 export let WHIRLPOOLS_CONFIG_ADDRESS: Address =
@@ -64,16 +86,64 @@ export async function setWhirlpoolsConfig(
   if (isAddress(config)) {
     WHIRLPOOLS_CONFIG_ADDRESS = config;
   } else {
-    WHIRLPOOLS_CONFIG_ADDRESS =
-      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[
-        config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
-      ];
+    if (
+      config === "solanaMainnet" &&
+      getWhirlpoolProgram() == WHIRLPOOL_IMMUTABLE_PROGRAM_ADDRESS
+    ) {
+      WHIRLPOOLS_CONFIG_ADDRESS =
+        SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS;
+    } else {
+      WHIRLPOOLS_CONFIG_ADDRESS =
+        DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[
+          config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
+        ];
+    }
   }
 
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
     await getWhirlpoolsConfigExtensionAddress(WHIRLPOOLS_CONFIG_ADDRESS).then(
       (x) => x[0],
     );
+}
+
+/**
+ * Selects which Whirlpool program the SDK targets.
+ *
+ * Pass `"mutable"` (default) for the canonical upgradable program,
+ * `"immutable"` for the immutable deployment, or an arbitrary address for
+ * forks / localnet. Generated instruction builders and PDA helpers will
+ * resolve to the selected program from this point on.
+ *
+ * `"mutable"` and `"immutable"` also snap `WHIRLPOOLS_CONFIG_ADDRESS` and
+ * `WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS` to the mainnet pair for that program.
+ * Passing an arbitrary address leaves both unchanged so callers can target a
+ * fork without losing their existing config selection.
+ *
+ * @returns the previously selected program address.
+ */
+export function setWhirlpoolProgram(program: WhirlpoolProgram): Address {
+  const previous = setClientWhirlpoolProgram(program);
+  if (program === "mutable") {
+    WHIRLPOOLS_CONFIG_ADDRESS =
+      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
+    WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
+      DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
+  } else if (program === "immutable") {
+    WHIRLPOOLS_CONFIG_ADDRESS =
+      SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_ADDRESS;
+    WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
+      SOLANA_MAINNET_WHIRLPOOLS_IMMUTABLE_CONFIG_EXTENSION_ADDRESS;
+  }
+  return previous;
+}
+
+/**
+ * Returns the currently selected Whirlpool program address. Builders inside
+ * this package read from this value automatically, but it is exposed so that
+ * downstream callers can inspect or thread it explicitly.
+ */
+export function getWhirlpoolProgram(): Address {
+  return getWhirlpoolProgramAddress();
 }
 
 /**
@@ -209,6 +279,7 @@ export function resetConfiguration() {
   SLIPPAGE_TOLERANCE_BPS = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
   NATIVE_MINT_WRAPPING_STRATEGY = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
   ENFORCE_TOKEN_BALANCE_CHECK = DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK;
+  resetWhirlpoolProgram();
 }
 
 let _payer: KeyPairSigner | undefined;

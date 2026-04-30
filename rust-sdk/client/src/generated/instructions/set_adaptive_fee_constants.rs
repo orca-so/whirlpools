@@ -57,7 +57,7 @@ impl SetAdaptiveFeeConstants {
       data.append(&mut args);
     
     solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     }
@@ -331,7 +331,7 @@ impl<'a, 'b> SetAdaptiveFeeConstantsCpi<'a, 'b> {
       data.append(&mut args);
     
     let instruction = solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     };

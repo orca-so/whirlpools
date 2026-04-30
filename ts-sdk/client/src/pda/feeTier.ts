@@ -4,14 +4,14 @@ import {
   getProgramDerivedAddress,
   getU16Encoder,
 } from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
+import { getWhirlpoolProgramAddress } from "../program";
 
 export async function getFeeTierAddress(
   whirlpoolsConfig: Address,
   feeTierIndex: number,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
-    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
+    programAddress: getWhirlpoolProgramAddress(),
     seeds: [
       "fee_tier",
       getAddressEncoder().encode(whirlpoolsConfig),

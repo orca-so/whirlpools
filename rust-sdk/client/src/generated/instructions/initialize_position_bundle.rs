@@ -90,7 +90,7 @@ impl InitializePositionBundle {
     let data = InitializePositionBundleInstructionData::new().try_to_vec().unwrap();
     
     solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     }
@@ -382,7 +382,7 @@ impl<'a, 'b> InitializePositionBundleCpi<'a, 'b> {
     let data = InitializePositionBundleInstructionData::new().try_to_vec().unwrap();
     
     let instruction = solana_instruction::Instruction {
-      program_id: crate::WHIRLPOOL_ID,
+      program_id: crate::current_whirlpool_id(),
       accounts,
       data,
     };

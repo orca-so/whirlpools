@@ -15,3 +15,8 @@ codama.update(
   }),
 );
 codama.accept(visitor);
+
+// Post-process the generated files to make the program ID runtime-selectable.
+// `await` ensures the rewrites finish before this script exits, so a
+// chained `cargo build` doesn't race against an in-flight write.
+await import("./postprocess-codama.js");

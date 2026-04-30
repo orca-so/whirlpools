@@ -22,6 +22,7 @@ import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
+  getWhirlpoolProgram,
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "./config";
@@ -196,22 +197,25 @@ export async function createConcentratedLiquidityPoolInstructions(
   ]);
 
   instructions.push(
-    getInitializePoolV2Instruction({
-      whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
-      tokenMintA,
-      tokenMintB,
-      tokenBadgeA,
-      tokenBadgeB,
-      funder,
-      whirlpool: poolAddress,
-      tokenVaultA,
-      tokenVaultB,
-      tokenProgramA,
-      tokenProgramB,
-      feeTier,
-      tickSpacing,
-      initialSqrtPrice,
-    }),
+    getInitializePoolV2Instruction(
+      {
+        whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
+        tokenMintA,
+        tokenMintB,
+        tokenBadgeA,
+        tokenBadgeB,
+        funder,
+        whirlpool: poolAddress,
+        tokenVaultA,
+        tokenVaultB,
+        tokenProgramA,
+        tokenProgramB,
+        feeTier,
+        tickSpacing,
+        initialSqrtPrice,
+      },
+      { programAddress: getWhirlpoolProgram() },
+    ),
   );
 
   nonRefundableRent += calculateMinimumBalanceForRentExemption(
@@ -254,13 +258,16 @@ export async function createConcentratedLiquidityPoolInstructions(
 
   for (let i = 0; i < tickArrayIndexes.length; i++) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: poolAddress,
-        funder,
-        tickArray: tickArrayAddresses[i],
-        startTickIndex: tickArrayIndexes[i],
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: poolAddress,
+          funder,
+          tickArray: tickArrayAddresses[i],
+          startTickIndex: tickArrayIndexes[i],
+          idempotent: false,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,

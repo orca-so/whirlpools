@@ -39,7 +39,12 @@ import type {
   Rpc,
   TransactionSigner,
 } from "@solana/kit";
-import { DEFAULT_ADDRESS, FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
+import {
+  DEFAULT_ADDRESS,
+  FUNDER,
+  getWhirlpoolProgram,
+  SLIPPAGE_TOLERANCE_BPS,
+} from "./config";
 import {
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
@@ -234,27 +239,30 @@ export async function decreaseLiquidityInstructions(
   instructions.push(...createInstructions);
 
   instructions.push(
-    getDecreaseLiquidityV2Instruction({
-      whirlpool: whirlpool.address,
-      positionAuthority: authority,
-      position: position.address,
-      positionTokenAccount,
-      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-      tokenVaultA: whirlpool.data.tokenVaultA,
-      tokenVaultB: whirlpool.data.tokenVaultB,
-      tokenMintA: whirlpool.data.tokenMintA,
-      tokenMintB: whirlpool.data.tokenMintB,
-      tokenProgramA: mintA.programAddress,
-      tokenProgramB: mintB.programAddress,
-      memoProgram: MEMO_PROGRAM_ADDRESS,
-      tickArrayLower,
-      tickArrayUpper,
-      liquidityAmount: quote.liquidityDelta,
-      tokenMinA: quote.tokenMinA,
-      tokenMinB: quote.tokenMinB,
-      remainingAccountsInfo: null,
-    }),
+    getDecreaseLiquidityV2Instruction(
+      {
+        whirlpool: whirlpool.address,
+        positionAuthority: authority,
+        position: position.address,
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+        tokenVaultA: whirlpool.data.tokenVaultA,
+        tokenVaultB: whirlpool.data.tokenVaultB,
+        tokenMintA: whirlpool.data.tokenMintA,
+        tokenMintB: whirlpool.data.tokenMintB,
+        tokenProgramA: mintA.programAddress,
+        tokenProgramB: mintB.programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        tickArrayLower,
+        tickArrayUpper,
+        liquidityAmount: quote.liquidityDelta,
+        tokenMinA: quote.tokenMinA,
+        tokenMinB: quote.tokenMinB,
+        remainingAccountsInfo: null,
+      },
+      { programAddress: getWhirlpoolProgram() },
+    ),
   );
 
   instructions.push(...cleanupInstructions);
@@ -450,48 +458,54 @@ export async function closePositionInstructions(
 
   if (quote.liquidityDelta > 0n) {
     instructions.push(
-      getDecreaseLiquidityV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-        tokenVaultA: whirlpool.data.tokenVaultA,
-        tokenVaultB: whirlpool.data.tokenVaultB,
-        tickArrayLower: lowerTickArrayAddress,
-        tickArrayUpper: upperTickArrayAddress,
-        liquidityAmount: quote.liquidityDelta,
-        tokenMinA: quote.tokenMinA,
-        tokenMinB: quote.tokenMinB,
-        tokenMintA: whirlpool.data.tokenMintA,
-        tokenMintB: whirlpool.data.tokenMintB,
-        tokenProgramA: mintA.programAddress,
-        tokenProgramB: mintB.programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getDecreaseLiquidityV2Instruction(
+        {
+          whirlpool: whirlpool.address,
+          positionAuthority: authority,
+          position: positionAddress[0],
+          positionTokenAccount,
+          tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+          tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+          tokenVaultA: whirlpool.data.tokenVaultA,
+          tokenVaultB: whirlpool.data.tokenVaultB,
+          tickArrayLower: lowerTickArrayAddress,
+          tickArrayUpper: upperTickArrayAddress,
+          liquidityAmount: quote.liquidityDelta,
+          tokenMinA: quote.tokenMinA,
+          tokenMinB: quote.tokenMinB,
+          tokenMintA: whirlpool.data.tokenMintA,
+          tokenMintB: whirlpool.data.tokenMintB,
+          tokenProgramA: mintA.programAddress,
+          tokenProgramB: mintB.programAddress,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
   }
 
   if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
     instructions.push(
-      getCollectFeesV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-        tokenVaultA: whirlpool.data.tokenVaultA,
-        tokenVaultB: whirlpool.data.tokenVaultB,
-        tokenMintA: whirlpool.data.tokenMintA,
-        tokenMintB: whirlpool.data.tokenMintB,
-        tokenProgramA: mintA.programAddress,
-        tokenProgramB: mintB.programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getCollectFeesV2Instruction(
+        {
+          whirlpool: whirlpool.address,
+          positionAuthority: authority,
+          position: positionAddress[0],
+          positionTokenAccount,
+          tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+          tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+          tokenVaultA: whirlpool.data.tokenVaultA,
+          tokenVaultB: whirlpool.data.tokenVaultB,
+          tokenMintA: whirlpool.data.tokenMintA,
+          tokenMintB: whirlpool.data.tokenMintB,
+          tokenProgramA: mintA.programAddress,
+          tokenProgramB: mintB.programAddress,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
   }
 
@@ -502,44 +516,53 @@ export async function closePositionInstructions(
     const rewardMint = rewardMints[i];
     assert(rewardMint.exists, `Reward mint ${i} not found`);
     instructions.push(
-      getCollectRewardV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
-        rewardVault: whirlpool.data.rewardInfos[i].vault,
-        rewardIndex: i,
-        rewardMint: rewardMint.address,
-        rewardTokenProgram: rewardMint.programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getCollectRewardV2Instruction(
+        {
+          whirlpool: whirlpool.address,
+          positionAuthority: authority,
+          position: positionAddress[0],
+          positionTokenAccount,
+          rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
+          rewardVault: whirlpool.data.rewardInfos[i].vault,
+          rewardIndex: i,
+          rewardMint: rewardMint.address,
+          rewardTokenProgram: rewardMint.programAddress,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
   }
 
   switch (positionMint.programAddress) {
     case TOKEN_PROGRAM_ADDRESS:
       instructions.push(
-        getClosePositionInstruction({
-          positionAuthority: authority,
-          position: positionAddress[0],
-          positionTokenAccount,
-          positionMint: positionMintAddress,
-          receiver: authority.address,
-        }),
+        getClosePositionInstruction(
+          {
+            positionAuthority: authority,
+            position: positionAddress[0],
+            positionTokenAccount,
+            positionMint: positionMintAddress,
+            receiver: authority.address,
+          },
+          { programAddress: getWhirlpoolProgram() },
+        ),
       );
       break;
     case TOKEN_2022_PROGRAM_ADDRESS:
       instructions.push(
-        getClosePositionWithTokenExtensionsInstruction({
-          positionAuthority: authority,
-          position: positionAddress[0],
-          positionTokenAccount,
-          positionMint: positionMintAddress,
-          receiver: authority.address,
-          token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
-        }),
+        getClosePositionWithTokenExtensionsInstruction(
+          {
+            positionAuthority: authority,
+            position: positionAddress[0],
+            positionTokenAccount,
+            positionMint: positionMintAddress,
+            receiver: authority.address,
+            token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
+          },
+          { programAddress: getWhirlpoolProgram() },
+        ),
       );
       break;
     default:

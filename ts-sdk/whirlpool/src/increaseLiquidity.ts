@@ -34,6 +34,7 @@ import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
+  getWhirlpoolProgram,
   SLIPPAGE_TOLERANCE_BPS,
   SPLASH_POOL_TICK_SPACING,
 } from "./config";
@@ -144,15 +145,18 @@ async function getIncreaseLiquidityInstructions(
   );
 
   const increaseLiquidityInstruction =
-    getIncreaseLiquidityByTokenAmountsV2Instruction({
-      method: increaseLiquidityMethod("ByTokenAmounts", {
-        minSqrtPrice,
-        maxSqrtPrice,
-        tokenMaxA,
-        tokenMaxB,
-      }),
-      ...commonInstructionParams,
-    });
+    getIncreaseLiquidityByTokenAmountsV2Instruction(
+      {
+        method: increaseLiquidityMethod("ByTokenAmounts", {
+          minSqrtPrice,
+          maxSqrtPrice,
+          tokenMaxA,
+          tokenMaxB,
+        }),
+        ...commonInstructionParams,
+      },
+      { programAddress: getWhirlpoolProgram() },
+    );
 
   return {
     createTokenAccountInstructions,
@@ -369,13 +373,16 @@ async function internalOpenPositionInstructions(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: whirlpool.address,
-        funder,
-        tickArray: lowerTickArrayAddress,
-        startTickIndex: lowerTickArrayIndex,
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: whirlpool.address,
+          funder,
+          tickArray: lowerTickArrayAddress,
+          startTickIndex: lowerTickArrayIndex,
+          idempotent: false,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,
@@ -385,13 +392,16 @@ async function internalOpenPositionInstructions(
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: whirlpool.address,
-        funder,
-        tickArray: upperTickArrayAddress,
-        startTickIndex: upperTickArrayIndex,
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: whirlpool.address,
+          funder,
+          tickArray: upperTickArrayAddress,
+          startTickIndex: upperTickArrayIndex,
+          idempotent: false,
+        },
+        { programAddress: getWhirlpoolProgram() },
+      ),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,
@@ -400,22 +410,25 @@ async function internalOpenPositionInstructions(
   }
 
   instructions.push(
-    getOpenPositionWithTokenExtensionsInstruction({
-      funder,
-      owner: funder.address,
-      position: positionAddress[0],
-      positionMint,
-      positionTokenAccount,
-      whirlpool: whirlpool.address,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-      tickLowerIndex: initializableLowerTickIndex,
-      tickUpperIndex: initializableUpperTickIndex,
-      token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
-      metadataUpdateAuth: address(
-        "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
-      ),
-      withTokenMetadataExtension,
-    }),
+    getOpenPositionWithTokenExtensionsInstruction(
+      {
+        funder,
+        owner: funder.address,
+        position: positionAddress[0],
+        positionMint,
+        positionTokenAccount,
+        whirlpool: whirlpool.address,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+        tickLowerIndex: initializableLowerTickIndex,
+        tickUpperIndex: initializableUpperTickIndex,
+        token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
+        metadataUpdateAuth: address(
+          "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
+        ),
+        withTokenMetadataExtension,
+      },
+      { programAddress: getWhirlpoolProgram() },
+    ),
   );
 
   instructions.push(increaseLiquidityInstruction);

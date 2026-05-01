@@ -6,6 +6,7 @@ On May 28th 2024, Whirlpool program has been upgraded to support TokenExtensions
 **Supported**
 - TransferFee
 - InterestBearing (supported since Oct 11th 2024)
+- ScaledUiAmount (supported since June 25th 2025)
 - MemoTransfer
 - MetadataPointer
 - TokenMetadata
@@ -15,7 +16,8 @@ On May 28th 2024, Whirlpool program has been upgraded to support TokenExtensions
 - PermanentDelegate
 - TransferHook
 - MintCloseAuthority
-- DefaultAccountState (default state must be Initialized)
+- DefaultAccountState
+- Pausable (supported since June 25th 2025)
 
 > ℹ️ FreezeAuthority is not extensions, but it requires TokenBadge. 
 It should be disabled unless there is a reasonable reason (e.g., legal compliance). FreezeAuthority rejection does not apply to TokenProgram tokens, but does apply to TokenExtensions tokens. 
@@ -50,6 +52,8 @@ V2 instructions have been added to handle tokens owned by Token-2022 program.
 |---|---|
 |increase_liquidity_v2|increase_liquidity|
 |decrease_liquidity_v2|decrease_liquidity|
+|increase_liquidity_by_token_amounts_v2|no v1 instruction|
+|reposition_liquidity_v2|no v1 instruction|
 
 #### For Fees and Rewards
 |Instruction|Corresponding V1|

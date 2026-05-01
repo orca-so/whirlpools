@@ -1,14 +1,11 @@
 //! Runtime-selectable Whirlpool program ID.
 //!
-//! This file is hand-maintained and copied over the codama-generated
-//! `src/generated/programs.rs` by `postprocess-codama.js`. Generated
-//! instruction builders and PDA helpers call `current_whirlpool_id()` so
-//! the same SDK can target the canonical (mutable) deployment, the
-//! immutable deployment, or an arbitrary forked program without
-//! recompiling.
-//!
-//! Lives outside `src/generated/` because the codama renderer wipes files
-//! in that directory that aren't part of its output set.
+//! Lives outside `src/generated/` because the codama renderer wipes any
+//! file in that directory that isn't part of its output set. The generated
+//! instruction builders and PDA helpers call [`current_whirlpool_id`] (re-
+//! exported at the crate root) so the same SDK can target the canonical
+//! (mutable) deployment, the immutable deployment, or an arbitrary forked
+//! program without recompiling.
 
 use solana_pubkey::{pubkey, Pubkey};
 use std::sync::Mutex;
@@ -18,8 +15,7 @@ pub const WHIRLPOOL_ID: Pubkey = pubkey!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3u
 
 /// Immutable Whirlpool program ID. Bytecode-identical to [`WHIRLPOOL_ID`],
 /// deployed as a non-upgradable program.
-pub const WHIRLPOOL_IMMUTABLE_ID: Pubkey =
-    pubkey!("iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN");
+pub const WHIRLPOOL_IMMUTABLE_ID: Pubkey = pubkey!("iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN");
 
 /// Selector for which Whirlpool program the SDK should target at runtime.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

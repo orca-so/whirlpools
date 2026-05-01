@@ -1,4 +1,4 @@
-use crate::generated::programs::current_whirlpool_id;
+use crate::program_id::current_whirlpool_id;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
@@ -24,7 +24,7 @@ pub fn get_whirlpool_address(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::generated::programs::{set_whirlpool_program_raw, WhirlpoolProgram};
+    use crate::program_id::{set_whirlpool_program_raw, WhirlpoolProgram};
     use serial_test::serial;
     use std::str::FromStr;
 

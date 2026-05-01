@@ -1,7 +1,10 @@
 #[rustfmt::skip]
+#[allow(dead_code, unused_imports)]
 mod generated;
 
 mod pda;
+
+mod program_id;
 
 mod state;
 
@@ -14,9 +17,9 @@ mod core_types;
 pub use generated::accounts::*;
 pub use generated::errors::*;
 pub use generated::instructions::*;
-pub use generated::programs::WHIRLPOOL_ID as ID;
-pub use generated::programs::*;
 pub use generated::types::*;
+pub use program_id::WHIRLPOOL_ID as ID;
+pub use program_id::*;
 
 #[cfg(feature = "fetch")]
 pub use generated::shared::*;

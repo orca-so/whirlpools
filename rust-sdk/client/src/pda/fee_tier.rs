@@ -1,4 +1,4 @@
-use crate::generated::programs::current_whirlpool_id;
+use crate::program_id::current_whirlpool_id;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 

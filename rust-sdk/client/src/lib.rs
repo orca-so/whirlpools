@@ -19,7 +19,10 @@ pub use generated::errors::*;
 pub use generated::instructions::*;
 pub use generated::types::*;
 pub use program_id::WHIRLPOOL_ID as ID;
-pub use program_id::*;
+pub use program_id::{
+    current_whirlpool_id, set_whirlpool_program_raw, WhirlpoolProgram, WHIRLPOOL_IMMUTABLE_ID,
+    WHIRLPOOL_ID,
+};
 
 #[cfg(feature = "fetch")]
 pub use generated::shared::*;

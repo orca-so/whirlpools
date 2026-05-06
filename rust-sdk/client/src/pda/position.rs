@@ -8,6 +8,26 @@ pub fn get_position_address(position_mint: &Pubkey) -> Result<(Pubkey, u8), Prog
     Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
 }
 
+// Would replace `get_position_address` - just here as an example
+pub fn new_get_position_address(
+    position_mint: &Pubkey,
+    program_id: Option<&Pubkey>,
+) -> Result<(Pubkey, u8), ProgramError> {
+    let seeds = &[b"position", position_mint.as_ref()];
+
+    Pubkey::try_find_program_address(seeds, program_id.unwrap_or(&WHIRLPOOL_ID))
+        .ok_or(ProgramError::InvalidSeeds)
+}
+
+pub fn get_position_address_with_program_id(
+    position_mint: &Pubkey,
+    program_id: &Pubkey,
+) -> Result<(Pubkey, u8), ProgramError> {
+    let seeds = &[b"position", position_mint.as_ref()];
+
+    Pubkey::try_find_program_address(seeds, program_id).ok_or(ProgramError::InvalidSeeds)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -16,6 +16,38 @@ pub fn get_tick_array_address(
     Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
 }
 
+// Would replace `get_tick_array_address` - just here as an example
+pub fn new_get_tick_array_address(
+    whirlpool: &Pubkey,
+    start_tick_index: i32,
+    program_id: Option<&Pubkey>,
+) -> Result<(Pubkey, u8), ProgramError> {
+    let start_tick_index_str = start_tick_index.to_string();
+    let seeds = &[
+        b"tick_array",
+        whirlpool.as_ref(),
+        start_tick_index_str.as_bytes(),
+    ];
+
+    Pubkey::try_find_program_address(seeds, program_id.unwrap_or(&WHIRLPOOL_ID))
+        .ok_or(ProgramError::InvalidSeeds)
+}
+
+pub fn get_tick_array_address_with_program_id(
+    whirlpool: &Pubkey,
+    start_tick_index: i32,
+    program_id: &Pubkey,
+) -> Result<(Pubkey, u8), ProgramError> {
+    let start_tick_index_str = start_tick_index.to_string();
+    let seeds = &[
+        b"tick_array",
+        whirlpool.as_ref(),
+        start_tick_index_str.as_bytes(),
+    ];
+
+    Pubkey::try_find_program_address(seeds, program_id).ok_or(ProgramError::InvalidSeeds)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

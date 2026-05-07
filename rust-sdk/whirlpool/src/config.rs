@@ -33,6 +33,12 @@ const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::new_f
     152, 57, 209, 52, 207, 240, 174, 74, 201, 7, 87, 54,
 ]);
 
+/// The Whirlpools config account address for the immutable Whirlpool program.
+const SOLANA_MAINNET_IMMUTABLE_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
+    116, 62, 1, 180, 69, 120, 160, 190, 89, 235, 62, 144, 64, 210, 160, 63, 11, 157, 46, 125, 206,
+    46, 108, 53, 135, 184, 54, 34, 43, 41, 184, 124,
+]);
+
 /// The currently selected address for the Whirlpools program's config account.
 pub static WHIRLPOOLS_CONFIG_ADDRESS: Mutex<Pubkey> =
     Mutex::new(SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS);
@@ -46,6 +52,7 @@ pub enum WhirlpoolsConfigInput {
     Address(Pubkey),
     SolanaMainnet,
     SolanaDevnet,
+    SolanaMainnetImmutable,
     EclipseMainnet,
     EclipseTestnet,
 }
@@ -64,6 +71,9 @@ impl From<WhirlpoolsConfigInput> for Pubkey {
             WhirlpoolsConfigInput::SolanaDevnet => SOLANA_DEVNET_WHIRLPOOLS_CONFIG_ADDRESS,
             WhirlpoolsConfigInput::EclipseMainnet => ECLIPSE_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
             WhirlpoolsConfigInput::EclipseTestnet => ECLIPSE_TESTNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            WhirlpoolsConfigInput::SolanaMainnetImmutable => {
+                SOLANA_MAINNET_IMMUTABLE_WHIRLPOOLS_CONFIG_ADDRESS
+            }
         }
     }
 }

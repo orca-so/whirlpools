@@ -5,97 +5,115 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use solana_pubkey::Pubkey;
 use crate::generated::types::WhirlpoolRewardInfo;
-use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
-
+use borsh::BorshSerialize;
+use solana_pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Whirlpool {
-pub discriminator: [u8; 8],
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub whirlpools_config: Pubkey,
-pub whirlpool_bump: [u8; 1],
-pub tick_spacing: u16,
-pub fee_tier_index_seed: [u8; 2],
-pub fee_rate: u16,
-pub protocol_fee_rate: u16,
-pub liquidity: u128,
-pub sqrt_price: u128,
-pub tick_current_index: i32,
-pub protocol_fee_owed_a: u64,
-pub protocol_fee_owed_b: u64,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub token_mint_a: Pubkey,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub token_vault_a: Pubkey,
-pub fee_growth_global_a: u128,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub token_mint_b: Pubkey,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub token_vault_b: Pubkey,
-pub fee_growth_global_b: u128,
-pub reward_last_updated_timestamp: u64,
-pub reward_infos: [WhirlpoolRewardInfo; 3],
+    pub discriminator: [u8; 8],
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub whirlpools_config: Pubkey,
+    pub whirlpool_bump: [u8; 1],
+    pub tick_spacing: u16,
+    pub fee_tier_index_seed: [u8; 2],
+    pub fee_rate: u16,
+    pub protocol_fee_rate: u16,
+    pub liquidity: u128,
+    pub sqrt_price: u128,
+    pub tick_current_index: i32,
+    pub protocol_fee_owed_a: u64,
+    pub protocol_fee_owed_b: u64,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub token_mint_a: Pubkey,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub token_vault_a: Pubkey,
+    pub fee_growth_global_a: u128,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub token_mint_b: Pubkey,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub token_vault_b: Pubkey,
+    pub fee_growth_global_b: u128,
+    pub reward_last_updated_timestamp: u64,
+    pub reward_infos: [WhirlpoolRewardInfo; 3],
 }
-
 
 pub const WHIRLPOOL_DISCRIMINATOR: [u8; 8] = [63, 149, 209, 12, 225, 128, 99, 9];
 
 impl Whirlpool {
-      pub const LEN: usize = 653;
-  
-  
-  
-  #[inline(always)]
-  pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
-    let mut data = data;
-    Self::deserialize(&mut data)
-  }
+    pub const LEN: usize = 653;
+
+    #[inline(always)]
+    pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+        let mut data = data;
+        Self::deserialize(&mut data)
+    }
 }
 
 impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for Whirlpool {
-  type Error = std::io::Error;
+    type Error = std::io::Error;
 
-  fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
-      let mut data: &[u8] = &(*account_info.data).borrow();
-      Self::deserialize(&mut data)
-  }
+    fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
+        let mut data: &[u8] = &(*account_info.data).borrow();
+        Self::deserialize(&mut data)
+    }
 }
 
 #[cfg(feature = "fetch")]
 pub fn fetch_whirlpool(
-  rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_pubkey::Pubkey,
+    rpc: &solana_client::rpc_client::RpcClient,
+    address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::DecodedAccount<Whirlpool>, std::io::Error> {
-  let accounts = fetch_all_whirlpool(rpc, &[*address])?;
-  Ok(accounts[0].clone())
+    let accounts = fetch_all_whirlpool(rpc, &[*address])?;
+    Ok(accounts[0].clone())
 }
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_whirlpool(
-  rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_pubkey::Pubkey],
+    rpc: &solana_client::rpc_client::RpcClient,
+    addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::DecodedAccount<Whirlpool>>, std::io::Error> {
-    let accounts = rpc.get_multiple_accounts(addresses)
-      .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    let accounts = rpc
+        .get_multiple_accounts(addresses)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::DecodedAccount<Whirlpool>> = Vec::new();
     for i in 0..addresses.len() {
-      let address = addresses[i];
-      let account = accounts[i].as_ref()
-        .ok_or(std::io::Error::new(std::io::ErrorKind::Other, format!("Account not found: {}", address)))?;
-      let data = Whirlpool::from_bytes(&account.data)?;
-      decoded_accounts.push(crate::shared::DecodedAccount { address, account: account.clone(), data });
+        let address = addresses[i];
+        let account = accounts[i].as_ref().ok_or(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Account not found: {}", address),
+        ))?;
+        let data = Whirlpool::from_bytes(&account.data)?;
+        decoded_accounts.push(crate::shared::DecodedAccount {
+            address,
+            account: account.clone(),
+            data,
+        });
     }
     Ok(decoded_accounts)
 }
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_whirlpool(
-  rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_pubkey::Pubkey,
+    rpc: &solana_client::rpc_client::RpcClient,
+    address: &solana_pubkey::Pubkey,
 ) -> Result<crate::shared::MaybeAccount<Whirlpool>, std::io::Error> {
     let accounts = fetch_all_maybe_whirlpool(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -103,47 +121,53 @@ pub fn fetch_maybe_whirlpool(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_whirlpool(
-  rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_pubkey::Pubkey],
+    rpc: &solana_client::rpc_client::RpcClient,
+    addresses: &[solana_pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::MaybeAccount<Whirlpool>>, std::io::Error> {
-    let accounts = rpc.get_multiple_accounts(addresses)
-      .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    let accounts = rpc
+        .get_multiple_accounts(addresses)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::MaybeAccount<Whirlpool>> = Vec::new();
     for i in 0..addresses.len() {
-      let address = addresses[i];
-      if let Some(account) = accounts[i].as_ref() {
-        let data = Whirlpool::from_bytes(&account.data)?;
-        decoded_accounts.push(crate::shared::MaybeAccount::Exists(crate::shared::DecodedAccount { address, account: account.clone(), data }));
-      } else {
-        decoded_accounts.push(crate::shared::MaybeAccount::NotFound(address));
-      }
+        let address = addresses[i];
+        if let Some(account) = accounts[i].as_ref() {
+            let data = Whirlpool::from_bytes(&account.data)?;
+            decoded_accounts.push(crate::shared::MaybeAccount::Exists(
+                crate::shared::DecodedAccount {
+                    address,
+                    account: account.clone(),
+                    data,
+                },
+            ));
+        } else {
+            decoded_accounts.push(crate::shared::MaybeAccount::NotFound(address));
+        }
     }
-  Ok(decoded_accounts)
+    Ok(decoded_accounts)
 }
 
-  #[cfg(feature = "anchor")]
-  impl anchor_lang::AccountDeserialize for Whirlpool {
-      fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
+#[cfg(feature = "anchor")]
+impl anchor_lang::AccountDeserialize for Whirlpool {
+    fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
-      }
-  }
+    }
+}
 
-  #[cfg(feature = "anchor")]
-  impl anchor_lang::AccountSerialize for Whirlpool {}
+#[cfg(feature = "anchor")]
+impl anchor_lang::AccountSerialize for Whirlpool {}
 
-  #[cfg(feature = "anchor")]
-  impl anchor_lang::Owner for Whirlpool {
-      fn owner() -> Pubkey {
+// TODO: How do we handle this?
+#[cfg(feature = "anchor")]
+impl anchor_lang::Owner for Whirlpool {
+    fn owner() -> Pubkey {
         crate::WHIRLPOOL_ID
-      }
-  }
+    }
+}
 
-  #[cfg(feature = "anchor-idl-build")]
-  impl anchor_lang::IdlBuild for Whirlpool {}
+#[cfg(feature = "anchor-idl-build")]
+impl anchor_lang::IdlBuild for Whirlpool {}
 
-  
-  #[cfg(feature = "anchor-idl-build")]
-  impl anchor_lang::Discriminator for Whirlpool {
+#[cfg(feature = "anchor-idl-build")]
+impl anchor_lang::Discriminator for Whirlpool {
     const DISCRIMINATOR: &[u8] = &[0; 8];
-  }
-
+}

@@ -2,11 +2,13 @@ use crate::generated::programs::WHIRLPOOL_ID;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
+/// A program_id of None resolves to the original whirlpool program id ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
 pub fn get_whirlpool_address(
     whirlpools_config: &Pubkey,
     token_mint_a: &Pubkey,
     token_mint_b: &Pubkey,
     fee_tier_index: u16,
+    program_id: Option<&Pubkey>,
 ) -> Result<(Pubkey, u8), ProgramError> {
     let fee_tier_index_bytes = fee_tier_index.to_le_bytes();
     let seeds = &[
@@ -17,7 +19,8 @@ pub fn get_whirlpool_address(
         fee_tier_index_bytes.as_ref(),
     ];
 
-    Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, program_id.unwrap_or(&WHIRLPOOL_ID))
+        .ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
@@ -33,7 +36,8 @@ mod tests {
             Pubkey::from_str("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo").unwrap();
         let whirlpool = Pubkey::from_str("JDQ9GDphXV5ENDrAQtRFvT98m3JwsVJJk8BYHoX8uTAg").unwrap();
         let (address, _) =
-            get_whirlpool_address(&whirlpools_config, &token_mint_a, &token_mint_b, 2).unwrap();
+            get_whirlpool_address(&whirlpools_config, &token_mint_a, &token_mint_b, 2, None)
+                .unwrap();
         assert_eq!(address, whirlpool);
     }
 }

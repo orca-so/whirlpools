@@ -51,7 +51,7 @@ pub async fn init_tick_arrays_for_range(
 
     let mut current = begin;
     while current <= end {
-        let (tick_array_addr, _) = get_tick_array_address(&whirlpool, current)?;
+        let (tick_array_addr, _) = get_tick_array_address(&whirlpool, current, None)?;
 
         let account_result = ctx.rpc.get_account(&tick_array_addr).await;
         if account_result.is_err() {
@@ -85,10 +85,10 @@ pub async fn setup_whirlpool(
     tick_spacing: u16,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
-    let fee_tier = get_fee_tier_address(&config, tick_spacing)?.0;
-    let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing)?.0;
-    let token_badge_a = get_token_badge_address(&config, &token_a)?.0;
-    let token_badge_b = get_token_badge_address(&config, &token_b)?.0;
+    let fee_tier = get_fee_tier_address(&config, tick_spacing, None)?.0;
+    let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing, None)?.0;
+    let token_badge_a = get_token_badge_address(&config, &token_a, None)?.0;
+    let token_badge_b = get_token_badge_address(&config, &token_b, None)?.0;
 
     let vault_a = ctx.get_next_keypair();
     let vault_b = ctx.get_next_keypair();
@@ -149,8 +149,10 @@ pub async fn setup_position(
     let upper_tick_array_start =
         get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing);
 
-    let (lower_tick_array_addr, _) = get_tick_array_address(&whirlpool, lower_tick_array_start)?;
-    let (upper_tick_array_addr, _) = get_tick_array_address(&whirlpool, upper_tick_array_start)?;
+    let (lower_tick_array_addr, _) =
+        get_tick_array_address(&whirlpool, lower_tick_array_start, None)?;
+    let (upper_tick_array_addr, _) =
+        get_tick_array_address(&whirlpool, upper_tick_array_start, None)?;
 
     init_tick_arrays_for_range(
         ctx,
@@ -195,7 +197,7 @@ pub async fn setup_position(
         }
     }
 
-    let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
+    let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey(), None)?;
 
     let position_token_account = get_associated_token_address_with_program_id(
         &ctx.signer.pubkey(),
@@ -281,7 +283,7 @@ pub async fn setup_te_position(
     .await?;
 
     for start_tick in tick_arrays.iter() {
-        let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
+        let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick, None)?;
 
         let account_result = ctx.rpc.get_account(&tick_array_address).await;
         let needs_init = match account_result {
@@ -306,7 +308,8 @@ pub async fn setup_te_position(
 
     let te_position_mint = ctx.get_next_keypair();
 
-    let (position_pubkey, _position_bump) = get_position_address(&te_position_mint.pubkey())?;
+    let (position_pubkey, _position_bump) =
+        get_position_address(&te_position_mint.pubkey(), None)?;
 
     let te_position_token_account = get_associated_token_address_with_program_id(
         &owner,
@@ -345,7 +348,7 @@ pub async fn setup_position_bundle(
 ) -> Result<Pubkey, Box<dyn Error>> {
     let position_bundle_mint = ctx.get_next_keypair();
     let (position_bundle_address, _bundle_bump) =
-        get_position_bundle_address(&position_bundle_mint.pubkey())?;
+        get_position_bundle_address(&position_bundle_mint.pubkey(), None)?;
 
     let position_bundle_token_account = get_associated_token_address_with_program_id(
         &ctx.signer.pubkey(),
@@ -372,8 +375,11 @@ pub async fn setup_position_bundle(
     if let Some(positions) = bundle_positions {
         for (i, _) in positions.iter().enumerate() {
             let bundle_index = i as u16;
-            let (bundled_position_address, _) =
-                get_bundled_position_address(&position_bundle_mint.pubkey(), bundle_index as u8)?;
+            let (bundled_position_address, _) = get_bundled_position_address(
+                &position_bundle_mint.pubkey(),
+                bundle_index as u8,
+                None,
+            )?;
 
             let open_bundled_ix = OpenBundledPosition {
                 funder: ctx.signer.pubkey(),

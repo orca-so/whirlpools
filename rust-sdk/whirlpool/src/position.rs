@@ -81,7 +81,7 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
         let bit_index = i % 8;
         if position_bundle.position_bitmap[byte_index] & (1 << bit_index) != 0 {
             let result =
-                get_bundled_position_address(&position_bundle.position_bundle_mint, i as u8);
+                get_bundled_position_address(&position_bundle.position_bundle_mint, i as u8, None);
             if let Ok(result) = result {
                 positions.push(result.0);
             }
@@ -162,12 +162,12 @@ pub async fn fetch_positions_for_owner(
 
     let position_addresses: Vec<Pubkey> = potiential_tokens
         .iter()
-        .map(|x| get_position_address(&x.mint).map(|x| x.0))
+        .map(|x| get_position_address(&x.mint, None).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let position_bundle_addresses: Vec<Pubkey> = potiential_tokens
         .iter()
-        .map(|x| get_position_bundle_address(&x.mint).map(|x| x.0))
+        .map(|x| get_position_bundle_address(&x.mint, None).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let position_infos = batch_get_multiple_accounts(rpc, &position_addresses, None).await?;

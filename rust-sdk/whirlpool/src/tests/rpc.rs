@@ -87,7 +87,7 @@ impl RpcContext {
         )
         .unwrap();
 
-        let default_fee_tier = get_fee_tier_address(&config, 128).unwrap().0;
+        let default_fee_tier = get_fee_tier_address(&config, 128, None).unwrap().0;
         svm.set_account(
             default_fee_tier,
             Account {
@@ -106,7 +106,7 @@ impl RpcContext {
         )
         .unwrap();
 
-        let concentrated_fee_tier = get_fee_tier_address(&config, 64).unwrap().0;
+        let concentrated_fee_tier = get_fee_tier_address(&config, 64, None).unwrap().0;
         svm.set_account(
             concentrated_fee_tier,
             Account {
@@ -125,7 +125,7 @@ impl RpcContext {
         )
         .unwrap();
 
-        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING)
+        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING, None)
             .unwrap()
             .0;
         svm.set_account(
@@ -162,7 +162,9 @@ impl RpcContext {
         .unwrap();
 
         // Create the whirlpools config extension account
-        let config_extension = get_whirlpools_config_extension_address(&config).unwrap().0;
+        let config_extension = get_whirlpools_config_extension_address(&config, None)
+            .unwrap()
+            .0;
         svm.set_account(
             config_extension,
             Account {

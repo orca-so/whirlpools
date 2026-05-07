@@ -33,7 +33,7 @@ use crate::{
 // TODO: support transfer hooks
 
 /// Represents the token max amount parameters for increasing liquidity.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct IncreaseLiquidityParam {
     pub token_max_a: u64,
     pub token_max_b: u64,
@@ -140,6 +140,21 @@ pub struct IncreaseLiquidityInstruction {
     pub additional_signers: Vec<Keypair>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct IncreaseLiquidityConfig<'a> {
+    /// The public key of the NFT mint address representing the pool position.
+    pub position_mint_address: Pubkey,
+    /// Maximum amounts of token A and B to deposit. The program will use
+    /// the minimum liquidity achievable within these caps.
+    pub param: IncreaseLiquidityParam,
+    /// An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+    pub slippage_tolerance_bps: Option<u16>,
+    /// An optional public key of the account authorizing the liquidity addition. Defaults to the global funder if not provided.
+    pub authority: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
+}
+
 /// Generates instructions to increase liquidity for an existing position.
 ///
 /// This function creates instructions to add liquidity to an existing pool position,
@@ -148,11 +163,7 @@ pub struct IncreaseLiquidityInstruction {
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for fetching necessary accounts and pool data.
-/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
-/// * `param` - Maximum amounts of token A and B to deposit. The program will use
-///   the minimum liquidity achievable within these caps.
-/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
-/// * `authority` - An optional public key of the account authorizing the liquidity addition. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the increase liquidity instruction.
 ///
 /// # Returns
 ///
@@ -173,7 +184,7 @@ pub struct IncreaseLiquidityInstruction {
 /// ```rust
 /// use orca_whirlpools::{
 ///     increase_liquidity_instructions, set_whirlpools_config_address,
-///     IncreaseLiquidityParam, WhirlpoolsConfigInput,
+///     IncreaseLiquidityConfig, IncreaseLiquidityParam, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -188,33 +199,34 @@ pub struct IncreaseLiquidityInstruction {
 ///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///     let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
 ///
-///     let result = increase_liquidity_instructions(
-///         &rpc,
+///     let config = IncreaseLiquidityConfig {
 ///         position_mint_address,
 ///         param,
-///         Some(100),
-///         Some(wallet.pubkey()),
-///     )
-///     .await.unwrap();
+///         slippage_tolerance_bps: Some(100),
+///         authority: Some(wallet.pubkey()),
+///         program_id: None,
+///     };
+///     let result = increase_liquidity_instructions(&rpc, config)
+///         .await
+///         .unwrap();
 ///
 ///     println!("Number of Instructions: {}", result.instructions.len());
 /// }
 /// ```
 pub async fn increase_liquidity_instructions(
     rpc: &RpcClient,
-    position_mint_address: Pubkey,
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: Option<u16>,
-    authority: Option<Pubkey>,
+    config: IncreaseLiquidityConfig<'_>,
 ) -> Result<IncreaseLiquidityInstruction, Box<dyn Error>> {
-    let slippage_tolerance_bps =
-        slippage_tolerance_bps.unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
-    let authority = authority.unwrap_or(*FUNDER.try_lock()?);
+    let slippage_tolerance_bps = config
+        .slippage_tolerance_bps
+        .unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
+    let authority = config.authority.unwrap_or(*FUNDER.try_lock()?);
     if authority == Pubkey::default() {
         return Err("Authority must be provided".into());
     }
 
-    let position_address = get_position_address(&position_mint_address)?.0;
+    let position_address =
+        get_position_address(&config.position_mint_address, config.program_id)?.0;
     let position_info = rpc.get_account(&position_address).await?;
     let position = Position::from_bytes(&position_info.data)?;
 
@@ -222,7 +234,11 @@ pub async fn increase_liquidity_instructions(
     let pool = Whirlpool::from_bytes(&pool_info.data)?;
 
     let mint_infos = rpc
-        .get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address])
+        .get_multiple_accounts(&[
+            pool.token_mint_a,
+            pool.token_mint_b,
+            config.position_mint_address,
+        ])
         .await?;
 
     let mint_a_info = mint_infos[0]
@@ -242,17 +258,25 @@ pub async fn increase_liquidity_instructions(
 
     let position_token_account_address = get_associated_token_address_with_program_id(
         &authority,
-        &position_mint_address,
+        &config.position_mint_address,
         &position_mint_info.owner,
     );
-    let lower_tick_array_address =
-        get_tick_array_address(&position.whirlpool, lower_tick_array_start_index)?.0;
-    let upper_tick_array_address =
-        get_tick_array_address(&position.whirlpool, upper_tick_array_start_index)?.0;
+    let lower_tick_array_address = get_tick_array_address(
+        &position.whirlpool,
+        lower_tick_array_start_index,
+        config.program_id,
+    )?
+    .0;
+    let upper_tick_array_address = get_tick_array_address(
+        &position.whirlpool,
+        upper_tick_array_start_index,
+        config.program_id,
+    )?
+    .0;
 
     let GetIncreaseLiquidityInstructionsResult {
         token_accounts,
-        increase_liquidity_instruction,
+        mut increase_liquidity_instruction,
     } = get_increase_liquidity_instructions(
         rpc,
         GetIncreaseLiquidityInstructionsParams {
@@ -266,10 +290,14 @@ pub async fn increase_liquidity_instructions(
             mint_b_info,
             authority,
             slippage_tolerance_bps,
-            param: &param,
+            param: &config.param,
         },
     )
     .await?;
+
+    if let Some(pid) = config.program_id {
+        increase_liquidity_instruction.program_id = *pid;
+    };
 
     let mut instructions: Vec<Instruction> = Vec::new();
     instructions.extend(token_accounts.create_instructions);
@@ -313,6 +341,7 @@ async fn internal_open_position(
     mint_b_info: &Account,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
+    program_id: Option<&Pubkey>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     let slippage_tolerance_bps =
@@ -348,18 +377,20 @@ async fn internal_open_position(
     let upper_tick_start_index =
         get_tick_array_start_tick_index(upper_initializable_tick_index, whirlpool.tick_spacing);
 
-    let position_address = get_position_address(&position_mint)?.0;
+    let position_address = get_position_address(&position_mint, program_id)?.0;
     let position_token_account_address = get_associated_token_address_with_program_id(
         &funder,
         &position_mint,
         &spl_token_2022_interface::ID,
     );
-    let lower_tick_array_address = get_tick_array_address(&pool_address, lower_tick_start_index)?.0;
-    let upper_tick_array_address = get_tick_array_address(&pool_address, upper_tick_start_index)?.0;
+    let lower_tick_array_address =
+        get_tick_array_address(&pool_address, lower_tick_start_index, program_id)?.0;
+    let upper_tick_array_address =
+        get_tick_array_address(&pool_address, upper_tick_start_index, program_id)?.0;
 
     let GetIncreaseLiquidityInstructionsResult {
         token_accounts,
-        increase_liquidity_instruction,
+        mut increase_liquidity_instruction,
     } = get_increase_liquidity_instructions(
         rpc,
         GetIncreaseLiquidityInstructionsParams {
@@ -378,6 +409,10 @@ async fn internal_open_position(
     )
     .await?;
 
+    if let Some(pid) = program_id {
+        increase_liquidity_instruction.program_id = *pid;
+    };
+
     instructions.extend(token_accounts.create_instructions);
     additional_signers.extend(token_accounts.additional_signers);
 
@@ -386,56 +421,68 @@ async fn internal_open_position(
         .await?;
 
     if tick_array_infos[0].is_none() {
-        instructions.push(
-            InitializeDynamicTickArray {
-                whirlpool: pool_address,
-                funder,
-                tick_array: lower_tick_array_address,
-                system_program: solana_system_interface::program::id(),
-            }
-            .instruction(InitializeDynamicTickArrayInstructionArgs {
-                start_tick_index: lower_tick_start_index,
-                idempotent: false,
-            }),
-        );
+        let mut initialize_dynamic_tick_array_lower_ix = InitializeDynamicTickArray {
+            whirlpool: pool_address,
+            funder,
+            tick_array: lower_tick_array_address,
+            system_program: solana_system_interface::program::id(),
+        }
+        .instruction(InitializeDynamicTickArrayInstructionArgs {
+            start_tick_index: lower_tick_start_index,
+            idempotent: false,
+        });
+
+        if let Some(pid) = program_id {
+            initialize_dynamic_tick_array_lower_ix.program_id = *pid;
+        };
+
+        instructions.push(initialize_dynamic_tick_array_lower_ix);
         non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
     if tick_array_infos[1].is_none() && lower_tick_start_index != upper_tick_start_index {
-        instructions.push(
-            InitializeDynamicTickArray {
-                whirlpool: pool_address,
-                funder,
-                tick_array: upper_tick_array_address,
-                system_program: solana_system_interface::program::id(),
-            }
-            .instruction(InitializeDynamicTickArrayInstructionArgs {
-                start_tick_index: upper_tick_start_index,
-                idempotent: false,
-            }),
-        );
+        let mut initialize_dynamic_tick_array_upper_ix = InitializeDynamicTickArray {
+            whirlpool: pool_address,
+            funder,
+            tick_array: upper_tick_array_address,
+            system_program: solana_system_interface::program::id(),
+        }
+        .instruction(InitializeDynamicTickArrayInstructionArgs {
+            start_tick_index: upper_tick_start_index,
+            idempotent: false,
+        });
+
+        if let Some(pid) = program_id {
+            initialize_dynamic_tick_array_upper_ix.program_id = *pid;
+        };
+
+        instructions.push(initialize_dynamic_tick_array_upper_ix);
         non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
-    instructions.push(
-        OpenPositionWithTokenExtensions {
-            funder,
-            owner: funder,
-            position: position_address,
-            position_mint,
-            position_token_account: position_token_account_address,
-            whirlpool: pool_address,
-            token2022_program: spl_token_2022_interface::ID,
-            system_program: solana_system_interface::program::id(),
-            associated_token_program: spl_associated_token_account_interface::program::id(),
-            metadata_update_auth: Pubkey::from_str("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")?,
-        }
-        .instruction(OpenPositionWithTokenExtensionsInstructionArgs {
-            tick_lower_index: lower_initializable_tick_index,
-            tick_upper_index: upper_initializable_tick_index,
-            with_token_metadata_extension: true,
-        }),
-    );
+    let mut open_position_with_token_extensions_ix = OpenPositionWithTokenExtensions {
+        funder,
+        owner: funder,
+        position: position_address,
+        position_mint,
+        position_token_account: position_token_account_address,
+        whirlpool: pool_address,
+        token2022_program: spl_token_2022_interface::ID,
+        system_program: solana_system_interface::program::id(),
+        associated_token_program: spl_associated_token_account_interface::program::id(),
+        metadata_update_auth: Pubkey::from_str("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")?,
+    }
+    .instruction(OpenPositionWithTokenExtensionsInstructionArgs {
+        tick_lower_index: lower_initializable_tick_index,
+        tick_upper_index: upper_initializable_tick_index,
+        with_token_metadata_extension: true,
+    });
+
+    if let Some(pid) = program_id {
+        open_position_with_token_extensions_ix.program_id = *pid;
+    };
+
+    instructions.push(open_position_with_token_extensions_ix);
 
     instructions.push(increase_liquidity_instruction);
     instructions.extend(token_accounts.cleanup_instructions);
@@ -448,6 +495,20 @@ async fn internal_open_position(
     })
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct OpenFullRangePositionConfig<'a> {
+    /// The public key of the liquidity pool.
+    pub pool_address: Pubkey,
+    /// Maximum amounts of token A and B to deposit.
+    pub param: IncreaseLiquidityParam,
+    /// An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+    pub slippage_tolerance_bps: Option<u16>,
+    /// An optional public key of the funder account. Defaults to the global funder if not provided.
+    pub funder: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
+}
+
 /// Opens a full-range position in a liquidity pool.
 ///
 /// This function creates a new position within the full price range for the specified pool,
@@ -456,10 +517,7 @@ async fn internal_open_position(
 /// # Arguments
 ///
 /// * `rpc` - A reference to the Solana RPC client.
-/// * `pool_address` - The public key of the liquidity pool.
-/// * `param` - Maximum amounts of token A and B to deposit.
-/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
-/// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the open full range position instruction.
 ///
 /// # Returns
 ///
@@ -482,7 +540,10 @@ async fn internal_open_position(
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_keypair::Keypair;
 /// use solana_pubkey::Pubkey;
-/// use orca_whirlpools::{open_full_range_position_instructions, IncreaseLiquidityParam};
+/// use orca_whirlpools::{
+///     open_full_range_position_instructions, IncreaseLiquidityParam,
+///     OpenFullRangePositionConfig,
+/// };
 /// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -490,30 +551,26 @@ async fn internal_open_position(
 ///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
 /// let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
-/// let slippage_tolerance_bps = Some(100);
 ///
 /// let wallet = Keypair::new();
-/// let funder = Some(wallet.pubkey());
 ///
-/// let result = open_full_range_position_instructions(
-///     &rpc,
-///     whirlpool_pubkey,
+/// let config = OpenFullRangePositionConfig {
+///     pool_address: whirlpool_pubkey,
 ///     param,
-///     slippage_tolerance_bps,
-///     funder,
-/// ).unwrap();
+///     slippage_tolerance_bps: Some(100),
+///     funder: Some(wallet.pubkey()),
+///     program_id: None,
+/// };
+/// let result = open_full_range_position_instructions(&rpc, config).unwrap();
 ///
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
 pub async fn open_full_range_position_instructions(
     rpc: &RpcClient,
-    pool_address: Pubkey,
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: Option<u16>,
-    funder: Option<Pubkey>,
+    config: OpenFullRangePositionConfig<'_>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    let whirlpool_info = rpc.get_account(&pool_address).await?;
+    let whirlpool_info = rpc.get_account(&config.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     let tick_range = get_full_range_tick_indexes(whirlpool.tick_spacing);
     let mint_infos = rpc
@@ -527,17 +584,36 @@ pub async fn open_full_range_position_instructions(
         .ok_or("Token B mint info not found")?;
     internal_open_position(
         rpc,
-        pool_address,
+        config.pool_address,
         whirlpool,
-        param,
+        config.param,
         tick_range.tick_lower_index,
         tick_range.tick_upper_index,
         mint_a_info,
         mint_b_info,
-        slippage_tolerance_bps,
-        funder,
+        config.slippage_tolerance_bps,
+        config.funder,
+        config.program_id,
     )
     .await
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct OpenPositionConfig<'a> {
+    /// The public key of the liquidity pool.
+    pub pool_address: Pubkey,
+    /// The lower bound of the price range for the position. Must be greater than 0.0.
+    pub lower_price: f64,
+    /// The upper bound of the price range for the position. Must be greater than 0.0.
+    pub upper_price: f64,
+    /// Maximum amounts of token A and B to deposit.
+    pub param: IncreaseLiquidityParam,
+    /// An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+    pub slippage_tolerance_bps: Option<u16>,
+    /// An optional public key of the funder account. Defaults to the global funder if not provided.
+    pub funder: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
 }
 
 /// Opens a position in a liquidity pool within a specific price range.
@@ -548,12 +624,7 @@ pub async fn open_full_range_position_instructions(
 /// # Arguments
 ///
 /// * `rpc` - A reference to the Solana RPC client.
-/// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_price` - The lower bound of the price range for the position. It returns error if the lower_price <= 0.0.
-/// * `upper_price` - The upper bound of the price range for the position. It returns error if the upper_price <= 0.0.
-/// * `param` - Maximum amounts of token A and B to deposit.
-/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
-/// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the open position instruction.
 ///
 /// # Returns
 ///
@@ -579,47 +650,39 @@ pub async fn open_full_range_position_instructions(
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_keypair::Keypair;
 /// use solana_pubkey::Pubkey;
-/// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam};
+/// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam, OpenPositionConfig};
 /// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 ///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
-/// let lower_price = 0.00005;
-/// let upper_price = 0.00015;
 /// let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
-/// let slippage_tolerance_bps = Some(100);
 ///
 /// let wallet = Keypair::new();
-/// let funder = Some(wallet.pubkey());
 ///
-/// let result = open_position_instructions(
-///     &rpc,
-///     whirlpool_pubkey,
-///     lower_price,
-///     upper_price,
+/// let config = OpenPositionConfig {
+///     pool_address: whirlpool_pubkey,
+///     lower_price: 0.00005,
+///     upper_price: 0.00015,
 ///     param,
-///     slippage_tolerance_bps,
-///     funder,
-/// ).unwrap();
+///     slippage_tolerance_bps: Some(100),
+///     funder: Some(wallet.pubkey()),
+///     program_id: None,
+/// };
+/// let result = open_position_instructions(&rpc, config).unwrap();
 ///
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
 pub async fn open_position_instructions(
     rpc: &RpcClient,
-    pool_address: Pubkey,
-    lower_price: f64,
-    upper_price: f64,
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: Option<u16>,
-    funder: Option<Pubkey>,
+    config: OpenPositionConfig<'_>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    if lower_price <= 0.0 || upper_price <= 0.0 {
+    if config.lower_price <= 0.0 || config.upper_price <= 0.0 {
         return Err("Floating price must be greater than 0.0".into());
     }
-    let whirlpool_info = rpc.get_account(&pool_address).await?;
+    let whirlpool_info = rpc.get_account(&config.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
         return Err("Splash pools only support full range positions".into());
@@ -639,22 +702,41 @@ pub async fn open_position_instructions(
     let decimals_a = mint_a.decimals;
     let decimals_b = mint_b.decimals;
 
-    let lower_tick_index = price_to_tick_index(lower_price, decimals_a, decimals_b);
-    let upper_tick_index = price_to_tick_index(upper_price, decimals_a, decimals_b);
+    let lower_tick_index = price_to_tick_index(config.lower_price, decimals_a, decimals_b);
+    let upper_tick_index = price_to_tick_index(config.upper_price, decimals_a, decimals_b);
 
     internal_open_position(
         rpc,
-        pool_address,
+        config.pool_address,
         whirlpool,
-        param,
+        config.param,
         lower_tick_index,
         upper_tick_index,
         mint_a_info,
         mint_b_info,
-        slippage_tolerance_bps,
-        funder,
+        config.slippage_tolerance_bps,
+        config.funder,
+        config.program_id,
     )
     .await
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct OpenPositionWithTickBoundsConfig<'a> {
+    /// The public key of the liquidity pool.
+    pub pool_address: Pubkey,
+    /// The lower tick bound for the position. Must be in bounds and aligned with tick spacing.
+    pub lower_tick_index: i32,
+    /// The upper tick bound for the position. Must be in bounds and aligned with tick spacing.
+    pub upper_tick_index: i32,
+    /// Maximum amounts of token A and B to deposit.
+    pub param: IncreaseLiquidityParam,
+    /// An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+    pub slippage_tolerance_bps: Option<u16>,
+    /// An optional public key of the funder account. Defaults to the global funder if not provided.
+    pub funder: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
 }
 
 /// Opens a position in a liquidity pool using explicit tick-index bounds.
@@ -667,12 +749,7 @@ pub async fn open_position_instructions(
 /// # Arguments
 ///
 /// * `rpc` - A reference to the Solana RPC client.
-/// * `pool_address` - The public key of the liquidity pool.
-/// * `lower_tick_index` - The lower tick bound for the position. It returns error if out of bounds or not aligned with tick spacing.
-/// * `upper_tick_index` - The upper tick bound for the position. It returns error if out of bounds or not aligned with tick spacing.
-/// * `param` - Maximum amounts of token A and B to deposit.
-/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
-/// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the open position with tick bounds instruction.
 ///
 /// # Returns
 ///
@@ -698,77 +775,72 @@ pub async fn open_position_instructions(
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_keypair::Keypair;
 /// use solana_pubkey::Pubkey;
-/// use orca_whirlpools::{open_position_instructions_with_tick_bounds, IncreaseLiquidityParam};
+/// use orca_whirlpools::{
+///     open_position_instructions_with_tick_bounds, IncreaseLiquidityParam,
+///     OpenPositionWithTickBoundsConfig,
+/// };
 /// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 ///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
-/// let lower_tick_index = -44320;
-/// let upper_tick_index = -22160;
-/// let para = IncreaseLiquidityParam{ token_max_a: 1_000_000, token_max_b: 1_000_000 };
-/// let slippage_tolerance_bps = Some(100);
+/// let param = IncreaseLiquidityParam { token_max_a: 1_000_000, token_max_b: 1_000_000 };
 ///
 /// let wallet = Keypair::new();
-/// let funder = Some(wallet.pubkey());
 ///
-/// let result = open_position_instructions_with_tick_bounds(
-///     &rpc,
-///     whirlpool_pubkey,
-///     lower_tick_index,
-///     upper_tick_index,
-///     para,
-///     slippage_tolerance_bps,
-///     funder,
-/// ).unwrap();
+/// let config = OpenPositionWithTickBoundsConfig {
+///     pool_address: whirlpool_pubkey,
+///     lower_tick_index: -44320,
+///     upper_tick_index: -22160,
+///     param,
+///     slippage_tolerance_bps: Some(100),
+///     funder: Some(wallet.pubkey()),
+///     program_id: None,
+/// };
+/// let result = open_position_instructions_with_tick_bounds(&rpc, config).unwrap();
 ///
 /// println!("Position Mint: {:?}", result.position_mint);
 /// println!("Initialization Cost: {} lamports", result.initialization_cost);
 /// ```
 pub async fn open_position_instructions_with_tick_bounds(
     rpc: &RpcClient,
-    pool_address: Pubkey,
-    lower_tick_index: i32,
-    upper_tick_index: i32,
-    param: IncreaseLiquidityParam,
-    slippage_tolerance_bps: Option<u16>,
-    funder: Option<Pubkey>,
+    config: OpenPositionWithTickBoundsConfig<'_>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    let whirlpool_info = rpc.get_account(&pool_address).await?;
+    let whirlpool_info = rpc.get_account(&config.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
         return Err("Splash pools only support full range positions".into());
     }
 
-    if !is_tick_index_in_bounds(lower_tick_index) {
+    if !is_tick_index_in_bounds(config.lower_tick_index) {
         return Err("Lower tick index is out of bounds".into());
     }
 
-    if !is_tick_initializable(lower_tick_index, whirlpool.tick_spacing) {
+    if !is_tick_initializable(config.lower_tick_index, whirlpool.tick_spacing) {
         return Err(format!(
             "Lower tick index {} is not aligned with tick spacing {}",
-            lower_tick_index, whirlpool.tick_spacing
+            config.lower_tick_index, whirlpool.tick_spacing
         )
         .into());
     }
 
-    if !is_tick_index_in_bounds(upper_tick_index) {
+    if !is_tick_index_in_bounds(config.upper_tick_index) {
         return Err("Upper tick index is out of bounds".into());
     }
 
-    if !is_tick_initializable(upper_tick_index, whirlpool.tick_spacing) {
+    if !is_tick_initializable(config.upper_tick_index, whirlpool.tick_spacing) {
         return Err(format!(
             "Upper tick index {} is not aligned with tick spacing {}",
-            upper_tick_index, whirlpool.tick_spacing
+            config.upper_tick_index, whirlpool.tick_spacing
         )
         .into());
     }
 
-    if lower_tick_index >= upper_tick_index {
+    if config.lower_tick_index >= config.upper_tick_index {
         return Err(format!(
             "Lower tick index {} must be less than upper tick index {}",
-            lower_tick_index, upper_tick_index
+            config.lower_tick_index, config.upper_tick_index
         )
         .into());
     }
@@ -785,15 +857,16 @@ pub async fn open_position_instructions_with_tick_bounds(
 
     internal_open_position(
         rpc,
-        pool_address,
+        config.pool_address,
         whirlpool,
-        param,
-        lower_tick_index,
-        upper_tick_index,
+        config.param,
+        config.lower_tick_index,
+        config.upper_tick_index,
         mint_a_info,
         mint_b_info,
-        slippage_tolerance_bps,
-        funder,
+        config.slippage_tolerance_bps,
+        config.funder,
+        config.program_id,
     )
     .await
 }
@@ -826,7 +899,8 @@ mod tests {
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
-        IncreaseLiquidityInstruction, IncreaseLiquidityParam,
+        IncreaseLiquidityConfig, IncreaseLiquidityInstruction, IncreaseLiquidityParam,
+        OpenPositionConfig,
     };
 
     use solana_client::nonblocking::rpc_client::RpcClient;
@@ -880,11 +954,7 @@ mod tests {
         )?;
         let liquidity_a = quote_a.liquidity_delta;
         let liquidity_b = quote_b.liquidity_delta;
-        let quote = if liquidity_a == 0 {
-            quote_b
-        } else if liquidity_b == 0 {
-            quote_a
-        } else if liquidity_a <= liquidity_b {
+        let quote = if liquidity_b == 0 || liquidity_a <= liquidity_b {
             quote_a
         } else {
             quote_b
@@ -913,7 +983,7 @@ mod tests {
         let used_a = before_a.saturating_sub(after_a);
         let used_b = before_b.saturating_sub(after_b);
 
-        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_pubkey = get_position_address(&position_mint, None)?.0;
         let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
         let pool_info = ctx.rpc.get_account(&position_data.whirlpool).await?;
         let pool = Whirlpool::from_bytes(&pool_info.data)?;
@@ -1115,10 +1185,13 @@ mod tests {
 
             let inc_ix = increase_liquidity_instructions(
                 &ctx.rpc,
-                position_mint,
-                param.clone(),
-                Some(100), // slippage
-                Some(ctx.signer.pubkey()),
+                IncreaseLiquidityConfig {
+                    position_mint_address: position_mint,
+                    param: param.clone(),
+                    slippage_tolerance_bps: Some(100),
+                    authority: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await
             .unwrap();
@@ -1158,10 +1231,13 @@ mod tests {
         };
         let res = increase_liquidity_instructions(
             &ctx.rpc,
-            position_mint,
-            param,
-            Some(100), // slippage
-            Some(Pubkey::default()),
+            IncreaseLiquidityConfig {
+                position_mint_address: position_mint,
+                param,
+                slippage_tolerance_bps: Some(100),
+                authority: Some(Pubkey::default()),
+                program_id: None,
+            },
         )
         .await;
 
@@ -1199,10 +1275,13 @@ mod tests {
         };
         let res = increase_liquidity_instructions(
             &ctx.rpc,
-            position_mint,
-            param,
-            Some(100),
-            Some(ctx.signer.pubkey()),
+            IncreaseLiquidityConfig {
+                position_mint_address: position_mint,
+                param,
+                slippage_tolerance_bps: Some(100),
+                authority: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await;
 
@@ -1237,10 +1316,13 @@ mod tests {
         };
         let res = increase_liquidity_instructions(
             &ctx.rpc,
-            position_mint,
-            param,
-            Some(100),
-            Some(ctx.signer.pubkey()),
+            IncreaseLiquidityConfig {
+                position_mint_address: position_mint,
+                param,
+                slippage_tolerance_bps: Some(100),
+                authority: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await;
 
@@ -1282,12 +1364,15 @@ mod tests {
         };
         let res = open_position_instructions(
             &ctx.rpc,
-            pool_pubkey,
-            lower_price,
-            100.0,
-            param,
-            Some(100),
-            Some(ctx.signer.pubkey()),
+            OpenPositionConfig {
+                pool_address: pool_pubkey,
+                lower_price,
+                upper_price: 100.0,
+                param,
+                slippage_tolerance_bps: Some(100),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await;
 
@@ -1327,12 +1412,15 @@ mod tests {
         };
         let res = open_position_instructions(
             &ctx.rpc,
-            pool_pubkey,
-            0.1,
-            upper_price,
-            param,
-            Some(100),
-            Some(ctx.signer.pubkey()),
+            OpenPositionConfig {
+                pool_address: pool_pubkey,
+                lower_price: 0.1,
+                upper_price,
+                param,
+                slippage_tolerance_bps: Some(100),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await;
 
@@ -1352,7 +1440,9 @@ mod tests {
 
     mod open_position_with_tick_bounds {
         use super::*;
-        use crate::open_position_instructions_with_tick_bounds;
+        use crate::{
+            open_position_instructions_with_tick_bounds, OpenPositionWithTickBoundsConfig,
+        };
 
         #[tokio::test]
         #[serial]
@@ -1372,12 +1462,15 @@ mod tests {
             };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
-                pool_pubkey,
-                i32::MAX,
-                64,
-                param,
-                Some(100),
-                Some(ctx.signer.pubkey()),
+                OpenPositionWithTickBoundsConfig {
+                    pool_address: pool_pubkey,
+                    lower_tick_index: i32::MAX,
+                    upper_tick_index: 64,
+                    param,
+                    slippage_tolerance_bps: Some(100),
+                    funder: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await;
 
@@ -1413,12 +1506,15 @@ mod tests {
             };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
-                pool_pubkey,
-                0,
-                i32::MAX,
-                param,
-                Some(100),
-                Some(ctx.signer.pubkey()),
+                OpenPositionWithTickBoundsConfig {
+                    pool_address: pool_pubkey,
+                    lower_tick_index: 0,
+                    upper_tick_index: i32::MAX,
+                    param,
+                    slippage_tolerance_bps: Some(100),
+                    funder: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await;
 
@@ -1454,12 +1550,15 @@ mod tests {
             };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
-                pool_pubkey,
-                1,  // not aligned with tick spacing 64
-                64, // aligned
-                param,
-                Some(100),
-                Some(ctx.signer.pubkey()),
+                OpenPositionWithTickBoundsConfig {
+                    pool_address: pool_pubkey,
+                    lower_tick_index: 1,  // not aligned with tick spacing 64
+                    upper_tick_index: 64, // aligned
+                    param,
+                    slippage_tolerance_bps: Some(100),
+                    funder: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await;
 
@@ -1495,12 +1594,15 @@ mod tests {
             };
             let res = open_position_instructions_with_tick_bounds(
                 &ctx.rpc,
-                pool_pubkey,
-                64,
-                64,
-                param,
-                Some(100),
-                Some(ctx.signer.pubkey()),
+                OpenPositionWithTickBoundsConfig {
+                    pool_address: pool_pubkey,
+                    lower_tick_index: 64,
+                    upper_tick_index: 64,
+                    param,
+                    slippage_tolerance_bps: Some(100),
+                    funder: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await;
 

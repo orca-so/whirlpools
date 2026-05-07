@@ -43,15 +43,26 @@ pub struct CreatePoolInstructions {
     pub additional_signers: Vec<Keypair>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct CreateSplashPoolConfig<'a> {
+    /// The public key of the first token mint address to include in the pool.
+    pub token_a: Pubkey,
+    /// The public key of the second token mint address to include in the pool.
+    pub token_b: Pubkey,
+    /// An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.
+    pub initial_price: Option<f64>,
+    /// An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
+    pub funder: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
+}
+
 /// Creates the necessary instructions to initialize a Splash Pool.
 ///
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for communicating with the blockchain.
-/// * `token_a` - The public key of the first token mint address to include in the pool.
-/// * `token_b` - The public key of the second token mint address to include in the pool.
-/// * `initial_price` - An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.
-/// * `funder` - An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the create splash pool instruction.
 ///
 /// # Returns
 ///
@@ -73,7 +84,8 @@ pub struct CreatePoolInstructions {
 ///
 /// ```rust
 /// use orca_whirlpools::{
-///     create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+///     create_splash_pool_instructions, set_whirlpools_config_address,
+///     CreateSplashPoolConfig, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_keypair::{Keypair, Signer};
@@ -86,14 +98,18 @@ pub struct CreatePoolInstructions {
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-///     let initial_price = Some(0.01);
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
-///     let funder = Some(wallet.pubkey());
 ///
-///     let create_pool_instructions =
-///         create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
-///             .await
-///             .unwrap();
+///     let config = CreateSplashPoolConfig {
+///         token_a,
+///         token_b,
+///         initial_price: Some(0.01),
+///         funder: Some(wallet.pubkey()),
+///         program_id: None,
+///     };
+///     let create_pool_instructions = create_splash_pool_instructions(&rpc, config)
+///         .await
+///         .unwrap();
 ///
 ///     println!("Pool Address: {:?}", create_pool_instructions.pool_address);
 ///     println!(
@@ -104,20 +120,36 @@ pub struct CreatePoolInstructions {
 /// ```
 pub async fn create_splash_pool_instructions(
     rpc: &RpcClient,
-    token_a: Pubkey,
-    token_b: Pubkey,
-    initial_price: Option<f64>,
-    funder: Option<Pubkey>,
+    config: CreateSplashPoolConfig<'_>,
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
     create_concentrated_liquidity_pool_instructions(
         rpc,
-        token_a,
-        token_b,
-        SPLASH_POOL_TICK_SPACING,
-        initial_price,
-        funder,
+        CreateConcentratedLiquidityPoolConfig {
+            token_a: config.token_a,
+            token_b: config.token_b,
+            tick_spacing: SPLASH_POOL_TICK_SPACING,
+            initial_price: config.initial_price,
+            funder: config.funder,
+            program_id: config.program_id,
+        },
     )
     .await
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CreateConcentratedLiquidityPoolConfig<'a> {
+    /// The public key of the first token mint address to include in the pool.
+    pub token_a: Pubkey,
+    /// The public key of the second token mint address to include in the pool.
+    pub token_b: Pubkey,
+    /// The spacing between price ticks for the pool.
+    pub tick_spacing: u16,
+    /// An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.
+    pub initial_price: Option<f64>,
+    /// An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
+    pub funder: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
 }
 
 /// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM).
@@ -125,11 +157,7 @@ pub async fn create_splash_pool_instructions(
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for communicating with the blockchain.
-/// * `token_a` - The public key of the first token mint address to include in the pool.
-/// * `token_b` - The public key of the second token mint address to include in the pool.
-/// * `tick_spacing` - The spacing between price ticks for the pool.
-/// * `initial_price` - An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.
-/// * `funder` - An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the create concentrated liquidity pool instruction.
 ///
 /// # Returns
 ///
@@ -152,7 +180,7 @@ pub async fn create_splash_pool_instructions(
 /// ```
 /// use orca_whirlpools::{
 ///     create_concentrated_liquidity_pool_instructions, set_whirlpools_config_address,
-///     WhirlpoolsConfigInput,
+///     CreateConcentratedLiquidityPoolConfig, WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_keypair::{Keypair, Signer};
@@ -165,21 +193,20 @@ pub async fn create_splash_pool_instructions(
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-///     let tick_spacing = 64;
-///     let initial_price = Some(0.01);
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
-///     let funder = Some(wallet.pubkey());
 ///
-///     let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
-///         &rpc,
+///     let config = CreateConcentratedLiquidityPoolConfig {
 ///         token_a,
 ///         token_b,
-///         tick_spacing,
-///         initial_price,
-///         funder,
-///     )
-///     .await
-///     .unwrap();
+///         tick_spacing: 64,
+///         initial_price: Some(0.01),
+///         funder: Some(wallet.pubkey()),
+///         program_id: None,
+///     };
+///     let create_pool_instructions =
+///         create_concentrated_liquidity_pool_instructions(&rpc, config)
+///             .await
+///             .unwrap();
 ///
 ///     println!("Pool Address: {:?}", create_pool_instructions.pool_address);
 ///     println!(
@@ -190,33 +217,31 @@ pub async fn create_splash_pool_instructions(
 /// ```
 pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
-    token_a: Pubkey,
-    token_b: Pubkey,
-    tick_spacing: u16,
-    initial_price: Option<f64>,
-    funder: Option<Pubkey>,
+    config: CreateConcentratedLiquidityPoolConfig<'_>,
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
-    let initial_price = initial_price.unwrap_or(1.0);
-    let funder = funder.unwrap_or(*FUNDER.try_lock()?);
+    let initial_price = config.initial_price.unwrap_or(1.0);
+    let funder = config.funder.unwrap_or(*FUNDER.try_lock()?);
     if funder == Pubkey::default() {
         return Err("Funder must be provided".into());
     }
-    if order_mints(token_a, token_b)[0] != token_a {
+    if order_mints(config.token_a, config.token_b)[0] != config.token_a {
         return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
     }
 
     let rent = get_rent(rpc).await?;
 
-    let account_infos = rpc.get_multiple_accounts(&[token_a, token_b]).await?;
+    let account_infos = rpc
+        .get_multiple_accounts(&[config.token_a, config.token_b])
+        .await?;
     let mint_a_info = account_infos[0]
         .as_ref()
-        .ok_or(format!("Mint {} not found", token_a))?;
+        .ok_or(format!("Mint {} not found", config.token_a))?;
     let mint_a = StateWithExtensions::<Mint>::unpack(&mint_a_info.data)?;
     let decimals_a = mint_a.base.decimals;
     let token_program_a = mint_a_info.owner;
     let mint_b_info = account_infos[1]
         .as_ref()
-        .ok_or(format!("Mint {} not found", token_b))?;
+        .ok_or(format!("Mint {} not found", config.token_b))?;
     let mint_b = StateWithExtensions::<Mint>::unpack(&mint_b_info.data)?;
     let decimals_b = mint_b.base.decimals;
     let token_program_b = mint_b_info.owner;
@@ -224,14 +249,24 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
 
     let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
-    let pool_address =
-        get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing)?.0;
+    let pool_address = get_whirlpool_address(
+        &whirlpools_config_address,
+        &config.token_a,
+        &config.token_b,
+        config.tick_spacing,
+        config.program_id,
+    )?
+    .0;
 
-    let fee_tier = get_fee_tier_address(&whirlpools_config_address, tick_spacing)?.0;
+    let fee_tier =
+        get_fee_tier_address(&whirlpools_config_address, config.tick_spacing, config.program_id)?
+            .0;
 
-    let token_badge_a = get_token_badge_address(&whirlpools_config_address, &token_a)?.0;
+    let token_badge_a =
+        get_token_badge_address(&whirlpools_config_address, &config.token_a, config.program_id)?.0;
 
-    let token_badge_b = get_token_badge_address(&whirlpools_config_address, &token_b)?.0;
+    let token_badge_b =
+        get_token_badge_address(&whirlpools_config_address, &config.token_b, config.program_id)?.0;
 
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();
@@ -239,28 +274,32 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let mut initialization_cost: u64 = 0;
     let mut instructions = vec![];
 
-    instructions.push(
-        InitializePoolV2 {
-            whirlpools_config: whirlpools_config_address,
-            token_mint_a: token_a,
-            token_mint_b: token_b,
-            token_badge_a,
-            token_badge_b,
-            funder,
-            whirlpool: pool_address,
-            token_vault_a: token_vault_a.pubkey(),
-            token_vault_b: token_vault_b.pubkey(),
-            fee_tier,
-            token_program_a,
-            token_program_b,
-            system_program: solana_system_interface::program::id(),
-            rent: Rent::id(),
-        }
-        .instruction(InitializePoolV2InstructionArgs {
-            initial_sqrt_price,
-            tick_spacing,
-        }),
-    );
+    let mut initialize_pool_v2_ix = InitializePoolV2 {
+        whirlpools_config: whirlpools_config_address,
+        token_mint_a: config.token_a,
+        token_mint_b: config.token_b,
+        token_badge_a,
+        token_badge_b,
+        funder,
+        whirlpool: pool_address,
+        token_vault_a: token_vault_a.pubkey(),
+        token_vault_b: token_vault_b.pubkey(),
+        fee_tier,
+        token_program_a,
+        token_program_b,
+        system_program: solana_system_interface::program::id(),
+        rent: Rent::id(),
+    }
+    .instruction(InitializePoolV2InstructionArgs {
+        initial_sqrt_price,
+        tick_spacing: config.tick_spacing,
+    });
+
+    if let Some(pid) = config.program_id {
+        initialize_pool_v2_ix.program_id = *pid;
+    };
+
+    instructions.push(initialize_pool_v2_ix);
 
     initialization_cost += rent.minimum_balance(Whirlpool::LEN);
     let token_a_space = get_account_data_size(token_program_a, mint_a_info)?;
@@ -268,30 +307,36 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let token_b_space = get_account_data_size(token_program_b, mint_b_info)?;
     initialization_cost += rent.minimum_balance(token_b_space);
 
-    let full_range = get_full_range_tick_indexes(tick_spacing);
+    let full_range = get_full_range_tick_indexes(config.tick_spacing);
     let lower_tick_index =
-        get_tick_array_start_tick_index(full_range.tick_lower_index, tick_spacing);
+        get_tick_array_start_tick_index(full_range.tick_lower_index, config.tick_spacing);
     let upper_tick_index =
-        get_tick_array_start_tick_index(full_range.tick_upper_index, tick_spacing);
+        get_tick_array_start_tick_index(full_range.tick_upper_index, config.tick_spacing);
     let initial_tick_index = sqrt_price_to_tick_index(initial_sqrt_price);
-    let current_tick_index = get_tick_array_start_tick_index(initial_tick_index, tick_spacing);
+    let current_tick_index =
+        get_tick_array_start_tick_index(initial_tick_index, config.tick_spacing);
 
     let tick_array_indexes =
         HashSet::from([lower_tick_index, upper_tick_index, current_tick_index]);
     for start_tick_index in tick_array_indexes {
-        let tick_array_address = get_tick_array_address(&pool_address, start_tick_index)?;
-        instructions.push(
-            InitializeDynamicTickArray {
-                whirlpool: pool_address,
-                tick_array: tick_array_address.0,
-                funder,
-                system_program: solana_system_interface::program::id(),
-            }
-            .instruction(InitializeDynamicTickArrayInstructionArgs {
-                start_tick_index,
-                idempotent: false,
-            }),
-        );
+        let tick_array_address =
+            get_tick_array_address(&pool_address, start_tick_index, config.program_id)?;
+        let mut initialize_dynamic_tick_array_ix = InitializeDynamicTickArray {
+            whirlpool: pool_address,
+            tick_array: tick_array_address.0,
+            funder,
+            system_program: solana_system_interface::program::id(),
+        }
+        .instruction(InitializeDynamicTickArrayInstructionArgs {
+            start_tick_index,
+            idempotent: false,
+        });
+
+        if let Some(pid) = config.program_id {
+            initialize_dynamic_tick_array_ix.program_id = *pid;
+        };
+
+        instructions.push(initialize_dynamic_tick_array_ix);
         initialization_cost += rent.minimum_balance(DynamicTickArray::MIN_LEN);
     }
 
@@ -327,8 +372,17 @@ mod tests {
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
 
-        let result =
-            create_splash_pool_instructions(&ctx.rpc, mint_a, mint_b, Some(1.0), None).await;
+        let result = create_splash_pool_instructions(
+            &ctx.rpc,
+            CreateSplashPoolConfig {
+                token_a: mint_a,
+                token_b: mint_b,
+                initial_price: Some(1.0),
+                funder: None,
+                program_id: None,
+            },
+        )
+        .await;
 
         assert!(result.is_err());
     }
@@ -342,11 +396,14 @@ mod tests {
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
-            mint_b,
-            mint_a,
-            64,
-            Some(1.0),
-            Some(ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: mint_b,
+                token_b: mint_a,
+                tick_spacing: 64,
+                initial_price: Some(1.0),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await;
 
@@ -364,10 +421,13 @@ mod tests {
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
-            mint_a,
-            mint_b,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateSplashPoolConfig {
+                token_a: mint_a,
+                token_b: mint_b,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -415,10 +475,13 @@ mod tests {
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
-            mint,
-            mint_te,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateSplashPoolConfig {
+                token_a: mint,
+                token_b: mint_te,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -466,10 +529,13 @@ mod tests {
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
-            mint_te_a,
-            mint_te_b,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateSplashPoolConfig {
+                token_a: mint_te_a,
+                token_b: mint_te_b,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -517,10 +583,13 @@ mod tests {
 
         let result = create_splash_pool_instructions(
             &ctx.rpc,
-            mint,
-            mint_te_fee,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateSplashPoolConfig {
+                token_a: mint,
+                token_b: mint_te_fee,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -568,11 +637,14 @@ mod tests {
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
-            mint_a,
-            mint_b,
-            64,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: mint_a,
+                token_b: mint_b,
+                tick_spacing: 64,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -620,11 +692,14 @@ mod tests {
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
-            mint,
-            mint_te,
-            64,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: mint,
+                token_b: mint_te,
+                tick_spacing: 64,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -672,11 +747,14 @@ mod tests {
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
-            mint_te_a,
-            mint_te_b,
-            64,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: mint_te_a,
+                token_b: mint_te_b,
+                tick_spacing: 64,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -724,11 +802,14 @@ mod tests {
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
-            mint,
-            mint_te_fee,
-            64,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: mint,
+                token_b: mint_te_fee,
+                tick_spacing: 64,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();
@@ -776,11 +857,14 @@ mod tests {
 
         let result = create_concentrated_liquidity_pool_instructions(
             &ctx.rpc,
-            mint,
-            mint_te_sua,
-            64,
-            Some(price),
-            Some(ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: mint,
+                token_b: mint_te_sua,
+                tick_spacing: 64,
+                initial_price: Some(price),
+                funder: Some(ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await
         .unwrap();

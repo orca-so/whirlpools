@@ -207,9 +207,10 @@ pub async fn fetch_concentrated_liquidity_pool(
     let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let [token_a, token_b] = order_mints(token_1, token_2);
     let whirlpool_address =
-        get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing)?.0;
+        get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing, None)?
+            .0;
 
-    let fee_tier_address = get_fee_tier_address(&whirlpools_config_address, tick_spacing)?;
+    let fee_tier_address = get_fee_tier_address(&whirlpools_config_address, tick_spacing, None)?;
 
     let account_infos = rpc
         .get_multiple_accounts(&[
@@ -350,7 +351,13 @@ pub async fn fetch_whirlpools_by_token_pair(
         .iter()
         .map(|fee_tier| fee_tier.data.tick_spacing)
         .map(|tick_spacing| {
-            get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing)
+            get_whirlpool_address(
+                &whirlpools_config_address,
+                &token_a,
+                &token_b,
+                tick_spacing,
+                None,
+            )
         })
         .map(|x| x.map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, ProgramError>>()?;

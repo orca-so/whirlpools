@@ -52,6 +52,16 @@ pub struct HarvestPositionInstruction {
     pub rewards_quote: CollectRewardsQuote,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct HarvestPositionConfig<'a> {
+    /// The public key of the NFT mint address representing the pool position.
+    pub position_mint_address: Pubkey,
+    /// An optional public key of the account authorizing the harvesting process. Defaults to the global funder if not provided.
+    pub authority: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
+}
+
 /// Generates instructions to harvest a position.
 ///
 /// Harvesting a position involves collecting any accumulated fees and rewards
@@ -60,8 +70,7 @@ pub struct HarvestPositionInstruction {
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for fetching accounts and pool data.
-/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
-/// * `authority` - An optional public key of the account authorizing the harvesting process. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the harvest position instruction.
 ///
 /// # Returns
 ///
@@ -83,7 +92,8 @@ pub struct HarvestPositionInstruction {
 ///
 /// ```rust
 /// use orca_whirlpools::{
-///     harvest_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+///     harvest_position_instructions, set_whirlpools_config_address, HarvestPositionConfig,
+///     WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -99,7 +109,12 @@ pub struct HarvestPositionInstruction {
 ///     let position_mint_address =
 ///         Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///
-///     let result = harvest_position_instructions(&rpc, position_mint_address, Some(wallet.pubkey()))
+///     let config = HarvestPositionConfig {
+///         position_mint_address,
+///         authority: Some(wallet.pubkey()),
+///         program_id: None,
+///     };
+///     let result = harvest_position_instructions(&rpc, config)
 ///         .await
 ///         .unwrap();
 ///
@@ -110,15 +125,15 @@ pub struct HarvestPositionInstruction {
 /// ```
 pub async fn harvest_position_instructions(
     rpc: &RpcClient,
-    position_mint_address: Pubkey,
-    authority: Option<Pubkey>,
+    config: HarvestPositionConfig<'_>,
 ) -> Result<HarvestPositionInstruction, Box<dyn Error>> {
-    let authority = authority.unwrap_or(*FUNDER.try_lock()?);
+    let authority = config.authority.unwrap_or(*FUNDER.try_lock()?);
     if authority == Pubkey::default() {
         return Err("Authority must be provided".into());
     }
 
-    let position_address = get_position_address(&position_mint_address)?.0;
+    let position_address =
+        get_position_address(&config.position_mint_address, config.program_id)?.0;
     let position_info = rpc.get_account(&position_address).await?;
     let position = Position::from_bytes(&position_info.data)?;
 
@@ -129,7 +144,7 @@ pub async fn harvest_position_instructions(
         .get_multiple_accounts(&[
             pool.token_mint_a,
             pool.token_mint_b,
-            position_mint_address,
+            config.position_mint_address,
             pool.reward_infos[0].mint,
             pool.reward_infos[1].mint,
             pool.reward_infos[2].mint,
@@ -170,13 +185,21 @@ pub async fn harvest_position_instructions(
 
     let position_token_account_address = get_associated_token_address_with_program_id(
         &authority,
-        &position_mint_address,
+        &config.position_mint_address,
         &position_mint_info.owner,
     );
-    let lower_tick_array_address =
-        get_tick_array_address(&position.whirlpool, lower_tick_array_start_index)?.0;
-    let upper_tick_array_address =
-        get_tick_array_address(&position.whirlpool, upper_tick_array_start_index)?.0;
+    let lower_tick_array_address = get_tick_array_address(
+        &position.whirlpool,
+        lower_tick_array_start_index,
+        config.program_id,
+    )?
+    .0;
+    let upper_tick_array_address = get_tick_array_address(
+        &position.whirlpool,
+        upper_tick_array_start_index,
+        config.program_id,
+    )?
+    .0;
 
     let tick_array_infos = rpc
         .get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])
@@ -248,15 +271,19 @@ pub async fn harvest_position_instructions(
     instructions.extend(token_accounts.create_instructions);
 
     if position.liquidity > 0 {
-        instructions.push(
-            UpdateFeesAndRewards {
-                whirlpool: position.whirlpool,
-                position: position_address,
-                tick_array_lower: lower_tick_array_address,
-                tick_array_upper: upper_tick_array_address,
-            }
-            .instruction(),
-        );
+        let mut update_fees_and_rewards_ix = UpdateFeesAndRewards {
+            whirlpool: position.whirlpool,
+            position: position_address,
+            tick_array_lower: lower_tick_array_address,
+            tick_array_upper: upper_tick_array_address,
+        }
+        .instruction();
+
+        if let Some(pid) = config.program_id {
+            update_fees_and_rewards_ix.program_id = *pid;
+        };
+
+        instructions.push(update_fees_and_rewards_ix);
     }
 
     if fees_quote.fee_owed_a > 0 || fees_quote.fee_owed_b > 0 {
@@ -269,26 +296,30 @@ pub async fn harvest_position_instructions(
             .get(&pool.token_mint_b)
             .ok_or("Token B owner account not found")?;
 
-        instructions.push(
-            CollectFeesV2 {
-                whirlpool: position.whirlpool,
-                position_authority: authority,
-                position: position_address,
-                position_token_account: position_token_account_address,
-                token_owner_account_a: *token_owner_account_a,
-                token_owner_account_b: *token_owner_account_b,
-                token_vault_a: pool.token_vault_a,
-                token_vault_b: pool.token_vault_b,
-                token_mint_a: pool.token_mint_a,
-                token_mint_b: pool.token_mint_b,
-                token_program_a: mint_a_info.owner,
-                token_program_b: mint_b_info.owner,
-                memo_program: spl_memo_interface::v3::ID,
-            }
-            .instruction(CollectFeesV2InstructionArgs {
-                remaining_accounts_info: None,
-            }),
-        );
+        let mut collect_fees_v2_ix = CollectFeesV2 {
+            whirlpool: position.whirlpool,
+            position_authority: authority,
+            position: position_address,
+            position_token_account: position_token_account_address,
+            token_owner_account_a: *token_owner_account_a,
+            token_owner_account_b: *token_owner_account_b,
+            token_vault_a: pool.token_vault_a,
+            token_vault_b: pool.token_vault_b,
+            token_mint_a: pool.token_mint_a,
+            token_mint_b: pool.token_mint_b,
+            token_program_a: mint_a_info.owner,
+            token_program_b: mint_b_info.owner,
+            memo_program: spl_memo_interface::v3::ID,
+        }
+        .instruction(CollectFeesV2InstructionArgs {
+            remaining_accounts_info: None,
+        });
+
+        if let Some(pid) = config.program_id {
+            collect_fees_v2_ix.program_id = *pid;
+        };
+
+        instructions.push(collect_fees_v2_ix);
     }
 
     for (i, _) in reward_infos.iter().enumerate().take(3) {
@@ -302,23 +333,28 @@ pub async fn harvest_position_instructions(
             .token_account_addresses
             .get(&pool.reward_infos[i].mint)
             .ok_or("Reward owner account not found")?;
-        instructions.push(
-            CollectRewardV2 {
-                whirlpool: position.whirlpool,
-                position_authority: authority,
-                position: position_address,
-                position_token_account: position_token_account_address,
-                reward_owner_account: *reward_owner,
-                reward_vault: pool.reward_infos[i].vault,
-                reward_mint: pool.reward_infos[i].mint,
-                reward_token_program: reward_info.owner,
-                memo_program: spl_memo_interface::v3::ID,
-            }
-            .instruction(CollectRewardV2InstructionArgs {
-                reward_index: i as u8,
-                remaining_accounts_info: None,
-            }),
-        );
+
+        let mut collect_reward_v2_ix = CollectRewardV2 {
+            whirlpool: position.whirlpool,
+            position_authority: authority,
+            position: position_address,
+            position_token_account: position_token_account_address,
+            reward_owner_account: *reward_owner,
+            reward_vault: pool.reward_infos[i].vault,
+            reward_mint: pool.reward_infos[i].mint,
+            reward_token_program: reward_info.owner,
+            memo_program: spl_memo_interface::v3::ID,
+        }
+        .instruction(CollectRewardV2InstructionArgs {
+            reward_index: i as u8,
+            remaining_accounts_info: None,
+        });
+
+        if let Some(pid) = config.program_id {
+            collect_reward_v2_ix.program_id = *pid;
+        };
+
+        instructions.push(collect_reward_v2_ix);
     }
 
     instructions.extend(token_accounts.cleanup_instructions);
@@ -357,7 +393,8 @@ mod tests {
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
-        HarvestPositionInstruction, IncreaseLiquidityParam, SwapType,
+        HarvestPositionConfig, HarvestPositionInstruction, IncreaseLiquidityConfig,
+        IncreaseLiquidityParam, SwapConfig, SwapType,
     };
 
     async fn fetch_position(
@@ -414,7 +451,7 @@ mod tests {
             fees_quote.fee_owed_b
         );
 
-        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_pubkey = get_position_address(&position_mint, None)?.0;
         let _position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
 
         Ok(())
@@ -545,13 +582,16 @@ mod tests {
 
             let inc_liq_ix = increase_liquidity_instructions(
                 &ctx.rpc,
-                position_mint,
-                IncreaseLiquidityParam {
-                    token_max_a: 50_000,
-                    token_max_b: 50_000,
+                IncreaseLiquidityConfig {
+                    position_mint_address: position_mint,
+                    param: IncreaseLiquidityParam {
+                        token_max_a: 50_000,
+                        token_max_b: 50_000,
+                    },
+                    slippage_tolerance_bps: Some(100),
+                    authority: Some(ctx.signer.pubkey()),
+                    program_id: None,
                 },
-                Some(100),
-                Some(ctx.signer.pubkey()),
             )
             .await
             .unwrap();
@@ -565,12 +605,15 @@ mod tests {
 
             let swap_ix = swap_instructions(
                 &ctx.rpc,
-                pool_pubkey,
-                10,
-                swap_input_mint,
-                SwapType::ExactIn,
-                Some(100), // 1% slippage
-                Some(ctx.signer.pubkey()),
+                SwapConfig {
+                    whirlpool_address: pool_pubkey,
+                    amount: 10,
+                    specified_mint: swap_input_mint,
+                    swap_type: SwapType::ExactIn,
+                    slippage_tolerance_bps: Some(100),
+                    signer: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await
             .unwrap();
@@ -581,10 +624,15 @@ mod tests {
             .await
             .unwrap();
 
-            let harvest_ix =
-                harvest_position_instructions(&ctx.rpc, position_mint, Some(ctx.signer.pubkey()))
-                    .await
-                    .unwrap();
+            let config = HarvestPositionConfig {
+                position_mint_address: position_mint,
+                authority: Some(ctx.signer.pubkey()),
+                program_id: None,
+            };
+
+            let harvest_ix = harvest_position_instructions(&ctx.rpc, config)
+                .await
+                .unwrap();
 
             let ata_a = if swapped {
                 user_atas.get(mint_b_key).unwrap()

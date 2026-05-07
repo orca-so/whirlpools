@@ -27,9 +27,10 @@ use crate::{
 /// Represents the type of a swap operation.
 ///
 /// This enum is used to specify whether the swap is an exact input or exact output type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum SwapType {
     /// Indicates a swap where the input token amount is specified.
+    #[default]
     ExactIn,
 
     /// Indicates a swap where the output token amount is specified.
@@ -78,6 +79,7 @@ async fn fetch_tick_arrays_or_default(
     rpc: &RpcClient,
     whirlpool_address: Pubkey,
     whirlpool: &Whirlpool,
+    program_id: Option<&Pubkey>,
 ) -> Result<[(Pubkey, TickArrayFacade); 5], Box<dyn Error>> {
     let tick_array_start_index =
         get_tick_array_start_tick_index(whirlpool.tick_current_index, whirlpool.tick_spacing);
@@ -93,7 +95,7 @@ async fn fetch_tick_arrays_or_default(
 
     let tick_array_addresses: Vec<Pubkey> = tick_array_indexes
         .iter()
-        .map(|&x| get_tick_array_address(&whirlpool_address, x).map(|y| y.0))
+        .map(|&x| get_tick_array_address(&whirlpool_address, x, program_id).map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let tick_array_infos = rpc.get_multiple_accounts(&tick_array_addresses).await?;
@@ -131,6 +133,25 @@ async fn fetch_oracle(
     Ok(Some(Oracle::from_bytes(&oracle_info.data)?))
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct SwapConfig<'a> {
+    /// The public key of the Whirlpool against which the swap will be executed.
+    pub whirlpool_address: Pubkey,
+    /// The token amount specified for the swap. For `SwapType::ExactIn`, this is the input token amount.
+    /// For `SwapType::ExactOut`, this is the output token amount.
+    pub amount: u64,
+    /// The public key of the token mint being swapped.
+    pub specified_mint: Pubkey,
+    /// The type of swap (`SwapType::ExactIn` or `SwapType::ExactOut`).
+    pub swap_type: SwapType,
+    /// An optional slippage tolerance, in basis points (BPS). Defaults to the global setting if not provided.
+    pub slippage_tolerance_bps: Option<u16>,
+    /// An optional public key of the wallet or account executing the swap. Defaults to the global funder if not provided.
+    pub signer: Option<Pubkey>,
+    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+    pub program_id: Option<&'a Pubkey>,
+}
+
 /// Generates the instructions necessary to execute a token swap.
 ///
 /// This function generates instructions for executing swaps, supporting both exact input and exact output scenarios.
@@ -139,13 +160,7 @@ async fn fetch_oracle(
 /// # Arguments
 ///
 /// * `rpc` - A reference to the Solana RPC client for fetching accounts and interacting with the blockchain.
-/// * `whirlpool_address` - The public key of the Whirlpool against which the swap will be executed.
-/// * `amount` - The token amount specified for the swap. For `SwapType::ExactIn`, this is the input token amount.
-///   For `SwapType::ExactOut`, this is the output token amount.
-/// * `specified_mint` - The public key of the token mint being swapped.
-/// * `swap_type` - The type of swap (`SwapType::ExactIn` or `SwapType::ExactOut`).
-/// * `slippage_tolerance_bps` - An optional slippage tolerance, in basis points (BPS). Defaults to the global setting if not provided.
-/// * `signer` - An optional public key of the wallet or account executing the swap. Defaults to the global funder if not provided.
+/// * `config` - The parameters to build the swap instruction.
 ///
 /// # Returns
 ///
@@ -166,7 +181,8 @@ async fn fetch_oracle(
 /// ```rust
 /// use crate::utils::load_wallet;
 /// use orca_whirlpools::{
-///     set_whirlpools_config_address, swap_instructions, SwapType, WhirlpoolsConfigInput,
+///     set_whirlpools_config_address, swap_instructions, SwapConfig, SwapType,
+///     WhirlpoolsConfigInput,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -180,19 +196,19 @@ async fn fetch_oracle(
 ///     let whirlpool_address =
 ///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 ///     let mint_address = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap();
-///     let input_amount = 1_000_000;
 ///
-///     let result = swap_instructions(
-///         &rpc,
+///     let config = SwapConfig {
 ///         whirlpool_address,
-///         input_amount,
-///         mint_address,
-///         SwapType::ExactIn,
-///         Some(100),
-///         Some(wallet.pubkey()),
-///     )
-///     .await
-///     .unwrap();
+///         amount: 1_000_000,
+///         specified_mint: mint_address,
+///         swap_type: SwapType::ExactIn,
+///         slippage_tolerance_bps: Some(100),
+///         signer: Some(wallet.pubkey()),
+///         program_id: None,
+///     };
+///     let result = swap_instructions(&rpc, config)
+///         .await
+///         .unwrap();
 ///
 ///     println!("Quote estimated token out: {:?}", result.quote);
 ///     println!("Number of Instructions: {}", result.instructions.len());
@@ -200,27 +216,25 @@ async fn fetch_oracle(
 /// ```
 pub async fn swap_instructions(
     rpc: &RpcClient,
-    whirlpool_address: Pubkey,
-    amount: u64,
-    specified_mint: Pubkey,
-    swap_type: SwapType,
-    slippage_tolerance_bps: Option<u16>,
-    signer: Option<Pubkey>,
+    config: SwapConfig<'_>,
 ) -> Result<SwapInstructions, Box<dyn Error>> {
-    let slippage_tolerance_bps =
-        slippage_tolerance_bps.unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
-    let signer = signer.unwrap_or(*FUNDER.try_lock()?);
+    let slippage_tolerance_bps = config
+        .slippage_tolerance_bps
+        .unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
+    let signer = config.signer.unwrap_or(*FUNDER.try_lock()?);
     if signer == Pubkey::default() {
         return Err("Signer must be provided".into());
     }
 
-    let whirlpool_info = rpc.get_account(&whirlpool_address).await?;
+    let whirlpool_info = rpc.get_account(&config.whirlpool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
-    let specified_input = swap_type == SwapType::ExactIn;
-    let specified_token_a = specified_mint == whirlpool.token_mint_a;
+    let specified_input = config.swap_type == SwapType::ExactIn;
+    let specified_token_a = config.specified_mint == whirlpool.token_mint_a;
     let a_to_b = specified_token_a == specified_input;
 
-    let tick_arrays = fetch_tick_arrays_or_default(rpc, whirlpool_address, &whirlpool).await?;
+    let tick_arrays =
+        fetch_tick_arrays_or_default(rpc, config.whirlpool_address, &whirlpool, config.program_id)
+            .await?;
 
     let mint_infos = rpc
         .get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])
@@ -234,7 +248,7 @@ pub async fn swap_instructions(
         .as_ref()
         .ok_or(format!("Mint b not found: {}", whirlpool.token_mint_b))?;
 
-    let oracle_address = get_oracle_address(&whirlpool_address)?.0;
+    let oracle_address = get_oracle_address(&config.whirlpool_address, config.program_id)?.0;
     let oracle = fetch_oracle(rpc, oracle_address, &whirlpool).await?;
 
     let current_epoch = rpc.get_epoch_info().await?.epoch;
@@ -250,9 +264,9 @@ pub async fn swap_instructions(
         .map(|x| x.trade_enable_timestamp)
         .unwrap_or(0);
 
-    let quote = match swap_type {
+    let quote = match config.swap_type {
         SwapType::ExactIn => SwapQuote::ExactIn(swap_quote_by_input_token(
-            amount,
+            config.amount,
             specified_token_a,
             slippage_tolerance_bps,
             whirlpool.clone().into(),
@@ -263,7 +277,7 @@ pub async fn swap_instructions(
             transfer_fee_b,
         )?),
         SwapType::ExactOut => SwapQuote::ExactOut(swap_quote_by_output_token(
-            amount,
+            config.amount,
             specified_token_a,
             slippage_tolerance_bps,
             whirlpool.clone().into(),
@@ -311,12 +325,12 @@ pub async fn swap_instructions(
         .get(&whirlpool.token_mint_b)
         .ok_or("Token B owner account not found")?;
 
-    let swap_instruction = SwapV2 {
+    let mut swap_instruction = SwapV2 {
         token_program_a: mint_a_info.owner,
         token_program_b: mint_b_info.owner,
         memo_program: spl_memo_interface::v3::ID,
         token_authority: signer,
-        whirlpool: whirlpool_address,
+        whirlpool: config.whirlpool_address,
         token_mint_a: whirlpool.token_mint_a,
         token_mint_b: whirlpool.token_mint_b,
         token_owner_account_a: *token_owner_account_a,
@@ -330,7 +344,7 @@ pub async fn swap_instructions(
     }
     .instruction_with_remaining_accounts(
         SwapV2InstructionArgs {
-            amount,
+            amount: config.amount,
             other_amount_threshold,
             sqrt_price_limit: 0,
             amount_specified_is_input: specified_input,
@@ -347,6 +361,10 @@ pub async fn swap_instructions(
             AccountMeta::new(tick_arrays[4].0, false),
         ],
     );
+
+    if let Some(pid) = config.program_id {
+        swap_instruction.program_id = *pid;
+    };
 
     instructions.push(swap_instruction);
     instructions.extend(token_accounts.cleanup_instructions);
@@ -383,7 +401,8 @@ mod tests {
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
-        IncreaseLiquidityParam, SwapInstructions, SwapQuote, SwapType,
+        IncreaseLiquidityConfig, IncreaseLiquidityParam, SwapConfig, SwapInstructions, SwapQuote,
+        SwapType,
     };
 
     async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
@@ -571,13 +590,16 @@ mod tests {
 
             let liq_ix = increase_liquidity_instructions(
                 &ctx.rpc,
-                position_mint,
-                IncreaseLiquidityParam {
-                    token_max_a: 1_000_000,
-                    token_max_b: 1_000_000,
+                IncreaseLiquidityConfig {
+                    position_mint_address: position_mint,
+                    param: IncreaseLiquidityParam {
+                        token_max_a: 1_000_000,
+                        token_max_b: 1_000_000,
+                    },
+                    slippage_tolerance_bps: Some(100),
+                    authority: Some(ctx.signer.pubkey()),
+                    program_id: None,
                 },
-                Some(100), // 1% slippage
-                Some(ctx.signer.pubkey()),
             )
             .await
             .unwrap();
@@ -618,12 +640,15 @@ mod tests {
 
             let swap_ix = swap_instructions(
                 &ctx.rpc,
-                pool_pubkey,
-                amount,
-                token_for_this_call,
-                swap_type.clone(),
-                Some(100), // slippage
-                Some(ctx.signer.pubkey()),
+                SwapConfig {
+                    whirlpool_address: pool_pubkey,
+                    amount,
+                    specified_mint: token_for_this_call,
+                    swap_type: swap_type.clone(),
+                    slippage_tolerance_bps: Some(100),
+                    signer: Some(ctx.signer.pubkey()),
+                    program_id: None,
+                },
             )
             .await
             .unwrap();

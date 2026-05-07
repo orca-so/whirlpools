@@ -73,7 +73,7 @@ pub fn set_whirlpools_config_address(input: WhirlpoolsConfigInput) -> Result<(),
     let address: Pubkey = input.into();
     *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = address;
     *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
-        get_whirlpools_config_extension_address(&address)?.0;
+        get_whirlpools_config_extension_address(&address, None)?.0;
     Ok(())
 }
 

@@ -13,7 +13,10 @@ use crate::{
     harvest_position_instructions, increase_liquidity_instructions,
     open_full_range_position_instructions, swap_instructions,
     tests::{setup_ata_with_amount, setup_mint_with_decimals, RpcContext},
-    DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING,
+    ClosePositionConfig, CreateConcentratedLiquidityPoolConfig, CreateSplashPoolConfig,
+    DecreaseLiquidityConfig, DecreaseLiquidityParam, HarvestPositionConfig,
+    IncreaseLiquidityConfig, IncreaseLiquidityParam, OpenFullRangePositionConfig, SwapConfig,
+    SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING,
 };
 
 struct TestContext {
@@ -43,10 +46,13 @@ impl TestContext {
     pub async fn init_splash_pool(&self) -> Result<Pubkey, Box<dyn Error>> {
         let splash_pool = create_splash_pool_instructions(
             &self.ctx.rpc,
-            self.mint_a,
-            self.mint_b,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            CreateSplashPoolConfig {
+                token_a: self.mint_a,
+                token_b: self.mint_b,
+                initial_price: None,
+                funder: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -68,11 +74,14 @@ impl TestContext {
     pub async fn init_concentrated_liquidity_pool(&self) -> Result<Pubkey, Box<dyn Error>> {
         let cl_pool = create_concentrated_liquidity_pool_instructions(
             &self.ctx.rpc,
-            self.mint_a,
-            self.mint_b,
-            128,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            CreateConcentratedLiquidityPoolConfig {
+                token_a: self.mint_a,
+                token_b: self.mint_b,
+                tick_spacing: 128,
+                initial_price: None,
+                funder: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -106,10 +115,13 @@ impl TestContext {
         };
         let position = open_full_range_position_instructions(
             &self.ctx.rpc,
-            pool,
-            param,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            OpenFullRangePositionConfig {
+                pool_address: pool,
+                param,
+                slippage_tolerance_bps: None,
+                funder: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
 
@@ -120,7 +132,7 @@ impl TestContext {
             )
             .await?;
 
-        let position_address = get_position_address(&position.position_mint)?.0;
+        let position_address = get_position_address(&position.position_mint, None)?.0;
         let infos_after = &self
             .ctx
             .rpc
@@ -142,7 +154,7 @@ impl TestContext {
     }
 
     pub async fn increase_liquidity(&self, position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
-        let position_address = get_position_address(&position_mint)?.0;
+        let position_address = get_position_address(&position_mint, None)?.0;
         let infos_before = &self
             .ctx
             .rpc
@@ -158,10 +170,13 @@ impl TestContext {
         };
         let increase_liquidity = increase_liquidity_instructions(
             &self.ctx.rpc,
-            position_mint,
-            param,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            IncreaseLiquidityConfig {
+                position_mint_address: position_mint,
+                param,
+                slippage_tolerance_bps: None,
+                authority: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -189,7 +204,7 @@ impl TestContext {
     }
 
     pub async fn decrease_liquidity(&self, position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
-        let position_address = get_position_address(&position_mint)?.0;
+        let position_address = get_position_address(&position_mint, None)?.0;
         let infos_before = &self
             .ctx
             .rpc
@@ -201,11 +216,13 @@ impl TestContext {
 
         let decrease_liquidity = decrease_liquidity_instructions(
             &self.ctx.rpc,
-            position_mint,
-            DecreaseLiquidityParam::Liquidity(10000),
-            None,
-            Some(self.ctx.signer.pubkey()),
-            None,
+            DecreaseLiquidityConfig {
+                position_mint_address: position_mint,
+                param: DecreaseLiquidityParam::Liquidity(10000),
+                slippage_tolerance_bps: None,
+                authority: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -250,8 +267,11 @@ impl TestContext {
 
         let harvest_position = harvest_position_instructions(
             &self.ctx.rpc,
-            position_mint,
-            Some(self.ctx.signer.pubkey()),
+            HarvestPositionConfig {
+                position_mint_address: position_mint,
+                authority: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -291,9 +311,12 @@ impl TestContext {
 
         let close_position = close_position_instructions(
             &self.ctx.rpc,
-            position_mint,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            ClosePositionConfig {
+                position_mint_address: position_mint,
+                slippage_tolerance_bps: None,
+                authority: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -303,7 +326,7 @@ impl TestContext {
             )
             .await?;
 
-        let position_address = get_position_address(&position_mint)?.0;
+        let position_address = get_position_address(&position_mint, None)?.0;
         let after_infos = &self
             .ctx
             .rpc
@@ -335,12 +358,15 @@ impl TestContext {
 
         let swap = swap_instructions(
             &self.ctx.rpc,
-            pool,
-            100000,
-            self.mint_a,
-            SwapType::ExactIn,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            SwapConfig {
+                whirlpool_address: pool,
+                amount: 100000,
+                specified_mint: self.mint_a,
+                swap_type: SwapType::ExactIn,
+                slippage_tolerance_bps: None,
+                signer: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -382,12 +408,15 @@ impl TestContext {
 
         let swap = swap_instructions(
             &self.ctx.rpc,
-            pool,
-            100000,
-            self.mint_a,
-            SwapType::ExactOut,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            SwapConfig {
+                whirlpool_address: pool,
+                amount: 100000,
+                specified_mint: self.mint_a,
+                swap_type: SwapType::ExactOut,
+                slippage_tolerance_bps: None,
+                signer: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -432,12 +461,15 @@ impl TestContext {
 
         let swap = swap_instructions(
             &self.ctx.rpc,
-            pool,
-            100,
-            self.mint_b,
-            SwapType::ExactIn,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            SwapConfig {
+                whirlpool_address: pool,
+                amount: 100,
+                specified_mint: self.mint_b,
+                swap_type: SwapType::ExactIn,
+                slippage_tolerance_bps: None,
+                signer: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx
@@ -479,12 +511,15 @@ impl TestContext {
 
         let swap = swap_instructions(
             &self.ctx.rpc,
-            pool,
-            100,
-            self.mint_b,
-            SwapType::ExactOut,
-            None,
-            Some(self.ctx.signer.pubkey()),
+            SwapConfig {
+                whirlpool_address: pool,
+                amount: 100,
+                specified_mint: self.mint_b,
+                swap_type: SwapType::ExactOut,
+                slippage_tolerance_bps: None,
+                signer: Some(self.ctx.signer.pubkey()),
+                program_id: None,
+            },
         )
         .await?;
         self.ctx

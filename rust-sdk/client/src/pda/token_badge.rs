@@ -2,9 +2,11 @@ use crate::generated::programs::WHIRLPOOL_ID;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
+/// A program_id of None resolves to the original whirlpool program id ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
 pub fn get_token_badge_address(
     whirlpools_config: &Pubkey,
     token_mint: &Pubkey,
+    program_id: Option<&Pubkey>,
 ) -> Result<(Pubkey, u8), ProgramError> {
     let seeds = &[
         b"token_badge",
@@ -12,7 +14,8 @@ pub fn get_token_badge_address(
         token_mint.as_ref(),
     ];
 
-    Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, program_id.unwrap_or(&WHIRLPOOL_ID))
+        .ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
@@ -26,7 +29,7 @@ mod tests {
             Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
         let token_mint = Pubkey::from_str("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo").unwrap();
         let token_badge = Pubkey::from_str("HX5iftnCxhtu11ys3ZuWbvUqo7cyPYaVNZBrLL67Hrbm").unwrap();
-        let (address, _) = get_token_badge_address(&whirlpools_config, &token_mint).unwrap();
+        let (address, _) = get_token_badge_address(&whirlpools_config, &token_mint, None).unwrap();
         assert_eq!(address, token_badge);
     }
 }

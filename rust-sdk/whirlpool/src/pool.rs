@@ -206,9 +206,14 @@ pub async fn fetch_concentrated_liquidity_pool(
 ) -> Result<PoolInfo, Box<dyn Error>> {
     let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let [token_a, token_b] = order_mints(token_1, token_2);
-    let whirlpool_address =
-        get_whirlpool_address(&whirlpools_config_address, &token_a, &token_b, tick_spacing, None)?
-            .0;
+    let whirlpool_address = get_whirlpool_address(
+        &whirlpools_config_address,
+        &token_a,
+        &token_b,
+        tick_spacing,
+        None,
+    )?
+    .0;
 
     let fee_tier_address = get_fee_tier_address(&whirlpools_config_address, tick_spacing, None)?;
 

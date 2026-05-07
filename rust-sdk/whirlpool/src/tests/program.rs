@@ -308,8 +308,7 @@ pub async fn setup_te_position(
 
     let te_position_mint = ctx.get_next_keypair();
 
-    let (position_pubkey, _position_bump) =
-        get_position_address(&te_position_mint.pubkey(), None)?;
+    let (position_pubkey, _position_bump) = get_position_address(&te_position_mint.pubkey(), None)?;
 
     let te_position_token_account = get_associated_token_address_with_program_id(
         &owner,

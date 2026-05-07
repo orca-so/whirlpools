@@ -258,15 +258,26 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     )?
     .0;
 
-    let fee_tier =
-        get_fee_tier_address(&whirlpools_config_address, config.tick_spacing, config.program_id)?
-            .0;
+    let fee_tier = get_fee_tier_address(
+        &whirlpools_config_address,
+        config.tick_spacing,
+        config.program_id,
+    )?
+    .0;
 
-    let token_badge_a =
-        get_token_badge_address(&whirlpools_config_address, &config.token_a, config.program_id)?.0;
+    let token_badge_a = get_token_badge_address(
+        &whirlpools_config_address,
+        &config.token_a,
+        config.program_id,
+    )?
+    .0;
 
-    let token_badge_b =
-        get_token_badge_address(&whirlpools_config_address, &config.token_b, config.program_id)?.0;
+    let token_badge_b = get_token_badge_address(
+        &whirlpools_config_address,
+        &config.token_b,
+        config.program_id,
+    )?
+    .0;
 
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();

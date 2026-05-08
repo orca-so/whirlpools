@@ -118,7 +118,7 @@ pub fn fetch_all_maybe_lock_config(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for LockConfig {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        unimplemented!("fetch account via rpc to determine owner")
       }
   }
 

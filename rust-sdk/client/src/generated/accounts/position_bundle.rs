@@ -112,7 +112,7 @@ pub fn fetch_all_maybe_position_bundle(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for PositionBundle {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        unimplemented!("fetch account via rpc to determine owner")
       }
   }
 

@@ -115,7 +115,7 @@ pub fn fetch_all_maybe_whirlpools_config_extension(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for WhirlpoolsConfigExtension {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        unimplemented!("fetch account via rpc to determine owner")
       }
   }
 

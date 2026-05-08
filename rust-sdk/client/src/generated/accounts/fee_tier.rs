@@ -113,7 +113,7 @@ pub fn fetch_all_maybe_fee_tier(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for FeeTier {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        unimplemented!("fetch account via rpc to determine owner")
       }
   }
 

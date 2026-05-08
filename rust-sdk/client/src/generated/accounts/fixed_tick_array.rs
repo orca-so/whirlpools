@@ -115,7 +115,7 @@ pub fn fetch_all_maybe_fixed_tick_array(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for FixedTickArray {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        unimplemented!("fetch account via rpc to determine owner")
       }
   }
 

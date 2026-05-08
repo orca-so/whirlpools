@@ -114,7 +114,7 @@ pub fn fetch_all_maybe_token_badge(
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for TokenBadge {
       fn owner() -> Pubkey {
-        crate::WHIRLPOOL_ID
+        unimplemented!("fetch account via rpc to determine owner")
       }
   }
 

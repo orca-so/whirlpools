@@ -948,7 +948,11 @@ mod tests {
         )?;
         let liquidity_a = quote_a.liquidity_delta;
         let liquidity_b = quote_b.liquidity_delta;
-        let quote = if liquidity_b == 0 || liquidity_a <= liquidity_b {
+        let quote = if liquidity_a == 0 {
+            quote_b
+        } else if liquidity_b == 0 {
+            quote_a
+        } else if liquidity_a <= liquidity_b {
             quote_a
         } else {
             quote_b

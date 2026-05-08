@@ -7,7 +7,8 @@ use crate::{
 };
 use colored::Colorize;
 use orca_whirlpools::{
-    close_position_instructions, open_position_instructions, IncreaseLiquidityParam,
+    close_position_instructions, open_position_instructions, ClosePositionConfig,
+    IncreaseLiquidityParam, OpenPositionConfig,
 };
 use orca_whirlpools_client::{get_position_address, Position};
 use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price};
@@ -72,9 +73,12 @@ pub async fn run_position_manager(
 
         let close_position_instructions = close_position_instructions(
             rpc,
-            position.position_mint,
-            Some(args.slippage_tolerance_bps),
-            None,
+            ClosePositionConfig {
+                position_mint_address: position.position_mint,
+                slippage_tolerance_bps: Some(args.slippage_tolerance_bps),
+                authority: None,
+                program_id: None,
+            },
         )
         .await
         .map_err(|_| "Failed to generate close position instructions.")?;
@@ -97,12 +101,15 @@ pub async fn run_position_manager(
 
         let open_position_instructions = open_position_instructions(
             rpc,
-            whirlpool_address,
-            new_lower_price,
-            new_upper_price,
-            param,
-            Some(args.slippage_tolerance_bps),
-            None,
+            OpenPositionConfig {
+                pool_address: whirlpool_address,
+                lower_price: new_lower_price,
+                upper_price: new_upper_price,
+                param,
+                slippage_tolerance_bps: Some(args.slippage_tolerance_bps),
+                funder: None,
+                program_id: None,
+            },
         )
         .await
         .map_err(|_| "Failed to generate open position instructions.")?;
@@ -140,7 +147,7 @@ pub async fn run_position_manager(
 
         let position_mint_address = open_position_instructions.position_mint;
         println!("New position mint address: {}", position_mint_address);
-        let (position_address, _) = get_position_address(&position_mint_address)
+        let (position_address, _) = get_position_address(&position_mint_address, None)
             .map_err(|_| "Failed to derive new position address.")?;
         *position = fetch_position(rpc, &position_address)
             .await

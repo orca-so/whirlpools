@@ -7,7 +7,7 @@ use clap::Parser;
 use cli::Args;
 use colored::Colorize;
 use dotenv::dotenv;
-use orca_whirlpools::{set_funder, set_whirlpools_config_address, WhirlpoolsConfigInput};
+use orca_whirlpools::set_funder;
 use orca_whirlpools_client::get_position_address;
 use position_manager::run_position_manager;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -25,8 +25,6 @@ async fn main() {
     dotenv().ok();
     let rpc_url = env::var("RPC_URL").unwrap();
     let rpc = RpcClient::new(rpc_url.to_string());
-    set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet)
-        .expect("Failed to set Whirlpools config address for specified network.");
     let wallet = wallet::load_wallet();
     set_funder(wallet.pubkey()).expect("Failed to set funder address.");
 
@@ -47,8 +45,8 @@ async fn main() {
 
     println!("-------------------------------------\n");
 
-    let (position_address, _) =
-        get_position_address(&position_mint_address).expect("Failed to derive position address.");
+    let (position_address, _) = get_position_address(&position_mint_address, None)
+        .expect("Failed to derive position address.");
     let mut position = fetch_position(&rpc, &position_address)
         .await
         .expect("Failed to fetch position data.");

@@ -180,17 +180,13 @@ pub struct SwapConfig<'a> {
 ///
 /// ```rust
 /// use crate::utils::load_wallet;
-/// use orca_whirlpools::{
-///     set_whirlpools_config_address, swap_instructions, SwapConfig, SwapType,
-///     WhirlpoolsConfigInput,
-/// };
+/// use orca_whirlpools::{swap_instructions, SwapConfig, SwapType};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
 ///     let whirlpool_address =

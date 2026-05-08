@@ -51,6 +51,7 @@ struct GetIncreaseLiquidityInstructionsParams<'a> {
     param: &'a IncreaseLiquidityParam,
     authority: Pubkey,
     slippage_tolerance_bps: u16,
+    program_id: Option<&'a Pubkey>,
 }
 
 struct GetIncreaseLiquidityInstructionsResult {
@@ -94,7 +95,7 @@ async fn get_increase_liquidity_instructions(
     let min_sqrt_price = bounds.min_sqrt_price;
     let max_sqrt_price = bounds.max_sqrt_price;
 
-    let increase_liquidity_instruction = IncreaseLiquidityByTokenAmountsV2 {
+    let mut increase_liquidity_instruction = IncreaseLiquidityByTokenAmountsV2 {
         whirlpool: params.whirlpool_address,
         token_program_a: params.mint_a_info.owner,
         token_program_b: params.mint_b_info.owner,
@@ -120,6 +121,10 @@ async fn get_increase_liquidity_instructions(
         },
         remaining_accounts_info: None,
     });
+
+    if let Some(pid) = params.program_id {
+        increase_liquidity_instruction.program_id = *pid;
+    }
 
     Ok(GetIncreaseLiquidityInstructionsResult {
         token_accounts,
@@ -183,8 +188,7 @@ pub struct IncreaseLiquidityConfig<'a> {
 ///
 /// ```rust
 /// use orca_whirlpools::{
-///     increase_liquidity_instructions, set_whirlpools_config_address,
-///     IncreaseLiquidityConfig, IncreaseLiquidityParam, WhirlpoolsConfigInput,
+///     increase_liquidity_instructions, IncreaseLiquidityConfig, IncreaseLiquidityParam,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -193,7 +197,6 @@ pub struct IncreaseLiquidityConfig<'a> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
 ///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
@@ -276,7 +279,7 @@ pub async fn increase_liquidity_instructions(
 
     let GetIncreaseLiquidityInstructionsResult {
         token_accounts,
-        mut increase_liquidity_instruction,
+        increase_liquidity_instruction,
     } = get_increase_liquidity_instructions(
         rpc,
         GetIncreaseLiquidityInstructionsParams {
@@ -291,13 +294,10 @@ pub async fn increase_liquidity_instructions(
             authority,
             slippage_tolerance_bps,
             param: &config.param,
+            program_id: config.program_id,
         },
     )
     .await?;
-
-    if let Some(pid) = config.program_id {
-        increase_liquidity_instruction.program_id = *pid;
-    };
 
     let mut instructions: Vec<Instruction> = Vec::new();
     instructions.extend(token_accounts.create_instructions);
@@ -390,7 +390,7 @@ async fn internal_open_position(
 
     let GetIncreaseLiquidityInstructionsResult {
         token_accounts,
-        mut increase_liquidity_instruction,
+        increase_liquidity_instruction,
     } = get_increase_liquidity_instructions(
         rpc,
         GetIncreaseLiquidityInstructionsParams {
@@ -405,13 +405,10 @@ async fn internal_open_position(
             authority: funder,
             slippage_tolerance_bps,
             param: &param,
+            program_id,
         },
     )
     .await?;
-
-    if let Some(pid) = program_id {
-        increase_liquidity_instruction.program_id = *pid;
-    };
 
     instructions.extend(token_accounts.create_instructions);
     additional_signers.extend(token_accounts.additional_signers);
@@ -546,7 +543,6 @@ pub struct OpenFullRangePositionConfig<'a> {
 /// };
 /// use std::str::FromStr;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 ///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
@@ -653,7 +649,6 @@ pub struct OpenPositionConfig<'a> {
 /// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam, OpenPositionConfig};
 /// use std::str::FromStr;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 ///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
@@ -781,7 +776,6 @@ pub struct OpenPositionWithTickBoundsConfig<'a> {
 /// };
 /// use std::str::FromStr;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 ///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();

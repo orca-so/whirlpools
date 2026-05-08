@@ -2,7 +2,7 @@ use crate::generated::programs::WHIRLPOOL_ID;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
-/// A program_id of None resolves to the original whirlpool program id ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+/// Passing `None` for `program_id` falls back to the mutable whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
 pub fn get_position_bundle_address(
     position_mint: &Pubkey,
     program_id: Option<&Pubkey>,
@@ -13,7 +13,7 @@ pub fn get_position_bundle_address(
         .ok_or(ProgramError::InvalidSeeds)
 }
 
-/// A program_id of None resolves to the original whirlpool program id ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+/// Passing `None` for `program_id` falls back to the mutable whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
 pub fn get_bundled_position_address(
     position_bundle_address: &Pubkey,
     bundle_index: u8,

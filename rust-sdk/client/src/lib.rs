@@ -5,6 +5,8 @@ mod pda;
 
 mod state;
 
+mod config;
+
 #[cfg(feature = "fetch")]
 mod gpa;
 
@@ -24,6 +26,7 @@ pub use generated::shared::*;
 #[cfg(feature = "fetch")]
 pub(crate) use generated::*;
 
+pub use config::*;
 pub use pda::*;
 pub use state::*;
 

@@ -17,9 +17,7 @@ use solana_sysvar_id::SysvarId;
 use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
 use spl_token_2022_interface::ID as TOKEN_2022_PROGRAM_ID;
 use spl_token_interface::ID as TOKEN_PROGRAM_ID;
-use std::error::Error;
-
-use crate::WHIRLPOOLS_CONFIG_ADDRESS;
+use std::{error::Error, str::FromStr};
 
 use super::rpc::RpcContext;
 
@@ -84,11 +82,11 @@ pub async fn setup_whirlpool(
     token_b: Pubkey,
     tick_spacing: u16,
 ) -> Result<Pubkey, Box<dyn Error>> {
-    let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
-    let fee_tier = get_fee_tier_address(&config, tick_spacing, None)?.0;
-    let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing, None)?.0;
-    let token_badge_a = get_token_badge_address(&config, &token_a, None)?.0;
-    let token_badge_b = get_token_badge_address(&config, &token_b, None)?.0;
+    let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
+    let fee_tier = get_fee_tier_address(None, tick_spacing)?.0;
+    let whirlpool = get_whirlpool_address(None, &token_a, &token_b, tick_spacing)?.0;
+    let token_badge_a = get_token_badge_address(None, &token_a)?.0;
+    let token_badge_b = get_token_badge_address(None, &token_b)?.0;
 
     let vault_a = ctx.get_next_keypair();
     let vault_b = ctx.get_next_keypair();

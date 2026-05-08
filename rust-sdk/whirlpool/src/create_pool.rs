@@ -4,7 +4,7 @@ use std::error::Error;
 use orca_whirlpools_client::Whirlpool;
 use orca_whirlpools_client::{
     get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address,
-    DynamicTickArray,
+    DynamicTickArray, TargetProgram,
 };
 use orca_whirlpools_client::{
     InitializeDynamicTickArray, InitializeDynamicTickArrayInstructionArgs, InitializePoolV2,
@@ -24,9 +24,7 @@ use spl_token_2022_interface::extension::StateWithExtensions;
 use spl_token_2022_interface::state::Mint;
 
 use crate::token::order_mints;
-use crate::{
-    get_account_data_size, get_rent, FUNDER, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS,
-};
+use crate::{get_account_data_size, get_rent, FUNDER, SPLASH_POOL_TICK_SPACING};
 
 /// Represents the instructions and metadata for creating a pool.
 pub struct CreatePoolInstructions {
@@ -44,7 +42,7 @@ pub struct CreatePoolInstructions {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct CreateSplashPoolConfig<'a> {
+pub struct CreateSplashPoolConfig {
     /// The public key of the first token mint address to include in the pool.
     pub token_a: Pubkey,
     /// The public key of the second token mint address to include in the pool.
@@ -53,8 +51,9 @@ pub struct CreateSplashPoolConfig<'a> {
     pub initial_price: Option<f64>,
     /// An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// An optional public key of the whirlpool program to target.
+    /// Defaults to the mutable whirlpool program and mainnet config if not provided
+    pub target_program: Option<TargetProgram>,
 }
 
 /// Creates the necessary instructions to initialize a Splash Pool.
@@ -83,10 +82,7 @@ pub struct CreateSplashPoolConfig<'a> {
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{
-///     create_splash_pool_instructions, set_whirlpools_config_address,
-///     CreateSplashPoolConfig, WhirlpoolsConfigInput,
-/// };
+/// use orca_whirlpools::{create_splash_pool_instructions, CreateSplashPoolConfig, TargetProgram};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_keypair::{Keypair, Signer};
 /// use solana_pubkey::Pubkey;
@@ -94,18 +90,18 @@ pub struct CreateSplashPoolConfig<'a> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
+///     let devnet_target = TargetProgram::devnet();
 ///
 ///     let config = CreateSplashPoolConfig {
 ///         token_a,
 ///         token_b,
 ///         initial_price: Some(0.01),
 ///         funder: Some(wallet.pubkey()),
-///         program_id: None,
+///         target_program: Some(devnet_target),
 ///     };
 ///     let create_pool_instructions = create_splash_pool_instructions(&rpc, config)
 ///         .await
@@ -120,7 +116,7 @@ pub struct CreateSplashPoolConfig<'a> {
 /// ```
 pub async fn create_splash_pool_instructions(
     rpc: &RpcClient,
-    config: CreateSplashPoolConfig<'_>,
+    config: CreateSplashPoolConfig,
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
     create_concentrated_liquidity_pool_instructions(
         rpc,
@@ -130,14 +126,14 @@ pub async fn create_splash_pool_instructions(
             tick_spacing: SPLASH_POOL_TICK_SPACING,
             initial_price: config.initial_price,
             funder: config.funder,
-            program_id: config.program_id,
+            target_program: config.target_program,
         },
     )
     .await
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct CreateConcentratedLiquidityPoolConfig<'a> {
+pub struct CreateConcentratedLiquidityPoolConfig {
     /// The public key of the first token mint address to include in the pool.
     pub token_a: Pubkey,
     /// The public key of the second token mint address to include in the pool.
@@ -148,8 +144,9 @@ pub struct CreateConcentratedLiquidityPoolConfig<'a> {
     pub initial_price: Option<f64>,
     /// An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// An optional public key of the whirlpool program to target.
+    /// Defaults to the mutable whirlpool program and mainnet config if not provided
+    pub target_program: Option<TargetProgram>,
 }
 
 /// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM).
@@ -179,8 +176,8 @@ pub struct CreateConcentratedLiquidityPoolConfig<'a> {
 ///
 /// ```
 /// use orca_whirlpools::{
-///     create_concentrated_liquidity_pool_instructions, set_whirlpools_config_address,
-///     CreateConcentratedLiquidityPoolConfig, WhirlpoolsConfigInput,
+///     create_concentrated_liquidity_pool_instructions, CreateConcentratedLiquidityPoolConfig,
+///     TargetProgram,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_keypair::{Keypair, Signer};
@@ -189,11 +186,11 @@ pub struct CreateConcentratedLiquidityPoolConfig<'a> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
+///     let mainnet_target = TargetProgram::mainnet();
 ///
 ///     let config = CreateConcentratedLiquidityPoolConfig {
 ///         token_a,
@@ -201,7 +198,7 @@ pub struct CreateConcentratedLiquidityPoolConfig<'a> {
 ///         tick_spacing: 64,
 ///         initial_price: Some(0.01),
 ///         funder: Some(wallet.pubkey()),
-///         program_id: None,
+///         target_program: Some(mainnet_target)
 ///     };
 ///     let create_pool_instructions =
 ///         create_concentrated_liquidity_pool_instructions(&rpc, config)
@@ -217,8 +214,10 @@ pub struct CreateConcentratedLiquidityPoolConfig<'a> {
 /// ```
 pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
-    config: CreateConcentratedLiquidityPoolConfig<'_>,
+    config: CreateConcentratedLiquidityPoolConfig,
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
+    let target_program = config.target_program.unwrap_or_default();
+
     let initial_price = config.initial_price.unwrap_or(1.0);
     let funder = config.funder.unwrap_or(*FUNDER.try_lock()?);
     if funder == Pubkey::default() {
@@ -248,36 +247,19 @@ pub async fn create_concentrated_liquidity_pool_instructions(
 
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
 
-    let whirlpools_config_address = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let pool_address = get_whirlpool_address(
-        &whirlpools_config_address,
+        Some(target_program),
         &config.token_a,
         &config.token_b,
         config.tick_spacing,
-        config.program_id,
     )?
     .0;
 
-    let fee_tier = get_fee_tier_address(
-        &whirlpools_config_address,
-        config.tick_spacing,
-        config.program_id,
-    )?
-    .0;
+    let fee_tier = get_fee_tier_address(Some(target_program), config.tick_spacing)?.0;
 
-    let token_badge_a = get_token_badge_address(
-        &whirlpools_config_address,
-        &config.token_a,
-        config.program_id,
-    )?
-    .0;
+    let token_badge_a = get_token_badge_address(Some(target_program), &config.token_a)?.0;
 
-    let token_badge_b = get_token_badge_address(
-        &whirlpools_config_address,
-        &config.token_b,
-        config.program_id,
-    )?
-    .0;
+    let token_badge_b = get_token_badge_address(Some(target_program), &config.token_b)?.0;
 
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();
@@ -286,7 +268,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let mut instructions = vec![];
 
     let mut initialize_pool_v2_ix = InitializePoolV2 {
-        whirlpools_config: whirlpools_config_address,
+        whirlpools_config: target_program.config_address(),
         token_mint_a: config.token_a,
         token_mint_b: config.token_b,
         token_badge_a,
@@ -306,9 +288,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
         tick_spacing: config.tick_spacing,
     });
 
-    if let Some(pid) = config.program_id {
-        initialize_pool_v2_ix.program_id = *pid;
-    };
+    initialize_pool_v2_ix.program_id = target_program.id();
 
     instructions.push(initialize_pool_v2_ix);
 
@@ -331,7 +311,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
         HashSet::from([lower_tick_index, upper_tick_index, current_tick_index]);
     for start_tick_index in tick_array_indexes {
         let tick_array_address =
-            get_tick_array_address(&pool_address, start_tick_index, config.program_id)?;
+            get_tick_array_address(&pool_address, start_tick_index, Some(&target_program.id()))?;
         let mut initialize_dynamic_tick_array_ix = InitializeDynamicTickArray {
             whirlpool: pool_address,
             tick_array: tick_array_address.0,
@@ -343,9 +323,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
             idempotent: false,
         });
 
-        if let Some(pid) = config.program_id {
-            initialize_dynamic_tick_array_ix.program_id = *pid;
-        };
+        initialize_dynamic_tick_array_ix.program_id = target_program.id();
 
         instructions.push(initialize_dynamic_tick_array_ix);
         initialization_cost += rent.minimum_balance(DynamicTickArray::MIN_LEN);
@@ -390,7 +368,7 @@ mod tests {
                 token_b: mint_b,
                 initial_price: Some(1.0),
                 funder: None,
-                program_id: None,
+                target_program: None,
             },
         )
         .await;
@@ -413,7 +391,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(1.0),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await;
@@ -437,7 +415,7 @@ mod tests {
                 token_b: mint_b,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -491,7 +469,7 @@ mod tests {
                 token_b: mint_te,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -545,7 +523,7 @@ mod tests {
                 token_b: mint_te_b,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -599,7 +577,7 @@ mod tests {
                 token_b: mint_te_fee,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -654,7 +632,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -709,7 +687,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -764,7 +742,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -819,7 +797,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await
@@ -874,7 +852,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await

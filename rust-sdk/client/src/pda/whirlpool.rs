@@ -1,16 +1,21 @@
-use crate::generated::programs::WHIRLPOOL_ID;
+use crate::TargetProgram;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
-/// A program_id of None resolves to the original whirlpool program id ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
+/// Derives the whirlpool PDA for the given mint pair and fee tier index under the supplied
+/// target program.
+///
+/// Passing `None` for `target_program` falls back to [`TargetProgram::default`] (the mutable
+/// mainnet deployment).
 pub fn get_whirlpool_address(
-    whirlpools_config: &Pubkey,
+    target_program: Option<TargetProgram>,
     token_mint_a: &Pubkey,
     token_mint_b: &Pubkey,
     fee_tier_index: u16,
-    program_id: Option<&Pubkey>,
 ) -> Result<(Pubkey, u8), ProgramError> {
     let fee_tier_index_bytes = fee_tier_index.to_le_bytes();
+    let target_program = target_program.unwrap_or_default();
+    let whirlpools_config = target_program.config_address();
     let seeds = &[
         b"whirlpool",
         whirlpools_config.as_ref(),
@@ -19,8 +24,7 @@ pub fn get_whirlpool_address(
         fee_tier_index_bytes.as_ref(),
     ];
 
-    Pubkey::try_find_program_address(seeds, program_id.unwrap_or(&WHIRLPOOL_ID))
-        .ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, &target_program.id()).ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
@@ -29,15 +33,11 @@ mod tests {
     use std::str::FromStr;
     #[test]
     fn test_get_whirlpool_address() {
-        let whirlpools_config =
-            Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
         let token_mint_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
         let token_mint_b =
             Pubkey::from_str("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo").unwrap();
         let whirlpool = Pubkey::from_str("JDQ9GDphXV5ENDrAQtRFvT98m3JwsVJJk8BYHoX8uTAg").unwrap();
-        let (address, _) =
-            get_whirlpool_address(&whirlpools_config, &token_mint_a, &token_mint_b, 2, None)
-                .unwrap();
+        let (address, _) = get_whirlpool_address(None, &token_mint_a, &token_mint_b, 2).unwrap();
         assert_eq!(address, whirlpool);
     }
 }

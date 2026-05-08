@@ -24,6 +24,7 @@ pub use create_pool::*;
 pub use decrease_liquidity::*;
 pub use harvest::*;
 pub use increase_liquidity::*;
+pub use orca_whirlpools_client::TargetProgram;
 pub use pool::*;
 pub use position::*;
 pub use swap::*;

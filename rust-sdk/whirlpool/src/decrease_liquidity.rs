@@ -109,8 +109,7 @@ pub struct DecreaseLiquidityConfig<'a> {
 ///
 /// ```rust
 /// use orca_whirlpools::{
-///     decrease_liquidity_instructions, set_whirlpools_config_address, DecreaseLiquidityParam,
-///     WhirlpoolsConfigInput, DecreaseLiquidityConfig
+///     decrease_liquidity_instructions, DecreaseLiquidityConfig, DecreaseLiquidityParam,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -119,7 +118,6 @@ pub struct DecreaseLiquidityConfig<'a> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
 ///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
@@ -371,17 +369,13 @@ pub struct ClosePositionConfig<'a> {
 ///
 /// ```rust
 /// use crate::utils::load_wallet;
-/// use orca_whirlpools::{
-///     close_position_instructions, set_whirlpools_config_address, ClosePositionConfig,
-///     WhirlpoolsConfigInput,
-/// };
+/// use orca_whirlpools::{close_position_instructions, ClosePositionConfig};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
 ///

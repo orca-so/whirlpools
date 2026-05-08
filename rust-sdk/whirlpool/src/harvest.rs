@@ -91,10 +91,7 @@ pub struct HarvestPositionConfig<'a> {
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{
-///     harvest_position_instructions, set_whirlpools_config_address, HarvestPositionConfig,
-///     WhirlpoolsConfigInput,
-/// };
+/// use orca_whirlpools::{harvest_position_instructions, HarvestPositionConfig};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
@@ -102,7 +99,6 @@ pub struct HarvestPositionConfig<'a> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
 ///

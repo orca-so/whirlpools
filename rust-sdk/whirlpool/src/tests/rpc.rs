@@ -38,7 +38,7 @@ use spl_memo_interface::instruction::build_memo;
 use tokio::sync::Mutex;
 
 use crate::tests::anchor_programs;
-use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
+use crate::SPLASH_POOL_TICK_SPACING;
 
 lazy_static::lazy_static! {
     static ref PROGRAMS: Vec<(String, Pubkey)> = anchor_programs("../..").unwrap();
@@ -66,7 +66,7 @@ impl RpcContext {
         svm.airdrop(&signer.pubkey(), 100_000_000_000).unwrap();
         create_native_mint(&mut svm);
 
-        let config = *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap();
+        let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
         svm.set_account(
             config,
             Account {
@@ -87,7 +87,7 @@ impl RpcContext {
         )
         .unwrap();
 
-        let default_fee_tier = get_fee_tier_address(&config, 128, None).unwrap().0;
+        let default_fee_tier = get_fee_tier_address(None, 128).unwrap().0;
         svm.set_account(
             default_fee_tier,
             Account {
@@ -106,7 +106,7 @@ impl RpcContext {
         )
         .unwrap();
 
-        let concentrated_fee_tier = get_fee_tier_address(&config, 64, None).unwrap().0;
+        let concentrated_fee_tier = get_fee_tier_address(None, 64).unwrap().0;
         svm.set_account(
             concentrated_fee_tier,
             Account {
@@ -125,7 +125,7 @@ impl RpcContext {
         )
         .unwrap();
 
-        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING, None)
+        let splash_fee_tier = get_fee_tier_address(None, SPLASH_POOL_TICK_SPACING)
             .unwrap()
             .0;
         svm.set_account(
@@ -162,9 +162,7 @@ impl RpcContext {
         .unwrap();
 
         // Create the whirlpools config extension account
-        let config_extension = get_whirlpools_config_extension_address(&config, None)
-            .unwrap()
-            .0;
+        let config_extension = get_whirlpools_config_extension_address(None).unwrap().0;
         svm.set_account(
             config_extension,
             Account {

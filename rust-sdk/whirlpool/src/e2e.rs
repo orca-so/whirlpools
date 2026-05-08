@@ -51,7 +51,7 @@ impl TestContext {
                 token_b: self.mint_b,
                 initial_price: None,
                 funder: Some(self.ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await?;
@@ -80,7 +80,7 @@ impl TestContext {
                 tick_spacing: 128,
                 initial_price: None,
                 funder: Some(self.ctx.signer.pubkey()),
-                program_id: None,
+                target_program: None,
             },
         )
         .await?;

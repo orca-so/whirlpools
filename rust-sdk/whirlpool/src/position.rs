@@ -116,16 +116,13 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 ///
 /// # Example
 /// ```rust
-/// use orca_whirlpools::{
-///     fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
-/// };
+/// use orca_whirlpools::fetch_positions_for_owner;
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let owner =
 ///         Pubkey::from_str("FTEV6CnregJCqU8s8hGR3VAYCrPKHfekXLsJaKHbPBxp").unwrap();
@@ -276,16 +273,13 @@ pub async fn fetch_positions_for_owner(
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{
-///     fetch_positions_in_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
-/// };
+/// use orca_whirlpools::fetch_positions_in_whirlpool;
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let whirlpool_address =
 ///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();

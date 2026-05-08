@@ -3,4 +3,4 @@
 "@orca-so/whirlpools-rust-client": major
 ---
 
-Adds optional program_id to SDK functions for target whirlpool program. Additionally, extracts SDK function params into config structs.
+Replace the global `WHIRLPOOLS_CONFIG_ADDRESS` / `set_whirlpools_config_address` / `WhirlpoolsConfigInput` API with a per-call `TargetProgram` (mainnet / devnet / mainnet-immutable / custom), and move SDK function arguments into `…Config` structs.

@@ -2,7 +2,7 @@ use std::error::Error;
 
 use orca_whirlpools_client::{
     fetch_all_fee_tier_with_filter, get_fee_tier_address, get_whirlpool_address, FeeTier,
-    FeeTierFilter, TargetProgram, Whirlpool, WhirlpoolsConfig,
+    FeeTierFilter, Whirlpool, WhirlpoolDeployment, WhirlpoolsConfig,
 };
 
 use orca_whirlpools_core::sqrt_price_to_price;
@@ -99,7 +99,7 @@ pub enum PoolInfo {
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `token_1` - The public key of the first token mint in the pool.
 /// * `token_2` - The public key of the second token mint in the pool.
-/// * `target_program` - The whirlpool program and config to query against. Defaults to the
+/// * `whirlpool_deployment` - The whirlpool program and config to query against. Defaults to the
 ///   mutable whirlpool program and mainnet config if `None`.
 ///
 /// # Returns
@@ -117,7 +117,7 @@ pub enum PoolInfo {
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{fetch_splash_pool, PoolInfo, TargetProgram};
+/// use orca_whirlpools::{fetch_splash_pool, PoolInfo, WhirlpoolDeployment};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
@@ -127,9 +127,8 @@ pub enum PoolInfo {
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-///     let devnet_target = TargetProgram::devnet();
 ///
-///     let pool_info = fetch_splash_pool(&rpc, token_a, token_b, Some(devnet_target))
+///     let pool_info = fetch_splash_pool(&rpc, token_a, token_b, Some(WhirlpoolDeployment::devnet()))
 ///         .await
 ///         .unwrap();
 ///
@@ -143,14 +142,14 @@ pub async fn fetch_splash_pool(
     rpc: &RpcClient,
     token_1: Pubkey,
     token_2: Pubkey,
-    target_program: Option<TargetProgram>,
+    whirlpool_deployment: Option<WhirlpoolDeployment>,
 ) -> Result<PoolInfo, Box<dyn Error>> {
     fetch_concentrated_liquidity_pool(
         rpc,
         token_1,
         token_2,
         SPLASH_POOL_TICK_SPACING,
-        target_program,
+        whirlpool_deployment,
     )
     .await
 }
@@ -166,7 +165,7 @@ pub async fn fetch_splash_pool(
 /// * `token_1` - The public key of the first token mint in the pool.
 /// * `token_2` - The public key of the second token mint in the pool.
 /// * `tick_spacing` - The tick spacing of the pool.
-/// * `target_program` - The whirlpool program and config to query against. Defaults to the
+/// * `whirlpool_deployment` - The whirlpool program and config to query against. Defaults to the
 ///   mutable whirlpool program and mainnet config if `None`.
 ///
 /// # Returns
@@ -184,7 +183,7 @@ pub async fn fetch_splash_pool(
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{fetch_concentrated_liquidity_pool, PoolInfo, TargetProgram};
+/// use orca_whirlpools::{fetch_concentrated_liquidity_pool, PoolInfo, WhirlpoolDeployment};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
@@ -195,14 +194,13 @@ pub async fn fetch_splash_pool(
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 ///     let tick_spacing = 64;
-///     let devnet_target = TargetProgram::devnet();
 ///
 ///     let pool_info = fetch_concentrated_liquidity_pool(
 ///         &rpc,
 ///         token_a,
 ///         token_b,
 ///         tick_spacing,
-///         Some(devnet_target),
+///         Some(WhirlpoolDeployment::devnet()),
 ///     )
 ///     .await
 ///     .unwrap();
@@ -218,20 +216,20 @@ pub async fn fetch_concentrated_liquidity_pool(
     token_1: Pubkey,
     token_2: Pubkey,
     tick_spacing: u16,
-    target_program: Option<TargetProgram>,
+    whirlpool_deployment: Option<WhirlpoolDeployment>,
 ) -> Result<PoolInfo, Box<dyn Error>> {
-    let target_program = target_program.unwrap_or_default();
+    let whirlpool_deployment = whirlpool_deployment.unwrap_or_default();
 
     let [token_a, token_b] = order_mints(token_1, token_2);
     let whirlpool_address =
-        get_whirlpool_address(Some(target_program), &token_a, &token_b, tick_spacing)?.0;
+        get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))?.0;
 
-    let fee_tier_address = get_fee_tier_address(Some(target_program), tick_spacing)?;
+    let fee_tier_address = get_fee_tier_address(tick_spacing, Some(whirlpool_deployment))?;
 
     let account_infos = rpc
         .get_multiple_accounts(&[
             whirlpool_address,
-            target_program.config_address(),
+            whirlpool_deployment.config_address(),
             fee_tier_address.0,
             token_a,
             token_b,
@@ -240,7 +238,7 @@ pub async fn fetch_concentrated_liquidity_pool(
 
     let whirlpools_config_info = account_infos[1].as_ref().ok_or(format!(
         "Whirlpools config {} not found",
-        target_program.config_address()
+        whirlpool_deployment.config_address()
     ))?;
     let whirlpools_config = WhirlpoolsConfig::from_bytes(&whirlpools_config_info.data)?;
 
@@ -266,7 +264,7 @@ pub async fn fetch_concentrated_liquidity_pool(
     } else {
         Ok(PoolInfo::Uninitialized(UninitializedPool {
             address: whirlpool_address,
-            whirlpools_config: target_program.config_address(),
+            whirlpools_config: whirlpool_deployment.config_address(),
             tick_spacing,
             fee_rate: fee_tier.default_fee_rate,
             protocol_fee_rate: whirlpools_config.default_protocol_fee_rate,
@@ -287,7 +285,7 @@ pub async fn fetch_concentrated_liquidity_pool(
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `token_1` - The public key of the first token mint in the pool.
 /// * `token_2` - The public key of the second token mint in the pool.
-/// * `target_program` - The whirlpool program and config to query against. Defaults to the
+/// * `whirlpool_deployment` - The whirlpool program and config to query against. Defaults to the
 ///   mutable whirlpool program and mainnet config if `None`.
 ///
 /// # Returns
@@ -305,7 +303,7 @@ pub async fn fetch_concentrated_liquidity_pool(
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{fetch_whirlpools_by_token_pair, PoolInfo, TargetProgram};
+/// use orca_whirlpools::{fetch_whirlpools_by_token_pair, PoolInfo, WhirlpoolDeployment};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
@@ -315,9 +313,8 @@ pub async fn fetch_concentrated_liquidity_pool(
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-///     let devnet_target = TargetProgram::devnet();
 ///
-///     let pool_infos = fetch_whirlpools_by_token_pair(&rpc, token_a, token_b, Some(devnet_target))
+///     let pool_infos = fetch_whirlpools_by_token_pair(&rpc, token_a, token_b, Some(WhirlpoolDeployment::devnet()))
 ///         .await
 ///         .unwrap();
 ///
@@ -333,27 +330,27 @@ pub async fn fetch_whirlpools_by_token_pair(
     rpc: &RpcClient,
     token_1: Pubkey,
     token_2: Pubkey,
-    target_program: Option<TargetProgram>,
+    whirlpool_deployment: Option<WhirlpoolDeployment>,
 ) -> Result<Vec<PoolInfo>, Box<dyn Error>> {
-    let target_program = target_program.unwrap_or_default();
+    let whirlpool_deployment = whirlpool_deployment.unwrap_or_default();
 
     let [token_a, token_b] = order_mints(token_1, token_2);
 
     let fee_tiers = fetch_all_fee_tier_with_filter(
         rpc,
         vec![FeeTierFilter::WhirlpoolsConfig(
-            target_program.config_address(),
+            whirlpool_deployment.config_address(),
         )],
     )
     .await?;
 
     let account_infos = rpc
-        .get_multiple_accounts(&[target_program.config_address(), token_a, token_b])
+        .get_multiple_accounts(&[whirlpool_deployment.config_address(), token_a, token_b])
         .await?;
 
     let whirlpools_config_info = account_infos[0].as_ref().ok_or(format!(
         "Whirlpools config {} not found",
-        target_program.config_address()
+        whirlpool_deployment.config_address()
     ))?;
     let whirlpools_config = WhirlpoolsConfig::from_bytes(&whirlpools_config_info.data)?;
 
@@ -371,7 +368,7 @@ pub async fn fetch_whirlpools_by_token_pair(
         .iter()
         .map(|fee_tier| fee_tier.data.tick_spacing)
         .map(|tick_spacing| {
-            get_whirlpool_address(Some(target_program), &token_a, &token_b, tick_spacing)
+            get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))
         })
         .map(|x| x.map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, ProgramError>>()?;
@@ -391,7 +388,7 @@ pub async fn fetch_whirlpools_by_token_pair(
         } else {
             whirlpools.push(PoolInfo::Uninitialized(UninitializedPool {
                 address: pool_address,
-                whirlpools_config: target_program.config_address(),
+                whirlpools_config: whirlpool_deployment.config_address(),
                 tick_spacing: fee_tier.data.tick_spacing,
                 fee_rate: fee_tier.data.default_fee_rate,
                 protocol_fee_rate: whirlpools_config.default_protocol_fee_rate,
@@ -410,6 +407,7 @@ mod tests {
     use crate::tests::{
         setup_ata_with_amount, setup_mint_with_decimals, setup_whirlpool, RpcContext,
     };
+    use rstest::rstest;
     use serial_test::serial;
 
     struct TestContext {
@@ -421,7 +419,9 @@ mod tests {
     }
 
     impl TestContext {
-        async fn new() -> Result<Self, Box<dyn Error>> {
+        async fn new(
+            whirlpool_deployment: WhirlpoolDeployment,
+        ) -> Result<Self, Box<dyn Error>> {
             let ctx = RpcContext::new();
             let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
             let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
@@ -430,9 +430,16 @@ mod tests {
             setup_ata_with_amount(&ctx, mint_b, 500_000_000_000).await?;
 
             // Setup all pools
-            let concentrated_pool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-            let splash_pool =
-                setup_whirlpool(&ctx, mint_a, mint_b, SPLASH_POOL_TICK_SPACING).await?;
+            let concentrated_pool =
+                setup_whirlpool(&ctx, mint_a, mint_b, 64, whirlpool_deployment).await?;
+            let splash_pool = setup_whirlpool(
+                &ctx,
+                mint_a,
+                mint_b,
+                SPLASH_POOL_TICK_SPACING,
+                whirlpool_deployment,
+            )
+            .await?;
 
             Ok(Self {
                 ctx,
@@ -444,15 +451,22 @@ mod tests {
         }
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_splash_pool() {
-        let test_ctx = TestContext::new().await.unwrap();
+    async fn test_fetch_splash_pool(#[case] whirlpool_deployment: WhirlpoolDeployment) {
+        let test_ctx = TestContext::new(whirlpool_deployment).await.unwrap();
 
-        if let PoolInfo::Initialized(pool) =
-            fetch_splash_pool(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b, None)
-                .await
-                .unwrap()
+        if let PoolInfo::Initialized(pool) = fetch_splash_pool(
+            &test_ctx.ctx.rpc,
+            test_ctx.mint_a,
+            test_ctx.mint_b,
+            Some(whirlpool_deployment),
+        )
+        .await
+        .unwrap()
         {
             assert_eq!(pool.data.liquidity, 0);
             assert_eq!(pool.data.tick_spacing, SPLASH_POOL_TICK_SPACING);
@@ -466,17 +480,22 @@ mod tests {
         }
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_concentrated_liquidity_pool() {
-        let test_ctx = TestContext::new().await.unwrap();
+    async fn test_fetch_concentrated_liquidity_pool(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
+        let test_ctx = TestContext::new(whirlpool_deployment).await.unwrap();
 
         if let PoolInfo::Initialized(pool) = fetch_concentrated_liquidity_pool(
             &test_ctx.ctx.rpc,
             test_ctx.mint_a,
             test_ctx.mint_b,
             64,
-            None,
+            Some(whirlpool_deployment),
         )
         .await
         .unwrap()
@@ -493,17 +512,20 @@ mod tests {
         }
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_non_existent_pool() {
-        let test_ctx = TestContext::new().await.unwrap();
+    async fn test_fetch_non_existent_pool(#[case] whirlpool_deployment: WhirlpoolDeployment) {
+        let test_ctx = TestContext::new(whirlpool_deployment).await.unwrap();
 
         if let PoolInfo::Uninitialized(pool) = fetch_concentrated_liquidity_pool(
             &test_ctx.ctx.rpc,
             test_ctx.mint_a,
             test_ctx.mint_b,
             128,
-            None,
+            Some(whirlpool_deployment),
         )
         .await
         .unwrap()
@@ -518,16 +540,21 @@ mod tests {
         }
     }
 
+    // Only parameterized for the mutable mainnet program. `fetch_whirlpools_by_token_pair` calls
+    // `fetch_all_fee_tier_with_filter`, whose underlying GPA helper in the client crate is hardcoded
+    // to `WHIRLPOOL_ID` and so cannot enumerate fee tiers for the immutable program.
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_all_pools_for_pair() {
-        let test_ctx = TestContext::new().await.unwrap();
+    async fn test_fetch_all_pools_for_pair(#[case] whirlpool_deployment: WhirlpoolDeployment) {
+        let test_ctx = TestContext::new(whirlpool_deployment).await.unwrap();
 
         let pools = fetch_whirlpools_by_token_pair(
             &test_ctx.ctx.rpc,
             test_ctx.mint_a,
             test_ctx.mint_b,
-            None,
+            Some(whirlpool_deployment),
         )
         .await
         .unwrap();

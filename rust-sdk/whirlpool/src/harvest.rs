@@ -6,6 +6,7 @@ use std::{
 
 use orca_whirlpools_client::{
     get_position_address, get_tick_array_address, FixedTickArray, Position, TickArray, Whirlpool,
+    WhirlpoolDeployment,
 };
 use orca_whirlpools_client::{
     CollectFeesV2, CollectFeesV2InstructionArgs, CollectRewardV2, CollectRewardV2InstructionArgs,
@@ -53,13 +54,14 @@ pub struct HarvestPositionInstruction {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct HarvestPositionConfig<'a> {
+pub struct HarvestPositionConfig {
     /// The public key of the NFT mint address representing the pool position.
     pub position_mint_address: Pubkey,
     /// An optional public key of the account authorizing the harvesting process. Defaults to the global funder if not provided.
     pub authority: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Generates instructions to harvest a position.
@@ -91,7 +93,7 @@ pub struct HarvestPositionConfig<'a> {
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{harvest_position_instructions, HarvestPositionConfig};
+/// use orca_whirlpools::{harvest_position_instructions, HarvestPositionConfig, WhirlpoolDeployment};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
@@ -108,7 +110,7 @@ pub struct HarvestPositionConfig<'a> {
 ///     let config = HarvestPositionConfig {
 ///         position_mint_address,
 ///         authority: Some(wallet.pubkey()),
-///         program_id: None,
+///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
 ///     let result = harvest_position_instructions(&rpc, config)
 ///         .await
@@ -121,15 +123,22 @@ pub struct HarvestPositionConfig<'a> {
 /// ```
 pub async fn harvest_position_instructions(
     rpc: &RpcClient,
-    config: HarvestPositionConfig<'_>,
+    config: HarvestPositionConfig,
 ) -> Result<HarvestPositionInstruction, Box<dyn Error>> {
-    let authority = config.authority.unwrap_or(*FUNDER.try_lock()?);
+    let HarvestPositionConfig {
+        position_mint_address,
+        authority,
+        whirlpool_deployment,
+    } = config;
+
+    let whirlpool_deployment = whirlpool_deployment.unwrap_or_default();
+    let authority = authority.unwrap_or(*FUNDER.try_lock()?);
     if authority == Pubkey::default() {
         return Err("Authority must be provided".into());
     }
 
     let position_address =
-        get_position_address(&config.position_mint_address, config.program_id)?.0;
+        get_position_address(&position_mint_address, Some(whirlpool_deployment.id()))?.0;
     let position_info = rpc.get_account(&position_address).await?;
     let position = Position::from_bytes(&position_info.data)?;
 
@@ -140,7 +149,7 @@ pub async fn harvest_position_instructions(
         .get_multiple_accounts(&[
             pool.token_mint_a,
             pool.token_mint_b,
-            config.position_mint_address,
+            position_mint_address,
             pool.reward_infos[0].mint,
             pool.reward_infos[1].mint,
             pool.reward_infos[2].mint,
@@ -181,19 +190,19 @@ pub async fn harvest_position_instructions(
 
     let position_token_account_address = get_associated_token_address_with_program_id(
         &authority,
-        &config.position_mint_address,
+        &position_mint_address,
         &position_mint_info.owner,
     );
     let lower_tick_array_address = get_tick_array_address(
         &position.whirlpool,
         lower_tick_array_start_index,
-        config.program_id,
+        Some(whirlpool_deployment.id()),
     )?
     .0;
     let upper_tick_array_address = get_tick_array_address(
         &position.whirlpool,
         upper_tick_array_start_index,
-        config.program_id,
+        Some(whirlpool_deployment.id()),
     )?
     .0;
 
@@ -275,9 +284,7 @@ pub async fn harvest_position_instructions(
         }
         .instruction();
 
-        if let Some(pid) = config.program_id {
-            update_fees_and_rewards_ix.program_id = *pid;
-        };
+        update_fees_and_rewards_ix.program_id = whirlpool_deployment.id();
 
         instructions.push(update_fees_and_rewards_ix);
     }
@@ -311,9 +318,7 @@ pub async fn harvest_position_instructions(
             remaining_accounts_info: None,
         });
 
-        if let Some(pid) = config.program_id {
-            collect_fees_v2_ix.program_id = *pid;
-        };
+        collect_fees_v2_ix.program_id = whirlpool_deployment.id();
 
         instructions.push(collect_fees_v2_ix);
     }
@@ -346,9 +351,7 @@ pub async fn harvest_position_instructions(
             remaining_accounts_info: None,
         });
 
-        if let Some(pid) = config.program_id {
-            collect_reward_v2_ix.program_id = *pid;
-        };
+        collect_reward_v2_ix.program_id = whirlpool_deployment.id();
 
         instructions.push(collect_reward_v2_ix);
     }
@@ -368,7 +371,7 @@ mod tests {
     use std::collections::HashMap;
     use std::error::Error;
 
-    use orca_whirlpools_client::{get_position_address, Position};
+    use orca_whirlpools_client::{get_position_address, Position, WhirlpoolDeployment};
     use serial_test::serial;
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_keypair::{Keypair, Signer};
@@ -420,6 +423,7 @@ mod tests {
         ata_b: Pubkey,
 
         position_mint: Pubkey,
+        whirlpool_deployment: WhirlpoolDeployment,
     ) -> Result<(), Box<dyn Error>> {
         let before_a = get_token_balance(&ctx.rpc, ata_a).await?;
         let before_b = get_token_balance(&ctx.rpc, ata_b).await?;
@@ -447,7 +451,8 @@ mod tests {
             fees_quote.fee_owed_b
         );
 
-        let position_pubkey = get_position_address(&position_mint, None)?.0;
+        let position_pubkey =
+            get_position_address(&position_mint, Some(whirlpool_deployment.id()))?.0;
         let _position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
 
         Ok(())
@@ -528,122 +533,143 @@ mod tests {
     }
 
     #[rstest]
-    #[case("A-B", "equally centered", -100, 100)]
-    #[case("A-B", "one sided A", -100, -1)]
-    #[case("A-B", "one sided B", 1, 100)]
-    #[case("A-TEA", "equally centered", -100, 100)]
-    #[case("A-TEA", "one sided A", -100, -1)]
-    #[case("TEA-TEB", "equally centered", -100, 100)]
-    #[case("TEA-TEB", "one sided A", -100, -1)]
-    #[case("A-TEFee", "equally centered", -100, 100)]
-    #[case("A-TEFee", "one sided A", -100, -1)]
+    #[case("A-B", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("A-B", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[tokio::test]
     #[serial]
-    fn test_harvest_position_with_swap(
+    async fn test_harvest_position_with_swap(
         #[case] pool_name: &str,
         #[case] position_name: &str,
         #[case] lower_tick: i32,
         #[case] upper_tick: i32,
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
     ) {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(async {
-            let ctx = RpcContext::new();
+        let ctx = RpcContext::new();
 
-            let minted = setup_all_mints(&ctx).await.unwrap();
-            let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
-            let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
-            let _pubkey_a = minted.get(mint_a_key).unwrap();
-            let _pubkey_b = minted.get(mint_b_key).unwrap();
-            let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
-            let pubkey_a = *minted.get(mint_a_key).unwrap();
-            let pubkey_b = *minted.get(mint_b_key).unwrap();
+        let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
+        let _pubkey_a = minted.get(mint_a_key).unwrap();
+        let _pubkey_b = minted.get(mint_b_key).unwrap();
+        let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
+        let pubkey_a = *minted.get(mint_a_key).unwrap();
+        let pubkey_b = *minted.get(mint_b_key).unwrap();
 
-            let swapped = pubkey_a > pubkey_b;
+        let swapped = pubkey_a > pubkey_b;
 
-            let (final_a, final_b) = if pubkey_a < pubkey_b {
-                (pubkey_a, pubkey_b)
-            } else {
-                (pubkey_b, pubkey_a)
-            };
+        let (final_a, final_b) = if pubkey_a < pubkey_b {
+            (pubkey_a, pubkey_b)
+        } else {
+            (pubkey_b, pubkey_a)
+        };
 
-            let tick_spacing = 64;
-            let pool_pubkey = setup_whirlpool(&ctx, final_a, final_b, tick_spacing)
+        let tick_spacing = 64;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, final_a, final_b, tick_spacing, whirlpool_deployment)
                 .await
                 .unwrap();
 
-            let position_mint =
-                setup_position(&ctx, pool_pubkey, Some((lower_tick, upper_tick)), None)
-                    .await
-                    .unwrap();
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((lower_tick, upper_tick)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
 
-            let inc_liq_ix = increase_liquidity_instructions(
-                &ctx.rpc,
-                IncreaseLiquidityConfig {
-                    position_mint_address: position_mint,
-                    param: IncreaseLiquidityParam {
-                        token_max_a: 50_000,
-                        token_max_b: 50_000,
-                    },
-                    slippage_tolerance_bps: Some(100),
-                    authority: Some(ctx.signer.pubkey()),
-                    program_id: None,
-                },
-            )
-            .await
-            .unwrap();
-            // send
-            ctx.send_transaction_with_signers(inc_liq_ix.instructions, vec![])
-                .await
-                .unwrap();
-
-            let do_b_to_a = position_name.contains("one sided B");
-            let swap_input_mint = if do_b_to_a { pubkey_b } else { pubkey_a };
-
-            let swap_ix = swap_instructions(
-                &ctx.rpc,
-                SwapConfig {
-                    whirlpool_address: pool_pubkey,
-                    amount: 10,
-                    specified_mint: swap_input_mint,
-                    swap_type: SwapType::ExactIn,
-                    slippage_tolerance_bps: Some(100),
-                    signer: Some(ctx.signer.pubkey()),
-                    program_id: None,
-                },
-            )
-            .await
-            .unwrap();
-            ctx.send_transaction_with_signers(
-                swap_ix.instructions,
-                swap_ix.additional_signers.iter().collect(),
-            )
-            .await
-            .unwrap();
-
-            let config = HarvestPositionConfig {
+        let inc_liq_ix = increase_liquidity_instructions(
+            &ctx.rpc,
+            IncreaseLiquidityConfig {
                 position_mint_address: position_mint,
+                param: IncreaseLiquidityParam {
+                    token_max_a: 50_000,
+                    token_max_b: 50_000,
+                },
+                slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
-                program_id: None,
-            };
+                whirlpool_deployment: Some(whirlpool_deployment),
+            },
+        )
+        .await
+        .unwrap();
+        // send
+        ctx.send_transaction_with_signers(inc_liq_ix.instructions, vec![])
+            .await
+            .unwrap();
 
-            let harvest_ix = harvest_position_instructions(&ctx.rpc, config)
-                .await
-                .unwrap();
+        let do_b_to_a = position_name.contains("one sided B");
+        let swap_input_mint = if do_b_to_a { pubkey_b } else { pubkey_a };
 
-            let ata_a = if swapped {
-                user_atas.get(mint_b_key).unwrap()
-            } else {
-                user_atas.get(mint_a_key).unwrap()
-            };
-            let ata_b = if swapped {
-                user_atas.get(mint_a_key).unwrap()
-            } else {
-                user_atas.get(mint_b_key).unwrap()
-            };
+        let swap_ix = swap_instructions(
+            &ctx.rpc,
+            SwapConfig {
+                whirlpool_address: pool_pubkey,
+                amount: 10,
+                specified_mint: swap_input_mint,
+                swap_type: SwapType::ExactIn,
+                slippage_tolerance_bps: Some(100),
+                signer: Some(ctx.signer.pubkey()),
+                whirlpool_deployment: Some(whirlpool_deployment),
+            },
+        )
+        .await
+        .unwrap();
+        ctx.send_transaction_with_signers(
+            swap_ix.instructions,
+            swap_ix.additional_signers.iter().collect(),
+        )
+        .await
+        .unwrap();
 
-            verify_harvest_position(&ctx, &harvest_ix, *ata_a, *ata_b, position_mint)
-                .await
-                .unwrap();
-        });
+        let config = HarvestPositionConfig {
+            position_mint_address: position_mint,
+            authority: Some(ctx.signer.pubkey()),
+            whirlpool_deployment: Some(whirlpool_deployment),
+        };
+
+        let harvest_ix = harvest_position_instructions(&ctx.rpc, config)
+            .await
+            .unwrap();
+
+        let ata_a = if swapped {
+            user_atas.get(mint_b_key).unwrap()
+        } else {
+            user_atas.get(mint_a_key).unwrap()
+        };
+        let ata_b = if swapped {
+            user_atas.get(mint_a_key).unwrap()
+        } else {
+            user_atas.get(mint_b_key).unwrap()
+        };
+
+        verify_harvest_position(
+            &ctx,
+            &harvest_ix,
+            *ata_a,
+            *ata_b,
+            position_mint,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
     }
 }

@@ -124,8 +124,14 @@ pub fn fetch_all_maybe_adaptive_fee_tier(
 
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for AdaptiveFeeTier {
+      /// Returns the mutable Whirlpool program ID.
+      ///
+      /// Using this with an account owned by the immutable Whirlpool program will
+      /// cause anchor's owner check to reject a valid account. Prefer fetching
+      /// the account via RPC and reading its `owner` field directly.
+      #[deprecated(note = "returns mutable Whirlpool program ID only")]
       fn owner() -> Pubkey {
-        unimplemented!("fetch account via rpc to determine owner")
+        crate::WHIRLPOOL_ID
       }
   }
 

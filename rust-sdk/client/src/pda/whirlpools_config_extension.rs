@@ -1,20 +1,16 @@
+use crate::WhirlpoolDeployment;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
-use crate::TargetProgram;
-
-/// Derives the whirlpools config extension PDA under the supplied target program.
-///
-/// Passing `None` for `target_program` falls back to [`TargetProgram::default`] (the mutable
-/// mainnet deployment).
+/// Derives the whirlpool config extension PDA under the supplied target program.
 pub fn get_whirlpools_config_extension_address(
-    target_program: Option<TargetProgram>,
+    whirlpool_deployment: WhirlpoolDeployment,
 ) -> Result<(Pubkey, u8), ProgramError> {
-    let target_program = target_program.unwrap_or_default();
-    let whirlpools_config = target_program.config_address();
+    let whirlpools_config = whirlpool_deployment.config_address();
     let seeds = &[b"config_extension", whirlpools_config.as_ref()];
 
-    Pubkey::try_find_program_address(seeds, &target_program.id()).ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, &whirlpool_deployment.id())
+        .ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
@@ -23,12 +19,21 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    fn test_get_whirlpools_config_extension_address() {
-        let whirlpools_config =
-            Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
+    fn test_get_whirlpools_config_extension_address_mutable() {
         let whirlpools_config_extension =
             Pubkey::from_str("777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH").unwrap();
-        let (address, _) = get_whirlpools_config_extension_address(None).unwrap();
+        let (address, _) =
+            get_whirlpools_config_extension_address(WhirlpoolDeployment::mainnet()).unwrap();
+        assert_eq!(address, whirlpools_config_extension);
+    }
+
+    #[test]
+    fn test_get_whirlpools_config_extension_address_immutable() {
+        let whirlpools_config_extension =
+            Pubkey::from_str("4Bsw8VVuegLmKQh2reevMBr2xw5R76WaJRKCvvxgcQrN").unwrap();
+        let (address, _) =
+            get_whirlpools_config_extension_address(WhirlpoolDeployment::mainnet_immutable())
+                .unwrap();
         assert_eq!(address, whirlpools_config_extension);
     }
 }

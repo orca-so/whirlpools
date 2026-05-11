@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use orca_whirlpools::{close_position_instructions, ClosePositionConfig};
+use orca_whirlpools::{close_position_instructions, ClosePositionConfig, WhirlpoolDeployment};
 use orca_whirlpools_client::{Position, Whirlpool};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSendTransactionConfig;
@@ -33,7 +33,7 @@ pub async fn display_position_balances(
             position_mint_address: position.position_mint,
             slippage_tolerance_bps: Some(slippage_tolerance_bps),
             authority: None,
-            program_id: None,
+            whirlpool_deployment: Some(WhirlpoolDeployment::mainnet()),
         },
     )
     .await?;

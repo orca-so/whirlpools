@@ -7,8 +7,9 @@ use async_trait::async_trait;
 use litesvm::LiteSVM;
 use litesvm_token::create_native_mint;
 use orca_whirlpools_client::{
-    get_fee_tier_address, get_whirlpools_config_extension_address, FEE_TIER_DISCRIMINATOR,
-    WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR, WHIRLPOOL_ID,
+    get_fee_tier_address, get_whirlpools_config_extension_address, WhirlpoolDeployment,
+    FEE_TIER_DISCRIMINATOR, WHIRLPOOLS_CONFIG_DISCRIMINATOR,
+    WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR,
 };
 use serde_json::{from_value, to_value, Value};
 use solana_account::{Account, ReadableAccount};
@@ -66,85 +67,9 @@ impl RpcContext {
         svm.airdrop(&signer.pubkey(), 100_000_000_000).unwrap();
         create_native_mint(&mut svm);
 
-        let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
-        svm.set_account(
-            config,
-            Account {
-                lamports: 100_000_000_000,
-                data: [
-                    WHIRLPOOLS_CONFIG_DISCRIMINATOR.as_slice(),
-                    &signer.pubkey().to_bytes(), // fee_authority
-                    &signer.pubkey().to_bytes(), // collect_protocol_fee_authority
-                    &signer.pubkey().to_bytes(), // reward_emissions_super_authority
-                    &[0; 2],                     // default_protocol_fee_rate
-                    &[0; 2],                     // feature_flags
-                ]
-                .concat(),
-                owner: WHIRLPOOL_ID,
-                executable: false,
-                rent_epoch: 0,
-            },
-        )
-        .unwrap();
-
-        let default_fee_tier = get_fee_tier_address(None, 128).unwrap().0;
-        svm.set_account(
-            default_fee_tier,
-            Account {
-                lamports: 100_000_000_000,
-                data: [
-                    FEE_TIER_DISCRIMINATOR.as_slice(),
-                    &config.to_bytes(),
-                    &128u16.to_le_bytes(),
-                    &1000u16.to_le_bytes(),
-                ]
-                .concat(),
-                owner: WHIRLPOOL_ID,
-                executable: false,
-                rent_epoch: 0,
-            },
-        )
-        .unwrap();
-
-        let concentrated_fee_tier = get_fee_tier_address(None, 64).unwrap().0;
-        svm.set_account(
-            concentrated_fee_tier,
-            Account {
-                lamports: 100_000_000_000,
-                data: [
-                    FEE_TIER_DISCRIMINATOR.as_slice(),
-                    &config.to_bytes(),
-                    &64u16.to_le_bytes(),
-                    &300u16.to_le_bytes(),
-                ]
-                .concat(),
-                owner: WHIRLPOOL_ID,
-                executable: false,
-                rent_epoch: 0,
-            },
-        )
-        .unwrap();
-
-        let splash_fee_tier = get_fee_tier_address(None, SPLASH_POOL_TICK_SPACING)
-            .unwrap()
-            .0;
-        svm.set_account(
-            splash_fee_tier,
-            Account {
-                lamports: 100_000_000_000,
-                data: [
-                    FEE_TIER_DISCRIMINATOR.as_slice(),
-                    &config.to_bytes(),
-                    &SPLASH_POOL_TICK_SPACING.to_le_bytes(),
-                    &1000u16.to_le_bytes(),
-                ]
-                .concat(),
-                owner: WHIRLPOOL_ID,
-                executable: false,
-                rent_epoch: 0,
-            },
-        )
-        .unwrap();
+        let _ = setup_whirlpool_deployment(&mut svm, WhirlpoolDeployment::mainnet(), &signer);
+        let _ =
+            setup_whirlpool_deployment(&mut svm, WhirlpoolDeployment::mainnet_immutable(), &signer);
 
         // Create the metadata_update_auth account required by OpenPositionWithTokenExtensions
         let metadata_update_auth =
@@ -155,26 +80,6 @@ impl RpcContext {
                 lamports: 100_000_000_000,
                 data: vec![],
                 owner: solana_system_interface::program::id(),
-                executable: false,
-                rent_epoch: 0,
-            },
-        )
-        .unwrap();
-
-        // Create the whirlpools config extension account
-        let config_extension = get_whirlpools_config_extension_address(None).unwrap().0;
-        svm.set_account(
-            config_extension,
-            Account {
-                lamports: 100_000_000_000,
-                data: [
-                    WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR.as_slice(),
-                    &config.to_bytes(),          // whirlpools_config
-                    &signer.pubkey().to_bytes(), // config_extension_authority
-                    &signer.pubkey().to_bytes(), // token_badge_authority
-                ]
-                .concat(),
-                owner: WHIRLPOOL_ID,
                 executable: false,
                 rent_epoch: 0,
             },
@@ -199,9 +104,17 @@ impl RpcContext {
             let program_path = format!("../../target/deploy/{}.so", name);
             let program_bytes = std::fs::read(&program_path)
                 .unwrap_or_else(|_| panic!("Failed to read program file: {}", program_path));
+
             svm.add_program(*pubkey, &program_bytes)
                 .expect("Failed to add program");
         }
+
+        // Load the immutable whirlpool program fixture
+        svm.add_program(
+            WhirlpoolDeployment::mainnet_immutable().id(),
+            include_bytes!("fixtures/whirlpool_immutable.so"),
+        )
+        .expect("Failed to add immutable whirlpool program");
 
         let svm = Arc::new(Mutex::new(svm));
         let rpc = RpcClient::new_sender(MockRpcSender { svm }, RpcClientConfig::default());
@@ -281,6 +194,120 @@ fn to_wire_account(
     } else {
         Ok(Value::Null)
     }
+}
+
+fn setup_whirlpool_deployment(
+    svm: &mut LiteSVM,
+    whirlpool_deployment: WhirlpoolDeployment,
+    signer: &Keypair,
+) -> Result<(), Box<dyn Error>> {
+    svm.set_account(
+        whirlpool_deployment.config_address(),
+        Account {
+            lamports: 100_000_000_000,
+            data: [
+                WHIRLPOOLS_CONFIG_DISCRIMINATOR.as_slice(),
+                &signer.pubkey().to_bytes(), // fee_authority
+                &signer.pubkey().to_bytes(), // collect_protocol_fee_authority
+                &signer.pubkey().to_bytes(), // reward_emissions_super_authority
+                &[0; 2],                     // default_protocol_fee_rate
+                &[0; 2],                     // feature_flags
+            ]
+            .concat(),
+            owner: whirlpool_deployment.id(),
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    let default_fee_tier = get_fee_tier_address(128, Some(whirlpool_deployment))
+        .unwrap()
+        .0;
+    svm.set_account(
+        default_fee_tier,
+        Account {
+            lamports: 100_000_000_000,
+            data: [
+                FEE_TIER_DISCRIMINATOR.as_slice(),
+                &whirlpool_deployment.config_address().to_bytes(),
+                &128u16.to_le_bytes(),
+                &1000u16.to_le_bytes(),
+            ]
+            .concat(),
+            owner: whirlpool_deployment.id(),
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    let concentrated_fee_tier = get_fee_tier_address(64, Some(whirlpool_deployment))
+        .unwrap()
+        .0;
+    svm.set_account(
+        concentrated_fee_tier,
+        Account {
+            lamports: 100_000_000_000,
+            data: [
+                FEE_TIER_DISCRIMINATOR.as_slice(),
+                &whirlpool_deployment.config_address().to_bytes(),
+                &64u16.to_le_bytes(),
+                &300u16.to_le_bytes(),
+            ]
+            .concat(),
+            owner: whirlpool_deployment.id(),
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    let splash_fee_tier =
+        get_fee_tier_address(SPLASH_POOL_TICK_SPACING, Some(whirlpool_deployment))
+            .unwrap()
+            .0;
+    svm.set_account(
+        splash_fee_tier,
+        Account {
+            lamports: 100_000_000_000,
+            data: [
+                FEE_TIER_DISCRIMINATOR.as_slice(),
+                &whirlpool_deployment.config_address().to_bytes(),
+                &SPLASH_POOL_TICK_SPACING.to_le_bytes(),
+                &1000u16.to_le_bytes(),
+            ]
+            .concat(),
+            owner: whirlpool_deployment.id(),
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    // Create the whirlpools config extension account
+    let config_extension = get_whirlpools_config_extension_address(whirlpool_deployment)
+        .unwrap()
+        .0;
+    svm.set_account(
+        config_extension,
+        Account {
+            lamports: 100_000_000_000,
+            data: [
+                WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR.as_slice(),
+                &whirlpool_deployment.config_address().to_bytes(), // whirlpools_config
+                &signer.pubkey().to_bytes(),                       // config_extension_authority
+                &signer.pubkey().to_bytes(),                       // token_badge_authority
+            ]
+            .concat(),
+            owner: whirlpool_deployment.id(),
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    Ok(())
 }
 
 fn send(svm: &mut LiteSVM, method: &str, params: &[Value]) -> Result<Value, Box<dyn Error>> {

@@ -4,7 +4,7 @@ use std::error::Error;
 use orca_whirlpools_client::Whirlpool;
 use orca_whirlpools_client::{
     get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address,
-    DynamicTickArray, TargetProgram,
+    DynamicTickArray, WhirlpoolDeployment,
 };
 use orca_whirlpools_client::{
     InitializeDynamicTickArray, InitializeDynamicTickArrayInstructionArgs, InitializePoolV2,
@@ -51,9 +51,9 @@ pub struct CreateSplashPoolConfig {
     pub initial_price: Option<f64>,
     /// An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target.
-    /// Defaults to the mutable whirlpool program and mainnet config if not provided
-    pub target_program: Option<TargetProgram>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Creates the necessary instructions to initialize a Splash Pool.
@@ -82,7 +82,7 @@ pub struct CreateSplashPoolConfig {
 /// # Example
 ///
 /// ```rust
-/// use orca_whirlpools::{create_splash_pool_instructions, CreateSplashPoolConfig, TargetProgram};
+/// use orca_whirlpools::{create_splash_pool_instructions, CreateSplashPoolConfig, WhirlpoolDeployment};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_keypair::{Keypair, Signer};
 /// use solana_pubkey::Pubkey;
@@ -94,14 +94,13 @@ pub struct CreateSplashPoolConfig {
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
-///     let devnet_target = TargetProgram::devnet();
 ///
 ///     let config = CreateSplashPoolConfig {
 ///         token_a,
 ///         token_b,
 ///         initial_price: Some(0.01),
 ///         funder: Some(wallet.pubkey()),
-///         target_program: Some(devnet_target),
+///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
 ///     let create_pool_instructions = create_splash_pool_instructions(&rpc, config)
 ///         .await
@@ -126,7 +125,7 @@ pub async fn create_splash_pool_instructions(
             tick_spacing: SPLASH_POOL_TICK_SPACING,
             initial_price: config.initial_price,
             funder: config.funder,
-            target_program: config.target_program,
+            whirlpool_deployment: config.whirlpool_deployment,
         },
     )
     .await
@@ -144,9 +143,9 @@ pub struct CreateConcentratedLiquidityPoolConfig {
     pub initial_price: Option<f64>,
     /// An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target.
-    /// Defaults to the mutable whirlpool program and mainnet config if not provided
-    pub target_program: Option<TargetProgram>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM).
@@ -177,7 +176,7 @@ pub struct CreateConcentratedLiquidityPoolConfig {
 /// ```
 /// use orca_whirlpools::{
 ///     create_concentrated_liquidity_pool_instructions, CreateConcentratedLiquidityPoolConfig,
-///     TargetProgram,
+///     WhirlpoolDeployment,
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_keypair::{Keypair, Signer};
@@ -190,7 +189,6 @@ pub struct CreateConcentratedLiquidityPoolConfig {
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
-///     let mainnet_target = TargetProgram::mainnet();
 ///
 ///     let config = CreateConcentratedLiquidityPoolConfig {
 ///         token_a,
@@ -198,7 +196,7 @@ pub struct CreateConcentratedLiquidityPoolConfig {
 ///         tick_spacing: 64,
 ///         initial_price: Some(0.01),
 ///         funder: Some(wallet.pubkey()),
-///         target_program: Some(mainnet_target)
+///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet())
 ///     };
 ///     let create_pool_instructions =
 ///         create_concentrated_liquidity_pool_instructions(&rpc, config)
@@ -216,50 +214,52 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
     config: CreateConcentratedLiquidityPoolConfig,
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
-    let target_program = config.target_program.unwrap_or_default();
+    let CreateConcentratedLiquidityPoolConfig {
+        whirlpool_deployment,
+        token_a,
+        token_b,
+        tick_spacing,
+        initial_price,
+        funder,
+    } = config;
 
-    let initial_price = config.initial_price.unwrap_or(1.0);
-    let funder = config.funder.unwrap_or(*FUNDER.try_lock()?);
+    let whirlpool_deployment = whirlpool_deployment.unwrap_or_default();
+
+    let initial_price = initial_price.unwrap_or(1.0);
+    let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     if funder == Pubkey::default() {
         return Err("Funder must be provided".into());
     }
-    if order_mints(config.token_a, config.token_b)[0] != config.token_a {
+    if order_mints(token_a, token_b)[0] != token_a {
         return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
     }
 
     let rent = get_rent(rpc).await?;
 
-    let account_infos = rpc
-        .get_multiple_accounts(&[config.token_a, config.token_b])
-        .await?;
+    let account_infos = rpc.get_multiple_accounts(&[token_a, token_b]).await?;
     let mint_a_info = account_infos[0]
         .as_ref()
-        .ok_or(format!("Mint {} not found", config.token_a))?;
+        .ok_or(format!("Mint {} not found", token_a))?;
     let mint_a = StateWithExtensions::<Mint>::unpack(&mint_a_info.data)?;
     let decimals_a = mint_a.base.decimals;
     let token_program_a = mint_a_info.owner;
     let mint_b_info = account_infos[1]
         .as_ref()
-        .ok_or(format!("Mint {} not found", config.token_b))?;
+        .ok_or(format!("Mint {} not found", token_b))?;
     let mint_b = StateWithExtensions::<Mint>::unpack(&mint_b_info.data)?;
     let decimals_b = mint_b.base.decimals;
     let token_program_b = mint_b_info.owner;
 
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
 
-    let pool_address = get_whirlpool_address(
-        Some(target_program),
-        &config.token_a,
-        &config.token_b,
-        config.tick_spacing,
-    )?
-    .0;
+    let pool_address =
+        get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))?.0;
 
-    let fee_tier = get_fee_tier_address(Some(target_program), config.tick_spacing)?.0;
+    let fee_tier = get_fee_tier_address(tick_spacing, Some(whirlpool_deployment))?.0;
 
-    let token_badge_a = get_token_badge_address(Some(target_program), &config.token_a)?.0;
+    let token_badge_a = get_token_badge_address(&token_a, Some(whirlpool_deployment))?.0;
 
-    let token_badge_b = get_token_badge_address(Some(target_program), &config.token_b)?.0;
+    let token_badge_b = get_token_badge_address(&token_b, Some(whirlpool_deployment))?.0;
 
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();
@@ -268,9 +268,9 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let mut instructions = vec![];
 
     let mut initialize_pool_v2_ix = InitializePoolV2 {
-        whirlpools_config: target_program.config_address(),
-        token_mint_a: config.token_a,
-        token_mint_b: config.token_b,
+        whirlpools_config: whirlpool_deployment.config_address(),
+        token_mint_a: token_a,
+        token_mint_b: token_b,
         token_badge_a,
         token_badge_b,
         funder,
@@ -285,10 +285,10 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     }
     .instruction(InitializePoolV2InstructionArgs {
         initial_sqrt_price,
-        tick_spacing: config.tick_spacing,
+        tick_spacing,
     });
 
-    initialize_pool_v2_ix.program_id = target_program.id();
+    initialize_pool_v2_ix.program_id = whirlpool_deployment.id();
 
     instructions.push(initialize_pool_v2_ix);
 
@@ -298,20 +298,22 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let token_b_space = get_account_data_size(token_program_b, mint_b_info)?;
     initialization_cost += rent.minimum_balance(token_b_space);
 
-    let full_range = get_full_range_tick_indexes(config.tick_spacing);
+    let full_range = get_full_range_tick_indexes(tick_spacing);
     let lower_tick_index =
-        get_tick_array_start_tick_index(full_range.tick_lower_index, config.tick_spacing);
+        get_tick_array_start_tick_index(full_range.tick_lower_index, tick_spacing);
     let upper_tick_index =
-        get_tick_array_start_tick_index(full_range.tick_upper_index, config.tick_spacing);
+        get_tick_array_start_tick_index(full_range.tick_upper_index, tick_spacing);
     let initial_tick_index = sqrt_price_to_tick_index(initial_sqrt_price);
-    let current_tick_index =
-        get_tick_array_start_tick_index(initial_tick_index, config.tick_spacing);
+    let current_tick_index = get_tick_array_start_tick_index(initial_tick_index, tick_spacing);
 
     let tick_array_indexes =
         HashSet::from([lower_tick_index, upper_tick_index, current_tick_index]);
     for start_tick_index in tick_array_indexes {
-        let tick_array_address =
-            get_tick_array_address(&pool_address, start_tick_index, Some(&target_program.id()))?;
+        let tick_array_address = get_tick_array_address(
+            &pool_address,
+            start_tick_index,
+            Some(whirlpool_deployment.id()),
+        )?;
         let mut initialize_dynamic_tick_array_ix = InitializeDynamicTickArray {
             whirlpool: pool_address,
             tick_array: tick_array_address.0,
@@ -323,7 +325,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
             idempotent: false,
         });
 
-        initialize_dynamic_tick_array_ix.program_id = target_program.id();
+        initialize_dynamic_tick_array_ix.program_id = whirlpool_deployment.id();
 
         instructions.push(initialize_dynamic_tick_array_ix);
         initialization_cost += rent.minimum_balance(DynamicTickArray::MIN_LEN);
@@ -344,6 +346,7 @@ mod tests {
     };
 
     use super::*;
+    use rstest::rstest;
     use serial_test::serial;
 
     async fn fetch_pool(
@@ -354,9 +357,12 @@ mod tests {
         Whirlpool::from_bytes(&account.data).map_err(|e| e.into())
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_error_if_no_funder() {
+    async fn test_error_if_no_funder(#[case] whirlpool_deployment: WhirlpoolDeployment) {
         let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
@@ -368,7 +374,7 @@ mod tests {
                 token_b: mint_b,
                 initial_price: Some(1.0),
                 funder: None,
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -376,9 +382,12 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_error_if_tokens_not_ordered() {
+    async fn test_error_if_tokens_not_ordered(#[case] whirlpool_deployment: WhirlpoolDeployment) {
         let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
@@ -391,7 +400,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(1.0),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -399,9 +408,12 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_splash_pool() {
+    async fn test_create_splash_pool(#[case] whirlpool_deployment: WhirlpoolDeployment) {
         let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
@@ -415,7 +427,7 @@ mod tests {
                 token_b: mint_b,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -453,9 +465,14 @@ mod tests {
         assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_splash_pool_with_one_te_token() {
+    async fn test_create_splash_pool_with_one_te_token(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
@@ -469,7 +486,7 @@ mod tests {
                 token_b: mint_te,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -507,9 +524,14 @@ mod tests {
         assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_splash_pool_with_two_te_tokens() {
+    async fn test_create_splash_pool_with_two_te_tokens(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
@@ -523,7 +545,7 @@ mod tests {
                 token_b: mint_te_b,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -561,9 +583,14 @@ mod tests {
         assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_splash_pool_with_transfer_fee() {
+    async fn test_create_splash_pool_with_transfer_fee(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
@@ -577,7 +604,7 @@ mod tests {
                 token_b: mint_te_fee,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -615,9 +642,14 @@ mod tests {
         assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_concentrated_liquidity_pool() {
+    async fn test_create_concentrated_liquidity_pool(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
@@ -632,7 +664,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -670,9 +702,14 @@ mod tests {
         assert_eq!(64, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_concentrated_liquidity_pool_with_one_te_token() {
+    async fn test_create_concentrated_liquidity_pool_with_one_te_token(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
@@ -687,7 +724,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -725,9 +762,14 @@ mod tests {
         assert_eq!(64, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_concentrated_liquidity_pool_with_two_te_tokens() {
+    async fn test_create_concentrated_liquidity_pool_with_two_te_tokens(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
@@ -742,7 +784,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -780,9 +822,14 @@ mod tests {
         assert_eq!(64, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_concentrated_liquidity_pool_with_transfer_fee() {
+    async fn test_create_concentrated_liquidity_pool_with_transfer_fee(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
@@ -797,7 +844,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await
@@ -835,9 +882,14 @@ mod tests {
         assert_eq!(64, pool_after.tick_spacing);
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_create_concentrated_liquidity_pool_with_scaled_ui_amount() {
+    async fn test_create_concentrated_liquidity_pool_with_scaled_ui_amount(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
         let mint = setup_mint(&ctx).await.unwrap();
         let mint_te_sua = setup_mint_te_sua(&ctx).await.unwrap();
@@ -852,7 +904,7 @@ mod tests {
                 tick_spacing: 64,
                 initial_price: Some(price),
                 funder: Some(ctx.signer.pubkey()),
-                target_program: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await

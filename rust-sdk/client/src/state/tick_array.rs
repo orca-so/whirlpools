@@ -244,6 +244,12 @@ impl anchor_lang::AccountSerialize for TickArray {
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for TickArray {
+    /// Returns the mutable Whirlpool program ID.
+    ///
+    /// Using this with an account owned by the immutable Whirlpool program will
+    /// cause anchor's owner check to reject a valid account. Prefer fetching
+    /// the account via RPC and reading its `owner` field directly.
+    #[deprecated(note = "returns mutable Whirlpool program ID only")]
     fn owner() -> anchor_lang::prelude::Pubkey {
         anchor_lang::prelude::Pubkey::from(crate::WHIRLPOOL_ID.to_bytes())
     }

@@ -4,7 +4,7 @@ use std::str::FromStr;
 use orca_whirlpools_client::{
     get_position_address, get_tick_array_address, DynamicTickArray, InitializeDynamicTickArray,
     InitializeDynamicTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
-    OpenPositionWithTokenExtensionsInstructionArgs, Position, Whirlpool,
+    OpenPositionWithTokenExtensionsInstructionArgs, Position, Whirlpool, WhirlpoolDeployment,
 };
 use orca_whirlpools_client::{
     IncreaseLiquidityByTokenAmountsV2, IncreaseLiquidityByTokenAmountsV2InstructionArgs,
@@ -51,7 +51,7 @@ struct GetIncreaseLiquidityInstructionsParams<'a> {
     param: &'a IncreaseLiquidityParam,
     authority: Pubkey,
     slippage_tolerance_bps: u16,
-    program_id: Option<&'a Pubkey>,
+    program_id: Pubkey,
 }
 
 struct GetIncreaseLiquidityInstructionsResult {
@@ -122,9 +122,7 @@ async fn get_increase_liquidity_instructions(
         remaining_accounts_info: None,
     });
 
-    if let Some(pid) = params.program_id {
-        increase_liquidity_instruction.program_id = *pid;
-    }
+    increase_liquidity_instruction.program_id = params.program_id;
 
     Ok(GetIncreaseLiquidityInstructionsResult {
         token_accounts,
@@ -146,7 +144,7 @@ pub struct IncreaseLiquidityInstruction {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct IncreaseLiquidityConfig<'a> {
+pub struct IncreaseLiquidityConfig {
     /// The public key of the NFT mint address representing the pool position.
     pub position_mint_address: Pubkey,
     /// Maximum amounts of token A and B to deposit. The program will use
@@ -156,8 +154,9 @@ pub struct IncreaseLiquidityConfig<'a> {
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the account authorizing the liquidity addition. Defaults to the global funder if not provided.
     pub authority: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Generates instructions to increase liquidity for an existing position.
@@ -188,7 +187,7 @@ pub struct IncreaseLiquidityConfig<'a> {
 ///
 /// ```rust
 /// use orca_whirlpools::{
-///     increase_liquidity_instructions, IncreaseLiquidityConfig, IncreaseLiquidityParam,
+///     increase_liquidity_instructions, IncreaseLiquidityConfig, IncreaseLiquidityParam, WhirlpoolDeployment
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
@@ -207,7 +206,7 @@ pub struct IncreaseLiquidityConfig<'a> {
 ///         param,
 ///         slippage_tolerance_bps: Some(100),
 ///         authority: Some(wallet.pubkey()),
-///         program_id: None,
+///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
 ///     let result = increase_liquidity_instructions(&rpc, config)
 ///         .await
@@ -218,18 +217,22 @@ pub struct IncreaseLiquidityConfig<'a> {
 /// ```
 pub async fn increase_liquidity_instructions(
     rpc: &RpcClient,
-    config: IncreaseLiquidityConfig<'_>,
+    config: IncreaseLiquidityConfig,
 ) -> Result<IncreaseLiquidityInstruction, Box<dyn Error>> {
     let slippage_tolerance_bps = config
         .slippage_tolerance_bps
         .unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
     let authority = config.authority.unwrap_or(*FUNDER.try_lock()?);
+    let whirlpool_deployment = config.whirlpool_deployment.unwrap_or_default();
     if authority == Pubkey::default() {
         return Err("Authority must be provided".into());
     }
 
-    let position_address =
-        get_position_address(&config.position_mint_address, config.program_id)?.0;
+    let position_address = get_position_address(
+        &config.position_mint_address,
+        Some(whirlpool_deployment.id()),
+    )?
+    .0;
     let position_info = rpc.get_account(&position_address).await?;
     let position = Position::from_bytes(&position_info.data)?;
 
@@ -267,13 +270,13 @@ pub async fn increase_liquidity_instructions(
     let lower_tick_array_address = get_tick_array_address(
         &position.whirlpool,
         lower_tick_array_start_index,
-        config.program_id,
+        Some(whirlpool_deployment.id()),
     )?
     .0;
     let upper_tick_array_address = get_tick_array_address(
         &position.whirlpool,
         upper_tick_array_start_index,
-        config.program_id,
+        Some(whirlpool_deployment.id()),
     )?
     .0;
 
@@ -294,7 +297,7 @@ pub async fn increase_liquidity_instructions(
             authority,
             slippage_tolerance_bps,
             param: &config.param,
-            program_id: config.program_id,
+            program_id: whirlpool_deployment.id(),
         },
     )
     .await?;
@@ -341,7 +344,7 @@ async fn internal_open_position(
     mint_b_info: &Account,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
-    program_id: Option<&Pubkey>,
+    program_id: Pubkey,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     let slippage_tolerance_bps =
@@ -377,16 +380,16 @@ async fn internal_open_position(
     let upper_tick_start_index =
         get_tick_array_start_tick_index(upper_initializable_tick_index, whirlpool.tick_spacing);
 
-    let position_address = get_position_address(&position_mint, program_id)?.0;
+    let position_address = get_position_address(&position_mint, Some(program_id))?.0;
     let position_token_account_address = get_associated_token_address_with_program_id(
         &funder,
         &position_mint,
         &spl_token_2022_interface::ID,
     );
     let lower_tick_array_address =
-        get_tick_array_address(&pool_address, lower_tick_start_index, program_id)?.0;
+        get_tick_array_address(&pool_address, lower_tick_start_index, Some(program_id))?.0;
     let upper_tick_array_address =
-        get_tick_array_address(&pool_address, upper_tick_start_index, program_id)?.0;
+        get_tick_array_address(&pool_address, upper_tick_start_index, Some(program_id))?.0;
 
     let GetIncreaseLiquidityInstructionsResult {
         token_accounts,
@@ -429,9 +432,7 @@ async fn internal_open_position(
             idempotent: false,
         });
 
-        if let Some(pid) = program_id {
-            initialize_dynamic_tick_array_lower_ix.program_id = *pid;
-        };
+        initialize_dynamic_tick_array_lower_ix.program_id = program_id;
 
         instructions.push(initialize_dynamic_tick_array_lower_ix);
         non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
@@ -449,9 +450,7 @@ async fn internal_open_position(
             idempotent: false,
         });
 
-        if let Some(pid) = program_id {
-            initialize_dynamic_tick_array_upper_ix.program_id = *pid;
-        };
+        initialize_dynamic_tick_array_upper_ix.program_id = program_id;
 
         instructions.push(initialize_dynamic_tick_array_upper_ix);
         non_refundable_rent += rent.minimum_balance(DynamicTickArray::MIN_LEN);
@@ -475,9 +474,7 @@ async fn internal_open_position(
         with_token_metadata_extension: true,
     });
 
-    if let Some(pid) = program_id {
-        open_position_with_token_extensions_ix.program_id = *pid;
-    };
+    open_position_with_token_extensions_ix.program_id = program_id;
 
     instructions.push(open_position_with_token_extensions_ix);
 
@@ -493,7 +490,7 @@ async fn internal_open_position(
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct OpenFullRangePositionConfig<'a> {
+pub struct OpenFullRangePositionConfig {
     /// The public key of the liquidity pool.
     pub pool_address: Pubkey,
     /// Maximum amounts of token A and B to deposit.
@@ -502,8 +499,9 @@ pub struct OpenFullRangePositionConfig<'a> {
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the funder account. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Opens a full-range position in a liquidity pool.
@@ -539,7 +537,7 @@ pub struct OpenFullRangePositionConfig<'a> {
 /// use solana_pubkey::Pubkey;
 /// use orca_whirlpools::{
 ///     open_full_range_position_instructions, IncreaseLiquidityParam,
-///     OpenFullRangePositionConfig,
+///     OpenFullRangePositionConfig, WhirlpoolDeployment
 /// };
 /// use std::str::FromStr;
 ///
@@ -555,7 +553,7 @@ pub struct OpenFullRangePositionConfig<'a> {
 ///     param,
 ///     slippage_tolerance_bps: Some(100),
 ///     funder: Some(wallet.pubkey()),
-///     program_id: None,
+///     whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 /// };
 /// let result = open_full_range_position_instructions(&rpc, config).unwrap();
 ///
@@ -564,8 +562,9 @@ pub struct OpenFullRangePositionConfig<'a> {
 /// ```
 pub async fn open_full_range_position_instructions(
     rpc: &RpcClient,
-    config: OpenFullRangePositionConfig<'_>,
+    config: OpenFullRangePositionConfig,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    let whirlpool_deployment = config.whirlpool_deployment.unwrap_or_default();
     let whirlpool_info = rpc.get_account(&config.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     let tick_range = get_full_range_tick_indexes(whirlpool.tick_spacing);
@@ -589,13 +588,13 @@ pub async fn open_full_range_position_instructions(
         mint_b_info,
         config.slippage_tolerance_bps,
         config.funder,
-        config.program_id,
+        whirlpool_deployment.id(),
     )
     .await
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct OpenPositionConfig<'a> {
+pub struct OpenPositionConfig {
     /// The public key of the liquidity pool.
     pub pool_address: Pubkey,
     /// The lower bound of the price range for the position. Must be greater than 0.0.
@@ -608,8 +607,9 @@ pub struct OpenPositionConfig<'a> {
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the funder account. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Opens a position in a liquidity pool within a specific price range.
@@ -646,7 +646,7 @@ pub struct OpenPositionConfig<'a> {
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_keypair::Keypair;
 /// use solana_pubkey::Pubkey;
-/// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam, OpenPositionConfig};
+/// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam, OpenPositionConfig, WhirlpoolDeployment};
 /// use std::str::FromStr;
 ///
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
@@ -663,7 +663,7 @@ pub struct OpenPositionConfig<'a> {
 ///     param,
 ///     slippage_tolerance_bps: Some(100),
 ///     funder: Some(wallet.pubkey()),
-///     program_id: None,
+///     whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 /// };
 /// let result = open_position_instructions(&rpc, config).unwrap();
 ///
@@ -672,8 +672,9 @@ pub struct OpenPositionConfig<'a> {
 /// ```
 pub async fn open_position_instructions(
     rpc: &RpcClient,
-    config: OpenPositionConfig<'_>,
+    config: OpenPositionConfig,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    let whirlpool_deployment = config.whirlpool_deployment.unwrap_or_default();
     if config.lower_price <= 0.0 || config.upper_price <= 0.0 {
         return Err("Floating price must be greater than 0.0".into());
     }
@@ -711,13 +712,13 @@ pub async fn open_position_instructions(
         mint_b_info,
         config.slippage_tolerance_bps,
         config.funder,
-        config.program_id,
+        whirlpool_deployment.id(),
     )
     .await
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct OpenPositionWithTickBoundsConfig<'a> {
+pub struct OpenPositionWithTickBoundsConfig {
     /// The public key of the liquidity pool.
     pub pool_address: Pubkey,
     /// The lower tick bound for the position. Must be in bounds and aligned with tick spacing.
@@ -730,8 +731,9 @@ pub struct OpenPositionWithTickBoundsConfig<'a> {
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the funder account. Defaults to the global funder if not provided.
     pub funder: Option<Pubkey>,
-    /// An optional public key of the whirlpool program to target. Defaults to the original whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
-    pub program_id: Option<&'a Pubkey>,
+    /// The Whirlpool program and config account to target.
+    /// Uses [`WhirlpoolDeployment::default`] when `None`.
+    pub whirlpool_deployment: Option<WhirlpoolDeployment>,
 }
 
 /// Opens a position in a liquidity pool using explicit tick-index bounds.
@@ -772,7 +774,7 @@ pub struct OpenPositionWithTickBoundsConfig<'a> {
 /// use solana_pubkey::Pubkey;
 /// use orca_whirlpools::{
 ///     open_position_instructions_with_tick_bounds, IncreaseLiquidityParam,
-///     OpenPositionWithTickBoundsConfig,
+///     OpenPositionWithTickBoundsConfig, WhirlpoolDeployment
 /// };
 /// use std::str::FromStr;
 ///
@@ -790,7 +792,7 @@ pub struct OpenPositionWithTickBoundsConfig<'a> {
 ///     param,
 ///     slippage_tolerance_bps: Some(100),
 ///     funder: Some(wallet.pubkey()),
-///     program_id: None,
+///     whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 /// };
 /// let result = open_position_instructions_with_tick_bounds(&rpc, config).unwrap();
 ///
@@ -799,8 +801,9 @@ pub struct OpenPositionWithTickBoundsConfig<'a> {
 /// ```
 pub async fn open_position_instructions_with_tick_bounds(
     rpc: &RpcClient,
-    config: OpenPositionWithTickBoundsConfig<'_>,
+    config: OpenPositionWithTickBoundsConfig,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
+    let whirlpool_deployment = config.whirlpool_deployment.unwrap_or_default();
     let whirlpool_info = rpc.get_account(&config.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
@@ -860,7 +863,7 @@ pub async fn open_position_instructions_with_tick_bounds(
         mint_b_info,
         config.slippage_tolerance_bps,
         config.funder,
-        config.program_id,
+        whirlpool_deployment.id(),
     )
     .await
 }
@@ -870,7 +873,7 @@ mod tests {
     use std::collections::HashMap;
     use std::error::Error;
 
-    use orca_whirlpools_client::{get_position_address, Position, Whirlpool};
+    use orca_whirlpools_client::{get_position_address, Position, Whirlpool, WhirlpoolDeployment};
     use orca_whirlpools_core::{
         increase_liquidity_quote_a, increase_liquidity_quote_b, IncreaseLiquidityQuote, TransferFee,
     };
@@ -950,9 +953,7 @@ mod tests {
         let liquidity_b = quote_b.liquidity_delta;
         let quote = if liquidity_a == 0 {
             quote_b
-        } else if liquidity_b == 0 {
-            quote_a
-        } else if liquidity_a <= liquidity_b {
+        } else if liquidity_b == 0 || liquidity_a <= liquidity_b {
             quote_a
         } else {
             quote_b
@@ -960,6 +961,7 @@ mod tests {
         Ok(quote)
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn verify_increase_liquidity(
         ctx: &RpcContext,
         increase_ix: &IncreaseLiquidityInstruction,
@@ -968,6 +970,7 @@ mod tests {
         position_mint: Pubkey,
         param: IncreaseLiquidityParam,
         pool_name: &str,
+        whirlpool_deployment: WhirlpoolDeployment,
     ) -> Result<(), Box<dyn Error>> {
         let before_a = get_token_balance(&ctx.rpc, token_a_account).await?;
         let before_b = get_token_balance(&ctx.rpc, token_b_account).await?;
@@ -981,7 +984,8 @@ mod tests {
         let used_a = before_a.saturating_sub(after_a);
         let used_b = before_b.saturating_sub(after_b);
 
-        let position_pubkey = get_position_address(&position_mint, None)?.0;
+        let position_pubkey =
+            get_position_address(&position_mint, Some(whirlpool_deployment.id()))?.0;
         let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
         let pool_info = ctx.rpc.get_account(&position_data.whirlpool).await?;
         let pool = Whirlpool::from_bytes(&pool_info.data)?;
@@ -1109,118 +1113,170 @@ mod tests {
     }
 
     #[rstest]
-    #[case("A-B", "equally centered", -100, 100)]
-    #[case("A-B", "one sided A", -100, -1)]
-    #[case("A-B", "one sided B", 1, 100)]
-    #[case("A-TEA", "equally centered", -100, 100)]
-    #[case("A-TEA", "one sided A", -100, -1)]
-    #[case("A-TEA", "one sided B", 1, 100)]
-    #[case("TEA-TEB", "equally centered", -100, 100)]
-    #[case("TEA-TEB", "one sided A", -100, -1)]
-    #[case("TEA-TEB", "one sided B", 1, 100)]
-    #[case("A-TEFee", "equally centered", -100, 100)]
-    #[case("A-TEFee", "one sided A", -100, -1)]
-    #[case("A-TEFee", "one sided B", 1, 100)]
+    #[case("A-B", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEA", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
+    #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("TEA-TEB", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
+    #[case("A-TEFee", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
+    #[case("A-B", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "A-TEA",
+        "one sided B",
+        1,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "TEA-TEB",
+        "one sided B",
+        1,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "A-TEFee",
+        "one sided B",
+        1,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[tokio::test]
     #[serial]
-    fn test_increase_liquidity_cases(
+    async fn test_increase_liquidity_cases(
         #[case] pool_name: &str,
         #[case] _position_name: &str,
         #[case] lower_tick: i32,
         #[case] upper_tick: i32,
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
     ) {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(async {
-            let ctx = RpcContext::new();
-
-            let minted = setup_all_mints(&ctx).await.unwrap();
-            let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
-
-            let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
-            let _pubkey_a = minted.get(mint_a_key).unwrap();
-            let _pubkey_b = minted.get(mint_b_key).unwrap();
-            let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
-            let pubkey_a = *minted.get(mint_a_key).unwrap();
-            let pubkey_b = *minted.get(mint_b_key).unwrap();
-
-            let (final_a, final_b) = if pubkey_a < pubkey_b {
-                (pubkey_a, pubkey_b)
-            } else {
-                (pubkey_b, pubkey_a)
-            };
-
-            // prevent flaky test by ordering the tokens correctly by lexical order
-            let tick_spacing = 64;
-            let swapped = pubkey_a > pubkey_b;
-            let pool_pubkey = setup_whirlpool(&ctx, final_a, final_b, tick_spacing)
-                .await
-                .unwrap();
-            let user_ata_for_token_a = if swapped {
-                user_atas.get(mint_b_key).unwrap()
-            } else {
-                user_atas.get(mint_a_key).unwrap()
-            };
-            let user_ata_for_token_b = if swapped {
-                user_atas.get(mint_a_key).unwrap()
-            } else {
-                user_atas.get(mint_b_key).unwrap()
-            };
-
-            let position_mint =
-                setup_position(&ctx, pool_pubkey, Some((lower_tick, upper_tick)), None)
-                    .await
-                    .unwrap();
-
-            let base_token_amount = 10_000u64;
-            let (token_max_a, token_max_b) = match (lower_tick, upper_tick) {
-                (-100, -1) => (0, base_token_amount), // one sided A -> deposit only B
-                (1, 100) => (base_token_amount, 0),   // one sided B -> deposit only A
-                _ => (base_token_amount, base_token_amount), // equally centered
-            };
-            let param = IncreaseLiquidityParam {
-                token_max_a,
-                token_max_b,
-            };
-
-            let inc_ix = increase_liquidity_instructions(
-                &ctx.rpc,
-                IncreaseLiquidityConfig {
-                    position_mint_address: position_mint,
-                    param: param.clone(),
-                    slippage_tolerance_bps: Some(100),
-                    authority: Some(ctx.signer.pubkey()),
-                    program_id: None,
-                },
-            )
-            .await
-            .unwrap();
-
-            verify_increase_liquidity(
-                &ctx,
-                &inc_ix,
-                *user_ata_for_token_a,
-                *user_ata_for_token_b,
-                position_mint,
-                param,
-                pool_name,
-            )
-            .await
-            .unwrap();
-        });
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_increase_liquidity_fails_if_authority_is_default() -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new();
 
-        let minted = setup_all_mints(&ctx).await?;
-        let _user_atas = setup_all_atas(&ctx, &minted).await?;
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
+
+        let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
+        let _pubkey_a = minted.get(mint_a_key).unwrap();
+        let _pubkey_b = minted.get(mint_b_key).unwrap();
+        let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
+        let pubkey_a = *minted.get(mint_a_key).unwrap();
+        let pubkey_b = *minted.get(mint_b_key).unwrap();
+
+        let (final_a, final_b) = if pubkey_a < pubkey_b {
+            (pubkey_a, pubkey_b)
+        } else {
+            (pubkey_b, pubkey_a)
+        };
+
+        // prevent flaky test by ordering the tokens correctly by lexical order
+        let tick_spacing = 64;
+        let swapped = pubkey_a > pubkey_b;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, final_a, final_b, tick_spacing, whirlpool_deployment)
+                .await
+                .unwrap();
+        let user_ata_for_token_a = if swapped {
+            user_atas.get(mint_b_key).unwrap()
+        } else {
+            user_atas.get(mint_a_key).unwrap()
+        };
+        let user_ata_for_token_b = if swapped {
+            user_atas.get(mint_a_key).unwrap()
+        } else {
+            user_atas.get(mint_b_key).unwrap()
+        };
+
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((lower_tick, upper_tick)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
+
+        let base_token_amount = 10_000u64;
+        let (token_max_a, token_max_b) = match (lower_tick, upper_tick) {
+            (-100, -1) => (0, base_token_amount), // one sided A -> deposit only B
+            (1, 100) => (base_token_amount, 0),   // one sided B -> deposit only A
+            _ => (base_token_amount, base_token_amount), // equally centered
+        };
+        let param = IncreaseLiquidityParam {
+            token_max_a,
+            token_max_b,
+        };
+
+        let inc_ix = increase_liquidity_instructions(
+            &ctx.rpc,
+            IncreaseLiquidityConfig {
+                position_mint_address: position_mint,
+                param: param.clone(),
+                slippage_tolerance_bps: Some(100),
+                authority: Some(ctx.signer.pubkey()),
+                whirlpool_deployment: Some(whirlpool_deployment),
+            },
+        )
+        .await
+        .unwrap();
+
+        verify_increase_liquidity(
+            &ctx,
+            &inc_ix,
+            *user_ata_for_token_a,
+            *user_ata_for_token_b,
+            position_mint,
+            param,
+            pool_name,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
+    }
+
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
+    #[tokio::test]
+    #[serial]
+    async fn test_increase_liquidity_fails_if_authority_is_default(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
+        let ctx = RpcContext::new();
+
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let _user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                .await
+                .unwrap();
 
-        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-100, 100)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
 
         use solana_pubkey::Pubkey;
         let param = IncreaseLiquidityParam {
@@ -1234,7 +1290,7 @@ mod tests {
                 param,
                 slippage_tolerance_bps: Some(100),
                 authority: Some(Pubkey::default()),
-                program_id: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -1247,24 +1303,37 @@ mod tests {
             "Error string was: {}",
             err_str
         );
-
-        Ok(())
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
     async fn test_increase_liquidity_succeeds_if_deposit_exceeds_user_balance_when_balance_check_not_enforced(
-    ) -> Result<(), Box<dyn Error>> {
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
 
-        let minted = setup_all_mints(&ctx).await?;
-        let _user_atas = setup_all_atas(&ctx, &minted).await?;
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let _user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                .await
+                .unwrap();
 
-        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-100, 100)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
 
         // Attempt - use a large token_max_b so the quote is constrained by token A.
         let param = IncreaseLiquidityParam {
@@ -1278,7 +1347,7 @@ mod tests {
                 param,
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
-                program_id: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -1287,25 +1356,38 @@ mod tests {
             res.is_ok(),
             "Should succeed when balance checking is disabled even if deposit exceeds balance"
         );
-
-        Ok(())
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
     async fn test_increase_liquidity_fails_if_deposit_exceeds_user_balance_when_balance_check_enforced(
-    ) -> Result<(), Box<dyn Error>> {
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
-        crate::set_enforce_token_balance_check(true)?;
+        crate::set_enforce_token_balance_check(true).unwrap();
 
-        let minted = setup_all_mints(&ctx).await?;
-        let _user_atas = setup_all_atas(&ctx, &minted).await?;
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let _user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                .await
+                .unwrap();
 
-        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-100, 100)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
 
         // Attempt - use a large token_max_b so the quote is constrained by token A.
         let param = IncreaseLiquidityParam {
@@ -1319,7 +1401,7 @@ mod tests {
                 param,
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
-                program_id: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -1336,23 +1418,38 @@ mod tests {
             err_str
         );
 
-        crate::reset_configuration()?;
-        Ok(())
+        crate::reset_configuration().unwrap();
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_open_position_fails_if_lower_price_is_zero() -> Result<(), Box<dyn Error>> {
+    async fn test_open_position_fails_if_lower_price_is_zero(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
 
-        let minted = setup_all_mints(&ctx).await?;
-        let _user_atas = setup_all_atas(&ctx, &minted).await?;
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let _user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                .await
+                .unwrap();
 
-        let _position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let _position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-100, 100)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
 
         // Attempt
         let lower_price = 0.0; // if price is 0.0, open_position_instructions will be failed
@@ -1369,7 +1466,7 @@ mod tests {
                 param,
                 slippage_tolerance_bps: Some(100),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -1384,23 +1481,37 @@ mod tests {
             "Unexpected error message: {}",
             err_str
         );
-
-        Ok(())
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_open_position_fails_if_upper_price_is_zero() -> Result<(), Box<dyn Error>> {
+    async fn test_open_position_fails_if_upper_price_is_zero(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) {
         let ctx = RpcContext::new();
 
-        let minted = setup_all_mints(&ctx).await?;
-        let _user_atas = setup_all_atas(&ctx, &minted).await?;
+        let minted = setup_all_mints(&ctx).await.unwrap();
+        let _user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                .await
+                .unwrap();
 
-        let _position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+        let _position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-100, 100)),
+            None,
+            whirlpool_deployment,
+        )
+        .await
+        .unwrap();
 
         // Attempt
         let upper_price = 0.0; // if price is 0.0, open_position_instructions will be failed
@@ -1417,7 +1528,7 @@ mod tests {
                 param,
                 slippage_tolerance_bps: Some(100),
                 funder: Some(ctx.signer.pubkey()),
-                program_id: None,
+                whirlpool_deployment: Some(whirlpool_deployment),
             },
         )
         .await;
@@ -1432,27 +1543,35 @@ mod tests {
             "Unexpected error message: {}",
             err_str
         );
-
-        Ok(())
     }
 
     mod open_position_with_tick_bounds {
+        use orca_whirlpools_client::WhirlpoolDeployment;
+
         use super::*;
         use crate::{
             open_position_instructions_with_tick_bounds, OpenPositionWithTickBoundsConfig,
         };
 
+        #[rstest]
+        #[case(WhirlpoolDeployment::mainnet())]
+        #[case(WhirlpoolDeployment::mainnet_immutable())]
         #[tokio::test]
         #[serial]
-        async fn fails_if_lower_tick_out_of_bounds() -> Result<(), Box<dyn Error>> {
+        async fn fails_if_lower_tick_out_of_bounds(
+            #[case] whirlpool_deployment: WhirlpoolDeployment,
+        ) {
             let ctx = RpcContext::new();
 
-            let minted = setup_all_mints(&ctx).await?;
-            setup_all_atas(&ctx, &minted).await?;
+            let minted = setup_all_mints(&ctx).await.unwrap();
+            setup_all_atas(&ctx, &minted).await.unwrap();
 
             let mint_a_key = minted.get("A").unwrap();
             let mint_b_key = minted.get("B").unwrap();
-            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+            let pool_pubkey =
+                setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                    .await
+                    .unwrap();
 
             let param = IncreaseLiquidityParam {
                 token_max_a: 2_000_000_000,
@@ -1467,7 +1586,7 @@ mod tests {
                     param,
                     slippage_tolerance_bps: Some(100),
                     funder: Some(ctx.signer.pubkey()),
-                    program_id: None,
+                    whirlpool_deployment: Some(whirlpool_deployment),
                 },
             )
             .await;
@@ -1482,21 +1601,27 @@ mod tests {
                 "Unexpected error message: {}",
                 err_str
             );
-
-            Ok(())
         }
 
+        #[rstest]
+        #[case(WhirlpoolDeployment::mainnet())]
+        #[case(WhirlpoolDeployment::mainnet_immutable())]
         #[tokio::test]
         #[serial]
-        async fn fails_if_upper_tick_out_of_bounds() -> Result<(), Box<dyn Error>> {
+        async fn fails_if_upper_tick_out_of_bounds(
+            #[case] whirlpool_deployment: WhirlpoolDeployment,
+        ) {
             let ctx = RpcContext::new();
 
-            let minted = setup_all_mints(&ctx).await?;
-            setup_all_atas(&ctx, &minted).await?;
+            let minted = setup_all_mints(&ctx).await.unwrap();
+            setup_all_atas(&ctx, &minted).await.unwrap();
 
             let mint_a_key = minted.get("A").unwrap();
             let mint_b_key = minted.get("B").unwrap();
-            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+            let pool_pubkey =
+                setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                    .await
+                    .unwrap();
 
             let param = IncreaseLiquidityParam {
                 token_max_a: 2_000_000_000,
@@ -1511,7 +1636,7 @@ mod tests {
                     param,
                     slippage_tolerance_bps: Some(100),
                     funder: Some(ctx.signer.pubkey()),
-                    program_id: None,
+                    whirlpool_deployment: Some(whirlpool_deployment),
                 },
             )
             .await;
@@ -1526,21 +1651,27 @@ mod tests {
                 "Unexpected error message: {}",
                 err_str
             );
-
-            Ok(())
         }
 
+        #[rstest]
+        #[case(WhirlpoolDeployment::mainnet())]
+        #[case(WhirlpoolDeployment::mainnet_immutable())]
         #[tokio::test]
         #[serial]
-        async fn fails_if_tick_not_aligned_with_tick_spacing() -> Result<(), Box<dyn Error>> {
+        async fn fails_if_tick_not_aligned_with_tick_spacing(
+            #[case] whirlpool_deployment: WhirlpoolDeployment,
+        ) {
             let ctx = RpcContext::new();
 
-            let minted = setup_all_mints(&ctx).await?;
-            setup_all_atas(&ctx, &minted).await?;
+            let minted = setup_all_mints(&ctx).await.unwrap();
+            setup_all_atas(&ctx, &minted).await.unwrap();
 
             let mint_a_key = minted.get("A").unwrap();
             let mint_b_key = minted.get("B").unwrap();
-            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+            let pool_pubkey =
+                setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                    .await
+                    .unwrap();
 
             let param = IncreaseLiquidityParam {
                 token_max_a: 2_000_000_000,
@@ -1555,7 +1686,7 @@ mod tests {
                     param,
                     slippage_tolerance_bps: Some(100),
                     funder: Some(ctx.signer.pubkey()),
-                    program_id: None,
+                    whirlpool_deployment: Some(whirlpool_deployment),
                 },
             )
             .await;
@@ -1570,21 +1701,27 @@ mod tests {
                 "Unexpected error message: {}",
                 err_str
             );
-
-            Ok(())
         }
 
+        #[rstest]
+        #[case(WhirlpoolDeployment::mainnet())]
+        #[case(WhirlpoolDeployment::mainnet_immutable())]
         #[tokio::test]
         #[serial]
-        async fn fails_if_lower_tick_gte_upper_tick() -> Result<(), Box<dyn Error>> {
+        async fn fails_if_lower_tick_gte_upper_tick(
+            #[case] whirlpool_deployment: WhirlpoolDeployment,
+        ) {
             let ctx = RpcContext::new();
 
-            let minted = setup_all_mints(&ctx).await?;
-            setup_all_atas(&ctx, &minted).await?;
+            let minted = setup_all_mints(&ctx).await.unwrap();
+            setup_all_atas(&ctx, &minted).await.unwrap();
 
             let mint_a_key = minted.get("A").unwrap();
             let mint_b_key = minted.get("B").unwrap();
-            let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+            let pool_pubkey =
+                setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+                    .await
+                    .unwrap();
 
             let param = IncreaseLiquidityParam {
                 token_max_a: 2_000_000_000,
@@ -1599,7 +1736,7 @@ mod tests {
                     param,
                     slippage_tolerance_bps: Some(100),
                     funder: Some(ctx.signer.pubkey()),
-                    program_id: None,
+                    whirlpool_deployment: Some(whirlpool_deployment),
                 },
             )
             .await;
@@ -1614,8 +1751,6 @@ mod tests {
                 "Unexpected error message: {}",
                 err_str
             );
-
-            Ok(())
         }
     }
 }

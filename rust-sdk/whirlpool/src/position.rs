@@ -74,14 +74,20 @@ pub enum PositionOrBundle {
     PositionBundle(HydratedPositionBundle),
 }
 
-fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pubkey> {
+fn get_position_in_bundle_addresses(
+    position_bundle: &PositionBundle,
+    program_id: Option<Pubkey>,
+) -> Vec<Pubkey> {
     let mut positions: Vec<Pubkey> = Vec::new();
     for i in 0..POSITION_BUNDLE_SIZE {
         let byte_index = i / 8;
         let bit_index = i % 8;
         if position_bundle.position_bitmap[byte_index] & (1 << bit_index) != 0 {
-            let result =
-                get_bundled_position_address(&position_bundle.position_bundle_mint, i as u8, None);
+            let result = get_bundled_position_address(
+                &position_bundle.position_bundle_mint,
+                i as u8,
+                program_id,
+            );
             if let Ok(result) = result {
                 positions.push(result.0);
             }
@@ -101,6 +107,7 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 ///
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `owner` - The public key of the wallet whose positions should be fetched.
+/// * `program_id` - An optional public key of the whirlpool program to target. Defaults to the mutable whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")
 ///
 /// # Returns
 ///
@@ -116,7 +123,7 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 ///
 /// # Example
 /// ```rust
-/// use orca_whirlpools::fetch_positions_for_owner;
+/// use orca_whirlpools::{fetch_positions_for_owner, WhirlpoolDeployment};
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_pubkey::Pubkey;
 /// use std::str::FromStr;
@@ -126,8 +133,9 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let owner =
 ///         Pubkey::from_str("FTEV6CnregJCqU8s8hGR3VAYCrPKHfekXLsJaKHbPBxp").unwrap();
+///     let devnet_whirlpool_deployment = WhirlpoolDeployment::devnet();
 ///
-///     let positions = fetch_positions_for_owner(&rpc, owner)
+///     let positions = fetch_positions_for_owner(&rpc, owner, Some(devnet_whirlpool_deployment.id()))
 ///         .await
 ///         .unwrap();
 ///
@@ -137,6 +145,7 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
+    program_id: Option<Pubkey>,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
     let token_accounts = get_token_accounts_for_owner(
         rpc,
@@ -159,12 +168,12 @@ pub async fn fetch_positions_for_owner(
 
     let position_addresses: Vec<Pubkey> = potiential_tokens
         .iter()
-        .map(|x| get_position_address(&x.mint, None).map(|x| x.0))
+        .map(|x| get_position_address(&x.mint, program_id).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let position_bundle_addresses: Vec<Pubkey> = potiential_tokens
         .iter()
-        .map(|x| get_position_bundle_address(&x.mint, None).map(|x| x.0))
+        .map(|x| get_position_bundle_address(&x.mint, program_id).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let position_infos = batch_get_multiple_accounts(rpc, &position_addresses, None).await?;
@@ -188,7 +197,7 @@ pub async fn fetch_positions_for_owner(
     let bundled_positions_addresses: Vec<Pubkey> = position_bundles
         .iter()
         .flatten()
-        .flat_map(get_position_in_bundle_addresses)
+        .flat_map(|bundle| get_position_in_bundle_addresses(bundle, program_id))
         .collect();
 
     let bundled_positions_infos: Vec<Account> =
@@ -306,17 +315,25 @@ mod tests {
         setup_ata_with_amount, setup_mint_with_decimals, setup_position, setup_position_bundle,
         setup_te_position, setup_whirlpool, RpcContext,
     };
+    use orca_whirlpools_client::WhirlpoolDeployment;
+    use rstest::rstest;
     use serial_test::serial;
     use solana_keypair::Signer;
 
     use std::error::Error;
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_positions_for_owner_no_positions() -> Result<(), Box<dyn Error>> {
+    async fn test_fetch_positions_for_owner_no_positions(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new();
         let owner = ctx.signer.pubkey();
-        let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
+        let positions =
+            fetch_positions_for_owner(&ctx.rpc, owner, Some(whirlpool_deployment.id())).await?;
         assert!(
             positions.is_empty(),
             "No positions should exist for a new owner"
@@ -324,27 +341,36 @@ mod tests {
         Ok(())
     }
 
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_positions_for_owner_with_position() -> Result<(), Box<dyn Error>> {
+    async fn test_fetch_positions_for_owner_with_position(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
-        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-        let normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
+        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64, whirlpool_deployment).await?;
+        let normal_position_pubkey =
+            setup_position(&ctx, whirlpool, None, None, whirlpool_deployment).await?;
 
         // 1) Add a te_position (uses token-2022)
-        let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
+        let _te_position_pubkey =
+            setup_te_position(&ctx, whirlpool, None, None, whirlpool_deployment).await?;
 
         // 2) Add a position bundle, optionally with multiple bundled positions
         let _position_bundle_pubkey =
-            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()])).await?;
+            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()]), whirlpool_deployment)
+                .await?;
 
         let owner = ctx.signer.pubkey();
-        let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
+        let positions =
+            fetch_positions_for_owner(&ctx.rpc, owner, Some(whirlpool_deployment.id())).await?;
 
         // Expect at least 3: normal, te_position, and a bundle
         assert!(
@@ -369,24 +395,34 @@ mod tests {
         Ok(())
     }
 
+    // Only parameterized for the mutable mainnet program. `fetch_positions_in_whirlpool` calls
+    // `fetch_all_position_with_filter`, whose underlying GPA helper in the client crate is hardcoded
+    // to `WHIRLPOOL_ID` and so cannot find positions owned by the immutable program.
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
     #[tokio::test]
     #[serial]
-    async fn test_fetch_positions_in_whirlpool() -> Result<(), Box<dyn Error>> {
+    async fn test_fetch_positions_in_whirlpool(
+        #[case] whirlpool_deployment: WhirlpoolDeployment,
+    ) -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
-        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-        let _normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
+        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64, whirlpool_deployment).await?;
+        let _normal_position_pubkey =
+            setup_position(&ctx, whirlpool, None, None, whirlpool_deployment).await?;
 
         // 1) te_position
-        let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
+        let _te_position_pubkey =
+            setup_te_position(&ctx, whirlpool, None, None, whirlpool_deployment).await?;
 
         // 2) position bundle
         let _position_bundle_pubkey =
-            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()])).await?;
+            setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()]), whirlpool_deployment)
+                .await?;
 
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
 

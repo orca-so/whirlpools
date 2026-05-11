@@ -8,7 +8,7 @@ use crate::{
 use colored::Colorize;
 use orca_whirlpools::{
     close_position_instructions, open_position_instructions, ClosePositionConfig,
-    IncreaseLiquidityParam, OpenPositionConfig,
+    IncreaseLiquidityParam, OpenPositionConfig, WhirlpoolDeployment,
 };
 use orca_whirlpools_client::{get_position_address, Position};
 use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price};
@@ -77,7 +77,7 @@ pub async fn run_position_manager(
                 position_mint_address: position.position_mint,
                 slippage_tolerance_bps: Some(args.slippage_tolerance_bps),
                 authority: None,
-                program_id: None,
+                whirlpool_deployment: Some(WhirlpoolDeployment::mainnet()),
             },
         )
         .await
@@ -108,7 +108,7 @@ pub async fn run_position_manager(
                 param,
                 slippage_tolerance_bps: Some(args.slippage_tolerance_bps),
                 funder: None,
-                program_id: None,
+                whirlpool_deployment: Some(WhirlpoolDeployment::mainnet()),
             },
         )
         .await
@@ -147,8 +147,11 @@ pub async fn run_position_manager(
 
         let position_mint_address = open_position_instructions.position_mint;
         println!("New position mint address: {}", position_mint_address);
-        let (position_address, _) = get_position_address(&position_mint_address, None)
-            .map_err(|_| "Failed to derive new position address.")?;
+        let (position_address, _) = get_position_address(
+            &position_mint_address,
+            Some(WhirlpoolDeployment::mainnet().id()),
+        )
+        .map_err(|_| "Failed to derive new position address.")?;
         *position = fetch_position(rpc, &position_address)
             .await
             .map_err(|_| "Failed to fetch new position data.")?;

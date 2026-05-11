@@ -18,15 +18,27 @@ codama.update(
 
 const renderMap = codama.accept(getRenderMapVisitor());
 
-// Replace just the body of the `Owner` impl across every generated file.
+// Inject a doc comment + #[deprecated] attribute above every generated
+// `anchor_lang::Owner` impl's `fn owner()`. The body (the constant program ID)
+// is left intact, and the indentation of the existing `fn owner()` line is
+// captured so the injected lines line up with whatever codama renders.
 const ownerImplRe =
-  /(impl anchor_lang::Owner for \w+ \{\s*fn owner\(\) -> Pubkey \{\s*)crate::\w+_ID(\s*\}\s*\})/g;
+  /(impl anchor_lang::Owner for \w+ \{)(\s*)(fn owner\(\) -> Pubkey \{\s*crate::\w+_ID\s*\}\s*\})/g;
+
+const ownerImplAnnotations = [
+  "/// Returns the mutable Whirlpool program ID.",
+  "///",
+  "/// Using this with an account owned by the immutable Whirlpool program will",
+  "/// cause anchor's owner check to reject a valid account. Prefer fetching",
+  "/// the account via RPC and reading its `owner` field directly.",
+  '#[deprecated(note = "returns mutable Whirlpool program ID only")]',
+];
 
 const patched = mapRenderMapContent(renderMap, (content) =>
-  content.replace(
-    ownerImplRe,
-    '$1unimplemented!("fetch account via rpc to determine owner")$2',
-  ),
+  content.replace(ownerImplRe, (_, head, ws, body) => {
+    const injected = ownerImplAnnotations.map((line) => ws + line).join("");
+    return head + injected + ws + body;
+  }),
 );
 
 const outDir = "./src/generated";

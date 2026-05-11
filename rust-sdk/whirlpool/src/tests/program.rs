@@ -5,7 +5,7 @@ use orca_whirlpools_client::{
     InitializePositionBundle, InitializeTickArray, InitializeTickArrayInstructionArgs,
     OpenBundledPosition, OpenBundledPositionInstructionArgs, OpenPosition,
     OpenPositionInstructionArgs, OpenPositionWithTokenExtensions,
-    OpenPositionWithTokenExtensionsInstructionArgs, Whirlpool,
+    OpenPositionWithTokenExtensionsInstructionArgs, Whirlpool, WhirlpoolDeployment,
 };
 use orca_whirlpools_core::{
     get_initializable_tick_index, get_tick_array_start_tick_index, tick_index_to_sqrt_price,
@@ -17,7 +17,7 @@ use solana_sysvar_id::SysvarId;
 use spl_associated_token_account_interface::address::get_associated_token_address_with_program_id;
 use spl_token_2022_interface::ID as TOKEN_2022_PROGRAM_ID;
 use spl_token_interface::ID as TOKEN_PROGRAM_ID;
-use std::{error::Error, str::FromStr};
+use std::error::Error;
 
 use super::rpc::RpcContext;
 
@@ -27,6 +27,7 @@ pub async fn init_tick_arrays_for_range(
     lower_tick_index: i32,
     upper_tick_index: i32,
     spacing: u16,
+    whirlpool_deployment: WhirlpoolDeployment,
 ) -> Result<(), Box<dyn Error>> {
     let (low, high) = if lower_tick_index <= upper_tick_index {
         (lower_tick_index, upper_tick_index)
@@ -49,21 +50,22 @@ pub async fn init_tick_arrays_for_range(
 
     let mut current = begin;
     while current <= end {
-        let (tick_array_addr, _) = get_tick_array_address(&whirlpool, current, None)?;
+        let (tick_array_addr, _) =
+            get_tick_array_address(&whirlpool, current, Some(whirlpool_deployment.id()))?;
 
         let account_result = ctx.rpc.get_account(&tick_array_addr).await;
         if account_result.is_err() {
-            instructions.push(
-                InitializeTickArray {
-                    whirlpool,
-                    funder: ctx.signer.pubkey(),
-                    tick_array: tick_array_addr,
-                    system_program: solana_system_interface::program::id(),
-                }
-                .instruction(InitializeTickArrayInstructionArgs {
-                    start_tick_index: current,
-                }),
-            );
+            let mut instruction = InitializeTickArray {
+                whirlpool,
+                funder: ctx.signer.pubkey(),
+                tick_array: tick_array_addr,
+                system_program: solana_system_interface::program::id(),
+            }
+            .instruction(InitializeTickArrayInstructionArgs {
+                start_tick_index: current,
+            });
+            instruction.program_id = whirlpool_deployment.id();
+            instructions.push(instruction);
         }
 
         current += offset;
@@ -81,12 +83,13 @@ pub async fn setup_whirlpool(
     token_a: Pubkey,
     token_b: Pubkey,
     tick_spacing: u16,
+    whirlpool_deployment: WhirlpoolDeployment,
 ) -> Result<Pubkey, Box<dyn Error>> {
-    let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
-    let fee_tier = get_fee_tier_address(None, tick_spacing)?.0;
-    let whirlpool = get_whirlpool_address(None, &token_a, &token_b, tick_spacing)?.0;
-    let token_badge_a = get_token_badge_address(None, &token_a)?.0;
-    let token_badge_b = get_token_badge_address(None, &token_b)?.0;
+    let fee_tier = get_fee_tier_address(tick_spacing, Some(whirlpool_deployment))?.0;
+    let whirlpool =
+        get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))?.0;
+    let token_badge_a = get_token_badge_address(&token_a, Some(whirlpool_deployment))?.0;
+    let token_badge_b = get_token_badge_address(&token_b, Some(whirlpool_deployment))?.0;
 
     let vault_a = ctx.get_next_keypair();
     let vault_b = ctx.get_next_keypair();
@@ -97,12 +100,12 @@ pub async fn setup_whirlpool(
     // Default initial price of 1.0
     let sqrt_price = tick_index_to_sqrt_price(0);
 
-    let instructions = vec![InitializePoolV2 {
+    let mut instruction = InitializePoolV2 {
         whirlpool,
         fee_tier,
         token_mint_a: token_a,
         token_mint_b: token_b,
-        whirlpools_config: config,
+        whirlpools_config: whirlpool_deployment.config_address(),
         funder: ctx.signer.pubkey(),
         token_vault_a: vault_a.pubkey(),
         token_vault_b: vault_b.pubkey(),
@@ -116,9 +119,11 @@ pub async fn setup_whirlpool(
     .instruction(InitializePoolV2InstructionArgs {
         tick_spacing,
         initial_sqrt_price: sqrt_price,
-    })];
+    });
 
-    ctx.send_transaction_with_signers(instructions, vec![&vault_a, &vault_b])
+    instruction.program_id = whirlpool_deployment.id();
+
+    ctx.send_transaction_with_signers(vec![instruction], vec![&vault_a, &vault_b])
         .await?;
 
     Ok(whirlpool)
@@ -129,6 +134,7 @@ pub async fn setup_position(
     whirlpool: Pubkey,
     tick_range: Option<(i32, i32)>,
     owner: Option<Pubkey>,
+    whirlpool_deployment: WhirlpoolDeployment,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let position_mint = ctx.get_next_keypair();
 
@@ -147,10 +153,16 @@ pub async fn setup_position(
     let upper_tick_array_start =
         get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing);
 
-    let (lower_tick_array_addr, _) =
-        get_tick_array_address(&whirlpool, lower_tick_array_start, None)?;
-    let (upper_tick_array_addr, _) =
-        get_tick_array_address(&whirlpool, upper_tick_array_start, None)?;
+    let (lower_tick_array_addr, _) = get_tick_array_address(
+        &whirlpool,
+        lower_tick_array_start,
+        Some(whirlpool_deployment.id()),
+    )?;
+    let (upper_tick_array_addr, _) = get_tick_array_address(
+        &whirlpool,
+        upper_tick_array_start,
+        Some(whirlpool_deployment.id()),
+    )?;
 
     init_tick_arrays_for_range(
         ctx,
@@ -158,6 +170,7 @@ pub async fn setup_position(
         tick_lower,
         tick_upper,
         whirlpool_account.tick_spacing,
+        whirlpool_deployment,
     )
     .await?;
 
@@ -165,37 +178,38 @@ pub async fn setup_position(
 
     let lower_tick_array_account = ctx.rpc.get_account(&lower_tick_array_addr).await;
     if lower_tick_array_account.is_err() {
-        instructions.push(
-            InitializeTickArray {
-                whirlpool,
-                funder: ctx.signer.pubkey(),
-                tick_array: lower_tick_array_addr,
-                system_program: solana_system_interface::program::id(),
-            }
-            .instruction(InitializeTickArrayInstructionArgs {
-                start_tick_index: lower_tick_array_start,
-            }),
-        );
+        let mut instruction = InitializeTickArray {
+            whirlpool,
+            funder: ctx.signer.pubkey(),
+            tick_array: lower_tick_array_addr,
+            system_program: solana_system_interface::program::id(),
+        }
+        .instruction(InitializeTickArrayInstructionArgs {
+            start_tick_index: lower_tick_array_start,
+        });
+        instruction.program_id = whirlpool_deployment.id();
+        instructions.push(instruction);
     }
 
     if upper_tick_array_start != lower_tick_array_start {
         let upper_tick_array_account = ctx.rpc.get_account(&upper_tick_array_addr).await;
         if upper_tick_array_account.is_err() {
-            instructions.push(
-                InitializeTickArray {
-                    whirlpool,
-                    funder: ctx.signer.pubkey(),
-                    tick_array: upper_tick_array_addr,
-                    system_program: solana_system_interface::program::id(),
-                }
-                .instruction(InitializeTickArrayInstructionArgs {
-                    start_tick_index: upper_tick_array_start,
-                }),
-            );
+            let mut instruction = InitializeTickArray {
+                whirlpool,
+                funder: ctx.signer.pubkey(),
+                tick_array: upper_tick_array_addr,
+                system_program: solana_system_interface::program::id(),
+            }
+            .instruction(InitializeTickArrayInstructionArgs {
+                start_tick_index: upper_tick_array_start,
+            });
+            instruction.program_id = whirlpool_deployment.id();
+            instructions.push(instruction);
         }
     }
 
-    let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey(), None)?;
+    let (position_pubkey, position_bump) =
+        get_position_address(&position_mint.pubkey(), Some(whirlpool_deployment.id()))?;
 
     let position_token_account = get_associated_token_address_with_program_id(
         &ctx.signer.pubkey(),
@@ -221,25 +235,25 @@ pub async fn setup_position(
         tick_upper_index: upper_tick_index,
         position_bump,
     });
-    instructions.push(
-        OpenPosition {
-            funder: ctx.signer.pubkey(),
-            owner: owner_pubkey,
-            position: position_pubkey,
-            position_mint: position_mint.pubkey(),
-            position_token_account,
-            whirlpool,
-            token_program: TOKEN_PROGRAM_ID,
-            system_program: solana_system_interface::program::id(),
-            associated_token_program: spl_associated_token_account_interface::program::id(),
-            rent: solana_rent::Rent::id(),
-        }
-        .instruction(OpenPositionInstructionArgs {
-            tick_lower_index: lower_tick_index,
-            tick_upper_index: upper_tick_index,
-            position_bump,
-        }),
-    );
+    let mut open_position_ix = OpenPosition {
+        funder: ctx.signer.pubkey(),
+        owner: owner_pubkey,
+        position: position_pubkey,
+        position_mint: position_mint.pubkey(),
+        position_token_account,
+        whirlpool,
+        token_program: TOKEN_PROGRAM_ID,
+        system_program: solana_system_interface::program::id(),
+        associated_token_program: spl_associated_token_account_interface::program::id(),
+        rent: solana_rent::Rent::id(),
+    }
+    .instruction(OpenPositionInstructionArgs {
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
+        position_bump,
+    });
+    open_position_ix.program_id = whirlpool_deployment.id();
+    instructions.push(open_position_ix);
 
     ctx.send_transaction_with_signers(instructions, vec![&position_mint])
         .await?;
@@ -252,6 +266,7 @@ pub async fn setup_te_position(
     whirlpool: Pubkey,
     tick_range: Option<(i32, i32)>,
     owner: Option<Pubkey>,
+    whirlpool_deployment: WhirlpoolDeployment,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let metadata_update_auth = Pubkey::try_from("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")?;
     let owner = owner.unwrap_or_else(|| ctx.signer.pubkey());
@@ -277,11 +292,13 @@ pub async fn setup_te_position(
         tick_lower,
         tick_upper,
         whirlpool_account.tick_spacing,
+        whirlpool_deployment,
     )
     .await?;
 
     for start_tick in tick_arrays.iter() {
-        let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick, None)?;
+        let (tick_array_address, _) =
+            get_tick_array_address(&whirlpool, *start_tick, Some(whirlpool_deployment.id()))?;
 
         let account_result = ctx.rpc.get_account(&tick_array_address).await;
         let needs_init = match account_result {
@@ -290,7 +307,7 @@ pub async fn setup_te_position(
         };
 
         if needs_init {
-            let init_tick_array_ix = InitializeTickArray {
+            let mut init_tick_array_ix = InitializeTickArray {
                 whirlpool,
                 funder: ctx.signer.pubkey(),
                 tick_array: tick_array_address,
@@ -299,6 +316,7 @@ pub async fn setup_te_position(
             .instruction(InitializeTickArrayInstructionArgs {
                 start_tick_index: *start_tick,
             });
+            init_tick_array_ix.program_id = whirlpool_deployment.id();
 
             ctx.send_transaction(vec![init_tick_array_ix]).await?;
         }
@@ -306,7 +324,8 @@ pub async fn setup_te_position(
 
     let te_position_mint = ctx.get_next_keypair();
 
-    let (position_pubkey, _position_bump) = get_position_address(&te_position_mint.pubkey(), None)?;
+    let (position_pubkey, _position_bump) =
+        get_position_address(&te_position_mint.pubkey(), Some(whirlpool_deployment.id()))?;
 
     let te_position_token_account = get_associated_token_address_with_program_id(
         &owner,
@@ -314,7 +333,7 @@ pub async fn setup_te_position(
         &TOKEN_2022_PROGRAM_ID,
     );
 
-    let open_position_ix = OpenPositionWithTokenExtensions {
+    let mut open_position_ix = OpenPositionWithTokenExtensions {
         funder: ctx.signer.pubkey(),
         owner,
         position: position_pubkey,
@@ -331,6 +350,7 @@ pub async fn setup_te_position(
         tick_upper_index: upper_tick_index,
         with_token_metadata_extension: true,
     });
+    open_position_ix.program_id = whirlpool_deployment.id();
 
     ctx.send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
         .await?;
@@ -342,10 +362,13 @@ pub async fn setup_position_bundle(
     ctx: &RpcContext,
     whirlpool: Pubkey,
     bundle_positions: Option<Vec<()>>,
+    whirlpool_deployment: WhirlpoolDeployment,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let position_bundle_mint = ctx.get_next_keypair();
-    let (position_bundle_address, _bundle_bump) =
-        get_position_bundle_address(&position_bundle_mint.pubkey(), None)?;
+    let (position_bundle_address, _bundle_bump) = get_position_bundle_address(
+        &position_bundle_mint.pubkey(),
+        Some(whirlpool_deployment.id()),
+    )?;
 
     let position_bundle_token_account = get_associated_token_address_with_program_id(
         &ctx.signer.pubkey(),
@@ -353,7 +376,7 @@ pub async fn setup_position_bundle(
         &TOKEN_PROGRAM_ID,
     );
 
-    let open_bundle_ix = InitializePositionBundle {
+    let mut open_bundle_ix = InitializePositionBundle {
         funder: ctx.signer.pubkey(),
         position_bundle: position_bundle_address,
         position_bundle_mint: position_bundle_mint.pubkey(),
@@ -365,6 +388,7 @@ pub async fn setup_position_bundle(
         rent: solana_rent::Rent::id(),
     }
     .instruction();
+    open_bundle_ix.program_id = whirlpool_deployment.id();
 
     ctx.send_transaction_with_signers(vec![open_bundle_ix], vec![&position_bundle_mint])
         .await?;
@@ -375,10 +399,10 @@ pub async fn setup_position_bundle(
             let (bundled_position_address, _) = get_bundled_position_address(
                 &position_bundle_mint.pubkey(),
                 bundle_index as u8,
-                None,
+                Some(whirlpool_deployment.id()),
             )?;
 
-            let open_bundled_ix = OpenBundledPosition {
+            let mut open_bundled_ix = OpenBundledPosition {
                 funder: ctx.signer.pubkey(),
                 bundled_position: bundled_position_address,
                 position_bundle: position_bundle_address,
@@ -393,6 +417,7 @@ pub async fn setup_position_bundle(
                 tick_upper_index: 128,
                 bundle_index,
             });
+            open_bundled_ix.program_id = whirlpool_deployment.id();
 
             ctx.send_transaction(vec![open_bundled_ix]).await?;
         }

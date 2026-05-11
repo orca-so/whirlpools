@@ -29,9 +29,7 @@ struct TestContext {
 }
 
 impl TestContext {
-    pub async fn new(
-        whirlpool_deployment: WhirlpoolDeployment,
-    ) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(whirlpool_deployment: WhirlpoolDeployment) -> Result<Self, Box<dyn Error>> {
         let ctx = RpcContext::new();
         let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
@@ -136,8 +134,11 @@ impl TestContext {
             )
             .await?;
 
-        let position_address =
-            get_position_address(&position.position_mint, Some(self.whirlpool_deployment.id()))?.0;
+        let position_address = get_position_address(
+            &position.position_mint,
+            Some(self.whirlpool_deployment.id()),
+        )?
+        .0;
         let infos_after = &self
             .ctx
             .rpc

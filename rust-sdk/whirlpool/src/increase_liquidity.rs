@@ -1263,10 +1263,9 @@ mod tests {
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey =
-            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
-                .await
-                .unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+            .await
+            .unwrap();
 
         let position_mint = setup_position(
             &ctx,
@@ -1320,10 +1319,9 @@ mod tests {
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey =
-            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
-                .await
-                .unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+            .await
+            .unwrap();
 
         let position_mint = setup_position(
             &ctx,
@@ -1374,10 +1372,9 @@ mod tests {
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey =
-            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
-                .await
-                .unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+            .await
+            .unwrap();
 
         let position_mint = setup_position(
             &ctx,
@@ -1436,10 +1433,9 @@ mod tests {
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey =
-            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
-                .await
-                .unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+            .await
+            .unwrap();
 
         let _position_mint = setup_position(
             &ctx,
@@ -1498,10 +1494,9 @@ mod tests {
 
         let mint_a_key = minted.get("A").unwrap();
         let mint_b_key = minted.get("B").unwrap();
-        let pool_pubkey =
-            setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
-                .await
-                .unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64, whirlpool_deployment)
+            .await
+            .unwrap();
 
         let _position_mint = setup_position(
             &ctx,

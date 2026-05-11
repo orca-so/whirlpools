@@ -419,9 +419,7 @@ mod tests {
     }
 
     impl TestContext {
-        async fn new(
-            whirlpool_deployment: WhirlpoolDeployment,
-        ) -> Result<Self, Box<dyn Error>> {
+        async fn new(whirlpool_deployment: WhirlpoolDeployment) -> Result<Self, Box<dyn Error>> {
             let ctx = RpcContext::new();
             let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
             let mint_b = setup_mint_with_decimals(&ctx, 9).await?;

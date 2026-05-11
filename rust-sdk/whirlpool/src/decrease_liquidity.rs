@@ -925,13 +925,31 @@ mod tests {
     #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
     #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
     #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEA", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "A-TEA",
+        "one sided B",
+        1,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
     #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("TEA-TEB", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "TEA-TEB",
+        "one sided B",
+        1,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
     #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEFee", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "A-TEFee",
+        "one sided B",
+        1,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[tokio::test]
     #[serial]
     async fn test_decrease_liquidity_cases(

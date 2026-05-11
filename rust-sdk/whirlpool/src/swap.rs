@@ -552,31 +552,181 @@ mod tests {
     #[case("A-TEA", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-B", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-B", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-B", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-B", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEA", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEA", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEA", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEA", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("TEA-TEB", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("TEA-TEB", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("TEA-TEB", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("TEA-TEB", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEFee", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEFee", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEFee", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet_immutable())]
-    #[case("A-TEFee", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case(
+        "A-TEA",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-TEFee",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-TEFee",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-TEFee",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-TEFee",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-B",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-B",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-B",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-B",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEA",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEA",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEA",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEA",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "TEA-TEB",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "TEA-TEB",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "TEA-TEB",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "TEA-TEB",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEFee",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEFee",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEFee",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEFee",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[tokio::test]
     #[serial]
     async fn test_swap_scenarios(

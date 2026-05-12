@@ -107,8 +107,7 @@ export type SwapConfig = {
   /** The wallet or signer executing the swap. Defaults to the global funder. */
   signer?: TransactionSigner<string>;
   /**
-   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
-   * deployment if not provided.
+   * The Whirlpool program and config account to target. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT if not provided.
    */
   whirlpoolDeployment?: WhirlpoolDeployment;
 };

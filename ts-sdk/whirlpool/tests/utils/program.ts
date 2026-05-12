@@ -34,6 +34,7 @@ import {
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
 import { address, type Address, type Instruction } from "@solana/kit";
+import type { WhirlpoolDeployment } from "../../src/config";
 import { SPLASH_POOL_TICK_SPACING } from "../../src/config";
 import { LOCALNET_ADMIN_KEYPAIR_0 } from "./admin";
 import { getNextKeypair } from "./keypair";
@@ -44,49 +45,60 @@ import {
   TEST_WHIRLPOOL_DEPLOYMENT,
 } from "./mockRpc";
 
-export async function setupConfigAndFeeTiers(): Promise<Address> {
+export async function setupConfigAndFeeTiers(
+  programId: Address = TEST_WHIRLPOOL_DEPLOYMENT.programId,
+): Promise<Address> {
   const admin = LOCALNET_ADMIN_KEYPAIR_0;
   const keypair = getNextKeypair();
   const instructions: Instruction[] = [];
 
   instructions.push(
-    getInitializeConfigInstruction({
-      config: keypair,
-      funder: admin,
-      feeAuthority: signer.address,
-      collectProtocolFeesAuthority: signer.address,
-      rewardEmissionsSuperAuthority: signer.address,
-      defaultProtocolFeeRate: 100,
-    }),
+    getInitializeConfigInstruction(
+      {
+        config: keypair,
+        funder: admin,
+        feeAuthority: signer.address,
+        collectProtocolFeesAuthority: signer.address,
+        rewardEmissionsSuperAuthority: signer.address,
+        defaultProtocolFeeRate: 100,
+      },
+      { programAddress: programId },
+    ),
   );
 
   const tempDeployment = {
-    programId: TEST_WHIRLPOOL_DEPLOYMENT.programId,
+    programId,
     configAddress: keypair.address,
   };
 
   const defaultFeeTierPda = await getFeeTierAddress(128, tempDeployment);
   instructions.push(
-    getInitializeFeeTierInstruction({
-      config: keypair.address,
-      feeTier: defaultFeeTierPda[0],
-      funder: signer,
-      feeAuthority: signer,
-      tickSpacing: 128,
-      defaultFeeRate: 1000,
-    }),
+    getInitializeFeeTierInstruction(
+      {
+        config: keypair.address,
+        feeTier: defaultFeeTierPda[0],
+        funder: signer,
+        feeAuthority: signer,
+        tickSpacing: 128,
+        defaultFeeRate: 1000,
+      },
+      { programAddress: programId },
+    ),
   );
 
   const concentratedFeeTierPda = await getFeeTierAddress(64, tempDeployment);
   instructions.push(
-    getInitializeFeeTierInstruction({
-      config: keypair.address,
-      feeTier: concentratedFeeTierPda[0],
-      funder: signer,
-      feeAuthority: signer,
-      tickSpacing: 64,
-      defaultFeeRate: 300,
-    }),
+    getInitializeFeeTierInstruction(
+      {
+        config: keypair.address,
+        feeTier: concentratedFeeTierPda[0],
+        funder: signer,
+        feeAuthority: signer,
+        tickSpacing: 64,
+        defaultFeeRate: 300,
+      },
+      { programAddress: programId },
+    ),
   );
 
   const splashFeeTierPda = await getFeeTierAddress(
@@ -94,14 +106,17 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
     tempDeployment,
   );
   instructions.push(
-    getInitializeFeeTierInstruction({
-      config: keypair.address,
-      feeTier: splashFeeTierPda[0],
-      funder: signer,
-      feeAuthority: signer,
-      tickSpacing: SPLASH_POOL_TICK_SPACING,
-      defaultFeeRate: 1000,
-    }),
+    getInitializeFeeTierInstruction(
+      {
+        config: keypair.address,
+        feeTier: splashFeeTierPda[0],
+        funder: signer,
+        feeAuthority: signer,
+        tickSpacing: SPLASH_POOL_TICK_SPACING,
+        defaultFeeRate: 1000,
+      },
+      { programAddress: programId },
+    ),
   );
 
   await sendTransaction(instructions);
@@ -112,22 +127,23 @@ export async function setupWhirlpool(
   tokenA: Address,
   tokenB: Address,
   tickSpacing: number,
-  config: { initialSqrtPrice?: bigint } = {},
+  config: {
+    initialSqrtPrice?: bigint;
+    whirlpoolDeployment?: WhirlpoolDeployment;
+  } = {},
 ): Promise<Address> {
-  const feeTierAddress = await getFeeTierAddress(
-    tickSpacing,
-    TEST_WHIRLPOOL_DEPLOYMENT,
-  );
+  const deployment = config.whirlpoolDeployment ?? TEST_WHIRLPOOL_DEPLOYMENT;
+  const feeTierAddress = await getFeeTierAddress(tickSpacing, deployment);
   const whirlpoolAddress = await getWhirlpoolAddress(
     tokenA,
     tokenB,
     tickSpacing,
-    TEST_WHIRLPOOL_DEPLOYMENT,
+    deployment,
   );
   const vaultA = getNextKeypair();
   const vaultB = getNextKeypair();
-  const badgeA = await getTokenBadgeAddress(tokenA, TEST_WHIRLPOOL_DEPLOYMENT);
-  const badgeB = await getTokenBadgeAddress(tokenB, TEST_WHIRLPOOL_DEPLOYMENT);
+  const badgeA = await getTokenBadgeAddress(tokenA, deployment);
+  const badgeB = await getTokenBadgeAddress(tokenB, deployment);
   const mintA = await fetchMint(rpc, tokenA);
   const mintB = await fetchMint(rpc, tokenB);
   const programA = mintA.programAddress;
@@ -138,22 +154,25 @@ export async function setupWhirlpool(
   const instructions: Instruction[] = [];
 
   instructions.push(
-    getInitializePoolV2Instruction({
-      whirlpool: whirlpoolAddress[0],
-      feeTier: feeTierAddress[0],
-      tokenMintA: tokenA,
-      tokenMintB: tokenB,
-      tickSpacing,
-      whirlpoolsConfig: TEST_WHIRLPOOL_DEPLOYMENT.configAddress,
-      funder: signer,
-      tokenVaultA: vaultA,
-      tokenVaultB: vaultB,
-      tokenBadgeA: badgeA[0],
-      tokenBadgeB: badgeB[0],
-      tokenProgramA: programA,
-      tokenProgramB: programB,
-      initialSqrtPrice: sqrtPrice,
-    }),
+    getInitializePoolV2Instruction(
+      {
+        whirlpool: whirlpoolAddress[0],
+        feeTier: feeTierAddress[0],
+        tokenMintA: tokenA,
+        tokenMintB: tokenB,
+        tickSpacing,
+        whirlpoolsConfig: deployment.configAddress,
+        funder: signer,
+        tokenVaultA: vaultA,
+        tokenVaultB: vaultB,
+        tokenBadgeA: badgeA[0],
+        tokenBadgeB: badgeB[0],
+        tokenProgramA: programA,
+        tokenProgramB: programB,
+        initialSqrtPrice: sqrtPrice,
+      },
+      { programAddress: deployment.programId },
+    ),
   );
 
   await sendTransaction(instructions);
@@ -162,8 +181,14 @@ export async function setupWhirlpool(
 
 export async function setupPosition(
   whirlpool: Address,
-  config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
+  config: {
+    tickLower?: number;
+    tickUpper?: number;
+    liquidity?: bigint;
+    whirlpoolDeployment?: WhirlpoolDeployment;
+  } = {},
 ): Promise<Address> {
+  const deployment = config.whirlpoolDeployment ?? TEST_WHIRLPOOL_DEPLOYMENT;
   const positionMint = getNextKeypair();
   const whirlpoolAccount = await fetchWhirlpool(rpc, whirlpool);
   const tickLower = config.tickLower ?? -100;
@@ -195,14 +220,14 @@ export async function setupPosition(
     lowerTickArrayAddress,
     upperTickArrayAddress,
   ] = await Promise.all([
-    getPositionAddress(positionMint.address),
+    getPositionAddress(positionMint.address, deployment.programId),
     findAssociatedTokenPda({
       owner: signer.address,
       mint: positionMint.address,
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, upperTickArrayIndex).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, lowerTickArrayIndex, deployment.programId).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, upperTickArrayIndex, deployment.programId).then((x) => x[0]),
   ]);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
@@ -214,41 +239,50 @@ export async function setupPosition(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: whirlpool,
-        funder: signer,
-        tickArray: lowerTickArrayAddress,
-        startTickIndex: lowerTickArrayIndex,
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: whirlpool,
+          funder: signer,
+          tickArray: lowerTickArrayAddress,
+          startTickIndex: lowerTickArrayIndex,
+          idempotent: false,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: whirlpool,
-        funder: signer,
-        tickArray: upperTickArrayAddress,
-        startTickIndex: upperTickArrayIndex,
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: whirlpool,
+          funder: signer,
+          tickArray: upperTickArrayAddress,
+          startTickIndex: upperTickArrayIndex,
+          idempotent: false,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
   }
 
   instructions.push(
-    getOpenPositionInstruction({
-      funder: signer,
-      owner: signer.address,
-      position: positionAddress[0],
-      positionMint: positionMint,
-      positionTokenAccount: positionTokenAccount,
-      whirlpool: whirlpool,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-      tickLowerIndex: initializableLowerTickIndex,
-      tickUpperIndex: initializableUpperTickIndex,
-      positionBump: positionAddress[1],
-    }),
+    getOpenPositionInstruction(
+      {
+        funder: signer,
+        owner: signer.address,
+        position: positionAddress[0],
+        positionMint: positionMint,
+        positionTokenAccount: positionTokenAccount,
+        whirlpool: whirlpool,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+        tickLowerIndex: initializableLowerTickIndex,
+        tickUpperIndex: initializableUpperTickIndex,
+        positionBump: positionAddress[1],
+      },
+      { programAddress: deployment.programId },
+    ),
   );
 
   if (config.liquidity) {
@@ -275,27 +309,30 @@ export async function setupPosition(
     );
 
     instructions.push(
-      getIncreaseLiquidityV2Instruction({
-        whirlpool: whirlpool,
-        positionAuthority: signer,
-        position: positionAddress[0],
-        positionTokenAccount,
-        tokenOwnerAccountA: tokenOwnerAccountA,
-        tokenOwnerAccountB: tokenOwnerAccountB,
-        tokenVaultA: whirlpoolAccount.data.tokenVaultA,
-        tokenVaultB: whirlpoolAccount.data.tokenVaultB,
-        tokenMintA: whirlpoolAccount.data.tokenMintA,
-        tokenMintB: whirlpoolAccount.data.tokenMintB,
-        tokenProgramA: tokenMintA.programAddress,
-        tokenProgramB: tokenMintB.programAddress,
-        tickArrayLower: lowerTickArrayAddress,
-        tickArrayUpper: upperTickArrayAddress,
-        liquidityAmount: quote.liquidityDelta,
-        tokenMaxA: quote.tokenMaxA,
-        tokenMaxB: quote.tokenMaxB,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getIncreaseLiquidityV2Instruction(
+        {
+          whirlpool: whirlpool,
+          positionAuthority: signer,
+          position: positionAddress[0],
+          positionTokenAccount,
+          tokenOwnerAccountA: tokenOwnerAccountA,
+          tokenOwnerAccountB: tokenOwnerAccountB,
+          tokenVaultA: whirlpoolAccount.data.tokenVaultA,
+          tokenVaultB: whirlpoolAccount.data.tokenVaultB,
+          tokenMintA: whirlpoolAccount.data.tokenMintA,
+          tokenMintB: whirlpoolAccount.data.tokenMintB,
+          tokenProgramA: tokenMintA.programAddress,
+          tokenProgramB: tokenMintB.programAddress,
+          tickArrayLower: lowerTickArrayAddress,
+          tickArrayUpper: upperTickArrayAddress,
+          liquidityAmount: quote.liquidityDelta,
+          tokenMaxA: quote.tokenMaxA,
+          tokenMaxB: quote.tokenMaxB,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
   }
 
@@ -306,8 +343,14 @@ export async function setupPosition(
 
 export async function setupTEPosition(
   whirlpool: Address,
-  config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
+  config: {
+    tickLower?: number;
+    tickUpper?: number;
+    liquidity?: bigint;
+    whirlpoolDeployment?: WhirlpoolDeployment;
+  } = {},
 ): Promise<Address> {
+  const deployment = config.whirlpoolDeployment ?? TEST_WHIRLPOOL_DEPLOYMENT;
   const metadataUpdateAuth = address(
     "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
   );
@@ -342,14 +385,14 @@ export async function setupTEPosition(
     lowerTickArrayAddress,
     upperTickArrayAddress,
   ] = await Promise.all([
-    getPositionAddress(positionMint.address),
+    getPositionAddress(positionMint.address, deployment.programId),
     findAssociatedTokenPda({
       owner: signer.address,
       mint: positionMint.address,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, upperTickArrayIndex).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, lowerTickArrayIndex, deployment.programId).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, upperTickArrayIndex, deployment.programId).then((x) => x[0]),
   ]);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
@@ -361,43 +404,52 @@ export async function setupTEPosition(
 
   if (!lowerTickArray.exists) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: whirlpool,
-        funder: signer,
-        tickArray: lowerTickArrayAddress,
-        startTickIndex: lowerTickArrayIndex,
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: whirlpool,
+          funder: signer,
+          tickArray: lowerTickArrayAddress,
+          startTickIndex: lowerTickArrayIndex,
+          idempotent: false,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: whirlpool,
-        funder: signer,
-        tickArray: upperTickArrayAddress,
-        startTickIndex: upperTickArrayIndex,
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: whirlpool,
+          funder: signer,
+          tickArray: upperTickArrayAddress,
+          startTickIndex: upperTickArrayIndex,
+          idempotent: false,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
   }
 
   instructions.push(
-    getOpenPositionWithTokenExtensionsInstruction({
-      funder: signer,
-      owner: signer.address,
-      position: positionAddress[0],
-      positionMint: positionMint,
-      positionTokenAccount: positionTokenAccount,
-      whirlpool: whirlpool,
-      token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-      metadataUpdateAuth: metadataUpdateAuth,
-      tickLowerIndex: initializableLowerTickIndex,
-      tickUpperIndex: initializableUpperTickIndex,
-      withTokenMetadataExtension: true,
-    }),
+    getOpenPositionWithTokenExtensionsInstruction(
+      {
+        funder: signer,
+        owner: signer.address,
+        position: positionAddress[0],
+        positionMint: positionMint,
+        positionTokenAccount: positionTokenAccount,
+        whirlpool: whirlpool,
+        token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+        metadataUpdateAuth: metadataUpdateAuth,
+        tickLowerIndex: initializableLowerTickIndex,
+        tickUpperIndex: initializableUpperTickIndex,
+        withTokenMetadataExtension: true,
+      },
+      { programAddress: deployment.programId },
+    ),
   );
 
   if (config.liquidity) {
@@ -424,27 +476,30 @@ export async function setupTEPosition(
     );
 
     instructions.push(
-      getIncreaseLiquidityV2Instruction({
-        whirlpool: whirlpool,
-        positionAuthority: signer,
-        position: positionAddress[0],
-        positionTokenAccount,
-        tokenOwnerAccountA: tokenOwnerAccountA,
-        tokenOwnerAccountB: tokenOwnerAccountB,
-        tokenVaultA: whirlpoolAccount.data.tokenVaultA,
-        tokenVaultB: whirlpoolAccount.data.tokenVaultB,
-        tokenMintA: whirlpoolAccount.data.tokenMintA,
-        tokenMintB: whirlpoolAccount.data.tokenMintB,
-        tokenProgramA: tokenMintA.programAddress,
-        tokenProgramB: tokenMintB.programAddress,
-        tickArrayLower: lowerTickArrayAddress,
-        tickArrayUpper: upperTickArrayAddress,
-        liquidityAmount: quote.liquidityDelta,
-        tokenMaxA: quote.tokenMaxA,
-        tokenMaxB: quote.tokenMaxB,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
+      getIncreaseLiquidityV2Instruction(
+        {
+          whirlpool: whirlpool,
+          positionAuthority: signer,
+          position: positionAddress[0],
+          positionTokenAccount,
+          tokenOwnerAccountA: tokenOwnerAccountA,
+          tokenOwnerAccountB: tokenOwnerAccountB,
+          tokenVaultA: whirlpoolAccount.data.tokenVaultA,
+          tokenVaultB: whirlpoolAccount.data.tokenVaultB,
+          tokenMintA: whirlpoolAccount.data.tokenMintA,
+          tokenMintB: whirlpoolAccount.data.tokenMintB,
+          tokenProgramA: tokenMintA.programAddress,
+          tokenProgramB: tokenMintB.programAddress,
+          tickArrayLower: lowerTickArrayAddress,
+          tickArrayUpper: upperTickArrayAddress,
+          liquidityAmount: quote.liquidityDelta,
+          tokenMaxA: quote.tokenMaxA,
+          tokenMaxB: quote.tokenMaxB,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+          remainingAccountsInfo: null,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
   }
 
@@ -456,7 +511,9 @@ export async function setupTEPosition(
 export async function setupPositionBundle(
   whirlpool: Address,
   config: { tickLower: number; tickUpper: number; liquidity?: bigint }[] = [],
+  options: { whirlpoolDeployment?: WhirlpoolDeployment } = {},
 ): Promise<Address> {
+  const deployment = options.whirlpoolDeployment ?? TEST_WHIRLPOOL_DEPLOYMENT;
   if (config.length > _POSITION_BUNDLE_SIZE()) {
     throw new Error(
       `Cannot open more than ${_POSITION_BUNDLE_SIZE()} bundled positions`,
@@ -467,6 +524,7 @@ export async function setupPositionBundle(
   const positionBundleMint = getNextKeypair();
   const positionBundleAddress = await getPositionBundleAddress(
     positionBundleMint.address,
+    deployment.programId,
   );
   const positionBundleTokenAccount = await findAssociatedTokenPda({
     owner: signer.address,
@@ -475,15 +533,18 @@ export async function setupPositionBundle(
   }).then((x) => x[0]);
 
   const instructions: Instruction[] = [
-    getInitializePositionBundleInstruction({
-      positionBundle: positionBundleAddress[0],
-      positionBundleMint: positionBundleMint,
-      positionBundleTokenAccount,
-      positionBundleOwner: signer.address,
-      funder: signer,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-    }),
+    getInitializePositionBundleInstruction(
+      {
+        positionBundle: positionBundleAddress[0],
+        positionBundleMint: positionBundleMint,
+        positionBundleTokenAccount,
+        positionBundleOwner: signer.address,
+        funder: signer,
+        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+      },
+      { programAddress: deployment.programId },
+    ),
   ];
 
   const initializedTickArrays = new Set<string>();
@@ -514,10 +575,12 @@ export async function setupPositionBundle(
     const lowerTickArrayAddress = await getTickArrayAddress(
       whirlpool,
       lowerTickArrayStartIndex,
+      deployment.programId,
     ).then((x) => x[0]);
     const upperTickArrayAddress = await getTickArrayAddress(
       whirlpool,
       upperTickArrayStartIndex,
+      deployment.programId,
     ).then((x) => x[0]);
 
     // Initialize tick arrays if needed
@@ -527,13 +590,16 @@ export async function setupPositionBundle(
       ]);
       if (!lowerTickArray.exists) {
         instructions.push(
-          getInitializeDynamicTickArrayInstruction({
-            whirlpool,
-            funder: signer,
-            tickArray: lowerTickArrayAddress,
-            startTickIndex: lowerTickArrayStartIndex,
-            idempotent: false,
-          }),
+          getInitializeDynamicTickArrayInstruction(
+            {
+              whirlpool,
+              funder: signer,
+              tickArray: lowerTickArrayAddress,
+              startTickIndex: lowerTickArrayStartIndex,
+              idempotent: false,
+            },
+            { programAddress: deployment.programId },
+          ),
         );
       }
       initializedTickArrays.add(lowerTickArrayAddress);
@@ -545,13 +611,16 @@ export async function setupPositionBundle(
       ]);
       if (!upperTickArray.exists) {
         instructions.push(
-          getInitializeDynamicTickArrayInstruction({
-            whirlpool,
-            funder: signer,
-            tickArray: upperTickArrayAddress,
-            startTickIndex: upperTickArrayStartIndex,
-            idempotent: false,
-          }),
+          getInitializeDynamicTickArrayInstruction(
+            {
+              whirlpool,
+              funder: signer,
+              tickArray: upperTickArrayAddress,
+              startTickIndex: upperTickArrayStartIndex,
+              idempotent: false,
+            },
+            { programAddress: deployment.programId },
+          ),
         );
       }
       initializedTickArrays.add(upperTickArrayAddress);
@@ -560,20 +629,24 @@ export async function setupPositionBundle(
     const bundledPositionAddress = await getBundledPositionAddress(
       positionBundleMint.address,
       bundleIndex,
+      deployment.programId,
     ).then((x) => x[0]);
 
     instructions.push(
-      getOpenBundledPositionInstruction({
-        bundledPosition: bundledPositionAddress,
-        positionBundle: positionBundleAddress[0],
-        positionBundleTokenAccount,
-        positionBundleAuthority: signer,
-        whirlpool,
-        funder: signer,
-        bundleIndex,
-        tickLowerIndex,
-        tickUpperIndex,
-      }),
+      getOpenBundledPositionInstruction(
+        {
+          bundledPosition: bundledPositionAddress,
+          positionBundle: positionBundleAddress[0],
+          positionBundleTokenAccount,
+          positionBundleAuthority: signer,
+          whirlpool,
+          funder: signer,
+          bundleIndex,
+          tickLowerIndex,
+          tickUpperIndex,
+        },
+        { programAddress: deployment.programId },
+      ),
     );
 
     if (liquidity != null && liquidity > 0n) {
@@ -599,27 +672,30 @@ export async function setupPositionBundle(
       );
 
       instructions.push(
-        getIncreaseLiquidityV2Instruction({
-          whirlpool,
-          positionAuthority: signer,
-          position: bundledPositionAddress,
-          positionTokenAccount: positionBundleTokenAccount,
-          tokenOwnerAccountA,
-          tokenOwnerAccountB,
-          tokenVaultA: whirlpoolAccount.data.tokenVaultA,
-          tokenVaultB: whirlpoolAccount.data.tokenVaultB,
-          tokenMintA: whirlpoolAccount.data.tokenMintA,
-          tokenMintB: whirlpoolAccount.data.tokenMintB,
-          tokenProgramA: tokenMintA.programAddress,
-          tokenProgramB: tokenMintB.programAddress,
-          tickArrayLower: lowerTickArrayAddress,
-          tickArrayUpper: upperTickArrayAddress,
-          liquidityAmount: quote.liquidityDelta,
-          tokenMaxA: quote.tokenMaxA,
-          tokenMaxB: quote.tokenMaxB,
-          memoProgram: MEMO_PROGRAM_ADDRESS,
-          remainingAccountsInfo: null,
-        }),
+        getIncreaseLiquidityV2Instruction(
+          {
+            whirlpool,
+            positionAuthority: signer,
+            position: bundledPositionAddress,
+            positionTokenAccount: positionBundleTokenAccount,
+            tokenOwnerAccountA,
+            tokenOwnerAccountB,
+            tokenVaultA: whirlpoolAccount.data.tokenVaultA,
+            tokenVaultB: whirlpoolAccount.data.tokenVaultB,
+            tokenMintA: whirlpoolAccount.data.tokenMintA,
+            tokenMintB: whirlpoolAccount.data.tokenMintB,
+            tokenProgramA: tokenMintA.programAddress,
+            tokenProgramB: tokenMintB.programAddress,
+            tickArrayLower: lowerTickArrayAddress,
+            tickArrayUpper: upperTickArrayAddress,
+            liquidityAmount: quote.liquidityDelta,
+            tokenMaxA: quote.tokenMaxA,
+            tokenMaxB: quote.tokenMaxB,
+            memoProgram: MEMO_PROGRAM_ADDRESS,
+            remainingAccountsInfo: null,
+          },
+          { programAddress: deployment.programId },
+        ),
       );
     }
   }

@@ -15,10 +15,11 @@ import {
   setupMintTEScaledUiAmount,
 } from "./utils/tokenExtensions";
 import {
+  getTestContext,
   rpc,
   sendTransaction,
   signer,
-  TEST_WHIRLPOOL_DEPLOYMENT,
+  TEST_WHIRLPOOL_DEPLOYMENTS,
 } from "./utils/mockRpc";
 import { fetchMaybeWhirlpool } from "@orca-so/whirlpools-client";
 import assert from "assert";
@@ -26,332 +27,337 @@ import type { Address } from "@solana/kit";
 import { assertAccountExists } from "@solana/kit";
 import { _TICK_ARRAY_SIZE, priceToSqrtPrice } from "@orca-so/whirlpools-core";
 
-describe("Create Pool", () => {
-  let mintA: Address;
-  let mintB: Address;
-  let mintTEA: Address;
-  let mintTEB: Address;
-  let mintTEFee: Address;
-  let mintTESUA: Address;
-  const tickSpacing = 64;
+await getTestContext();
 
-  beforeAll(async () => {
-    mintA = await setupMint();
-    mintB = await setupMint();
-    mintTEA = await setupMintTE();
-    mintTEB = await setupMintTE();
-    mintTEFee = await setupMintTEFee();
-    mintTESUA = await setupMintTEScaledUiAmount();
-  });
+describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
+  "Create Pool ($programId)",
+  (whirlpoolDeployment) => {
+    let mintA: Address;
+    let mintB: Address;
+    let mintTEA: Address;
+    let mintTEB: Address;
+    let mintTEFee: Address;
+    let mintTESUA: Address;
+    const tickSpacing = 64;
 
-  it("Should throw an error if funder is not set", async () => {
-    setDefaultFunder(DEFAULT_FUNDER);
-    await assert.rejects(
-      createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintA,
-        mintB,
-        tickSpacing,
-        { initialPrice: 1, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
-      ),
-    );
-    setDefaultFunder(signer);
-  });
+    beforeAll(async () => {
+      mintA = await setupMint();
+      mintB = await setupMint();
+      mintTEA = await setupMintTE();
+      mintTEB = await setupMintTE();
+      mintTEFee = await setupMintTEFee();
+      mintTESUA = await setupMintTEScaledUiAmount();
+    });
 
-  it("Should throw an error if token mints are not ordered correctly", async () => {
-    await assert.rejects(
-      createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintB,
-        mintA,
-        tickSpacing,
-        { initialPrice: 1, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
-      ),
-    );
-  });
-
-  it("Should create splash pool", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
-
-    const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintA, mintB, {
-        initialPrice: price,
-        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
-      });
-
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
-
-    await sendTransaction(instructions);
-
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
-
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintB, poolAfter.data.tokenMintB);
-    assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
-  });
-
-  it("Should create splash pool with 1 TE token (without extension)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
-
-    const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintA, mintTEA, {
-        initialPrice: price,
-        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
-      });
-
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
-
-    await sendTransaction(instructions);
-
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
-
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTEA, poolAfter.data.tokenMintB);
-    assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
-  });
-
-  it("Should create splash pool with 2 TE tokens (without extensions)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
-
-    const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintTEA, mintTEB, {
-        initialPrice: price,
-        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
-      });
-
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
-
-    await sendTransaction(instructions);
-
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
-
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintTEA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTEB, poolAfter.data.tokenMintB);
-    assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
-  });
-
-  it("Should create splash pool with 1 TE tokens (with Transfer Fee extension)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
-
-    const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintA, mintTEFee, {
-        initialPrice: price,
-        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
-      });
-
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
-
-    await sendTransaction(instructions);
-
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
-
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);
-    assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
-  });
-
-  it("Should create concentrated liquidity pool", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
-
-    const { instructions, poolAddress, initializationCost } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintA,
-        mintB,
-        tickSpacing,
-        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
+    it("Should throw an error if funder is not set", async () => {
+      setDefaultFunder(DEFAULT_FUNDER);
+      await assert.rejects(
+        createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintA,
+          mintB,
+          tickSpacing,
+          { initialPrice: 1, whirlpoolDeployment },
+        ),
       );
+      setDefaultFunder(signer);
+    });
 
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
-
-    await sendTransaction(instructions);
-
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
-
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintB, poolAfter.data.tokenMintB);
-    assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
-  });
-
-  it("Should create concentrated liquidity pool with 1 TE token (without extension)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
-
-    const { instructions, poolAddress, initializationCost } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintA,
-        mintTEA,
-        tickSpacing,
-        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
+    it("Should throw an error if token mints are not ordered correctly", async () => {
+      await assert.rejects(
+        createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintB,
+          mintA,
+          tickSpacing,
+          { initialPrice: 1, whirlpoolDeployment },
+        ),
       );
+    });
 
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
+    it("Should create splash pool", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    await sendTransaction(instructions);
+      const { instructions, poolAddress, initializationCost } =
+        await createSplashPoolInstructions(rpc, mintA, mintB, {
+          initialPrice: price,
+          whirlpoolDeployment,
+        });
 
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
 
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTEA, poolAfter.data.tokenMintB);
-    assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
-  });
+      await sendTransaction(instructions);
 
-  it("Should create concentrated liquidity pool with 2 TE tokens (without extensions)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
 
-    const { instructions, poolAddress, initializationCost } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintTEA,
-        mintTEB,
-        tickSpacing,
-        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
-      );
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintB, poolAfter.data.tokenMintB);
+      assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
+    });
 
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
+    it("Should create splash pool with 1 TE token (without extension)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    await sendTransaction(instructions);
+      const { instructions, poolAddress, initializationCost } =
+        await createSplashPoolInstructions(rpc, mintA, mintTEA, {
+          initialPrice: price,
+          whirlpoolDeployment,
+        });
 
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
 
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintTEA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTEB, poolAfter.data.tokenMintB);
-    assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
-  });
+      await sendTransaction(instructions);
 
-  it("Should create concentrated liquidity pool with 1 TE token (with Transfer Fee extension)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
 
-    const { instructions, poolAddress, initializationCost } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintA,
-        mintTEFee,
-        tickSpacing,
-        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
-      );
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTEA, poolAfter.data.tokenMintB);
+      assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
+    });
 
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
+    it("Should create splash pool with 2 TE tokens (without extensions)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    await sendTransaction(instructions);
+      const { instructions, poolAddress, initializationCost } =
+        await createSplashPoolInstructions(rpc, mintTEA, mintTEB, {
+          initialPrice: price,
+          whirlpoolDeployment,
+        });
 
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
 
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);
-    assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
-  });
+      await sendTransaction(instructions);
 
-  it("Should create concentrated liquidity pool with 1 TE token (with Scaled Ui Amount extension)", async () => {
-    const price = 10;
-    const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
 
-    const { instructions, poolAddress, initializationCost } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintA,
-        mintTESUA,
-        tickSpacing,
-        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
-      );
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintTEA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTEB, poolAfter.data.tokenMintB);
+      assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
+    });
 
-    const balanceBefore = await rpc.getBalance(signer.address).send();
-    const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(poolBefore.exists, false);
+    it("Should create splash pool with 1 TE tokens (with Transfer Fee extension)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    await sendTransaction(instructions);
+      const { instructions, poolAddress, initializationCost } =
+        await createSplashPoolInstructions(rpc, mintA, mintTEFee, {
+          initialPrice: price,
+          whirlpoolDeployment,
+        });
 
-    const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
-    const balanceAfter = await rpc.getBalance(signer.address).send();
-    const balanceChange = balanceBefore.value - balanceAfter.value;
-    const txFee = 15000n; // 3 signing accounts * 5000 lamports
-    const minRentExempt = balanceChange - txFee;
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
 
-    assertAccountExists(poolAfter);
-    assert.strictEqual(initializationCost, minRentExempt);
-    assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
-    assert.strictEqual(mintA, poolAfter.data.tokenMintA);
-    assert.strictEqual(mintTESUA, poolAfter.data.tokenMintB);
-    assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
-  });
-});
+      await sendTransaction(instructions);
+
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
+
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);
+      assert.strictEqual(SPLASH_POOL_TICK_SPACING, poolAfter.data.tickSpacing);
+    });
+
+    it("Should create concentrated liquidity pool", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+
+      const { instructions, poolAddress, initializationCost } =
+        await createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintA,
+          mintB,
+          tickSpacing,
+          { initialPrice: price, whirlpoolDeployment },
+        );
+
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
+
+      await sendTransaction(instructions);
+
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
+
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintB, poolAfter.data.tokenMintB);
+      assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
+    });
+
+    it("Should create concentrated liquidity pool with 1 TE token (without extension)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+
+      const { instructions, poolAddress, initializationCost } =
+        await createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintA,
+          mintTEA,
+          tickSpacing,
+          { initialPrice: price, whirlpoolDeployment },
+        );
+
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
+
+      await sendTransaction(instructions);
+
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
+
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTEA, poolAfter.data.tokenMintB);
+      assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
+    });
+
+    it("Should create concentrated liquidity pool with 2 TE tokens (without extensions)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+
+      const { instructions, poolAddress, initializationCost } =
+        await createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintTEA,
+          mintTEB,
+          tickSpacing,
+          { initialPrice: price, whirlpoolDeployment },
+        );
+
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
+
+      await sendTransaction(instructions);
+
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
+
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintTEA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTEB, poolAfter.data.tokenMintB);
+      assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
+    });
+
+    it("Should create concentrated liquidity pool with 1 TE token (with Transfer Fee extension)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+
+      const { instructions, poolAddress, initializationCost } =
+        await createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintA,
+          mintTEFee,
+          tickSpacing,
+          { initialPrice: price, whirlpoolDeployment },
+        );
+
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
+
+      await sendTransaction(instructions);
+
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
+
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);
+      assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
+    });
+
+    it("Should create concentrated liquidity pool with 1 TE token (with Scaled Ui Amount extension)", async () => {
+      const price = 10;
+      const sqrtPrice = priceToSqrtPrice(price, 6, 6);
+
+      const { instructions, poolAddress, initializationCost } =
+        await createConcentratedLiquidityPoolInstructions(
+          rpc,
+          mintA,
+          mintTESUA,
+          tickSpacing,
+          { initialPrice: price, whirlpoolDeployment },
+        );
+
+      const balanceBefore = await rpc.getBalance(signer.address).send();
+      const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
+      assert.strictEqual(poolBefore.exists, false);
+
+      await sendTransaction(instructions);
+
+      const poolAfter = await fetchMaybeWhirlpool(rpc, poolAddress);
+      const balanceAfter = await rpc.getBalance(signer.address).send();
+      const balanceChange = balanceBefore.value - balanceAfter.value;
+      const txFee = 15000n; // 3 signing accounts * 5000 lamports
+      const minRentExempt = balanceChange - txFee;
+
+      assertAccountExists(poolAfter);
+      assert.strictEqual(initializationCost, minRentExempt);
+      assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
+      assert.strictEqual(mintA, poolAfter.data.tokenMintA);
+      assert.strictEqual(mintTESUA, poolAfter.data.tokenMintB);
+      assert.strictEqual(tickSpacing, poolAfter.data.tickSpacing);
+    });
+  },
+);

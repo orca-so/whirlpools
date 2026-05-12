@@ -175,8 +175,7 @@ export type IncreaseLiquidityConfig = {
   /** The account authorizing the liquidity addition. Defaults to the global funder. */
   authority?: TransactionSigner<string>;
   /**
-   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
-   * deployment if not provided.
+   * The Whirlpool program and config account to target. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT if not provided.
    */
   whirlpoolDeployment?: WhirlpoolDeployment;
 };

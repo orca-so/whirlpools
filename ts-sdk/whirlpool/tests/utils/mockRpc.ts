@@ -33,7 +33,7 @@ export const signer = getNextKeypair();
 setDefaultFunder(signer);
 
 /**
- * The {@link WhirlpoolDeployment} used by the in-process LiteSVM test harness.
+ * The mutable {@link WhirlpoolDeployment} used by the in-process LiteSVM test harness.
  *
  * Initialized lazily inside {@link getTestContext} once the test program and
  * its randomly generated config account are deployed. Test code must `await`
@@ -41,6 +41,23 @@ setDefaultFunder(signer);
  */
 export let TEST_WHIRLPOOL_DEPLOYMENT: WhirlpoolDeployment =
   WhirlpoolDeployment.mainnet;
+
+/**
+ * The immutable {@link WhirlpoolDeployment} used by the in-process LiteSVM test harness.
+ *
+ * Mirrors {@link TEST_WHIRLPOOL_DEPLOYMENT} but targets the immutable whirlpool program.
+ */
+export let TEST_WHIRLPOOL_DEPLOYMENT_IMMUTABLE: WhirlpoolDeployment =
+  WhirlpoolDeployment.mainnetImmutable;
+
+/**
+ * Both test deployments — convenient for parametrizing tests against the mutable and
+ * immutable whirlpool programs (mirrors the rstest cases in the rust SDK).
+ */
+export let TEST_WHIRLPOOL_DEPLOYMENTS: WhirlpoolDeployment[] = [
+  TEST_WHIRLPOOL_DEPLOYMENT,
+  TEST_WHIRLPOOL_DEPLOYMENT_IMMUTABLE,
+];
 
 function toPublicKey(address: Address): PublicKey {
   return new PublicKey(address);
@@ -74,13 +91,22 @@ export async function getTestContext(): Promise<LiteSVM> {
     const fs = await import("fs");
     const path = await import("path");
 
-    // Load whirlpool program
+    // Load mutable whirlpool program
     const whirlpoolProgram = fs.readFileSync(
       path.join(process.cwd(), "../../target/deploy/whirlpool.so"),
     );
     _testContext.addProgram(
-      toPublicKey(address("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc")),
+      toPublicKey(WhirlpoolDeployment.mainnet.programId),
       whirlpoolProgram,
+    );
+
+    // Load immutable whirlpool program (used to parametrize tests against both deployments)
+    const whirlpoolImmutableProgram = fs.readFileSync(
+      path.join(process.cwd(), "../../target/deploy/whirlpool_immutable.so"),
+    );
+    _testContext.addProgram(
+      toPublicKey(WhirlpoolDeployment.mainnetImmutable.programId),
+      whirlpoolImmutableProgram,
     );
 
     // Create native SOL mint account
@@ -118,11 +144,26 @@ export async function getTestContext(): Promise<LiteSVM> {
       rentEpoch: 0,
     });
 
-    const configAddress = await setupConfigAndFeeTiers();
+    const mutableConfigAddress = await setupConfigAndFeeTiers(
+      WhirlpoolDeployment.mainnet.programId,
+    );
     TEST_WHIRLPOOL_DEPLOYMENT = WhirlpoolDeployment.custom(
       WhirlpoolDeployment.mainnet.programId,
-      configAddress,
+      mutableConfigAddress,
     );
+
+    const immutableConfigAddress = await setupConfigAndFeeTiers(
+      WhirlpoolDeployment.mainnetImmutable.programId,
+    );
+    TEST_WHIRLPOOL_DEPLOYMENT_IMMUTABLE = WhirlpoolDeployment.custom(
+      WhirlpoolDeployment.mainnetImmutable.programId,
+      immutableConfigAddress,
+    );
+
+    TEST_WHIRLPOOL_DEPLOYMENTS = [
+      TEST_WHIRLPOOL_DEPLOYMENT,
+      TEST_WHIRLPOOL_DEPLOYMENT_IMMUTABLE,
+    ];
   }
   return _testContext;
 }

@@ -57,8 +57,7 @@ export type CreateSplashPoolConfig = {
   /** The account funding the initialization process. Defaults to the global funder if not provided. */
   funder?: TransactionSigner<string>;
   /**
-   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
-   * deployment if not provided.
+   * The Whirlpool program and config account to target. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT if not provided.
    */
   whirlpoolDeployment?: WhirlpoolDeployment;
 };
@@ -122,8 +121,7 @@ export type CreateConcentratedLiquidityPoolConfig = {
   /** The account funding the initialization process. Defaults to the global funder if not provided. */
   funder?: TransactionSigner<string>;
   /**
-   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
-   * deployment if not provided.
+   * The Whirlpool program and config account to target. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT if not provided.
    */
   whirlpoolDeployment?: WhirlpoolDeployment;
 };

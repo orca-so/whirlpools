@@ -65,7 +65,7 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
- * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT.
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
  * @example
@@ -105,7 +105,7 @@ export async function fetchSplashPool(
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
  * @param {number} tickSpacing - The tick spacing of the pool.
- * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT.
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
  * @example
@@ -187,7 +187,7 @@ export async function fetchConcentratedLiquidityPool(
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
- * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT.
  * @returns {Promise<PoolInfo[]>} - A promise that resolves to an array of pool information for each pool between the two tokens.
  *
  * @example

@@ -86,7 +86,7 @@ function getPositionInBundleAddresses(
  *
  * @param {SolanaRpc} rpc - The Solana RPC client used to fetch token accounts and multiple accounts.
  * @param {Address} owner - The wallet address whose positions you want to fetch.
- * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT.
  * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
  *
  * @example
@@ -215,7 +215,7 @@ export async function fetchPositionsForOwner(
  *
  * @param {SolanaRpc} rpc - The Solana RPC client used to fetch positions.
  * @param {Address} whirlpool - The address of the Whirlpool.
- * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT.
  * @returns {Promise<HydratedPosition[]>} - A promise that resolves to an array of hydrated positions.
  *
  * @example

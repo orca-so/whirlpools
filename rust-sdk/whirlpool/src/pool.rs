@@ -341,6 +341,7 @@ pub async fn fetch_whirlpools_by_token_pair(
         vec![FeeTierFilter::WhirlpoolsConfig(
             whirlpool_deployment.config_address(),
         )],
+        Some(whirlpool_deployment.id()),
     )
     .await?;
 

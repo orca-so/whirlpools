@@ -73,8 +73,8 @@ pub async fn run_position_manager(
 
         let close_position_instructions = close_position_instructions(
             rpc,
+            position.position_mint,
             ClosePositionConfig {
-                position_mint_address: position.position_mint,
                 slippage_tolerance_bps: Some(args.slippage_tolerance_bps),
                 authority: None,
                 whirlpool_deployment: Some(WhirlpoolDeployment::mainnet()),
@@ -101,11 +101,11 @@ pub async fn run_position_manager(
 
         let open_position_instructions = open_position_instructions(
             rpc,
+            whirlpool_address,
+            new_lower_price,
+            new_upper_price,
+            param,
             OpenPositionConfig {
-                pool_address: whirlpool_address,
-                lower_price: new_lower_price,
-                upper_price: new_upper_price,
-                param,
                 slippage_tolerance_bps: Some(args.slippage_tolerance_bps),
                 funder: None,
                 whirlpool_deployment: Some(WhirlpoolDeployment::mainnet()),

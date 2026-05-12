@@ -7,6 +7,7 @@ use solana_client::{
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     rpc_filter::RpcFilterType,
 };
+use solana_pubkey::Pubkey;
 
 use crate::{generated::shared::DecodedAccount, WHIRLPOOL_ID};
 
@@ -27,9 +28,13 @@ pub(crate) fn rpc_program_accounts_config(filters: Vec<RpcFilterType>) -> RpcPro
 pub(crate) async fn fetch_decoded_program_accounts<T: BorshDeserialize>(
     rpc: &RpcClient,
     filters: Vec<RpcFilterType>,
+    program_id: Option<Pubkey>,
 ) -> Result<Vec<DecodedAccount<T>>, Box<dyn Error>> {
     let accounts = rpc
-        .get_program_accounts_with_config(&WHIRLPOOL_ID, rpc_program_accounts_config(filters))
+        .get_program_accounts_with_config(
+            &program_id.unwrap_or(WHIRLPOOL_ID),
+            rpc_program_accounts_config(filters),
+        )
         .await?;
     let mut decoded_accounts: Vec<DecodedAccount<T>> = Vec::new();
     for (address, account) in accounts {

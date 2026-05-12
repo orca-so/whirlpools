@@ -29,8 +29,8 @@ pub async fn display_position_balances(
 ) -> Result<(), Box<dyn Error>> {
     let close_position_instructions = close_position_instructions(
         rpc,
+        position.position_mint,
         ClosePositionConfig {
-            position_mint_address: position.position_mint,
             slippage_tolerance_bps: Some(slippage_tolerance_bps),
             authority: None,
             whirlpool_deployment: Some(WhirlpoolDeployment::mainnet()),

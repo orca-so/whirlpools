@@ -136,15 +136,6 @@ async fn fetch_oracle(
 
 #[derive(Debug, Clone, Default)]
 pub struct SwapConfig {
-    /// The public key of the Whirlpool against which the swap will be executed.
-    pub whirlpool_address: Pubkey,
-    /// The token amount specified for the swap. For `SwapType::ExactIn`, this is the input token amount.
-    /// For `SwapType::ExactOut`, this is the output token amount.
-    pub amount: u64,
-    /// The public key of the token mint being swapped.
-    pub specified_mint: Pubkey,
-    /// The type of swap (`SwapType::ExactIn` or `SwapType::ExactOut`).
-    pub swap_type: SwapType,
     /// An optional slippage tolerance, in basis points (BPS). Defaults to the global setting if not provided.
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the wallet or account executing the swap. Defaults to the global funder if not provided.
@@ -162,6 +153,10 @@ pub struct SwapConfig {
 /// # Arguments
 ///
 /// * `rpc` - A reference to the Solana RPC client for fetching accounts and interacting with the blockchain.
+/// * `whirlpool_address` - The public key of the Whirlpool against which the swap will be executed.
+/// * `amount` - The token amount specified for the swap.
+/// * `specified_mint` - The public key of the token mint being swapped.
+/// * `swap_type` - The type of swap ([`SwapType::ExactIn`] or [`SwapType::ExactOut`]).
 /// * `config` - The parameters to build the swap instruction.
 ///
 /// # Returns
@@ -196,17 +191,18 @@ pub struct SwapConfig {
 ///     let mint_address = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap();
 ///
 ///     let config = SwapConfig {
-///         whirlpool_address,
-///         amount: 1_000_000,
-///         specified_mint: mint_address,
-///         swap_type: SwapType::ExactIn,
 ///         slippage_tolerance_bps: Some(100),
 ///         signer: Some(wallet.pubkey()),
 ///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
-///     let result = swap_instructions(&rpc, config)
-///         .await
-///         .unwrap();
+///
+///     let result = swap_instructions(
+///         &rpc,         
+///         whirlpool_address,
+///         1_000_000,
+///         specified_mint: mint_address,
+///         SwapType::ExactIn,config
+///     ).await.unwrap();
 ///
 ///     println!("Quote estimated token out: {:?}", result.quote);
 ///     println!("Number of Instructions: {}", result.instructions.len());
@@ -214,13 +210,13 @@ pub struct SwapConfig {
 /// ```
 pub async fn swap_instructions(
     rpc: &RpcClient,
+    whirlpool_address: Pubkey,
+    amount: u64,
+    specified_mint: Pubkey,
+    swap_type: SwapType,
     config: SwapConfig,
 ) -> Result<SwapInstructions, Box<dyn Error>> {
     let SwapConfig {
-        whirlpool_address,
-        amount,
-        specified_mint,
-        swap_type,
         slippage_tolerance_bps,
         signer,
         whirlpool_deployment,
@@ -546,123 +542,67 @@ mod tests {
 
     #[rstest]
     #[case("A-B", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet())]
+    #[case(
+        "A-B",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-B", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet())]
+    #[case(
+        "A-B",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-B", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet())]
+    #[case(
+        "A-B",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-B", false, SwapType::ExactOut, 100, WhirlpoolDeployment::mainnet())]
+    #[case(
+        "A-B",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-TEA", true, SwapType::ExactIn, 1000, WhirlpoolDeployment::mainnet())]
+    #[case(
+        "A-TEA",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-TEA", true, SwapType::ExactOut, 500, WhirlpoolDeployment::mainnet())]
+    #[case(
+        "A-TEA",
+        true,
+        SwapType::ExactOut,
+        500,
+        WhirlpoolDeployment::mainnet_immutable()
+    )]
     #[case("A-TEA", false, SwapType::ExactIn, 200, WhirlpoolDeployment::mainnet())]
     #[case(
         "A-TEA",
         false,
-        SwapType::ExactOut,
-        100,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "TEA-TEB",
-        true,
-        SwapType::ExactIn,
-        1000,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "TEA-TEB",
-        true,
-        SwapType::ExactOut,
-        500,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "TEA-TEB",
-        false,
         SwapType::ExactIn,
         200,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "TEA-TEB",
-        false,
-        SwapType::ExactOut,
-        100,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "A-TEFee",
-        true,
-        SwapType::ExactIn,
-        1000,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "A-TEFee",
-        true,
-        SwapType::ExactOut,
-        500,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "A-TEFee",
-        false,
-        SwapType::ExactIn,
-        200,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "A-TEFee",
-        false,
-        SwapType::ExactOut,
-        100,
-        WhirlpoolDeployment::mainnet()
-    )]
-    #[case(
-        "A-B",
-        true,
-        SwapType::ExactIn,
-        1000,
-        WhirlpoolDeployment::mainnet_immutable()
-    )]
-    #[case(
-        "A-B",
-        true,
-        SwapType::ExactOut,
-        500,
-        WhirlpoolDeployment::mainnet_immutable()
-    )]
-    #[case(
-        "A-B",
-        false,
-        SwapType::ExactIn,
-        200,
-        WhirlpoolDeployment::mainnet_immutable()
-    )]
-    #[case(
-        "A-B",
-        false,
-        SwapType::ExactOut,
-        100,
-        WhirlpoolDeployment::mainnet_immutable()
-    )]
-    #[case(
-        "A-TEA",
-        true,
-        SwapType::ExactIn,
-        1000,
-        WhirlpoolDeployment::mainnet_immutable()
-    )]
-    #[case(
-        "A-TEA",
-        true,
-        SwapType::ExactOut,
-        500,
         WhirlpoolDeployment::mainnet_immutable()
     )]
     #[case(
         "A-TEA",
         false,
-        SwapType::ExactIn,
-        200,
-        WhirlpoolDeployment::mainnet_immutable()
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet()
     )]
     #[case(
         "A-TEA",
@@ -676,6 +616,13 @@ mod tests {
         true,
         SwapType::ExactIn,
         1000,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        true,
+        SwapType::ExactIn,
+        1000,
         WhirlpoolDeployment::mainnet_immutable()
     )]
     #[case(
@@ -683,7 +630,21 @@ mod tests {
         true,
         SwapType::ExactOut,
         500,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        true,
+        SwapType::ExactOut,
+        500,
         WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "TEA-TEB",
+        false,
+        SwapType::ExactIn,
+        200,
+        WhirlpoolDeployment::mainnet()
     )]
     #[case(
         "TEA-TEB",
@@ -697,7 +658,21 @@ mod tests {
         false,
         SwapType::ExactOut,
         100,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "TEA-TEB",
+        false,
+        SwapType::ExactOut,
+        100,
         WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEFee",
+        true,
+        SwapType::ExactIn,
+        1000,
+        WhirlpoolDeployment::mainnet()
     )]
     #[case(
         "A-TEFee",
@@ -711,6 +686,13 @@ mod tests {
         true,
         SwapType::ExactOut,
         500,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-TEFee",
+        true,
+        SwapType::ExactOut,
+        500,
         WhirlpoolDeployment::mainnet_immutable()
     )]
     #[case(
@@ -718,7 +700,21 @@ mod tests {
         false,
         SwapType::ExactIn,
         200,
+        WhirlpoolDeployment::mainnet()
+    )]
+    #[case(
+        "A-TEFee",
+        false,
+        SwapType::ExactIn,
+        200,
         WhirlpoolDeployment::mainnet_immutable()
+    )]
+    #[case(
+        "A-TEFee",
+        false,
+        SwapType::ExactOut,
+        100,
+        WhirlpoolDeployment::mainnet()
     )]
     #[case(
         "A-TEFee",
@@ -769,12 +765,12 @@ mod tests {
 
         let liq_ix = increase_liquidity_instructions(
             &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam {
+                token_max_a: 1_000_000,
+                token_max_b: 1_000_000,
+            },
             IncreaseLiquidityConfig {
-                position_mint_address: position_mint,
-                param: IncreaseLiquidityParam {
-                    token_max_a: 1_000_000,
-                    token_max_b: 1_000_000,
-                },
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -819,11 +815,11 @@ mod tests {
 
         let swap_ix = swap_instructions(
             &ctx.rpc,
+            pool_pubkey,
+            amount,
+            token_for_this_call,
+            swap_type.clone(),
             SwapConfig {
-                whirlpool_address: pool_pubkey,
-                amount,
-                specified_mint: token_for_this_call,
-                swap_type: swap_type.clone(),
                 slippage_tolerance_bps: Some(100),
                 signer: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),

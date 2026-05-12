@@ -69,10 +69,6 @@ pub struct DecreaseLiquidityInstruction {
 
 #[derive(Debug, Clone, Default)]
 pub struct DecreaseLiquidityConfig {
-    /// The public key of the NFT mint address representing the pool position.
-    pub position_mint_address: Pubkey,
-    /// A variant of `DecreaseLiquidityParam` specifying the liquidity reduction method (by Token A, Token B, or liquidity amount).
-    pub param: DecreaseLiquidityParam,
     /// An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the account authorizing the liquidity removal. Defaults to the global funder if not provided.
@@ -90,6 +86,8 @@ pub struct DecreaseLiquidityConfig {
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for fetching necessary accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
+/// * `param` - A variant of `DecreaseLiquidityParam` specifying the liquidity reduction method (by Token A, Token B, or liquidity amount).
 /// * `config` - The parameters to build the deacrease liquidity instruction
 ///
 /// # Returns
@@ -125,14 +123,14 @@ pub struct DecreaseLiquidityConfig {
 ///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///     let param = DecreaseLiquidityParam::TokenA(1_000_000);
 ///     let config = DecreaseLiquidityConfig {
-///         position_mint_address,
-///         param,
 ///         slippage_tolerance_bps: Some(100),
 ///         authority: Some(wallet.pubkey()),
 ///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
 ///     let result = decrease_liquidity_instructions(
 ///         &rpc,
+///         position_mint_address,
+///         param,
 ///         config
 ///     )
 ///     .await.unwrap();
@@ -142,11 +140,11 @@ pub struct DecreaseLiquidityConfig {
 /// ```
 pub async fn decrease_liquidity_instructions(
     rpc: &RpcClient,
+    position_mint_address: Pubkey,
+    param: DecreaseLiquidityParam,
     config: DecreaseLiquidityConfig,
 ) -> Result<DecreaseLiquidityInstruction, Box<dyn Error>> {
     let DecreaseLiquidityConfig {
-        position_mint_address,
-        param,
         slippage_tolerance_bps,
         authority,
         whirlpool_deployment,
@@ -326,8 +324,6 @@ pub struct ClosePositionInstruction {
 
 #[derive(Debug, Clone, Default)]
 pub struct ClosePositionConfig {
-    /// The public key of the NFT mint address representing the position to be closed.
-    pub position_mint_address: Pubkey,
     /// An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
     pub slippage_tolerance_bps: Option<u16>,
     /// An optional public key of the account authorizing the transaction. Defaults to the global funder if not provided.
@@ -346,6 +342,7 @@ pub struct ClosePositionConfig {
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for fetching accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the position to be closed.
 /// * `config` - The parameters to build the close position instruction.
 ///
 /// # Returns
@@ -387,12 +384,11 @@ pub struct ClosePositionConfig {
 ///         Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///
 ///     let config = ClosePositionConfig {
-///         position_mint_address,
 ///         slippage_tolerance_bps: Some(100),
 ///         authority: Some(wallet.pubkey()),
 ///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
-///     let result = close_position_instructions(&rpc, config)
+///     let result = close_position_instructions(&rpc, position_mint_address, config)
 ///         .await
 ///         .unwrap();
 ///
@@ -404,10 +400,10 @@ pub struct ClosePositionConfig {
 /// ```
 pub async fn close_position_instructions(
     rpc: &RpcClient,
+    position_mint_address: Pubkey,
     config: ClosePositionConfig,
 ) -> Result<ClosePositionInstruction, Box<dyn Error>> {
     let ClosePositionConfig {
-        position_mint_address,
         slippage_tolerance_bps,
         authority,
         whirlpool_deployment,
@@ -909,22 +905,16 @@ mod tests {
 
     #[rstest]
     #[case("A-B",    "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-B",    "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-B",    "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B",    "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-B",    "one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
     #[case(
         "A-TEA",
         "one sided B",
@@ -932,8 +922,11 @@ mod tests {
         100,
         WhirlpoolDeployment::mainnet_immutable()
     )]
+    #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
     #[case(
         "TEA-TEB",
         "one sided B",
@@ -941,8 +934,11 @@ mod tests {
         100,
         WhirlpoolDeployment::mainnet_immutable()
     )]
+    #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
     #[case(
         "A-TEFee",
         "one sided B",
@@ -993,12 +989,12 @@ mod tests {
 
         let inc_ix = increase_liquidity_instructions(
             &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam {
+                token_max_a: 100_000,
+                token_max_b: 100_000,
+            },
             IncreaseLiquidityConfig {
-                position_mint_address: position_mint,
-                param: IncreaseLiquidityParam {
-                    token_max_a: 100_000,
-                    token_max_b: 100_000,
-                },
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -1011,16 +1007,19 @@ mod tests {
             .unwrap();
 
         let config = DecreaseLiquidityConfig {
-            position_mint_address: position_mint,
-            param: DecreaseLiquidityParam::Liquidity(50_000),
             slippage_tolerance_bps: Some(100),
             authority: Some(ctx.signer.pubkey()),
             whirlpool_deployment: Some(whirlpool_deployment),
         };
 
-        let dec_ix = decrease_liquidity_instructions(&ctx.rpc, config)
-            .await
-            .unwrap();
+        let dec_ix = decrease_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            DecreaseLiquidityParam::Liquidity(50_000),
+            config,
+        )
+        .await
+        .unwrap();
 
         let user_ata_for_token_a = if swapped {
             user_atas[mkey_b]
@@ -1047,20 +1046,20 @@ mod tests {
 
     #[rstest]
     #[case("A-B",    "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-B",    "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-B",    "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B",    "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-B",    "one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA",  "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA",  "one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("TEA-TEB","equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("TEA-TEB","one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-TEFee","equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-TEFee","one sided A",      -100, -1, WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
@@ -1099,12 +1098,12 @@ mod tests {
 
         let inc_ix = increase_liquidity_instructions(
             &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam {
+                token_max_a: 100_000,
+                token_max_b: 100_000,
+            },
             IncreaseLiquidityConfig {
-                position_mint_address: position_mint,
-                param: IncreaseLiquidityParam {
-                    token_max_a: 100_000,
-                    token_max_b: 100_000,
-                },
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -1116,11 +1115,11 @@ mod tests {
 
         let swap_ix = swap_instructions(
             &ctx.rpc,
+            pool_pubkey,
+            100,
+            final_a,
+            SwapType::ExactIn,
             SwapConfig {
-                whirlpool_address: pool_pubkey,
-                amount: 100,
-                specified_mint: final_a,
-                swap_type: SwapType::ExactIn,
                 slippage_tolerance_bps: Some(100),
                 signer: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -1154,8 +1153,8 @@ mod tests {
 
         let close_ix = close_position_instructions(
             &ctx.rpc,
+            position_mint,
             ClosePositionConfig {
-                position_mint_address: position_mint,
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -1228,8 +1227,8 @@ mod tests {
 
         let res = close_position_instructions(
             &ctx.rpc,
+            bogus_mint,
             ClosePositionConfig {
-                position_mint_address: bogus_mint,
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),

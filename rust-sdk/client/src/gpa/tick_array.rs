@@ -39,13 +39,15 @@ impl From<TickArrayFilter> for DynamicTickArrayFilter {
 pub async fn fetch_all_tick_array_with_filter(
     rpc: &RpcClient,
     filters: Vec<TickArrayFilter>,
+    program_id: Option<Pubkey>,
 ) -> Result<Vec<DecodedAccount<TickArray>>, Box<dyn Error>> {
     let fixed_filters = filters
         .clone()
         .into_iter()
         .map(|filter| filter.into())
         .collect();
-    let fixed_tick_arrays = fetch_all_fixed_tick_array_with_filter(rpc, fixed_filters).await?;
+    let fixed_tick_arrays =
+        fetch_all_fixed_tick_array_with_filter(rpc, fixed_filters, program_id).await?;
 
     let dynamic_filters = filters
         .clone()
@@ -53,7 +55,7 @@ pub async fn fetch_all_tick_array_with_filter(
         .map(|filter| filter.into())
         .collect();
     let dynamic_tick_arrays =
-        fetch_all_dynamic_tick_array_with_filter(rpc, dynamic_filters).await?;
+        fetch_all_dynamic_tick_array_with_filter(rpc, dynamic_filters, program_id).await?;
 
     let mut tick_arrays: Vec<DecodedAccount<TickArray>> = Vec::new();
 

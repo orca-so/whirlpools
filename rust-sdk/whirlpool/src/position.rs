@@ -303,9 +303,10 @@ pub async fn fetch_positions_for_owner(
 pub async fn fetch_positions_in_whirlpool(
     rpc: &RpcClient,
     whirlpool: Pubkey,
+    program_id: Option<Pubkey>,
 ) -> Result<Vec<DecodedAccount<Position>>, Box<dyn Error>> {
     let filters = vec![PositionFilter::Whirlpool(whirlpool)];
-    fetch_all_position_with_filter(rpc, filters).await
+    fetch_all_position_with_filter(rpc, filters, program_id).await
 }
 
 #[cfg(test)]
@@ -424,7 +425,9 @@ mod tests {
             setup_position_bundle(&ctx, whirlpool, Some(vec![(), ()]), whirlpool_deployment)
                 .await?;
 
-        let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
+        let positions =
+            fetch_positions_in_whirlpool(&ctx.rpc, whirlpool, Some(whirlpool_deployment.id()))
+                .await?;
 
         // Expect at least 3: normal + te_position + bundle
         assert!(

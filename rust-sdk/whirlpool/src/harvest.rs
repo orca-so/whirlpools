@@ -55,8 +55,6 @@ pub struct HarvestPositionInstruction {
 
 #[derive(Debug, Clone, Default)]
 pub struct HarvestPositionConfig {
-    /// The public key of the NFT mint address representing the pool position.
-    pub position_mint_address: Pubkey,
     /// An optional public key of the account authorizing the harvesting process. Defaults to the global funder if not provided.
     pub authority: Option<Pubkey>,
     /// The Whirlpool program and config account to target.
@@ -72,6 +70,7 @@ pub struct HarvestPositionConfig {
 /// # Arguments
 ///
 /// * `rpc` - A reference to a Solana RPC client for fetching accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
 /// * `config` - The parameters to build the harvest position instruction.
 ///
 /// # Returns
@@ -108,11 +107,10 @@ pub struct HarvestPositionConfig {
 ///         Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///
 ///     let config = HarvestPositionConfig {
-///         position_mint_address,
 ///         authority: Some(wallet.pubkey()),
 ///         whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
 ///     };
-///     let result = harvest_position_instructions(&rpc, config)
+///     let result = harvest_position_instructions(&rpc, position_mint_address, config)
 ///         .await
 ///         .unwrap();
 ///
@@ -123,10 +121,10 @@ pub struct HarvestPositionConfig {
 /// ```
 pub async fn harvest_position_instructions(
     rpc: &RpcClient,
+    position_mint_address: Pubkey,
     config: HarvestPositionConfig,
 ) -> Result<HarvestPositionInstruction, Box<dyn Error>> {
     let HarvestPositionConfig {
-        position_mint_address,
         authority,
         whirlpool_deployment,
     } = config;
@@ -534,22 +532,22 @@ mod tests {
 
     #[rstest]
     #[case("A-B", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
-    #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-B", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-B", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-B", "one sided B", 1, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-TEA", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("TEA-TEB", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("TEA-TEB", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet())]
     #[case("A-TEFee", "equally centered", -100, 100, WhirlpoolDeployment::mainnet_immutable())]
+    #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet())]
     #[case("A-TEFee", "one sided A", -100, -1, WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
@@ -598,12 +596,12 @@ mod tests {
 
         let inc_liq_ix = increase_liquidity_instructions(
             &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam {
+                token_max_a: 50_000,
+                token_max_b: 50_000,
+            },
             IncreaseLiquidityConfig {
-                position_mint_address: position_mint,
-                param: IncreaseLiquidityParam {
-                    token_max_a: 50_000,
-                    token_max_b: 50_000,
-                },
                 slippage_tolerance_bps: Some(100),
                 authority: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -621,11 +619,11 @@ mod tests {
 
         let swap_ix = swap_instructions(
             &ctx.rpc,
+            pool_pubkey,
+            10,
+            swap_input_mint,
+            SwapType::ExactIn,
             SwapConfig {
-                whirlpool_address: pool_pubkey,
-                amount: 10,
-                specified_mint: swap_input_mint,
-                swap_type: SwapType::ExactIn,
                 slippage_tolerance_bps: Some(100),
                 signer: Some(ctx.signer.pubkey()),
                 whirlpool_deployment: Some(whirlpool_deployment),
@@ -641,12 +639,11 @@ mod tests {
         .unwrap();
 
         let config = HarvestPositionConfig {
-            position_mint_address: position_mint,
             authority: Some(ctx.signer.pubkey()),
             whirlpool_deployment: Some(whirlpool_deployment),
         };
 
-        let harvest_ix = harvest_position_instructions(&ctx.rpc, config)
+        let harvest_ix = harvest_position_instructions(&ctx.rpc, position_mint, config)
             .await
             .unwrap();
 

@@ -38,11 +38,12 @@ impl From<WhirlpoolsConfigExtensionFilter> for RpcFilterType {
 pub async fn fetch_all_whirlpools_config_extension_with_filter(
     rpc: &RpcClient,
     filters: Vec<WhirlpoolsConfigExtensionFilter>,
+    program_id: Option<Pubkey>,
 ) -> Result<Vec<DecodedAccount<WhirlpoolsConfigExtension>>, Box<dyn Error>> {
     let mut filters: Vec<RpcFilterType> = filters.into_iter().map(|filter| filter.into()).collect();
     filters.push(RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
         0,
         WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR.to_vec(),
     )));
-    fetch_decoded_program_accounts(rpc, filters).await
+    fetch_decoded_program_accounts(rpc, filters, program_id).await
 }

@@ -30,11 +30,12 @@ impl From<FixedTickArrayFilter> for RpcFilterType {
 pub async fn fetch_all_fixed_tick_array_with_filter(
     rpc: &RpcClient,
     filters: Vec<FixedTickArrayFilter>,
+    program_id: Option<Pubkey>,
 ) -> Result<Vec<DecodedAccount<FixedTickArray>>, Box<dyn Error>> {
     let mut filters: Vec<RpcFilterType> = filters.into_iter().map(|filter| filter.into()).collect();
     filters.push(RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
         0,
         FIXED_TICK_ARRAY_DISCRIMINATOR.to_vec(),
     )));
-    fetch_decoded_program_accounts(rpc, filters).await
+    fetch_decoded_program_accounts(rpc, filters, program_id).await
 }

@@ -539,11 +539,9 @@ mod tests {
         }
     }
 
-    // Only parameterized for the mutable mainnet program. `fetch_whirlpools_by_token_pair` calls
-    // `fetch_all_fee_tier_with_filter`, whose underlying GPA helper in the client crate is hardcoded
-    // to `WHIRLPOOL_ID` and so cannot enumerate fee tiers for the immutable program.
     #[rstest]
     #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
     async fn test_fetch_all_pools_for_pair(#[case] whirlpool_deployment: WhirlpoolDeployment) {

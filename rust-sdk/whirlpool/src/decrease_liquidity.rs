@@ -45,12 +45,6 @@ pub enum DecreaseLiquidityParam {
     Liquidity(u128),
 }
 
-impl Default for DecreaseLiquidityParam {
-    fn default() -> Self {
-        DecreaseLiquidityParam::Liquidity(0)
-    }
-}
-
 /// Represents the instructions and quote for decreasing liquidity in a position.
 #[derive(Debug)]
 pub struct DecreaseLiquidityInstruction {

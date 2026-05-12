@@ -396,11 +396,9 @@ mod tests {
         Ok(())
     }
 
-    // Only parameterized for the mutable mainnet program. `fetch_positions_in_whirlpool` calls
-    // `fetch_all_position_with_filter`, whose underlying GPA helper in the client crate is hardcoded
-    // to `WHIRLPOOL_ID` and so cannot find positions owned by the immutable program.
     #[rstest]
     #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
     #[tokio::test]
     #[serial]
     async fn test_fetch_positions_in_whirlpool(

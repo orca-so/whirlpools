@@ -1,9 +1,8 @@
-import { getWhirlpoolsConfigExtensionAddress } from "@orca-so/whirlpools-client";
-import type { Address, TransactionSigner, KeyPairSigner } from "@solana/kit";
+import type { TransactionSigner, KeyPairSigner } from "@solana/kit";
+import type { Address } from "@solana/kit";
 import {
   address,
   createNoopSigner,
-  isAddress,
   createKeyPairFromBytes,
   createSignerFromKeyPair,
 } from "@solana/kit";
@@ -18,63 +17,18 @@ export {
   setPriorityFeePercentile,
   getRpcConfig,
 } from "@orca-so/tx-sender";
+
+export {
+  WhirlpoolDeployment,
+  DEFAULT_WHIRLPOOL_DEPLOYMENT,
+} from "@orca-so/whirlpools-client";
+
 /**
  * The default (null) address.
  */
-export const DEFAULT_ADDRESS = address("11111111111111111111111111111111");
-
-/**
- * The WhirlpoolsConfig addresses for various networks.
- */
-export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES = {
-  solanaMainnet: address("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"),
-  solanaDevnet: address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR"),
-  eclipseMainnet: address("FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv"),
-  eclipseTestnet: address("FPydDjRdZu9sT7HVd6ANhfjh85KLq21Pefr5YWWMRPFp"),
-};
-
-/**
- * The default WhirlpoolsConfigExtension address.
- */
-export const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = address(
-  "777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH",
+export const DEFAULT_ADDRESS: Address = address(
+  "11111111111111111111111111111111",
 );
-
-/**
- * The WhirlpoolsConfig address.
- */
-export let WHIRLPOOLS_CONFIG_ADDRESS: Address =
-  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
-
-/**
- * The WhirlpoolsConfigExtension address.
- */
-export let WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Address =
-  DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
-
-/**
- * Updates the WhirlpoolsConfig and WhirlpoolsConfigExtension addresses.
- *
- * @param {Address | keyof typeof NETWORK_ADDRESSES} config - A WhirlpoolsConfig address or a network name.
- * @returns {Promise<void>} - Resolves when the addresses have been updated.
- */
-export async function setWhirlpoolsConfig(
-  config: Address | keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
-): Promise<void> {
-  if (isAddress(config)) {
-    WHIRLPOOLS_CONFIG_ADDRESS = config;
-  } else {
-    WHIRLPOOLS_CONFIG_ADDRESS =
-      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[
-        config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
-      ];
-  }
-
-  WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
-    await getWhirlpoolsConfigExtensionAddress(WHIRLPOOLS_CONFIG_ADDRESS).then(
-      (x) => x[0],
-    );
-}
 
 /**
  * The tick spacing for the Splash pools.
@@ -198,13 +152,8 @@ export function setEnforceTokenBalanceCheck(
 
 /**
  * Resets the configuration to its default state.
- *
- * @returns {Promise<void>} - Resolves when the configuration has been reset.
  */
 export function resetConfiguration() {
-  WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
-  WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
-    DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
   FUNDER = DEFAULT_FUNDER;
   SLIPPAGE_TOLERANCE_BPS = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
   NATIVE_MINT_WRAPPING_STRATEGY = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;

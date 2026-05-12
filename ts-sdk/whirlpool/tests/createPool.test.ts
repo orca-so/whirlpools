@@ -14,7 +14,12 @@ import {
   setupMintTEFee,
   setupMintTEScaledUiAmount,
 } from "./utils/tokenExtensions";
-import { rpc, sendTransaction, signer } from "./utils/mockRpc";
+import {
+  rpc,
+  sendTransaction,
+  signer,
+  TEST_WHIRLPOOL_DEPLOYMENT,
+} from "./utils/mockRpc";
 import { fetchMaybeWhirlpool } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import type { Address } from "@solana/kit";
@@ -47,7 +52,7 @@ describe("Create Pool", () => {
         mintA,
         mintB,
         tickSpacing,
-        1,
+        { initialPrice: 1, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       ),
     );
     setDefaultFunder(signer);
@@ -60,7 +65,7 @@ describe("Create Pool", () => {
         mintB,
         mintA,
         tickSpacing,
-        1,
+        { initialPrice: 1, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       ),
     );
   });
@@ -70,7 +75,10 @@ describe("Create Pool", () => {
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
     const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintA, mintB, price);
+      await createSplashPoolInstructions(rpc, mintA, mintB, {
+        initialPrice: price,
+        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
+      });
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
     const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
@@ -97,7 +105,10 @@ describe("Create Pool", () => {
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
     const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintA, mintTEA, price);
+      await createSplashPoolInstructions(rpc, mintA, mintTEA, {
+        initialPrice: price,
+        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
+      });
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
     const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
@@ -124,7 +135,10 @@ describe("Create Pool", () => {
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
     const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintTEA, mintTEB, price);
+      await createSplashPoolInstructions(rpc, mintTEA, mintTEB, {
+        initialPrice: price,
+        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
+      });
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
     const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
@@ -151,7 +165,10 @@ describe("Create Pool", () => {
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
     const { instructions, poolAddress, initializationCost } =
-      await createSplashPoolInstructions(rpc, mintA, mintTEFee, price);
+      await createSplashPoolInstructions(rpc, mintA, mintTEFee, {
+        initialPrice: price,
+        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
+      });
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
     const poolBefore = await fetchMaybeWhirlpool(rpc, poolAddress);
@@ -183,7 +200,7 @@ describe("Create Pool", () => {
         mintA,
         mintB,
         tickSpacing,
-        price,
+        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       );
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -216,7 +233,7 @@ describe("Create Pool", () => {
         mintA,
         mintTEA,
         tickSpacing,
-        price,
+        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       );
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -249,7 +266,7 @@ describe("Create Pool", () => {
         mintTEA,
         mintTEB,
         tickSpacing,
-        price,
+        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       );
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -282,7 +299,7 @@ describe("Create Pool", () => {
         mintA,
         mintTEFee,
         tickSpacing,
-        price,
+        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       );
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -315,7 +332,7 @@ describe("Create Pool", () => {
         mintA,
         mintTESUA,
         tickSpacing,
-        price,
+        { initialPrice: price, whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
       );
 
     const balanceBefore = await rpc.getBalance(signer.address).send();

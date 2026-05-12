@@ -4,12 +4,9 @@ import {
   fetchSplashPool,
   fetchWhirlpoolsByTokenPair,
 } from "../src/pool";
-import { rpc } from "./utils/mockRpc";
+import { rpc, TEST_WHIRLPOOL_DEPLOYMENT } from "./utils/mockRpc";
 import assert from "assert";
-import {
-  SPLASH_POOL_TICK_SPACING,
-  WHIRLPOOLS_CONFIG_ADDRESS,
-} from "../src/config";
+import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import type { Address } from "@solana/kit";
 import { setupMint } from "./utils/token";
 import { setupWhirlpool } from "./utils/program";
@@ -27,16 +24,21 @@ describe("Fetch Pool", () => {
     mintB = await setupMint();
     concentratedPool = await setupWhirlpool(mintA, mintB, 64);
     defaultPool = await getWhirlpoolAddress(
-      WHIRLPOOLS_CONFIG_ADDRESS,
       mintA,
       mintB,
       128,
+      TEST_WHIRLPOOL_DEPLOYMENT,
     ).then((x) => x[0]);
     splashPool = await setupWhirlpool(mintA, mintB, SPLASH_POOL_TICK_SPACING);
   });
 
   it("Should be able to fetch a splash pool", async () => {
-    const pool = await fetchSplashPool(rpc, mintA, mintB);
+    const pool = await fetchSplashPool(
+      rpc,
+      mintA,
+      mintB,
+      TEST_WHIRLPOOL_DEPLOYMENT,
+    );
     assert.strictEqual(pool.initialized, true);
     assert.strictEqual(pool.liquidity, 0n);
     assert.strictEqual(pool.tickSpacing, SPLASH_POOL_TICK_SPACING);
@@ -45,11 +47,20 @@ describe("Fetch Pool", () => {
     assert.strictEqual(pool.tokenMintB, mintB);
     assert.strictEqual(pool.feeRate, 1000);
     assert.strictEqual(pool.protocolFeeRate, 100);
-    assert.strictEqual(pool.whirlpoolsConfig, WHIRLPOOLS_CONFIG_ADDRESS);
+    assert.strictEqual(
+      pool.whirlpoolsConfig,
+      TEST_WHIRLPOOL_DEPLOYMENT.configAddress,
+    );
   });
 
   it("Should be able to fetch a concentrated liquidity pool", async () => {
-    const pool = await fetchConcentratedLiquidityPool(rpc, mintA, mintB, 64);
+    const pool = await fetchConcentratedLiquidityPool(
+      rpc,
+      mintA,
+      mintB,
+      64,
+      TEST_WHIRLPOOL_DEPLOYMENT,
+    );
     assert.strictEqual(pool.initialized, true);
     assert.strictEqual(pool.liquidity, 0n);
     assert.strictEqual(pool.tickSpacing, 64);
@@ -58,11 +69,20 @@ describe("Fetch Pool", () => {
     assert.strictEqual(pool.tokenMintB, mintB);
     assert.strictEqual(pool.feeRate, 300);
     assert.strictEqual(pool.protocolFeeRate, 100);
-    assert.strictEqual(pool.whirlpoolsConfig, WHIRLPOOLS_CONFIG_ADDRESS);
+    assert.strictEqual(
+      pool.whirlpoolsConfig,
+      TEST_WHIRLPOOL_DEPLOYMENT.configAddress,
+    );
   });
 
   it("Should be able to try fetching a non-existent pool", async () => {
-    const pool = await fetchConcentratedLiquidityPool(rpc, mintA, mintB, 128);
+    const pool = await fetchConcentratedLiquidityPool(
+      rpc,
+      mintA,
+      mintB,
+      128,
+      TEST_WHIRLPOOL_DEPLOYMENT,
+    );
     assert.strictEqual(pool.initialized, false);
     assert.strictEqual(pool.tickSpacing, 128);
     assert.strictEqual(pool.address, defaultPool);
@@ -70,11 +90,19 @@ describe("Fetch Pool", () => {
     assert.strictEqual(pool.tokenMintB, mintB);
     assert.strictEqual(pool.feeRate, 1000);
     assert.strictEqual(pool.protocolFeeRate, 100);
-    assert.strictEqual(pool.whirlpoolsConfig, WHIRLPOOLS_CONFIG_ADDRESS);
+    assert.strictEqual(
+      pool.whirlpoolsConfig,
+      TEST_WHIRLPOOL_DEPLOYMENT.configAddress,
+    );
   });
 
   it("Should be able to fetch all pools for a pair", async () => {
-    const pools = await fetchWhirlpoolsByTokenPair(rpc, mintA, mintB);
+    const pools = await fetchWhirlpoolsByTokenPair(
+      rpc,
+      mintA,
+      mintB,
+      TEST_WHIRLPOOL_DEPLOYMENT,
+    );
     assert.strictEqual(pools.length, 3);
 
     // Note: we use find because ordering is not guaranteed

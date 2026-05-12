@@ -17,7 +17,6 @@ import {
   getWhirlpoolDecoder,
 } from "../generated/accounts/whirlpool";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type WhirlpoolFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -218,7 +217,8 @@ export function whirlpoolRewardVault3Filter(
  */
 export async function fetchAllWhirlpoolWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: WhirlpoolFilter[]
+  filters: WhirlpoolFilter[],
+  programAddress?: Address,
 ): Promise<Account<Whirlpool>[]> {
   const discriminator = getBase58Decoder().decode(
     WHIRLPOOL_DISCRIMINATOR,
@@ -232,8 +232,8 @@ export async function fetchAllWhirlpoolWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getWhirlpoolDecoder(),
+    programAddress,
   );
 }

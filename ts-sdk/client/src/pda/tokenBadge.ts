@@ -1,16 +1,22 @@
 import type { Address, ProgramDerivedAddress } from "@solana/kit";
 import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
+import type { WhirlpoolDeployment } from "../config";
+import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 
+/**
+ * Derives the token badge PDA for the given mint under the supplied target program.
+ *
+ * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
+ */
 export async function getTokenBadgeAddress(
-  whirlpoolsConfig: Address,
   tokenMint: Address,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
-    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
+    programAddress: whirlpoolDeployment.programId,
     seeds: [
       "token_badge",
-      getAddressEncoder().encode(whirlpoolsConfig),
+      getAddressEncoder().encode(whirlpoolDeployment.configAddress),
       getAddressEncoder().encode(tokenMint),
     ],
   });

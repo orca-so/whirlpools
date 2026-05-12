@@ -23,7 +23,7 @@ import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import assert from "assert";
 import { randomUUID } from "crypto";
 import { FailedTransactionMetadata, FeatureSet, LiteSVM } from "litesvm";
-import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
+import { setDefaultFunder, WhirlpoolDeployment } from "../../src/config";
 import { LOCALNET_ADMIN_KEYPAIR_0, LOCALNET_ADMIN_KEYPAIR_1 } from "./admin";
 import { getNextKeypair } from "./keypair";
 import { setupConfigAndFeeTiers } from "./program";
@@ -31,6 +31,16 @@ import { getTokenSize } from "@solana-program/token-2022";
 
 export const signer = getNextKeypair();
 setDefaultFunder(signer);
+
+/**
+ * The {@link WhirlpoolDeployment} used by the in-process LiteSVM test harness.
+ *
+ * Initialized lazily inside {@link getTestContext} once the test program and
+ * its randomly generated config account are deployed. Test code must `await`
+ * a `getTestContext()` (directly or transitively) before reading this.
+ */
+export let TEST_WHIRLPOOL_DEPLOYMENT: WhirlpoolDeployment =
+  WhirlpoolDeployment.mainnet;
 
 function toPublicKey(address: Address): PublicKey {
   return new PublicKey(address);
@@ -109,7 +119,10 @@ export async function getTestContext(): Promise<LiteSVM> {
     });
 
     const configAddress = await setupConfigAndFeeTiers();
-    setWhirlpoolsConfig(configAddress);
+    TEST_WHIRLPOOL_DEPLOYMENT = WhirlpoolDeployment.custom(
+      WhirlpoolDeployment.mainnet.programId,
+      configAddress,
+    );
   }
   return _testContext;
 }

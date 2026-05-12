@@ -17,7 +17,6 @@ import {
   getFixedTickArrayDecoder,
 } from "../generated/accounts/fixedTickArray";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type FixedTickArrayFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -49,7 +48,8 @@ export function fixedTickArrayWhirlpoolFilter(
 
 export async function fetchAllFixedTickArrayWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: FixedTickArrayFilter[]
+  filters: FixedTickArrayFilter[],
+  programAddress?: Address,
 ): Promise<Account<FixedTickArray>[]> {
   const discriminator = getBase58Decoder().decode(
     FIXED_TICK_ARRAY_DISCRIMINATOR,
@@ -63,8 +63,8 @@ export async function fetchAllFixedTickArrayWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getFixedTickArrayDecoder(),
+    programAddress,
   );
 }

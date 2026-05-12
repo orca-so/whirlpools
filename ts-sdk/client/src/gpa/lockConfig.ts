@@ -9,7 +9,6 @@ import type {
 import { getAddressEncoder, getBase58Decoder } from "@solana/kit";
 import { getLockConfigDecoder, LOCK_CONFIG_DISCRIMINATOR } from "../generated";
 import type { LockConfig } from "../generated/accounts/lockConfig";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 import { fetchDecodedProgramAccounts } from "./utils";
 
 type LockConfigFilter = GetProgramAccountsMemcmpFilter & {
@@ -50,7 +49,8 @@ export function lockConfigWhirlpoolFilter(address: Address): LockConfigFilter {
 
 export async function fetchAllLockConfigWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: LockConfigFilter[]
+  filters: LockConfigFilter[],
+  programAddress?: Address,
 ): Promise<Account<LockConfig>[]> {
   const discriminator = getBase58Decoder().decode(
     LOCK_CONFIG_DISCRIMINATOR,
@@ -64,8 +64,8 @@ export async function fetchAllLockConfigWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getLockConfigDecoder(),
+    programAddress,
   );
 }

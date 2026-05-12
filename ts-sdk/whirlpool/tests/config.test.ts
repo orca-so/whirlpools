@@ -7,20 +7,16 @@ import {
   setDefaultFunder,
   setDefaultSlippageToleranceBps,
   setNativeMintWrappingStrategy,
-  setWhirlpoolsConfig,
   NATIVE_MINT_WRAPPING_STRATEGY,
-  WHIRLPOOLS_CONFIG_ADDRESS,
-  WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
   DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY,
-  DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
-  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
   ENFORCE_TOKEN_BALANCE_CHECK,
   DEFAULT_ENFORCE_TOKEN_BALANCE_CHECK,
   setEnforceTokenBalanceCheck,
+  WhirlpoolDeployment,
 } from "../src/config";
 import assert from "assert";
-import { address, createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
+import { createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
 
 // Tests in order, which is important here
 
@@ -29,29 +25,34 @@ describe("Configuration", () => {
     resetConfiguration();
   });
 
-  it("Should be able to set whirlpool config", async () => {
-    await setWhirlpoolsConfig(
-      address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E"),
+  it("Should expose named WhirlpoolDeployment constants", () => {
+    assert.strictEqual(
+      WhirlpoolDeployment.mainnet.configAddress,
+      "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ",
     );
     assert.strictEqual(
-      WHIRLPOOLS_CONFIG_ADDRESS,
-      "GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E",
+      WhirlpoolDeployment.devnet.configAddress,
+      "FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR",
     );
     assert.strictEqual(
-      WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
-      "Ez4MMUVb7VrKFcTSbi9Yz2ivXwdwCqJicnDaRHbe96Yk",
+      WhirlpoolDeployment.mainnet.programId,
+      "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    );
+    assert.strictEqual(
+      WhirlpoolDeployment.mainnetImmutable.programId,
+      "iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN",
     );
   });
 
-  it("Should be able to set whirlpools config based on network", async () => {
-    await setWhirlpoolsConfig("eclipseTestnet");
-    assert.strictEqual(
-      WHIRLPOOLS_CONFIG_ADDRESS,
-      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.eclipseTestnet,
+  it("Should construct a custom WhirlpoolDeployment", () => {
+    const custom = WhirlpoolDeployment.custom(
+      WhirlpoolDeployment.mainnet.programId,
+      "GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E" as never,
     );
+    assert.strictEqual(custom.programId, WhirlpoolDeployment.mainnet.programId);
     assert.strictEqual(
-      WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
-      "6gUEB962oFdZtwoVyXNya9TfGWnBEbYNYt8UdvzT6PSf",
+      custom.configAddress,
+      "GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E",
     );
   });
 
@@ -87,14 +88,6 @@ describe("Configuration", () => {
 
   it("Should be able to reset the configuration", () => {
     resetConfiguration();
-    assert.strictEqual(
-      WHIRLPOOLS_CONFIG_ADDRESS,
-      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet,
-    );
-    assert.strictEqual(
-      WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
-      DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
-    );
     assert.strictEqual(FUNDER.address, DEFAULT_ADDRESS);
     assert.strictEqual(SLIPPAGE_TOLERANCE_BPS, DEFAULT_SLIPPAGE_TOLERANCE_BPS);
     assert.strictEqual(

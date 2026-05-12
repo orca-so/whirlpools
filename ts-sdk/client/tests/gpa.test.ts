@@ -165,7 +165,7 @@ describe("get program account memcmp filters", () => {
     const mockFetch = vi.mocked(fetchDecodedProgramAccounts);
     const filters = mockFetch.mock.calls[
       index
-    ][2] as GetProgramAccountsMemcmpFilter[];
+    ][1] as GetProgramAccountsMemcmpFilter[];
     for (const filter of filters) {
       const offset = Number(filter.memcmp.offset);
       const actual = getBase58Encoder().encode(filter.memcmp.bytes);
@@ -180,12 +180,11 @@ describe("get program account memcmp filters", () => {
       tickSpacing: 1234,
       defaultFeeRate: 4321,
     };
-    await fetchAllFeeTierWithFilter(
-      mockRpc,
+    await fetchAllFeeTierWithFilter(mockRpc, [
       feeTierWhirlpoolsConfigFilter(feeTierStruct.whirlpoolsConfig),
       feeTierTickSpacingFilter(feeTierStruct.tickSpacing),
       feeTierFeeRateFilter(feeTierStruct.defaultFeeRate),
-    );
+    ]);
     const data = getFeeTierEncoder().encode(feeTierStruct);
     assertFilters(data);
   });
@@ -198,12 +197,11 @@ describe("get program account memcmp filters", () => {
       lockedTimestamp: 1234,
       lockType: LockTypeLabel.Permanent,
     };
-    await fetchAllLockConfigWithFilter(
-      mockRpc,
+    await fetchAllLockConfigWithFilter(mockRpc, [
       lockConfigPositionFilter(lockConfigStruct.position),
       lockConfigPositionOwnerFilter(lockConfigStruct.positionOwner),
       lockConfigWhirlpoolFilter(lockConfigStruct.whirlpool),
-    );
+    ]);
     const data = getLockConfigEncoder().encode(lockConfigStruct);
     assertFilters(data);
   });
@@ -225,13 +223,12 @@ describe("get program account memcmp filters", () => {
         { growthInsideCheckpoint: 7654, amountOwed: 3210 },
       ],
     };
-    await fetchAllPositionWithFilter(
-      mockRpc,
+    await fetchAllPositionWithFilter(mockRpc, [
       positionWhirlpoolFilter(positionStruct.whirlpool),
       positionMintFilter(positionStruct.positionMint),
       positionTickLowerIndexFilter(positionStruct.tickLowerIndex),
       positionTickUpperIndexFilter(positionStruct.tickUpperIndex),
-    );
+    ]);
     const data = getPositionEncoder().encode(positionStruct);
     assertFilters(data);
   });
@@ -241,10 +238,9 @@ describe("get program account memcmp filters", () => {
       positionBundleMint: addresses[0],
       positionBitmap: new Uint8Array(88),
     };
-    await fetchAllPositionBundleWithFilter(
-      mockRpc,
+    await fetchAllPositionBundleWithFilter(mockRpc, [
       positionBundleMintFilter(positionBundleStruct.positionBundleMint),
-    );
+    ]);
     const data = getPositionBundleEncoder().encode(positionBundleStruct);
     assertFilters(data);
   });
@@ -283,11 +279,10 @@ describe("get program account memcmp filters", () => {
       tickBitmap: 309485009821345068724781055n, // 2^88 - 1
       whirlpool: addresses[0],
     };
-    await fetchAllTickArrayWithFilter(
-      mockRpc,
+    await fetchAllTickArrayWithFilter(mockRpc, [
       tickArrayStartTickIndexFilter(fixedTickArrayStruct.startTickIndex),
       tickArrayWhirlpoolFilter(fixedTickArrayStruct.whirlpool),
-    );
+    ]);
     const fixedData = getFixedTickArrayEncoder().encode(fixedTickArrayStruct);
     assertFilters(fixedData, 0);
     const dynamicData = getDynamicTickArrayEncoder().encode(
@@ -310,11 +305,10 @@ describe("get program account memcmp filters", () => {
       ticks: Array(88).fill(tickStruct),
       whirlpool: addresses[0],
     };
-    await fetchAllFixedTickArrayWithFilter(
-      mockRpc,
+    await fetchAllFixedTickArrayWithFilter(mockRpc, [
       fixedTickArrayStartTickIndexFilter(fixedTickArrayStruct.startTickIndex),
       fixedTickArrayWhirlpoolFilter(fixedTickArrayStruct.whirlpool),
-    );
+    ]);
     const data = getFixedTickArrayEncoder().encode(fixedTickArrayStruct);
     assertFilters(data);
   });
@@ -338,11 +332,10 @@ describe("get program account memcmp filters", () => {
       tickBitmap: 309485009821345068724781055n, // 2^88 - 1
       whirlpool: addresses[0],
     };
-    await fetchAllDynamicTickArrayWithFilter(
-      mockRpc,
+    await fetchAllDynamicTickArrayWithFilter(mockRpc, [
       dynamicTickArrayStartTickIndexFilter(tickArrayStruct.startTickIndex),
       dynamicTickArrayWhirlpoolFilter(tickArrayStruct.whirlpool),
-    );
+    ]);
     const data = getDynamicTickArrayEncoder().encode(tickArrayStruct);
     assertFilters(data);
   });
@@ -353,11 +346,10 @@ describe("get program account memcmp filters", () => {
       tokenMint: addresses[1],
       attributeRequireNonTransferablePosition: true,
     };
-    await fetchAllTokenBadgeWithFilter(
-      mockRpc,
+    await fetchAllTokenBadgeWithFilter(mockRpc, [
       tokenBadgeWhirlpoolsConfigFilter(tokenBadgeStruct.whirlpoolsConfig),
       tokenBadgeTokenMintFilter(tokenBadgeStruct.tokenMint),
-    );
+    ]);
     const data = getTokenBadgeEncoder().encode(tokenBadgeStruct);
     assertFilters(data);
   });
@@ -406,8 +398,7 @@ describe("get program account memcmp filters", () => {
         },
       ],
     };
-    await fetchAllWhirlpoolWithFilter(
-      mockRpc,
+    await fetchAllWhirlpoolWithFilter(mockRpc, [
       whirlpoolWhirlpoolConfigFilter(whirlpoolStruct.whirlpoolsConfig),
       whirlpoolTickSpacingFilter(whirlpoolStruct.tickSpacing),
       whirlpoolFeeRateFilter(whirlpoolStruct.feeRate),
@@ -422,7 +413,7 @@ describe("get program account memcmp filters", () => {
       whirlpoolRewardVault2Filter(whirlpoolStruct.rewardInfos[1].vault),
       whirlpoolRewardMint3Filter(whirlpoolStruct.rewardInfos[2].mint),
       whirlpoolRewardVault3Filter(whirlpoolStruct.rewardInfos[2].vault),
-    );
+    ]);
     const data = getWhirlpoolEncoder().encode(whirlpoolStruct);
     assertFilters(data);
   });
@@ -435,8 +426,7 @@ describe("get program account memcmp filters", () => {
       defaultProtocolFeeRate: 1234,
       featureFlags: 1,
     };
-    await fetchAllWhirlpoolsConfigWithFilter(
-      mockRpc,
+    await fetchAllWhirlpoolsConfigWithFilter(mockRpc, [
       whirlpoolsConfigFeeAuthorityFilter(whirlpoolsConfigStruct.feeAuthority),
       whirlpoolsConfigCollectProtocolFeesAuthorityFilter(
         whirlpoolsConfigStruct.collectProtocolFeesAuthority,
@@ -447,7 +437,7 @@ describe("get program account memcmp filters", () => {
       whirlpoolsConfigDefaultProtocolFeeRateFilter(
         whirlpoolsConfigStruct.defaultProtocolFeeRate,
       ),
-    );
+    ]);
     const data = getWhirlpoolsConfigEncoder().encode(whirlpoolsConfigStruct);
     assertFilters(data);
   });
@@ -458,8 +448,7 @@ describe("get program account memcmp filters", () => {
       configExtensionAuthority: addresses[1],
       tokenBadgeAuthority: addresses[2],
     };
-    await fetchAllWhirlpoolsConfigExtensionWithFilter(
-      mockRpc,
+    await fetchAllWhirlpoolsConfigExtensionWithFilter(mockRpc, [
       whirlpoolsConfigExtensionWhirlpoolsConfigFilter(
         whirlpoolsConfigExtensionStruct.whirlpoolsConfig,
       ),
@@ -469,7 +458,7 @@ describe("get program account memcmp filters", () => {
       whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter(
         whirlpoolsConfigExtensionStruct.tokenBadgeAuthority,
       ),
-    );
+    ]);
     const data = getWhirlpoolsConfigExtensionEncoder().encode(
       whirlpoolsConfigExtensionStruct,
     );
@@ -492,8 +481,7 @@ describe("get program account memcmp filters", () => {
       tickGroupSize: 3210,
       majorSwapThresholdTicks: 9876,
     };
-    await fetchAllAdaptiveFeeTierWithFilter(
-      mockRpc,
+    await fetchAllAdaptiveFeeTierWithFilter(mockRpc, [
       adaptiveFeeTierWhirlpoolsConfigFilter(
         adaptiveFeeTierStruct.whirlpoolsConfig,
       ),
@@ -523,7 +511,7 @@ describe("get program account memcmp filters", () => {
       adaptiveFeeTierMajorSwapThresholdTicksFilter(
         adaptiveFeeTierStruct.majorSwapThresholdTicks,
       ),
-    );
+    ]);
     const data = getAdaptiveFeeTierEncoder().encode(adaptiveFeeTierStruct);
     assertFilters(data);
   });
@@ -552,8 +540,7 @@ describe("get program account memcmp filters", () => {
       },
       reserved: new Uint8Array(128),
     };
-    await fetchAllOracleWithFilter(
-      mockRpc,
+    await fetchAllOracleWithFilter(mockRpc, [
       oracleWhirlpoolFilter(oracleStruct.whirlpool),
       oracleTradeEnableTimestampFilter(oracleStruct.tradeEnableTimestamp),
       oracleFilterPeriodFilter(oracleStruct.adaptiveFeeConstants.filterPeriod),
@@ -573,7 +560,7 @@ describe("get program account memcmp filters", () => {
       oracleMajorSwapThresholdTicksFilter(
         oracleStruct.adaptiveFeeConstants.majorSwapThresholdTicks,
       ),
-    );
+    ]);
     const data = getOracleEncoder().encode(oracleStruct);
     assertFilters(data);
   });

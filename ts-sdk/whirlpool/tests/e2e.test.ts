@@ -7,7 +7,11 @@ import {
   openFullRangePositionInstructions,
   increaseLiquidityInstructions,
 } from "../src/increaseLiquidity";
-import { sendTransaction, rpc } from "./utils/mockRpc";
+import {
+  sendTransaction,
+  rpc,
+  TEST_WHIRLPOOL_DEPLOYMENT,
+} from "./utils/mockRpc";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import { swapInstructions } from "../src/swap";
 import type { Address } from "@solana/kit";
@@ -55,7 +59,9 @@ describe("e2e", () => {
 
   const testInitSplashPool = async () => {
     const { instructions: createPoolInstructions, poolAddress } =
-      await createSplashPoolInstructions(rpc, mintA, mintB);
+      await createSplashPoolInstructions(rpc, mintA, mintB, {
+        whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT,
+      });
     await sendTransaction(createPoolInstructions);
 
     const pool = await fetchWhirlpool(rpc, poolAddress);
@@ -68,7 +74,13 @@ describe("e2e", () => {
 
   const testInitConcentratedLiquidityPool = async () => {
     const { instructions: createPoolInstructions, poolAddress } =
-      await createConcentratedLiquidityPoolInstructions(rpc, mintA, mintB, 128);
+      await createConcentratedLiquidityPoolInstructions(
+        rpc,
+        mintA,
+        mintB,
+        128,
+        { whirlpoolDeployment: TEST_WHIRLPOOL_DEPLOYMENT },
+      );
     await sendTransaction(createPoolInstructions);
 
     const pool = await fetchWhirlpool(rpc, poolAddress);
@@ -100,12 +112,9 @@ describe("e2e", () => {
     );
 
     const { instructions, positionMint } =
-      await openFullRangePositionInstructions(
-        rpc,
-        poolAddress,
-        param,
+      await openFullRangePositionInstructions(rpc, poolAddress, param, {
         slippageToleranceBps,
-      );
+      });
     await sendTransaction(instructions);
 
     const positionAfter = await fetchPositionByMint(positionMint);
@@ -174,7 +183,7 @@ describe("e2e", () => {
       rpc,
       positionMint,
       paramIncrease,
-      slippageToleranceBps,
+      { slippageToleranceBps },
     );
     await sendTransaction(instructions);
 

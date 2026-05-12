@@ -23,8 +23,13 @@ import {
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
 } from "@orca-so/whirlpools-core";
-import type { Whirlpool, Oracle } from "@orca-so/whirlpools-client";
+import type {
+  Whirlpool,
+  Oracle,
+  WhirlpoolDeployment,
+} from "@orca-so/whirlpools-client";
 import {
+  DEFAULT_WHIRLPOOL_DEPLOYMENT,
   AccountsType,
   fetchAllMaybeTickArray,
   fetchWhirlpool,
@@ -39,7 +44,7 @@ import {
 } from "./token";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import { fetchAllMint } from "@solana-program/token-2022";
-import { wrapFunctionWithExecution } from "./actionHelpers";
+import { executeWithCallback } from "./actionHelpers";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -93,6 +98,21 @@ export type SwapInstructions<T extends SwapParams> = {
   tradeEnableTimestamp: bigint;
 };
 
+/**
+ * Options for {@link swapInstructions}.
+ */
+export type SwapConfig = {
+  /** Slippage tolerance in basis points (BPS). Defaults to the global setting. */
+  slippageToleranceBps?: number;
+  /** The wallet or signer executing the swap. Defaults to the global funder. */
+  signer?: TransactionSigner<string>;
+  /**
+   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
+   * deployment if not provided.
+   */
+  whirlpoolDeployment?: WhirlpoolDeployment;
+};
+
 function createUninitializedTickArray(
   address: Address,
   startTickIndex: number,
@@ -121,6 +141,7 @@ function createUninitializedTickArray(
 async function fetchTickArrayOrDefault(
   rpc: Rpc<GetMultipleAccountsApi>,
   whirlpool: Account<Whirlpool>,
+  programAddress: Address,
 ): Promise<Account<TickArrayFacade>[]> {
   const tickArrayStartIndex = getTickArrayStartTickIndex(
     whirlpool.data.tickCurrentIndex,
@@ -138,7 +159,9 @@ async function fetchTickArrayOrDefault(
 
   const tickArrayAddresses = await Promise.all(
     tickArrayIndexes.map((startIndex) =>
-      getTickArrayAddress(whirlpool.address, startIndex).then((x) => x[0]),
+      getTickArrayAddress(whirlpool.address, startIndex, programAddress).then(
+        (x) => x[0],
+      ),
     ),
   );
 
@@ -224,32 +247,29 @@ function getSwapQuote<T extends SwapParams>(
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
  * @param {Address} poolAddress - The address of the Whirlpool against which the swap will be made.
- * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
- * @param {TransactionSigner} [signer=FUNDER] - The wallet or signer executing the swap.
+ * @param {SwapConfig} [config] - The parameters to build the swap instruction.
  * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
  *
  * @example
- * import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
+ * import { swapInstructions, SwapConfig, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
- * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await loadWallet(); // CAUTION: This wallet is not persistent.
+ * const wallet = await loadWallet();
  * const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
  * const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
- * const inputAmount = 1_000_000n;
  *
  * const { instructions, quote } = await swapInstructions(
  *   devnetRpc,
- *   { inputAmount, mint: mintAddress },
+ *   { inputAmount: 1_000_000n, mint: mintAddress },
  *   whirlpoolAddress,
- *   100,
- *   wallet
+ *   {
+ *     slippageToleranceBps: 100,
+ *     signer: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   },
  * );
- *
- * console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
- * console.log(`Number of instructions:, ${instructions.length}`);
  */
 export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<
@@ -260,9 +280,14 @@ export async function swapInstructions<T extends SwapParams>(
   >,
   params: T,
   poolAddress: Address,
-  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  signer: TransactionSigner<string> = FUNDER,
+  config: SwapConfig = {},
 ): Promise<SwapInstructions<T>> {
+  const slippageToleranceBps =
+    config.slippageToleranceBps ?? SLIPPAGE_TOLERANCE_BPS;
+  const signer = config.signer ?? FUNDER;
+  const whirlpoolDeployment =
+    config.whirlpoolDeployment ?? DEFAULT_WHIRLPOOL_DEPLOYMENT;
+
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const [tokenA, tokenB] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
@@ -271,11 +296,16 @@ export async function swapInstructions<T extends SwapParams>(
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
   const specifiedInput = "inputAmount" in params;
 
-  const tickArrays = await fetchTickArrayOrDefault(rpc, whirlpool);
-
-  const oracleAddress = await getOracleAddress(whirlpool.address).then(
-    (x) => x[0],
+  const tickArrays = await fetchTickArrayOrDefault(
+    rpc,
+    whirlpool,
+    whirlpoolDeployment.programId,
   );
+
+  const oracleAddress = await getOracleAddress(
+    whirlpool.address,
+    whirlpoolDeployment.programId,
+  ).then((x) => x[0]);
   const oracle = await getOracle(rpc, oracleAddress, whirlpool.data);
 
   const currentEpoch = await rpc.getEpochInfo().send();
@@ -314,33 +344,36 @@ export async function swapInstructions<T extends SwapParams>(
   const otherAmountThreshold =
     "tokenMaxIn" in quote ? quote.tokenMaxIn : quote.tokenMinOut;
 
-  const swapInstruction = getSwapV2Instruction({
-    tokenProgramA: tokenA.programAddress,
-    tokenProgramB: tokenB.programAddress,
-    memoProgram: MEMO_PROGRAM_ADDRESS,
-    tokenAuthority: signer,
-    whirlpool: whirlpool.address,
-    tokenMintA: whirlpool.data.tokenMintA,
-    tokenMintB: whirlpool.data.tokenMintB,
-    tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-    tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-    tokenVaultA: whirlpool.data.tokenVaultA,
-    tokenVaultB: whirlpool.data.tokenVaultB,
-    tickArray0: tickArrays[0].address,
-    tickArray1: tickArrays[1].address,
-    tickArray2: tickArrays[2].address,
-    amount: specifiedAmount,
-    otherAmountThreshold,
-    sqrtPriceLimit: 0,
-    amountSpecifiedIsInput: specifiedInput,
-    aToB,
-    oracle: oracleAddress,
-    remainingAccountsInfo: {
-      slices: [
-        { accountsType: AccountsType.SupplementalTickArrays, length: 2 },
-      ],
+  const swapInstruction = getSwapV2Instruction(
+    {
+      tokenProgramA: tokenA.programAddress,
+      tokenProgramB: tokenB.programAddress,
+      memoProgram: MEMO_PROGRAM_ADDRESS,
+      tokenAuthority: signer,
+      whirlpool: whirlpool.address,
+      tokenMintA: whirlpool.data.tokenMintA,
+      tokenMintB: whirlpool.data.tokenMintB,
+      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+      tokenVaultA: whirlpool.data.tokenVaultA,
+      tokenVaultB: whirlpool.data.tokenVaultB,
+      tickArray0: tickArrays[0].address,
+      tickArray1: tickArrays[1].address,
+      tickArray2: tickArrays[2].address,
+      amount: specifiedAmount,
+      otherAmountThreshold,
+      sqrtPriceLimit: 0,
+      amountSpecifiedIsInput: specifiedInput,
+      aToB,
+      oracle: oracleAddress,
+      remainingAccountsInfo: {
+        slices: [
+          { accountsType: AccountsType.SupplementalTickArrays, length: 2 },
+        ],
+      },
     },
-  });
+    { programAddress: whirlpoolDeployment.programId },
+  );
 
   swapInstruction.accounts.push(
     { address: tickArrays[3].address, role: AccountRole.WRITABLE },
@@ -359,4 +392,12 @@ export async function swapInstructions<T extends SwapParams>(
 
 // -------- ACTIONS --------
 
-export const swap = wrapFunctionWithExecution(swapInstructions);
+export function swap<T extends SwapParams>(
+  params: T,
+  poolAddress: Address,
+  config?: Omit<SwapConfig, "signer">,
+) {
+  return executeWithCallback((rpc, owner) =>
+    swapInstructions(rpc, params, poolAddress, { ...config, signer: owner }),
+  );
+}

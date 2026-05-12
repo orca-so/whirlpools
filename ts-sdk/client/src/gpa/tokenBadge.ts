@@ -13,7 +13,6 @@ import {
   getTokenBadgeDecoder,
 } from "../generated/accounts/tokenBadge";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type TokenBadgeFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -43,7 +42,8 @@ export function tokenBadgeTokenMintFilter(address: Address): TokenBadgeFilter {
 
 export async function fetchAllTokenBadgeWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: TokenBadgeFilter[]
+  filters: TokenBadgeFilter[],
+  programAddress?: Address,
 ): Promise<Account<TokenBadge>[]> {
   const discriminator = getBase58Decoder().decode(
     TOKEN_BADGE_DISCRIMINATOR,
@@ -57,8 +57,8 @@ export async function fetchAllTokenBadgeWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getTokenBadgeDecoder(),
+    programAddress,
   );
 }

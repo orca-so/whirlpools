@@ -13,7 +13,6 @@ import {
   getPositionBundleDecoder,
 } from "../generated/accounts/positionBundle";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type PositionBundleFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -33,7 +32,8 @@ export function positionBundleMintFilter(
 
 export async function fetchAllPositionBundleWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: PositionBundleFilter[]
+  filters: PositionBundleFilter[],
+  programAddress?: Address,
 ): Promise<Account<PositionBundle>[]> {
   const discriminator = getBase58Decoder().decode(
     POSITION_BUNDLE_DISCRIMINATOR,
@@ -47,8 +47,8 @@ export async function fetchAllPositionBundleWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getPositionBundleDecoder(),
+    programAddress,
   );
 }

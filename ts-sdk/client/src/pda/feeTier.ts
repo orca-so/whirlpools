@@ -1,20 +1,26 @@
-import type { Address, ProgramDerivedAddress } from "@solana/kit";
+import type { ProgramDerivedAddress } from "@solana/kit";
 import {
   getAddressEncoder,
   getProgramDerivedAddress,
   getU16Encoder,
 } from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
+import type { WhirlpoolDeployment } from "../config";
+import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 
+/**
+ * Derives the fee tier PDA for the given fee tier index under the supplied target program.
+ *
+ * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
+ */
 export async function getFeeTierAddress(
-  whirlpoolsConfig: Address,
   feeTierIndex: number,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
-    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
+    programAddress: whirlpoolDeployment.programId,
     seeds: [
       "fee_tier",
-      getAddressEncoder().encode(whirlpoolsConfig),
+      getAddressEncoder().encode(whirlpoolDeployment.configAddress),
       getU16Encoder().encode(feeTierIndex),
     ],
   });

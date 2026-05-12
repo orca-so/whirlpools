@@ -1,5 +1,9 @@
-import type { Whirlpool } from "@orca-so/whirlpools-client";
+import type {
+  Whirlpool,
+  WhirlpoolDeployment,
+} from "@orca-so/whirlpools-client";
 import {
+  DEFAULT_WHIRLPOOL_DEPLOYMENT,
   getFeeTierAddress,
   getWhirlpoolAddress,
   fetchWhirlpoolsConfig,
@@ -16,7 +20,7 @@ import type {
   Address,
   GetProgramAccountsApi,
 } from "@solana/kit";
-import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
+import { SPLASH_POOL_TICK_SPACING } from "./config";
 import { orderMints } from "./token";
 import { sqrtPriceToPrice } from "@orca-so/whirlpools-core";
 import { fetchAllMint } from "@solana-program/token";
@@ -61,13 +65,13 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
  * @example
- * import { fetchSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { fetchSplashPool, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
- * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //devUSDC
@@ -75,25 +79,22 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * const poolInfo = await fetchSplashPool(
  *   devnetRpc,
  *   tokenMintOne,
- *   tokenMintTwo
+ *   tokenMintTwo,
+ *   WhirlpoolDeployment.devnet,
  * );
- *
- * if (poolInfo.initialized) {
- *   console.log("Pool is initialized:", poolInfo);
- * } else {
- *   console.log("Pool is not initialized:", poolInfo);
- * };
  */
 export async function fetchSplashPool(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<PoolInfo> {
   return fetchConcentratedLiquidityPool(
     rpc,
     tokenMintOne,
     tokenMintTwo,
     SPLASH_POOL_TICK_SPACING,
+    whirlpoolDeployment,
   );
 }
 
@@ -104,13 +105,13 @@ export async function fetchSplashPool(
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
  * @param {number} tickSpacing - The tick spacing of the pool.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
  * @example
- * import { fetchConcentratedLiquidityPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { fetchConcentratedLiquidityPool, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
- * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
@@ -121,36 +122,32 @@ export async function fetchSplashPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
- *   tickSpacing
+ *   tickSpacing,
+ *   WhirlpoolDeployment.devnet,
  * );
- *
- * if (poolInfo.initialized) {
- *   console.log("Pool is initialized:", poolInfo);
- * } else {
- *   console.log("Pool is not initialized:", poolInfo);
- * };
  */
 export async function fetchConcentratedLiquidityPool(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
   tickSpacing: number,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<PoolInfo> {
   const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAddress = await getFeeTierAddress(
-    WHIRLPOOLS_CONFIG_ADDRESS,
     tickSpacing,
+    whirlpoolDeployment,
   ).then((x) => x[0]);
   const poolAddress = await getWhirlpoolAddress(
-    WHIRLPOOLS_CONFIG_ADDRESS,
     tokenMintA,
     tokenMintB,
     tickSpacing,
+    whirlpoolDeployment,
   ).then((x) => x[0]);
 
   // TODO: this is multiple rpc calls. Can we do it in one?
   const [configAccount, feeTierAccount, poolAccount] = await Promise.all([
-    fetchWhirlpoolsConfig(rpc, WHIRLPOOLS_CONFIG_ADDRESS),
+    fetchWhirlpoolsConfig(rpc, whirlpoolDeployment.configAddress),
     fetchFeeTier(rpc, feeTierAddress),
     fetchMaybeWhirlpool(rpc, poolAddress),
   ]);
@@ -173,7 +170,7 @@ export async function fetchConcentratedLiquidityPool(
     return {
       initialized: false,
       address: poolAddress,
-      whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
+      whirlpoolsConfig: whirlpoolDeployment.configAddress,
       tickSpacing,
       feeRate: feeTierAccount.data.defaultFeeRate,
       protocolFeeRate: configAccount.data.defaultProtocolFeeRate,
@@ -185,18 +182,18 @@ export async function fetchConcentratedLiquidityPool(
 
 /**
  * Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
- * If a pool does not exist, it creates a placeholder account for the uninitialized pool with default data
+ * If a pool does not exist, it creates a placeholder account for the uninitialized pool with default data.
  *
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
  * @returns {Promise<PoolInfo[]>} - A promise that resolves to an array of pool information for each pool between the two tokens.
  *
  * @example
- * import { fetchWhirlpoolsByTokenPair, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { fetchWhirlpoolsByTokenPair, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
- * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
@@ -205,44 +202,36 @@ export async function fetchConcentratedLiquidityPool(
  * const poolInfos = await fetchWhirlpoolsByTokenPair(
  *   devnetRpc,
  *   tokenMintOne,
- *   tokenMintTwo
+ *   tokenMintTwo,
+ *   WhirlpoolDeployment.devnet,
  * );
- *
- * poolInfos.forEach((poolInfo) => {
- *   if (poolInfo.initialized) {
- *     console.log("Pool is initialized:", poolInfo);
- *   } else {
- *     console.log("Pool is not initialized:", poolInfo);
- *   }
- * });
  */
 export async function fetchWhirlpoolsByTokenPair(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<PoolInfo[]> {
   const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAccounts = await fetchAllFeeTierWithFilter(
     rpc,
-    feeTierWhirlpoolsConfigFilter(WHIRLPOOLS_CONFIG_ADDRESS),
+    [feeTierWhirlpoolsConfigFilter(whirlpoolDeployment.configAddress)],
+    whirlpoolDeployment.programId,
   );
 
   const supportedTickSpacings = feeTierAccounts.map((x) => x.data.tickSpacing);
 
   const poolAddresses = await Promise.all(
     supportedTickSpacings.map((x) =>
-      getWhirlpoolAddress(
-        WHIRLPOOLS_CONFIG_ADDRESS,
-        tokenMintA,
-        tokenMintB,
-        x,
-      ).then((x) => x[0]),
+      getWhirlpoolAddress(tokenMintA, tokenMintB, x, whirlpoolDeployment).then(
+        (x) => x[0],
+      ),
     ),
   );
 
   // TODO: this is multiple rpc calls. Can we do it in one?
   const [configAccount, poolAccounts] = await Promise.all([
-    fetchWhirlpoolsConfig(rpc, WHIRLPOOLS_CONFIG_ADDRESS),
+    fetchWhirlpoolsConfig(rpc, whirlpoolDeployment.configAddress),
     fetchAllMaybeWhirlpool(rpc, poolAddresses),
   ]);
 
@@ -271,7 +260,7 @@ export async function fetchWhirlpoolsByTokenPair(
       pools.push({
         initialized: false,
         address: poolAddress,
-        whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
+        whirlpoolsConfig: whirlpoolDeployment.configAddress,
         tickSpacing,
         feeRate: feeTierAccount.data.defaultFeeRate,
         protocolFeeRate: configAccount.data.defaultProtocolFeeRate,

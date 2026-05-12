@@ -38,15 +38,18 @@ export function tickArrayWhirlpoolFilter(address: Address): TickArrayFilter {
 
 export async function fetchAllTickArrayWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: TickArrayFilter[]
+  filters: TickArrayFilter[],
+  programAddress?: Address,
 ): Promise<Account<TickArray>[]> {
   const fixedAccounts = await fetchAllFixedTickArrayWithFilter(
     rpc,
-    ...filters.map((filter) => filter.fixed),
+    filters.map((filter) => filter.fixed),
+    programAddress,
   );
   const dynamicAccounts = await fetchAllDynamicTickArrayWithFilter(
     rpc,
-    ...filters.map((filter) => filter.dynamic),
+    filters.map((filter) => filter.dynamic),
+    programAddress,
   );
 
   const tickArrays: Account<TickArray>[] = [];

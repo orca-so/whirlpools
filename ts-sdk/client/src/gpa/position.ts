@@ -17,7 +17,6 @@ import {
   getPositionDecoder,
 } from "../generated/accounts/position";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 type PositionFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -69,7 +68,8 @@ export function positionTickUpperIndexFilter(
 
 export async function fetchAllPositionWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: PositionFilter[]
+  filters: PositionFilter[],
+  programAddress?: Address,
 ): Promise<Account<Position>[]> {
   const discriminator = getBase58Decoder().decode(
     POSITION_DISCRIMINATOR,
@@ -83,8 +83,8 @@ export async function fetchAllPositionWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getPositionDecoder(),
+    programAddress,
   );
 }

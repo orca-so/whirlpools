@@ -232,8 +232,7 @@ describe("Open Position Instructions", () => {
         increaseLiquidityParam,
         expectedTickLowerIndex,
         expectedTickUpperIndex,
-        100,
-        false,
+        { slippageToleranceBps: 100, withTokenMetadataExtension: false },
       );
 
     const positionAddress = await getPositionAddress(positionMint);
@@ -275,8 +274,7 @@ describe("Open Position Instructions", () => {
       increaseLiquidityParam,
       0.95,
       1.05,
-      100,
-      false,
+      { slippageToleranceBps: 100, withTokenMetadataExtension: false },
     );
 
     const openPositionIxs = instructions.filter(({ data }) => {

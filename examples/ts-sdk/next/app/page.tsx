@@ -1,6 +1,6 @@
 "use client";
 
-import { swapInstructions, setWhirlpoolsConfig } from "@orca-so/whirlpools";
+import { swapInstructions, WhirlpoolDeployment } from "@orca-so/whirlpools";
 import { useWallet } from "./contexts/WalletContext";
 import { useState, useEffect, useMemo } from "react";
 import { WalletProvider } from "./contexts/WalletContext";
@@ -63,8 +63,11 @@ function SwapPage({ account }: SwapPageProps) {
         mint: SOL_MINT,
       },
       POOL_ADDRESS,
-      100,
-      noopSigner,
+      {
+        slippageToleranceBps: 100,
+        signer: noopSigner,
+        whirlpoolDeployment: WhirlpoolDeployment.devnet,
+      },
     );
 
     try {
@@ -219,7 +222,6 @@ function PageContent() {
 
 export default function Page() {
   useEffect(() => {
-    setWhirlpoolsConfig("solanaDevnet");
     setRpc(
       process.env.NEXT_PUBLIC_RPC_URL! || "https://api.devnet.solana.com",
       {

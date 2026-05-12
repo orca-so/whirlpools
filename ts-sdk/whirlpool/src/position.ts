@@ -1,5 +1,10 @@
-import type { Position, PositionBundle } from "@orca-so/whirlpools-client";
+import type {
+  Position,
+  PositionBundle,
+  WhirlpoolDeployment,
+} from "@orca-so/whirlpools-client";
 import {
+  DEFAULT_WHIRLPOOL_DEPLOYMENT,
   decodePosition,
   decodePositionBundle,
   fetchAllPositionWithFilter,
@@ -53,6 +58,7 @@ export type PositionData = PositionOrBundle & {
 
 function getPositionInBundleAddresses(
   positionBundle: PositionBundle,
+  programAddress: Address,
 ): Promise<Address>[] {
   const buffer = Buffer.from(positionBundle.positionBitmap);
   const positions: Promise<Address>[] = [];
@@ -61,9 +67,11 @@ function getPositionInBundleAddresses(
     const bitIndex = i % 8;
     if (buffer[byteIndex] & (1 << bitIndex)) {
       positions.push(
-        getBundledPositionAddress(positionBundle.positionBundleMint, i).then(
-          (x) => x[0],
-        ),
+        getBundledPositionAddress(
+          positionBundle.positionBundleMint,
+          i,
+          programAddress,
+        ).then((x) => x[0]),
       );
     }
   }
@@ -78,21 +86,25 @@ function getPositionInBundleAddresses(
  *
  * @param {SolanaRpc} rpc - The Solana RPC client used to fetch token accounts and multiple accounts.
  * @param {Address} owner - The wallet address whose positions you want to fetch.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
  * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
  *
  * @example
- * import { fetchPositionsForOwner } from '@orca-so/whirlpools';
+ * import { fetchPositionsForOwner, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/kit';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = address("INSERT_WALLET_ADDRESS");
  *
- * const positions = await fetchPositionsForOwner(devnetRpc, wallet.address);
+ * const positions = await fetchPositionsForOwner(devnetRpc, wallet, WhirlpoolDeployment.devnet);
  */
 export async function fetchPositionsForOwner(
   rpc: Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>,
   owner: Address,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<PositionData[]> {
+  const programId = whirlpoolDeployment.programId;
+
   const [tokenAccounts, token2022Accounts] = await Promise.all([
     rpc
       .getTokenAccountsByOwner(
@@ -121,12 +133,14 @@ export async function fetchPositionsForOwner(
     .filter((x) => x.amount === 1n);
 
   const positionAddresses = await Promise.all(
-    potentialTokens.map((x) => getPositionAddress(x.mint).then((x) => x[0])),
+    potentialTokens.map((x) =>
+      getPositionAddress(x.mint, programId).then((x) => x[0]),
+    ),
   );
 
   const positionBundleAddresses = await Promise.all(
     potentialTokens.map((x) =>
-      getPositionBundleAddress(x.mint).then((x) => x[0]),
+      getPositionBundleAddress(x.mint, programId).then((x) => x[0]),
     ),
   );
 
@@ -145,7 +159,7 @@ export async function fetchPositionsForOwner(
   const bundledPositionAddresses = await Promise.all(
     positionBundles
       .filter((x) => x.exists)
-      .flatMap((x) => getPositionInBundleAddresses(x.data)),
+      .flatMap((x) => getPositionInBundleAddresses(x.data, programId)),
   );
 
   const bundledPositions = (
@@ -201,6 +215,7 @@ export async function fetchPositionsForOwner(
  *
  * @param {SolanaRpc} rpc - The Solana RPC client used to fetch positions.
  * @param {Address} whirlpool - The address of the Whirlpool.
+ * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to the mutable mainnet deployment.
  * @returns {Promise<HydratedPosition[]>} - A promise that resolves to an array of hydrated positions.
  *
  * @example
@@ -215,10 +230,12 @@ export async function fetchPositionsForOwner(
 export async function fetchPositionsInWhirlpool(
   rpc: Rpc<GetProgramAccountsApi>,
   whirlpool: Address,
+  whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<HydratedPosition[]> {
   const positions = await fetchAllPositionWithFilter(
     rpc,
-    positionWhirlpoolFilter(whirlpool),
+    [positionWhirlpoolFilter(whirlpool)],
+    whirlpoolDeployment.programId,
   );
   return positions.map((x) => ({
     ...x,

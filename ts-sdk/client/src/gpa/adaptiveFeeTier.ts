@@ -13,7 +13,6 @@ import {
   getU32Encoder,
 } from "@solana/kit";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 import type { AdaptiveFeeTier } from "../generated";
 import {
   ADAPTIVE_FEE_TIER_DISCRIMINATOR,
@@ -186,7 +185,8 @@ export function adaptiveFeeTierMajorSwapThresholdTicksFilter(
 
 export async function fetchAllAdaptiveFeeTierWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: AdaptiveFeeTierFilter[]
+  filters: AdaptiveFeeTierFilter[],
+  programAddress?: Address,
 ): Promise<Account<AdaptiveFeeTier>[]> {
   const discriminator = getBase58Decoder().decode(
     ADAPTIVE_FEE_TIER_DISCRIMINATOR,
@@ -200,8 +200,8 @@ export async function fetchAllAdaptiveFeeTierWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getAdaptiveFeeTierDecoder(),
+    programAddress,
   );
 }

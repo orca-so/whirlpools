@@ -17,7 +17,6 @@ import {
   getDynamicTickArrayDecoder,
 } from "../generated/accounts/dynamicTickArray";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type DynamicTickArrayFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -49,7 +48,8 @@ export function dynamicTickArrayWhirlpoolFilter(
 
 export async function fetchAllDynamicTickArrayWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: DynamicTickArrayFilter[]
+  filters: DynamicTickArrayFilter[],
+  programAddress?: Address,
 ): Promise<Account<DynamicTickArray>[]> {
   const discriminator = getBase58Decoder().decode(
     DYNAMIC_TICK_ARRAY_DISCRIMINATOR,
@@ -63,8 +63,8 @@ export async function fetchAllDynamicTickArrayWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getDynamicTickArrayDecoder(),
+    programAddress,
   );
 }

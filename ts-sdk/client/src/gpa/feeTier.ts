@@ -17,7 +17,6 @@ import {
   getFeeTierDecoder,
 } from "../generated/accounts/feeTier";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 type FeeTierFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -55,7 +54,8 @@ export function feeTierFeeRateFilter(defaultFeeRate: number): FeeTierFilter {
 
 export async function fetchAllFeeTierWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: FeeTierFilter[]
+  filters: FeeTierFilter[],
+  programAddress?: Address,
 ): Promise<Account<FeeTier>[]> {
   const discriminator = getBase58Decoder().decode(
     FEE_TIER_DISCRIMINATOR,
@@ -69,8 +69,8 @@ export async function fetchAllFeeTierWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getFeeTierDecoder(),
+    programAddress,
   );
 }

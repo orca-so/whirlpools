@@ -34,13 +34,15 @@ import {
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
 import { address, type Address, type Instruction } from "@solana/kit";
-import {
-  SPLASH_POOL_TICK_SPACING,
-  WHIRLPOOLS_CONFIG_ADDRESS,
-} from "../../src/config";
+import { SPLASH_POOL_TICK_SPACING } from "../../src/config";
 import { LOCALNET_ADMIN_KEYPAIR_0 } from "./admin";
 import { getNextKeypair } from "./keypair";
-import { rpc, sendTransaction, signer } from "./mockRpc";
+import {
+  rpc,
+  sendTransaction,
+  signer,
+  TEST_WHIRLPOOL_DEPLOYMENT,
+} from "./mockRpc";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
   const admin = LOCALNET_ADMIN_KEYPAIR_0;
@@ -58,7 +60,12 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
     }),
   );
 
-  const defaultFeeTierPda = await getFeeTierAddress(keypair.address, 128);
+  const tempDeployment = {
+    programId: TEST_WHIRLPOOL_DEPLOYMENT.programId,
+    configAddress: keypair.address,
+  };
+
+  const defaultFeeTierPda = await getFeeTierAddress(128, tempDeployment);
   instructions.push(
     getInitializeFeeTierInstruction({
       config: keypair.address,
@@ -70,7 +77,7 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
     }),
   );
 
-  const concentratedFeeTierPda = await getFeeTierAddress(keypair.address, 64);
+  const concentratedFeeTierPda = await getFeeTierAddress(64, tempDeployment);
   instructions.push(
     getInitializeFeeTierInstruction({
       config: keypair.address,
@@ -83,8 +90,8 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
   );
 
   const splashFeeTierPda = await getFeeTierAddress(
-    keypair.address,
     SPLASH_POOL_TICK_SPACING,
+    tempDeployment,
   );
   instructions.push(
     getInitializeFeeTierInstruction({
@@ -108,19 +115,19 @@ export async function setupWhirlpool(
   config: { initialSqrtPrice?: bigint } = {},
 ): Promise<Address> {
   const feeTierAddress = await getFeeTierAddress(
-    WHIRLPOOLS_CONFIG_ADDRESS,
     tickSpacing,
+    TEST_WHIRLPOOL_DEPLOYMENT,
   );
   const whirlpoolAddress = await getWhirlpoolAddress(
-    WHIRLPOOLS_CONFIG_ADDRESS,
     tokenA,
     tokenB,
     tickSpacing,
+    TEST_WHIRLPOOL_DEPLOYMENT,
   );
   const vaultA = getNextKeypair();
   const vaultB = getNextKeypair();
-  const badgeA = await getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenA);
-  const badgeB = await getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenB);
+  const badgeA = await getTokenBadgeAddress(tokenA, TEST_WHIRLPOOL_DEPLOYMENT);
+  const badgeB = await getTokenBadgeAddress(tokenB, TEST_WHIRLPOOL_DEPLOYMENT);
   const mintA = await fetchMint(rpc, tokenA);
   const mintB = await fetchMint(rpc, tokenB);
   const programA = mintA.programAddress;
@@ -137,7 +144,7 @@ export async function setupWhirlpool(
       tokenMintA: tokenA,
       tokenMintB: tokenB,
       tickSpacing,
-      whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
+      whirlpoolsConfig: TEST_WHIRLPOOL_DEPLOYMENT.configAddress,
       funder: signer,
       tokenVaultA: vaultA,
       tokenVaultB: vaultB,

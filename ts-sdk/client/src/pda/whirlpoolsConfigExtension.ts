@@ -1,12 +1,16 @@
-import type { Address, ProgramDerivedAddress } from "@solana/kit";
+import type { ProgramDerivedAddress } from "@solana/kit";
 import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
+import type { WhirlpoolDeployment } from "../config";
 
+/** Derives the whirlpool config extension PDA under the supplied target program. */
 export async function getWhirlpoolsConfigExtensionAddress(
-  configAddress: Address,
+  whirlpoolDeployment: WhirlpoolDeployment,
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
-    programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
-    seeds: ["config_extension", getAddressEncoder().encode(configAddress)],
+    programAddress: whirlpoolDeployment.programId,
+    seeds: [
+      "config_extension",
+      getAddressEncoder().encode(whirlpoolDeployment.configAddress),
+    ],
   });
 }

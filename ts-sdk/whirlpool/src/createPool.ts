@@ -1,4 +1,6 @@
+import type { WhirlpoolDeployment } from "@orca-so/whirlpools-client";
 import {
+  DEFAULT_WHIRLPOOL_DEPLOYMENT,
   getFeeTierAddress,
   getInitializePoolV2Instruction,
   getInitializeDynamicTickArrayInstruction,
@@ -19,12 +21,7 @@ import type {
 } from "@solana/kit";
 import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { fetchSysvarRent } from "@solana/sysvars";
-import {
-  DEFAULT_ADDRESS,
-  FUNDER,
-  SPLASH_POOL_TICK_SPACING,
-  WHIRLPOOLS_CONFIG_ADDRESS,
-} from "./config";
+import { DEFAULT_ADDRESS, FUNDER, SPLASH_POOL_TICK_SPACING } from "./config";
 import {
   getFullRangeTickIndexes,
   getTickArrayStartTickIndex,
@@ -35,7 +32,7 @@ import { fetchAllMint } from "@solana-program/token-2022";
 import assert from "assert";
 import { getTokenSizeForMint, orderMints } from "./token";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
-import { wrapFunctionWithExecution } from "./actionHelpers";
+import { executeWithCallback } from "./actionHelpers";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -52,55 +49,84 @@ export type CreatePoolInstructions = {
 };
 
 /**
+ * Options for {@link createSplashPoolInstructions}.
+ */
+export type CreateSplashPoolConfig = {
+  /** An optional initial price of token A in terms of token B. Defaults to `1` if not provided. */
+  initialPrice?: number;
+  /** The account funding the initialization process. Defaults to the global funder if not provided. */
+  funder?: TransactionSigner<string>;
+  /**
+   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
+   * deployment if not provided.
+   */
+  whirlpoolDeployment?: WhirlpoolDeployment;
+};
+
+/**
  * Creates the necessary instructions to initialize a Splash Pool on Orca Whirlpools.
  *
  * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
  * @param {Address} tokenMintA - The first token mint address to include in the pool.
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
- * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
- * @param {TransactionSigner} [funder=FUNDER] - The account that will fund the initialization process.
+ * @param {CreateSplashPoolConfig} [config] - The parameters to build the create splash pool instruction.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * import { createSplashPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createSplashPoolInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
  *
- * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
- * const initialPrice = 0.01;
  *
  * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
  *     devnetRpc,
  *     tokenMintOne,
  *     tokenMintTwo,
- *     initialPrice,
- *     wallet
+ *     {
+ *       initialPrice: 0.01,
+ *       funder: wallet,
+ *       whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *     },
  * );
- *
- * console.log(`Pool Address: ${poolAddress}`);
- * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintA: Address,
   tokenMintB: Address,
-  initialPrice: number = 1,
-  funder: TransactionSigner<string> = FUNDER,
+  config: CreateSplashPoolConfig = {},
 ): Promise<CreatePoolInstructions> {
   return createConcentratedLiquidityPoolInstructions(
     rpc,
     tokenMintA,
     tokenMintB,
     SPLASH_POOL_TICK_SPACING,
-    initialPrice,
-    funder,
+    {
+      initialPrice: config.initialPrice,
+      funder: config.funder,
+      whirlpoolDeployment: config.whirlpoolDeployment,
+    },
   );
 }
+
+/**
+ * Options for {@link createConcentratedLiquidityPoolInstructions}.
+ */
+export type CreateConcentratedLiquidityPoolConfig = {
+  /** An optional initial price of token A in terms of token B. Defaults to `1` if not provided. */
+  initialPrice?: number;
+  /** The account funding the initialization process. Defaults to the global funder if not provided. */
+  funder?: TransactionSigner<string>;
+  /**
+   * The Whirlpool program and config account to target. Defaults to the mutable mainnet
+   * deployment if not provided.
+   */
+  whirlpoolDeployment?: WhirlpoolDeployment;
+};
 
 /**
  * Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
@@ -109,44 +135,44 @@ export function createSplashPoolInstructions(
  * @param {Address} tokenMintA - The first token mint address to include in the pool.
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
  * @param {number} tickSpacing - The spacing between price ticks for the pool.
- * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
- * @param {TransactionSigner} [funder=FUNDER] - The account that will fund the initialization process.
+ * @param {CreateConcentratedLiquidityPoolConfig} [config] - The parameters to build the create concentrated liquidity pool instruction.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createConcentratedLiquidityPoolInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
  *
- * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
- * const tickSpacing = 64;
- * const initialPrice = 0.01;
  *
  * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPoolInstructions(
  *     devnetRpc,
  *     tokenMintOne,
  *     tokenMintTwo,
- *     tickSpacing,
- *     initialPrice,
- *     wallet
+ *     64,
+ *     {
+ *       initialPrice: 0.01,
+ *       funder: wallet,
+ *       whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *     },
  * );
- *
- * console.log(`Pool Address: ${poolAddress}`);
- * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintA: Address,
   tokenMintB: Address,
   tickSpacing: number,
-  initialPrice: number = 1,
-  funder: TransactionSigner<string> = FUNDER,
+  config: CreateConcentratedLiquidityPoolConfig = {},
 ): Promise<CreatePoolInstructions> {
+  const initialPrice = config.initialPrice ?? 1;
+  const funder = config.funder ?? FUNDER;
+  const whirlpoolDeployment =
+    config.whirlpoolDeployment ?? DEFAULT_WHIRLPOOL_DEPLOYMENT;
+
   assert(
     funder.address !== DEFAULT_ADDRESS,
     "Either supply a funder or set the default funder",
@@ -157,7 +183,6 @@ export async function createConcentratedLiquidityPoolInstructions(
   );
   const instructions: Instruction[] = [];
 
-  // as Parameters<typeof fetchSysvarRent>[0],
   const rent = await fetchSysvarRent(rpc);
   let nonRefundableRent: bigint = 0n;
 
@@ -179,39 +204,38 @@ export async function createConcentratedLiquidityPoolInstructions(
     tokenVaultB,
   ] = await Promise.all([
     getWhirlpoolAddress(
-      WHIRLPOOLS_CONFIG_ADDRESS,
       tokenMintA,
       tokenMintB,
       tickSpacing,
+      whirlpoolDeployment,
     ).then((x) => x[0]),
-    getFeeTierAddress(WHIRLPOOLS_CONFIG_ADDRESS, tickSpacing).then((x) => x[0]),
-    getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenMintA).then(
-      (x) => x[0],
-    ),
-    getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenMintB).then(
-      (x) => x[0],
-    ),
+    getFeeTierAddress(tickSpacing, whirlpoolDeployment).then((x) => x[0]),
+    getTokenBadgeAddress(tokenMintA, whirlpoolDeployment).then((x) => x[0]),
+    getTokenBadgeAddress(tokenMintB, whirlpoolDeployment).then((x) => x[0]),
     generateKeyPairSigner(),
     generateKeyPairSigner(),
   ]);
 
   instructions.push(
-    getInitializePoolV2Instruction({
-      whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
-      tokenMintA,
-      tokenMintB,
-      tokenBadgeA,
-      tokenBadgeB,
-      funder,
-      whirlpool: poolAddress,
-      tokenVaultA,
-      tokenVaultB,
-      tokenProgramA,
-      tokenProgramB,
-      feeTier,
-      tickSpacing,
-      initialSqrtPrice,
-    }),
+    getInitializePoolV2Instruction(
+      {
+        whirlpoolsConfig: whirlpoolDeployment.configAddress,
+        tokenMintA,
+        tokenMintB,
+        tokenBadgeA,
+        tokenBadgeB,
+        funder,
+        whirlpool: poolAddress,
+        tokenVaultA,
+        tokenVaultB,
+        tokenProgramA,
+        tokenProgramB,
+        feeTier,
+        tickSpacing,
+        initialSqrtPrice,
+      },
+      { programAddress: whirlpoolDeployment.programId },
+    ),
   );
 
   nonRefundableRent += calculateMinimumBalanceForRentExemption(
@@ -248,19 +272,24 @@ export async function createConcentratedLiquidityPoolInstructions(
 
   const tickArrayAddresses = await Promise.all(
     tickArrayIndexes.map((x) =>
-      getTickArrayAddress(poolAddress, x).then((x) => x[0]),
+      getTickArrayAddress(poolAddress, x, whirlpoolDeployment.programId).then(
+        (x) => x[0],
+      ),
     ),
   );
 
   for (let i = 0; i < tickArrayIndexes.length; i++) {
     instructions.push(
-      getInitializeDynamicTickArrayInstruction({
-        whirlpool: poolAddress,
-        funder,
-        tickArray: tickArrayAddresses[i],
-        startTickIndex: tickArrayIndexes[i],
-        idempotent: false,
-      }),
+      getInitializeDynamicTickArrayInstruction(
+        {
+          whirlpool: poolAddress,
+          funder,
+          tickArray: tickArrayAddresses[i],
+          startTickIndex: tickArrayIndexes[i],
+          idempotent: false,
+        },
+        { programAddress: whirlpoolDeployment.programId },
+      ),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
       rent,
@@ -277,9 +306,32 @@ export async function createConcentratedLiquidityPoolInstructions(
 
 // -------- ACTIONS --------
 
-export const createSplashPool = wrapFunctionWithExecution(
-  createSplashPoolInstructions,
-);
-export const createConcentratedLiquidityPool = wrapFunctionWithExecution(
-  createConcentratedLiquidityPoolInstructions,
-);
+export function createSplashPool(
+  tokenMintA: Address,
+  tokenMintB: Address,
+  config?: Omit<CreateSplashPoolConfig, "funder">,
+) {
+  return executeWithCallback((rpc, owner) =>
+    createSplashPoolInstructions(rpc, tokenMintA, tokenMintB, {
+      ...config,
+      funder: owner,
+    }),
+  );
+}
+
+export function createConcentratedLiquidityPool(
+  tokenMintA: Address,
+  tokenMintB: Address,
+  tickSpacing: number,
+  config?: Omit<CreateConcentratedLiquidityPoolConfig, "funder">,
+) {
+  return executeWithCallback((rpc, owner) =>
+    createConcentratedLiquidityPoolInstructions(
+      rpc,
+      tokenMintA,
+      tokenMintB,
+      tickSpacing,
+      { ...config, funder: owner },
+    ),
+  );
+}

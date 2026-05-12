@@ -32,37 +32,33 @@ const keyPairBytes = new Uint8Array(
 const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
 ```
 
-### 2. Configure the Whirlpools SDK for Your Network
+### 2. Select a Whirlpool Deployment
 
-Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function. This ensures compatibility with the network you’re deploying on.
+Each SDK function targets a specific `WhirlpoolDeployment` — a `programId` + `WhirlpoolsConfig` pair. The named constants cover the official deployments:
 
-Example: Setting the SDK Configuration to Solana Devnet.
+- `WhirlpoolDeployment.mainnet` — the mutable mainnet program with the mainnet config.
+- `WhirlpoolDeployment.devnet` — the mutable mainnet program with the devnet config.
+- `WhirlpoolDeployment.mainnetImmutable` — the immutable mainnet program with its mainnet config.
+- `WhirlpoolDeployment.custom(programId, configAddress)` — for forks or local validators.
+
+Defaults to `WhirlpoolDeployment.mainnet` when omitted.
 
 ```tsx
-import { setWhirlpoolsConfig } from "@orca-so/whirlpools";
+import { WhirlpoolDeployment } from "@orca-so/whirlpools";
 
-await setWhirlpoolsConfig("solanaDevnet");
+const deployment = WhirlpoolDeployment.devnet;
 ```
-
-Available networks are:
-
-- solanaMainnet
-- solanaDevnet
-- eclipseMainnet
-- eclipseTestnet
-
-> ℹ️ The setWhirlpoolsConfig function accepts either one of Orca's default network keys or a custom Address. This allows you to specify a custom configuration if needed.
 
 ### 3. Create the Swap Instructions
 
-After configuring the SDK, you can perform a swap. Here is an example of how to perform a token swap using the Whirlpools SDK:
+After selecting a deployment, you can perform a swap. Here is an example of how to perform a token swap using the Whirlpools SDK:
 
 ```tsx
-import { swapInstructions } from "@orca-so/whirlpools";
+import { swapInstructions, WhirlpoolDeployment } from "@orca-so/whirlpools";
+
 const poolAddress = "POOL_ADDRESS";
 const mintAddress = "TOKEN_MINT";
 const amount = 1_000_000n;
-const slippageTolerance = 100; // 100 bps = 1%
 
 const { instructions, quote } = await swapInstructions(
   devnetRpc,
@@ -71,19 +67,21 @@ const { instructions, quote } = await swapInstructions(
     mint: mintAddress,
   },
   poolAddress,
-  slippageTolerance,
-  wallet
+  {
+    slippageToleranceBps: 100, // 100 bps = 1%
+    signer: wallet,
+    whirlpoolDeployment: WhirlpoolDeployment.devnet,
+  },
 );
 ```
 
 ### 4. Putting it all together
 
 ```tsx
-import { swapInstructions, setWhirlpoolsConfig } from "@orca-so/whirlpools";
-import { generateKeyPairSigner, createSolanaRpc, devnet } from "@solana/kit";
+import { swapInstructions, WhirlpoolDeployment } from "@orca-so/whirlpools";
+import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from "@solana/kit";
 
 const devnetRpc = createSolanaRpc(devnet("https://api.devnet.solana.com"));
-await setWhirlpoolsConfig("solanaDevnet");
 const wallet = loadWallet();
 await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
 
@@ -97,7 +95,6 @@ await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
 const poolAddress = "3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt";
 const mintAddress = "So11111111111111111111111111111111111111112";
 const amount = 1_000_000n; // 0.001 WSOL (SOL has 9 decimals)
-const slippageTolerance = 100; // 100bps = 1%
 
 const { instructions, quote } = await swapInstructions(
   devnetRpc,
@@ -106,8 +103,11 @@ const { instructions, quote } = await swapInstructions(
     mint: mintAddress,
   },
   poolAddress,
-  slippageTolerance,
-  wallet
+  {
+    slippageToleranceBps: 100,
+    signer: wallet,
+    whirlpoolDeployment: WhirlpoolDeployment.devnet,
+  },
 );
 ```
 
@@ -167,7 +167,7 @@ import { address } from "@solana/kit";
 // Create a new splash pool between SOL and USDC
 const { poolAddress, callback } = await createSplashPool(
   address("So11111111111111111111111111111111111111112"), // SOL
-  address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v") // USDC
+  address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), // USDC
 );
 
 // Execute the transaction
@@ -191,13 +191,13 @@ const { positionAddress, callback: fullRangeCallback } =
     {
       tokenA: BigInt(1_000_000), // Amount of token A to add (in native units)
     },
-    50 // Optional: Slippage tolerance in basis points (0.5%)
+    { slippageToleranceBps: 50 }, // Optional: Slippage tolerance in basis points (0.5%)
   );
 
 // Execute the transaction
 const fullRangeSig = await fullRangeCallback();
 console.log(
-  `Full range position created at ${positionAddress} in tx ${fullRangeSig}`
+  `Full range position created at ${positionAddress} in tx ${fullRangeSig}`,
 );
 
 // Add concentrated liquidity to a whirlpool
@@ -209,13 +209,13 @@ const { positionAddress: concPosAddress, callback: concCallback } =
     },
     19.5, // Lower price bound
     20.5, // Upper price bound
-    50 // Optional: Slippage tolerance in basis points (0.5%)
+    { slippageToleranceBps: 50 }, // Optional: Slippage tolerance in basis points (0.5%)
   );
 
 // Execute the transaction
 const concSig = await concCallback();
 console.log(
-  `Concentrated position created at ${concPosAddress} in tx ${concSig}`
+  `Concentrated position created at ${concPosAddress} in tx ${concSig}`,
 );
 
 // Increase liquidity in an existing position
@@ -224,7 +224,7 @@ const { callback: increaseLiqCallback, quote } = await increasePosLiquidity(
   {
     tokenA: BigInt(1_000_000), // Amount of token A to add (in native units)
   },
-  50 // Optional: Slippage tolerance in basis points (0.5%)
+  { slippageToleranceBps: 50 }, // Optional: Slippage tolerance in basis points (0.5%)
 );
 
 //optionally check quote
@@ -250,7 +250,7 @@ const {
   feesQuote,
   rewardsQuote,
 } = await harvestPosition(
-  address("POSITION_ADDRESS") // The position address
+  address("POSITION_ADDRESS"), // The position address
 );
 
 // Check quotes

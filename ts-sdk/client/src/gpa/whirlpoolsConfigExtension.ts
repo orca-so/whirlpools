@@ -13,7 +13,6 @@ import {
   getWhirlpoolsConfigExtensionDecoder,
 } from "../generated/accounts/whirlpoolsConfigExtension";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type WhirlpoolsConfigExtensionFilter = GetProgramAccountsMemcmpFilter & {
   readonly __kind: unique symbol;
@@ -61,7 +60,8 @@ export function whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter(
 
 export async function fetchAllWhirlpoolsConfigExtensionWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: WhirlpoolsConfigExtensionFilter[]
+  filters: WhirlpoolsConfigExtensionFilter[],
+  programAddress?: Address,
 ): Promise<Account<WhirlpoolsConfigExtension>[]> {
   const discriminator = getBase58Decoder().decode(
     WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR,
@@ -75,8 +75,8 @@ export async function fetchAllWhirlpoolsConfigExtensionWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getWhirlpoolsConfigExtensionDecoder(),
+    programAddress,
   );
 }

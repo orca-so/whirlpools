@@ -14,7 +14,6 @@ import {
   getU64Encoder,
 } from "@solana/kit";
 import { fetchDecodedProgramAccounts } from "./utils";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 import type { Oracle } from "../generated";
 import { getOracleDecoder, ORACLE_DISCRIMINATOR } from "../generated";
 
@@ -126,7 +125,8 @@ export function oracleMajorSwapThresholdTicksFilter(
 
 export async function fetchAllOracleWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
-  ...filters: OracleFilter[]
+  filters: OracleFilter[],
+  programAddress?: Address,
 ): Promise<Account<Oracle>[]> {
   const discriminator = getBase58Decoder().decode(
     ORACLE_DISCRIMINATOR,
@@ -140,8 +140,8 @@ export async function fetchAllOracleWithFilter(
   };
   return fetchDecodedProgramAccounts(
     rpc,
-    WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],
     getOracleDecoder(),
+    programAddress,
   );
 }

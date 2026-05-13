@@ -65,52 +65,89 @@ const testCases = [
 testCases.forEach((tc) => {
   describe(`derive program accounts (${tc.name})`, () => {
     it("FeeTier", async () => {
-      const [feeTier] = await getFeeTierAddress(tc.feeTierFeeIndex, tc.whirlpoolDeployment);
+      const [feeTier] = await getFeeTierAddress(
+        tc.feeTierFeeIndex,
+        tc.whirlpoolDeployment,
+      );
       assert.strictEqual(feeTier, tc.feeTierExpected);
     });
 
     it("LockConfig", async () => {
-      const [lockConfig] = await getLockConfigAddress(tc.positionAddress, tc.whirlpoolDeployment.programId);
+      const [lockConfig] = await getLockConfigAddress(
+        tc.positionAddress,
+        tc.whirlpoolDeployment.programId,
+      );
       assert.strictEqual(lockConfig, tc.lockConfigExpected);
     });
 
     it("Oracle", async () => {
-      const [oracle] = await getOracleAddress(tc.whirlpoolAddress, tc.whirlpoolDeployment.programId);
+      const [oracle] = await getOracleAddress(
+        tc.whirlpoolAddress,
+        tc.whirlpoolDeployment.programId,
+      );
       assert.strictEqual(oracle, tc.oracleExpected);
     });
 
     it("Position", async () => {
-      const [position] = await getPositionAddress(tc.positionMint, tc.whirlpoolDeployment.programId);
+      const [position] = await getPositionAddress(
+        tc.positionMint,
+        tc.whirlpoolDeployment.programId,
+      );
       assert.strictEqual(position, tc.positionExpected);
     });
 
     it("PositionBundle", async () => {
-      const [positionBundle] = await getPositionBundleAddress(tc.positionMint, tc.whirlpoolDeployment.programId);
+      const [positionBundle] = await getPositionBundleAddress(
+        tc.positionMint,
+        tc.whirlpoolDeployment.programId,
+      );
       assert.strictEqual(positionBundle, tc.positionBundleExpected);
     });
 
     it("BundledPosition", async () => {
-      const [bundledPosition] = await getBundledPositionAddress(tc.positionMint, 0, tc.whirlpoolDeployment.programId);
+      const [positionBundleAddress] = await getPositionBundleAddress(
+        tc.positionMint,
+        tc.whirlpoolDeployment.programId,
+      );
+      const [bundledPosition] = await getBundledPositionAddress(
+        positionBundleAddress,
+        0,
+        tc.whirlpoolDeployment.programId,
+      );
       assert.strictEqual(bundledPosition, tc.bundledPositionExpected);
     });
 
     it("TickArray", async () => {
-      const [tickArray] = await getTickArrayAddress(tc.whirlpoolAddress, 0, tc.whirlpoolDeployment.programId);
+      const [tickArray] = await getTickArrayAddress(
+        tc.whirlpoolAddress,
+        0,
+        tc.whirlpoolDeployment.programId,
+      );
       assert.strictEqual(tickArray, tc.tickArrayExpected);
     });
 
     it("TokenBadge", async () => {
-      const [tokenBadge] = await getTokenBadgeAddress(tc.tokenMint, tc.whirlpoolDeployment);
+      const [tokenBadge] = await getTokenBadgeAddress(
+        tc.tokenMint,
+        tc.whirlpoolDeployment,
+      );
       assert.strictEqual(tokenBadge, tc.tokenBadgeExpected);
     });
 
     it("Whirlpool", async () => {
-      const [whirlpool] = await getWhirlpoolAddress(tc.tokenMintA, tc.tokenMintB, tc.feeTierFeeIndex, tc.whirlpoolDeployment);
+      const [whirlpool] = await getWhirlpoolAddress(
+        tc.tokenMintA,
+        tc.tokenMintB,
+        tc.feeTierFeeIndex,
+        tc.whirlpoolDeployment,
+      );
       assert.strictEqual(whirlpool, tc.whirlpoolExpected);
     });
 
     it("WhirlpoolsConfigExtension", async () => {
-      const [extension] = await getWhirlpoolsConfigExtensionAddress(tc.whirlpoolDeployment);
+      const [extension] = await getWhirlpoolsConfigExtensionAddress(
+        tc.whirlpoolDeployment,
+      );
       assert.strictEqual(extension, tc.extensionExpected);
     });
   });

@@ -749,7 +749,14 @@ export function openConcentratedPosition(
   config?: OpenPositionConfig,
 ) {
   return executeWithCallback((rpc) =>
-    openPositionInstructions(rpc, poolAddress, param, lowerPrice, upperPrice, config),
+    openPositionInstructions(
+      rpc,
+      poolAddress,
+      param,
+      lowerPrice,
+      upperPrice,
+      config,
+    ),
   );
 }
 

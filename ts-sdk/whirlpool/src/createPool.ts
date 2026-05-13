@@ -21,11 +21,7 @@ import type {
 } from "@solana/kit";
 import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { fetchSysvarRent } from "@solana/sysvars";
-import {
-  DEFAULT_ADDRESS,
-  FUNDER,
-  SPLASH_POOL_TICK_SPACING,
-} from "./config";
+import { DEFAULT_ADDRESS, FUNDER, SPLASH_POOL_TICK_SPACING } from "./config";
 import {
   getFullRangeTickIndexes,
   getTickArrayStartTickIndex,
@@ -306,9 +302,7 @@ export function createSplashPool(
   config?: CreatePoolConfig,
 ) {
   return executeWithCallback((rpc) =>
-    createSplashPoolInstructions(rpc, tokenMintA, tokenMintB, 
-      config,
-    ),
+    createSplashPoolInstructions(rpc, tokenMintA, tokenMintB, config),
   );
 }
 

@@ -102,7 +102,7 @@ export async function getTestContext(): Promise<LiteSVM> {
 
     // Load immutable whirlpool program (used to parametrize tests against both deployments)
     const whirlpoolImmutableProgram = fs.readFileSync(
-      path.join(process.cwd(), "../../target/deploy/whirlpool_immutable.so"),
+      path.join(process.cwd(), "../../rust-sdk/whirlpool/src/tests/fixtures/whirlpool_immutable.so"),
     );
     _testContext.addProgram(
       toPublicKey(WhirlpoolDeployment.mainnetImmutable.programId),

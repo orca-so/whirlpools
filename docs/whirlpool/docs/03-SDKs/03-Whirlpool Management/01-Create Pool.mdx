@@ -214,7 +214,8 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         },
     );
 
-    // Use the callback to submit the transaction
+    // Use the callback to submit the transaction.
+    // Add a payer explicitly (e.g. `sendTx(payer)`) or default to the global payer from `setPayerFromBytes()`
     const txId = await sendTx();
 
     console.log(`Pool Address: ${poolAddress}`);
@@ -247,6 +248,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     );
 
     // Use the callback to submit the transaction
+    // Add a payer explicitly (e.g. `sendTx(payer)`) or default to the global payer from `setPayerFromBytes()`    
     const txId = await sendTx();
 
 

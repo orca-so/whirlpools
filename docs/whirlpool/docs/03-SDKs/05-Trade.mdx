@@ -161,6 +161,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     );
 
     // Use the callback to submit the transaction
+    // Add a payer explicitly (e.g. `sendTx(payer)`) or default to the global payer from `setPayerFromBytes()`
     const txId = await sendTx();
 
     console.log(`Quote estimated token out: ${quote.tokenEstOut}`);

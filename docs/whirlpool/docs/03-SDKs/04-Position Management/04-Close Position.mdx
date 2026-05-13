@@ -150,6 +150,7 @@ After closing a position, you can:
     );
 
     // Use the callback to submit the transaction 
+    // Add a payer explicitly (e.g. `sendTx(payer)`) or default to the global payer from `setPayerFromBytes()`    
     const txId = await sendTx();
 
     console.log(`Quote token max B: ${quote.tokenEstB}`);

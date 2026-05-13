@@ -60,7 +60,7 @@ import { getSqrtPriceSlippageBounds } from "@orca-so/whirlpools-core";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
-/** RPC client for increase-liquidity operations. */
+/** RPC client for increase-liquidity operations. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi */
 type IncreaseLiquidityRpc = Rpc<
   GetAccountInfoApi &
     GetMultipleAccountsApi &
@@ -188,7 +188,26 @@ export type IncreaseLiquidityConfig = {
  * @param {IncreaseLiquidityParam} param - Maximum amounts of token A and B to deposit.
  * @param {IncreaseLiquidityConfig} [config] - The parameters to build the increase liquidity instruction.
  * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions.
- */
+ * 
+ * @example
+ * import { increaseLiquidityInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
+ * import { loadWallet } from './utils';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ * const { instructions } = await increaseLiquidityInstructions(
+ *   devnetRpc,
+ *   positionMint,
+ *   { tokenMaxA: 10n, tokenMaxB: 12n },
+ *   {
+ *     slippageToleranceBps: 100,
+ *     authority: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   }
+ * );
+*/
 export async function increaseLiquidityInstructions(
   rpc: IncreaseLiquidityRpc,
   positionMintAddress: Address,
@@ -458,9 +477,9 @@ async function internalOpenPositionInstructions(
 }
 
 /**
- * Options for {@link openFullRangePositionInstructions}.
+ * Options for {@link openPositionInstructions}, {@link openPositionInstructionsWithTickBounds} and {@link openFullRangePositionInstructions}.
  */
-export type OpenFullRangePositionConfig = {
+export type OpenPositionConfig = {
   slippageToleranceBps?: number;
   withTokenMetadataExtension?: boolean;
   funder?: TransactionSigner<string>;
@@ -469,12 +488,39 @@ export type OpenFullRangePositionConfig = {
 
 /**
  * Opens a full-range position for a pool, typically used for Splash Pools or other full-range liquidity provisioning.
+ * 
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi
+ * @param {Address} poolAddress - The address of the liquidity pool.
+ * @param {IncreaseLiquidityParam} param - Maximum amounts of token A and B to deposit.
+ * @param {OpenPositionConfig} [config] - The parameters to build the open full range position instructions.
+ * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, position mint address, and initialization cost.
+ *
+ * @example
+ * import { openFullRangePositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+ *
+ * const whirlpoolAddress = address("POOL_ADDRESS");
+ *
+ * const { instructions, initializationCost, positionMint } = await openFullRangePositionInstructions(
+ *   devnetRpc,
+ *   whirlpoolAddress,
+ *   { tokenMaxA: 1_000_000n, tokenMaxB: 0n },
+ *   {
+ *     slippageToleranceBps: 100,
+ *     withTokenMetadataExtension: true,
+ *     funder: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   },
+ * );
  */
 export async function openFullRangePositionInstructions(
   rpc: IncreaseLiquidityRpc,
   poolAddress: Address,
   param: IncreaseLiquidityParam,
-  config: OpenFullRangePositionConfig = {},
+  config: OpenPositionConfig = {},
 ): Promise<OpenPositionInstructions> {
   const slippageToleranceBps =
     config.slippageToleranceBps ?? SLIPPAGE_TOLERANCE_BPS;
@@ -507,17 +553,44 @@ export async function openFullRangePositionInstructions(
 }
 
 /**
- * Options for {@link openPositionInstructions} and {@link openPositionInstructionsWithTickBounds}.
- */
-export type OpenPositionConfig = {
-  slippageToleranceBps?: number;
-  withTokenMetadataExtension?: boolean;
-  funder?: TransactionSigner<string>;
-  whirlpoolDeployment?: WhirlpoolDeployment;
-};
-
-/**
  * Opens a new position in a concentrated liquidity pool within a specific price range.
+ * This function allows you to provide liquidity for the specified range of prices and adjust liquidity parameters accordingly.
+ *
+ * **Note:** This function cannot be used with Splash Pools.
+ *
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi
+ * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
+ * @param {IncreaseLiquidityParam} param - Maximum amounts of token A and B to deposit.
+ * @param {number} lowerPrice - The lower bound of the price range for the position.
+ * @param {number} upperPrice - The upper bound of the price range for the position.
+ * @param {OpenPositionConfig} [config] - The parameters to build the open position instruction.
+ *
+ * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, position mint address, and initialization cost.
+ *
+ * @example
+ * import { openPositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+ *
+ * const whirlpoolAddress = address("POOL_ADDRESS");
+ * const lowerPrice = 0.00005;
+ * const upperPrice = 0.00015;
+ *
+ * const { instructions, initializationCost, positionMint } = await openPositionInstructions(
+ *   devnetRpc,
+ *   whirlpoolAddress,
+ *   { tokenMaxA: 1_000_000n, tokenMaxB: 0n },
+ *   lowerPrice,
+ *   upperPrice,
+ *   {
+ *     slippageToleranceBps: 100,
+ *     withTokenMetadataExtension: true,
+ *     funder: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   },
+ * );
  */
 export async function openPositionInstructions(
   rpc: IncreaseLiquidityRpc,
@@ -563,6 +636,43 @@ export async function openPositionInstructions(
 
 /**
  * Opens a new position in a concentrated liquidity pool within a specific tick range.
+ * This function allows you to provide liquidity for the specified range of ticks and adjust liquidity parameters accordingly.
+ *
+ * **Note:** This function cannot be used with Splash Pools.
+ *
+ * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi
+ * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
+ * @param {IncreaseLiquidityParam} param - Maximum amounts of token A and B to deposit.
+ * @param {number} lowerTickIndex - The lower bound of the tick range for the position.
+ * @param {number} upperTickIndex - The upper bound of the tick range for the position.
+ * @param {OpenPositionConfig} [config] - The parameters to build the open position with tick bounds instruction.
+ *
+ * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, position mint address, and initialization cost.
+ *
+ * @example
+ * import { openPositionInstructionsWithTickBounds, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
+ *
+ * const whirlpoolAddress = address("POOL_ADDRESS");
+ * const lowerTickIndex = -44320;
+ * const upperTickIndex = -22160;
+ *
+ * const { instructions, initializationCost, positionMint } = await openPositionInstructionsWithTickBounds(
+ *   devnetRpc,
+ *   whirlpoolAddress,
+ *   { tokenMaxA: 1_000_000n, tokenMaxB: 0n },
+ *   lowerTickIndex,
+ *   upperTickIndex,
+ *   {
+ *     slippageToleranceBps: 100,
+ *     withTokenMetadataExtension: true,
+ *     funder: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   },
+ * );
  */
 export async function openPositionInstructionsWithTickBounds(
   rpc: IncreaseLiquidityRpc,
@@ -627,7 +737,7 @@ export function increasePosLiquidity(
 export function openFullRangePosition(
   poolAddress: Address,
   param: IncreaseLiquidityParam,
-  config?: Omit<OpenFullRangePositionConfig, "funder">,
+  config?: Omit<OpenPositionConfig, "funder">,
 ) {
   return executeWithCallback((rpc, owner) =>
     openFullRangePositionInstructions(rpc, poolAddress, param, {

@@ -92,6 +92,9 @@ export type CreateSplashPoolConfig = {
  *       whirlpoolDeployment: WhirlpoolDeployment.devnet,
  *     },
  * );
+ *
+ * console.log(`Pool Address: ${poolAddress}`);
+ * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
@@ -158,6 +161,9 @@ export type CreateConcentratedLiquidityPoolConfig = {
  *       whirlpoolDeployment: WhirlpoolDeployment.devnet,
  *     },
  * );
+ *
+ * console.log(`Pool Address: ${poolAddress}`);
+ * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,

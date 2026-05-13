@@ -51,8 +51,13 @@ import { fetchPositionsForOwner } from "./position";
 
 /** Represents the instructions and quotes for harvesting a position. */
 export type HarvestPositionInstructions = {
+  /** A breakdown of the fees owed to the position owner, detailing the amounts for token A (`fee_owed_a`) and token B (`fee_owed_b`). */
   feesQuote: CollectFeesQuote;
+
+  /** A breakdown of the rewards owed, detailing up to three reward tokens (`reward_owed_1`, `reward_owed_2`, and `reward_owed_3`). */
   rewardsQuote: CollectRewardsQuote;
+
+  /** A list of instructions required to harvest the position. */
   instructions: Instruction[];
 };
 
@@ -72,6 +77,27 @@ export type HarvestPositionConfig = {
  * @param {Address} positionMintAddress The position mint address you want to harvest fees and rewards from.
  * @param {HarvestPositionConfig} [config] The parameters to build the harvest position instruction.
  * @returns {Promise<HarvestPositionInstructions>}
+ * 
+ * @example
+ * import { harvestPositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
+ * import { loadWallet } from './utils';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ *
+ * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
+ *   devnetRpc,
+ *   positionMint,
+ *   {
+ *     authority: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   }
+ * );
+ *
+ * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
+ * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
  */
 export async function harvestPositionInstructions(
   rpc: Rpc<

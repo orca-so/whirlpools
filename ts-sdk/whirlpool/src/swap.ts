@@ -269,6 +269,9 @@ function getSwapQuote<T extends SwapParams>(
  *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
  *   },
  * );
+ * 
+ * console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
+ * console.log(`Number of instructions:, ${instructions.length}`);
  */
 export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<

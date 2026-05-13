@@ -152,6 +152,8 @@ export function setEnforceTokenBalanceCheck(
 
 /**
  * Resets the configuration to its default state.
+ *
+ * @returns {void} Resolves when the configuration has been reset.
  */
 export function resetConfiguration() {
   FUNDER = DEFAULT_FUNDER;

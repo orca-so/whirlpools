@@ -67,13 +67,27 @@ import { executeWithCallback } from "./actionHelpers";
  * The SDK will compute the other two based on the input provided.
  */
 export type DecreaseLiquidityQuoteParam =
-  | { liquidity: bigint }
-  | { tokenA: bigint }
-  | { tokenB: bigint };
+  | {
+      /** The amount of liquidity to decrease. */
+      liquidity: bigint;
+    }
+  | {
+      /** The amount of Token A to withdraw. */
+      tokenA: bigint;
+    }
+  | {
+      /** The amount of Token B to withdraw. */
+      tokenB: bigint;
+    };
 
-/** Represents the instructions and quote for decreasing liquidity in a position. */
+/**
+ * Represents the instructions and quote for decreasing liquidity in a position.
+ */
 export type DecreaseLiquidityInstructions = {
+  /** The quote details for decreasing liquidity, including the liquidity delta, estimated tokens, and minimum token amounts based on slippage tolerance. */
   quote: DecreaseLiquidityQuote;
+
+  /** The list of instructions required to decrease liquidity. */
   instructions: Instruction[];
 };
 
@@ -122,13 +136,45 @@ function getDecreaseLiquidityQuote(
  * Options for {@link decreaseLiquidityInstructions}.
  */
 export type DecreaseLiquidityConfig = {
+  /** The acceptable slippage tolerance in basis points. Defaults to the global {@link SLIPPAGE_TOLERANCE_BPS}. */
   slippageToleranceBps?: number;
+  /** The account authorizing the liquidity removal. Defaults to the global {@link FUNDER}. */
   authority?: TransactionSigner<string>;
+  /** The Whirlpool program and config account to target. Defaults to {@link DEFAULT_WHIRLPOOL_DEPLOYMENT}. */
   whirlpoolDeployment?: WhirlpoolDeployment;
 };
 
 /**
  * Generates instructions to decrease liquidity from an existing position in an Orca Whirlpool.
+ *
+ * @param {SolanaRpc} rpc - A Solana RPC client for fetching necessary accounts and pool data.
+ * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position from which liquidity will be removed.
+ * @param {DecreaseLiquidityQuoteParam} param - Defines the liquidity removal method (`liquidity`, `tokenA`, or `tokenB`).
+ * @param {DecreaseLiquidityConfig} [config] - Optional slippage tolerance, authority, and target Whirlpool deployment.
+ *
+ * @returns {Promise<DecreaseLiquidityInstructions>} A promise resolving to an object containing the decrease liquidity quote and instructions.
+ *
+ * @example
+ * import { decreaseLiquidityInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
+ * import { loadWallet } from './utils';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ * const param = { tokenA: 10n };
+ * const { quote, instructions } = await decreaseLiquidityInstructions(
+ *   devnetRpc,
+ *   positionMint,
+ *   param,
+ *   {
+ *     slippageToleranceBps: 100,
+ *     authority: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   },
+ * );
+ *
+ * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function decreaseLiquidityInstructions(
   rpc: Rpc<
@@ -248,9 +294,13 @@ export async function decreaseLiquidityInstructions(
 
 /**
  * Represents the instructions and quotes for closing a liquidity position in an Orca Whirlpool.
+ * Extends `DecreaseLiquidityInstructions` and adds additional fee and reward details.
  */
 export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
+  /** The fees collected from the position, including the amounts for token A (`fee_owed_a`) and token B (`fee_owed_b`). */
   feesQuote: CollectFeesQuote;
+
+  /** The rewards collected from the position, including up to three reward tokens (`reward_owed_1`, `reward_owed_2`, and `reward_owed_3`). */
   rewardsQuote: CollectRewardsQuote;
 };
 
@@ -258,13 +308,47 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * Options for {@link closePositionInstructions}.
  */
 export type ClosePositionConfig = {
+  /** The acceptable slippage tolerance in basis points. Defaults to the global {@link SLIPPAGE_TOLERANCE_BPS}. */
   slippageToleranceBps?: number;
+  /** The account authorizing the transaction. Defaults to the global {@link FUNDER}. */
   authority?: TransactionSigner<string>;
+  /** The Whirlpool program and config account to target. Defaults to {@link DEFAULT_WHIRLPOOL_DEPLOYMENT}. */
   whirlpoolDeployment?: WhirlpoolDeployment;
 };
 
 /**
- * Generates instructions to close a liquidity position in an Orca Whirlpool.
+ * Generates instructions to close a liquidity position in an Orca Whirlpool. This includes collecting all fees,
+ * rewards, removing any remaining liquidity, and closing the position.
+ *
+ * @param {SolanaRpc} rpc - A Solana RPC client for fetching accounts and pool data.
+ * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
+ * @param {ClosePositionConfig} [config] - Optional slippage tolerance, authority, and target Whirlpool deployment.
+ *
+ * @returns {Promise<ClosePositionInstructions>} A promise resolving to an object containing instructions, fees quote, rewards quote, and the liquidity quote for the closed position.
+ *
+ * @example
+ * import { closePositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
+ * import { loadWallet } from './utils';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ *
+ * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
+ *   devnetRpc,
+ *   positionMint,
+ *   {
+ *     slippageToleranceBps: 100,
+ *     authority: wallet,
+ *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   },
+ * );
+ *
+ * console.log(`Quote token max B: ${quote.tokenEstB}`);
+ * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
+ * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
+ * console.log(`Number of instructions: ${instructions.length}`);
  */
 export async function closePositionInstructions(
   rpc: Rpc<

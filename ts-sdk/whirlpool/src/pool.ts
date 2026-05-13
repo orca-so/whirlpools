@@ -125,6 +125,12 @@ export async function fetchSplashPool(
  *   tickSpacing,
  *   WhirlpoolDeployment.devnet,
  * );
+ * 
+ * if (poolInfo.initialized) {
+ *   console.log("Pool is initialized:", poolInfo);
+ * } else {
+ *   console.log("Pool is not initialized:", poolInfo);
+ * };
  */
 export async function fetchConcentratedLiquidityPool(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
@@ -205,6 +211,14 @@ export async function fetchConcentratedLiquidityPool(
  *   tokenMintTwo,
  *   WhirlpoolDeployment.devnet,
  * );
+ * 
+ * poolInfos.forEach((poolInfo) => {
+ *   if (poolInfo.initialized) {
+ *     console.log("Pool is initialized:", poolInfo);
+ *   } else {
+ *     console.log("Pool is not initialized:", poolInfo);
+ *   }
+ * });
  */
 export async function fetchWhirlpoolsByTokenPair(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,

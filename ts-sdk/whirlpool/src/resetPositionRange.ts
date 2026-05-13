@@ -46,6 +46,35 @@ export type ResetPositionRangeConfig = {
 
 /**
  * Generates instructions to reset a position range.
+ * 
+ * @param {SolanaRpc} rpc - The Solana RPC client.
+ * @param {Address} positionMintAddress - The address of the position mint.
+ * @param {number} newLowerPrice - The new lower price of the position.
+ * @param {number} newUpperPrice - The new upper price of the position.
+ * @param {ResetPositionRangeConfig} [config] - The parameters to build the reset position range instruction.
+ * @returns {Promise<ResetPositionRangeInstructions>} A promise that resolves to an object containing instructions.
+ *
+ * @example
+ * import { resetPositionRangeInstructions, WhirlpoolDeployment } from "@orca-so/whirlpools";
+ * import { createSolanaRpc, devnet } from "@solana/kit";
+ *
+ * const devnetRpc = createSolanaRpc(devnet("https://api.devnet.solana.com"));
+ * const wallet = await loadWallet();
+ *
+ * const positionMintAddress = address("5uiTr6jPdCXNfBWyfhAS9HScpkhGpoPEsaKcYUDMB2Nw");
+ * const newLowerPrice = 300;
+ * const newUpperPrice = 400;
+ *
+ * const instructions = await resetPositionRangeInstructions(
+ *   devnetRpc,
+ *   positionMintAddress,
+ *   newLowerPrice,
+ *   newUpperPrice,
+ *   {
+ *      authority: wallet, 
+ *      whirlpoolDeployment: WhirlpoolDeployment.devnet,
+ *   }
+ * );
  */
 export async function resetPositionRangeInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,

@@ -69,16 +69,13 @@ The SDKs offer three main functions to help developers monitor the pools:
     <ReactMarkdown>{byAddressFetching}</ReactMarkdown>
 
     ```rust
-    use orca_whirlpools::{
-        fetch_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
-    };
+    use orca_whirlpools_client::fetch_whirlpool;
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
 
     #[tokio::main]
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap(); // SOL/devUSDC
 
@@ -91,20 +88,20 @@ The SDKs offer three main functions to help developers monitor the pools:
     <ReactMarkdown>{splashPoolFetching}</ReactMarkdown>
 
     ```rust
-    use orca_whirlpools::{
-        fetch_splash_pool, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput,
-    };
+    use orca_whirlpools::{fetch_splash_pool, PoolInfo, WhirlpoolDeployment};
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
 
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
         let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 
-        let pool_info = fetch_splash_pool(&rpc, token_a, token_b).await.unwrap();
+        let pool_info =
+            fetch_splash_pool(&rpc, token_a, token_b, Some(WhirlpoolDeployment::devnet()))
+                .await
+                .unwrap();
 
         match pool_info {
             PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),
@@ -117,7 +114,7 @@ The SDKs offer three main functions to help developers monitor the pools:
 
     ```rust
     use orca_whirlpools::{
-        fetch_concentrated_liquidity_pool, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput
+        fetch_concentrated_liquidity_pool, PoolInfo, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -125,13 +122,20 @@ The SDKs offer three main functions to help developers monitor the pools:
 
     #[tokio::main]
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
         let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
         let tick_spacing = 64;
 
-        let pool_info = fetch_concentrated_liquidity_pool(&rpc, token_a, token_b, tick_spacing).await.unwrap();
+        let pool_info = fetch_concentrated_liquidity_pool(
+            &rpc,
+            token_a,
+            token_b,
+            tick_spacing,
+            Some(WhirlpoolDeployment::devnet()),
+        )
+        .await
+        .unwrap();
 
         match pool_info {
             PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),
@@ -144,7 +148,7 @@ The SDKs offer three main functions to help developers monitor the pools:
 
     ```rust
     use orca_whirlpools::{
-        fetch_whirlpools_by_token_pair, set_whirlpools_config_address, PoolInfo, WhirlpoolsConfigInput,
+        fetch_whirlpools_by_token_pair, PoolInfo, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -152,14 +156,18 @@ The SDKs offer three main functions to help developers monitor the pools:
 
     #[tokio::main]
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
         let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 
-        let pool_infos = fetch_whirlpools_by_token_pair(&rpc, token_a, token_b)
-            .await
-            .unwrap();
+        let pool_infos = fetch_whirlpools_by_token_pair(
+            &rpc,
+            token_a,
+            token_b,
+            Some(WhirlpoolDeployment::devnet()),
+        )
+        .await
+        .unwrap();
 
         for pool_info in pool_infos {
             match pool_info {
@@ -175,10 +183,9 @@ The SDKs offer three main functions to help developers monitor the pools:
     <ReactMarkdown>{byAddressFetching}</ReactMarkdown>
 
     ```tsx
-    import { fetchWhirlpool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { fetchWhirlpool } from '@orca-so/whirlpools-client';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt"); // SOL/devUSDC
 
@@ -193,10 +200,9 @@ The SDKs offer three main functions to help developers monitor the pools:
     <ReactMarkdown>{splashPoolFetching}</ReactMarkdown>
 
     ```tsx
-    import { fetchSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { fetchSplashPool, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //devUSDC
@@ -204,7 +210,8 @@ The SDKs offer three main functions to help developers monitor the pools:
     const poolInfo = await fetchSplashPool(
       devnetRpc,
       tokenMintOne,
-      tokenMintTwo
+      tokenMintTwo,
+      WhirlpoolDeployment.devnet,
     );
 
     if (poolInfo.initialized) {
@@ -217,10 +224,9 @@ The SDKs offer three main functions to help developers monitor the pools:
     <ReactMarkdown>{concentratedPoolFetching}</ReactMarkdown>
 
     ```tsx
-    import { fetchConcentratedLiquidityPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { fetchConcentratedLiquidityPool, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
 
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
@@ -231,7 +237,8 @@ The SDKs offer three main functions to help developers monitor the pools:
       devnetRpc,
       tokenMintOne,
       tokenMintTwo,
-      tickSpacing
+      tickSpacing,
+      WhirlpoolDeployment.devnet,
     );
 
     if (poolInfo.initialized) {
@@ -244,10 +251,9 @@ The SDKs offer three main functions to help developers monitor the pools:
     <ReactMarkdown>{allPoolsFetching}</ReactMarkdown>
 
     ```tsx
-    import { fetchWhirlpoolsByTokenPair, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { fetchWhirlpoolsByTokenPair, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
 
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
@@ -256,7 +262,8 @@ The SDKs offer three main functions to help developers monitor the pools:
     const poolInfos = await fetchWhirlpoolsByTokenPair(
       devnetRpc,
       tokenMintOne,
-      tokenMintTwo
+      tokenMintTwo,
+      WhirlpoolDeployment.devnet,
     );
 
     poolInfos.forEach((poolInfo) => {

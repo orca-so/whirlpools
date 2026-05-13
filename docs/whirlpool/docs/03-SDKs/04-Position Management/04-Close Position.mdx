@@ -62,7 +62,7 @@ After closing a position, you can:
     ```rust
     use crate::utils::load_wallet;
     use orca_whirlpools::{
-        close_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+        close_position_instructions, ClosePositionConfig, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -77,7 +77,6 @@ After closing a position, you can:
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         set_rpc("https://api.devnet.solana.com").await?;
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let wallet = load_wallet();
         let rpc = get_rpc_client()?;
 
@@ -87,8 +86,11 @@ After closing a position, you can:
         let result = close_position_instructions(
             &rpc,
             position_mint_address,
-            Some(100),
-            Some(wallet.pubkey()),
+            ClosePositionConfig {
+                slippage_tolerance_bps: Some(100),
+                authority: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
         )
         .await?;
 
@@ -131,20 +133,20 @@ After closing a position, you can:
     <ReactMarkdown>{startingGuideText}</ReactMarkdown>
 
     ```tsx
-    import { closePosition, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address, setRpc, setPayerFromBytes } from '@solana/kit';
+    import { closePosition, setRpc, setPayerFromBytes, WhirlpoolDeployment } from '@orca-so/whirlpools';
+    import { address } from '@solana/kit';
     import secret from "wallet.json";
 
-    await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    await setPayerFromBytes(new Uint8Array(secret));
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
     const { instructions, quote, feesQuote, rewardsQuote, callback: sendTx } = await closePosition(
-      devnetRpc,
       positionMint,
-      100,
-      signer
+      {
+        slippageToleranceBps: 100,
+        whirlpoolDeployment: WhirlpoolDeployment.devnet,
+      },
     );
 
     // Use the callback to submit the transaction 

@@ -45,16 +45,13 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
 
     ```rust
     use crate::utils::load_wallet;
-    use orca_whirlpools::{
-        set_whirlpools_config_address, swap_instructions, SwapType, WhirlpoolsConfigInput,
-    };
+    use orca_whirlpools::{swap_instructions, SwapConfig, SwapType, WhirlpoolDeployment};
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
 
     #[tokio::main]
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let wallet = load_wallet();
         let whirlpool_address =
@@ -68,8 +65,11 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
             input_amount,
             mint_address,
             SwapType::ExactIn,
-            Some(100),
-            Some(wallet.pubkey()),
+            SwapConfig {
+                slippage_tolerance_bps: Some(100),
+                signer: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
         )
         .await
         .unwrap();
@@ -140,11 +140,10 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     7. **Submit Transaction**: Use the callback to submit the transaction.
 
     ```tsx
-    import { setWhirlpoolsConfig, swap, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
-    import { createSolanaRpc, address } from '@solana/kit';
+    import { swap, setRpc, setPayerFromBytes, WhirlpoolDeployment } from '@orca-so/whirlpools';
+    import { address } from '@solana/kit';
     import secret from "wallet.json";
 
-    await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
     await setPayerFromBytes(new Uint8Array(secret));
 
@@ -155,7 +154,10 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     const { instructions, quote, callback: sendTx } = await swap(
       { inputAmount, mint: mintAddress },
       whirlpoolAddress,
-      100
+      {
+        slippageToleranceBps: 100,
+        whirlpoolDeployment: WhirlpoolDeployment.devnet,
+      },
     );
 
     // Use the callback to submit the transaction

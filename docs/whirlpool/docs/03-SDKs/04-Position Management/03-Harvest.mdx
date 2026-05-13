@@ -58,7 +58,7 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
 
     ```rust
     use orca_whirlpools::{
-        harvest_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+        harvest_position_instructions, HarvestPositionConfig, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -74,15 +74,21 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         set_rpc("https://api.devnet.solana.com").await?;
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let wallet = load_wallet();
         let rpc = get_rpc_client()?;
 
         let position_mint_address =
             Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 
-        let result = harvest_position_instructions(&rpc, position_mint_address, Some(wallet.pubkey()))
-            .await?;
+        let result = harvest_position_instructions(
+            &rpc,
+            position_mint_address,
+            HarvestPositionConfig {
+                authority: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
+        )
+        .await?;
 
         // The instructions may include new token accounts that need to be created
         // and signed for with their corresponding Keypair.
@@ -121,19 +127,17 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
     <ReactMarkdown>{startingGuideText}</ReactMarkdown>
 
     ```tsx
-    import { harvestPosition, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address, setRpc, setPayerFromBytes } from '@solana/kit';
+    import { harvestPosition, setRpc, setPayerFromBytes, WhirlpoolDeployment } from '@orca-so/whirlpools';
+    import { address } from '@solana/kit';
     import secret from "wallet.json";
 
-    await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    await setPayerFromBytes(new Uint8Array(secret));
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
     const { feesQuote, rewardsQuote, instructions, callback: sendTx } = await harvestPosition(
-      devnetRpc,
       positionMint,
-      signer
+      { whirlpoolDeployment: WhirlpoolDeployment.devnet },
     );
 
     // Use the callback to submit the transaction

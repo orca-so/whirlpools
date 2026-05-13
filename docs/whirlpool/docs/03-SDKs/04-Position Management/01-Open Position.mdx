@@ -89,8 +89,8 @@ After opening a position, you can:
 
     ```rust
     use orca_whirlpools::{
-      open_full_range_position_instructions, set_whirlpools_config_address,
-      IncreaseLiquidityParam, WhirlpoolsConfigInput
+      open_full_range_position_instructions, IncreaseLiquidityParam,
+      OpenFullRangePositionConfig, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -103,7 +103,6 @@ After opening a position, you can:
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
       set_rpc("https://api.devnet.solana.com").await?;
-      set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
       let wallet = Keypair::new(); // Replace with your wallet loader
       let rpc = get_rpc_client()?;
       let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
@@ -113,8 +112,11 @@ After opening a position, you can:
         &rpc,
         whirlpool_address,
         param,
-        Some(100),
-        Some(wallet.pubkey())
+        OpenFullRangePositionConfig {
+          slippage_tolerance_bps: Some(100),
+          funder: Some(wallet.pubkey()),
+          whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+        },
       ).await?;
 
       let mut signers: Vec<&dyn Signer> = vec![&wallet];
@@ -139,8 +141,8 @@ After opening a position, you can:
 
     ```rust
     use orca_whirlpools::{
-      open_position_instructions, set_whirlpools_config_address,
-      IncreaseLiquidityParam, WhirlpoolsConfigInput
+      open_position_instructions, IncreaseLiquidityParam, OpenPositionConfig,
+      WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -153,7 +155,6 @@ After opening a position, you can:
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
       set_rpc("https://api.devnet.solana.com").await?;
-      set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
       let wallet = Keypair::new(); // Replace with your wallet loader
       let rpc = get_rpc_client()?;
       let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
@@ -165,8 +166,11 @@ After opening a position, you can:
         0.001,
         100.0,
         param,
-        Some(100),
-        Some(wallet.pubkey())
+        OpenPositionConfig {
+          slippage_tolerance_bps: Some(100),
+          funder: Some(wallet.pubkey()),
+          whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+        },
       ).await?;
 
       let mut signers: Vec<&dyn Signer> = vec![&wallet];
@@ -206,10 +210,9 @@ After opening a position, you can:
     <ReactMarkdown>{splashPoolOpeningSteps}</ReactMarkdown>
 
     ```tsx
-    import { openFullRangePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { openFullRangePositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address, generateKeyPairSigner } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const wallet = await generateKeyPairSigner();
 
@@ -222,9 +225,11 @@ After opening a position, you can:
       devnetRpc,
       whirlpoolAddress,
       param,
-      100,
-      true,
-      wallet
+      {
+        slippageToleranceBps: 100,
+        funder: wallet,
+        whirlpoolDeployment: WhirlpoolDeployment.devnet,
+      },
     );
 
     // Build and send the transaction using your preferred method
@@ -235,10 +240,9 @@ After opening a position, you can:
     <ReactMarkdown>{concentratedPoolOpeningSteps}</ReactMarkdown>
 
     ```tsx
-    import { openPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { openPositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address, generateKeyPairSigner } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const wallet = await generateKeyPairSigner();
 
@@ -254,9 +258,11 @@ After opening a position, you can:
       param,
       lowerPrice,
       upperPrice,
-      100,
-      true,
-      wallet
+      {
+        slippageToleranceBps: 100,
+        funder: wallet,
+        whirlpoolDeployment: WhirlpoolDeployment.devnet,
+      },
     );
 
     console.log(`Initialization cost: ${initializationCost}`);

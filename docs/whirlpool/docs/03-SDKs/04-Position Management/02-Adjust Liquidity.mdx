@@ -69,8 +69,8 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     ```rust
     use orca_whirlpools::{
         decrease_liquidity_instructions, increase_liquidity_instructions,
-        set_whirlpools_config_address, DecreaseLiquidityParam, IncreaseLiquidityParam,
-        WhirlpoolsConfigInput
+        DecreaseLiquidityConfig, DecreaseLiquidityParam, IncreaseLiquidityConfig,
+        IncreaseLiquidityParam, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -83,7 +83,6 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         set_rpc("https://api.devnet.solana.com").await?;
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let wallet = Keypair::new(); // Replace with your wallet loader
         let rpc = get_rpc_client()?;
         let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
@@ -94,8 +93,11 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
             &rpc,
             position_mint_address,
             increase_param,
-            Some(100),
-            Some(wallet.pubkey()),
+            IncreaseLiquidityConfig {
+                slippage_tolerance_bps: Some(100),
+                authority: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
         )
         .await?;
 
@@ -115,8 +117,11 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
             &rpc,
             position_mint_address,
             decrease_param,
-            Some(100),
-            Some(wallet.pubkey()),
+            DecreaseLiquidityConfig {
+                slippage_tolerance_bps: Some(100),
+                authority: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
         )
         .await?;
 
@@ -151,10 +156,9 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     <ReactMarkdown>{startingGuideText}</ReactMarkdown>
 
     ```tsx
-    import { decreaseLiquidityInstructions, increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { decreaseLiquidityInstructions, increaseLiquidityInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address, generateKeyPairSigner } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const wallet = await generateKeyPairSigner();
 
@@ -166,8 +170,11 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         devnetRpc,
         positionMint,
         increaseParam,
-        100,
-        wallet
+        {
+            slippageToleranceBps: 100,
+            authority: wallet,
+            whirlpoolDeployment: WhirlpoolDeployment.devnet,
+        },
     );
 
     // Decrease: specify one of tokenA, tokenB, or liquidity
@@ -176,8 +183,11 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         devnetRpc,
         positionMint,
         decreaseParam,
-        100,
-        wallet
+        {
+            slippageToleranceBps: 100,
+            authority: wallet,
+            whirlpoolDeployment: WhirlpoolDeployment.devnet,
+        },
     );
 
     console.log(`Decrease quote estimated token B: ${decreaseQuote.tokenEstB}`);

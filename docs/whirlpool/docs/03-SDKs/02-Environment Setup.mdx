@@ -71,27 +71,25 @@ This document covers the essential setup required to start building on Orca's SD
     
     > ⚠️ Important: Never share your private key publicly.
     
-    ## 3. Configure the Whirlpools SDK for Your Network
+    ## 3. Select a Whirlpool Deployment
     
-    Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function.
+    Each SDK function targets a `WhirlpoolDeployment` — a `program_id` + `WhirlpoolsConfig` pair. Pass one of the named constructors (or a `custom` one) to any SDK function or PDA helper that takes a `whirlpool_deployment` argument. If omitted, the SDK defaults to `WhirlpoolDeployment::mainnet()` (the mutable mainnet program with the mainnet config).
     
     ```rust
-    use orca_whirlpools::{WhirlpoolsConfigInput, set_whirlpools_config_address};
+    use orca_whirlpools::WhirlpoolDeployment;
 
     fn main() {
-      set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+      let _deployment = WhirlpoolDeployment::devnet();
       // Rest of the code
     }
     ```
     
-    Available networks are:
+    Available deployments:
     
-    - solanaMainnet
-    - solanaDevnet
-    - eclipseMainnet
-    - eclipseTestnet
-    
-    > ℹ️ The `set_whirlpools_config_address` function accepts either one of Orca's default network keys or a custom address. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca.
+    - `WhirlpoolDeployment::mainnet()` — mutable mainnet program + mainnet config
+    - `WhirlpoolDeployment::devnet()` — mutable mainnet program + devnet config
+    - `WhirlpoolDeployment::mainnet_immutable()` — immutable mainnet program + its config
+    - `WhirlpoolDeployment::custom(program_id, config)` — for forks or local validators
     
     ## 4. Airdrop SOL to Your Wallet
     
@@ -176,24 +174,22 @@ This document covers the essential setup required to start building on Orca's SD
     
     > ⚠️ Important: Never share your private key publicly.
     
-    ## 3. Configure the Whirlpools SDK for Your Network
+    ## 3. Select a Whirlpool Deployment
     
-    Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function.
+    Each SDK function targets a `WhirlpoolDeployment` — a `programId` + `WhirlpoolsConfig` pair. Pass one of the named constants (or a `custom` one) to any SDK function or PDA helper that takes a `whirlpoolDeployment` argument. If omitted, the SDK defaults to `WhirlpoolDeployment.mainnet` (the mutable mainnet program with the mainnet config).
     
     ```tsx
-    import { setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { WhirlpoolDeployment } from '@orca-so/whirlpools';
 
-    await setWhirlpoolsConfig('solanaDevnet');
+    const deployment = WhirlpoolDeployment.devnet;
     ```
     
-    Available networks are:
+    Available deployments:
     
-    - solanaMainnet
-    - solanaDevnet
-    - eclipseMainnet
-    - eclipseTestnet
-    
-    > ℹ️ The `setWhirlpoolsConfig` function accepts either one of Orca's default network keys or a custom `Address`. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca.
+    - `WhirlpoolDeployment.mainnet` — mutable mainnet program + mainnet config
+    - `WhirlpoolDeployment.devnet` — mutable mainnet program + devnet config
+    - `WhirlpoolDeployment.mainnetImmutable` — immutable mainnet program + its config
+    - `WhirlpoolDeployment.custom(programId, configAddress)` — for forks or local validators
     
     ## 4. Airdrop SOL to Your Wallet
     

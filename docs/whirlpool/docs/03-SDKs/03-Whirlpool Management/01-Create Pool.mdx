@@ -73,7 +73,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
 
     ```rust
     use orca_whirlpools::{
-        create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+        create_splash_pool_instructions, CreateSplashPoolConfig, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
@@ -88,18 +88,23 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         set_rpc("https://api.devnet.solana.com").await?;
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-        
+
         let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
         let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-        let initial_price = Some(0.01);
         let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
-        let funder = Some(wallet.pubkey());
         let rpc = get_rpc_client()?;
 
-        let result =
-            create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
-                .await?;
+        let result = create_splash_pool_instructions(
+            &rpc,
+            token_a,
+            token_b,
+            CreateSplashPoolConfig {
+                initial_price: Some(0.01),
+                funder: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
+        )
+        .await?;
 
         // The instructions include new Tick Array accounts that need to be created
         // and signed for with their corresponding Keypair.
@@ -129,8 +134,8 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
 
     ```rust
     use orca_whirlpools::{
-        create_concentrated_liquidity_pool_instructions, set_whirlpools_config_address,
-        WhirlpoolsConfigInput,
+        create_concentrated_liquidity_pool_instructions,
+        CreateConcentratedLiquidityPoolConfig, WhirlpoolDeployment,
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
@@ -145,14 +150,11 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         set_rpc("https://api.devnet.solana.com").await?;
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-        
+
         let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
         let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
         let tick_spacing = 64;
-        let initial_price = Some(0.01);
         let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
-        let funder = Some(wallet.pubkey());
         let rpc = get_rpc_client()?;
 
         let result = create_concentrated_liquidity_pool_instructions(
@@ -160,8 +162,11 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
             token_a,
             token_b,
             tick_spacing,
-            initial_price,
-            funder,
+            CreateConcentratedLiquidityPoolConfig {
+                initial_price: Some(0.01),
+                funder: Some(wallet.pubkey()),
+                whirlpool_deployment: Some(WhirlpoolDeployment::devnet()),
+            },
         )
         .await?;
 
@@ -190,24 +195,23 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     <ReactMarkdown>{splashPoolSteps}</ReactMarkdown>
 
     ```tsx
-    import { createSplashPool, setWhirlpoolsConfig, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
-    import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+    import { createSplashPool, WhirlpoolDeployment, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
+    import { address } from '@solana/kit';
     import secret from "wallet.json";
 
-    await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    await setPayerFromBytes(new Uint8Array(secret));
 
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
-    const initialPrice = 0.01;
 
-    const { poolAddress, instructions, initializationCost, callback: sendTx } = await createSplashPool(
-        devnetRpc,
+    const { poolAddress, initializationCost, callback: sendTx } = await createSplashPool(
         tokenMintOne,
         tokenMintTwo,
-        initialPrice,
-        signer
+        {
+            initialPrice: 0.01,
+            whirlpoolDeployment: WhirlpoolDeployment.devnet,
+        },
     );
 
     // Use the callback to submit the transaction
@@ -221,26 +225,25 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     <ReactMarkdown>{concentratedLiquiditySteps}</ReactMarkdown>
 
     ```tsx
-    import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
-    import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
+    import { createConcentratedLiquidityPool, WhirlpoolDeployment, setRpc, setPayerFromBytes } from '@orca-so/whirlpools';
+    import { address } from '@solana/kit';
     import secret from "wallet.json";
 
-    await setWhirlpoolsConfig('solanaDevnet');
     await setRpc('https://api.devnet.solana.com');
-    const signer = await setPayerFromBytes(new Uint8Array(secret));
+    await setPayerFromBytes(new Uint8Array(secret));
 
     const tokenMintOne = address("So11111111111111111111111111111111111111112");
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
     const tickSpacing = 64;
-    const initialPrice = 0.01;
 
-    const { poolAddress, instructions, initializationCost, callback: sendTx } = await createConcentratedLiquidityPool(
-        devnetRpc,
+    const { poolAddress, initializationCost, callback: sendTx } = await createConcentratedLiquidityPool(
         tokenMintOne,
         tokenMintTwo,
         tickSpacing,
-        initialPrice,
-        signer
+        {
+            initialPrice: 0.01,
+            whirlpoolDeployment: WhirlpoolDeployment.devnet,
+        },
     );
 
     // Use the callback to submit the transaction

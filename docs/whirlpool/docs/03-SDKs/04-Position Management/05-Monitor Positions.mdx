@@ -93,23 +93,24 @@ By effectively monitoring positions, you gain the insights needed to optimize yo
     <ReactMarkdown>{walletPositionsSection}</ReactMarkdown>
     
     ```rust
-    use orca_whirlpools::{
-        fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
-    };
+    use orca_whirlpools::{fetch_positions_for_owner, WhirlpoolDeployment};
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
 
     #[tokio::main]
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let owner_address =
             Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 
-        let positions = fetch_positions_for_owner(&rpc, owner_address)
-            .await
-            .unwrap();
+        let positions = fetch_positions_for_owner(
+            &rpc,
+            owner_address,
+            Some(WhirlpoolDeployment::devnet().id()),
+        )
+        .await
+        .unwrap();
 
         println!("Positions: {:?}", positions);
     }
@@ -118,23 +119,24 @@ By effectively monitoring positions, you gain the insights needed to optimize yo
     <ReactMarkdown>{whirlpoolPositionsSection}</ReactMarkdown>
     
     ```rust
-    use orca_whirlpools::{
-        fetch_positions_in_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
-    };
+    use orca_whirlpools::{fetch_positions_in_whirlpool, WhirlpoolDeployment};
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
 
     #[tokio::main]
     async fn main() {
-        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let whirlpool_address =
             Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 
-        let positions = fetch_positions_in_whirlpool(&rpc, whirlpool_address)
-            .await
-            .unwrap();
+        let positions = fetch_positions_in_whirlpool(
+            &rpc,
+            whirlpool_address,
+            Some(WhirlpoolDeployment::devnet().id()),
+        )
+        .await
+        .unwrap();
 
         println!("Positions: {:?}", positions);
     }
@@ -157,14 +159,13 @@ By effectively monitoring positions, you gain the insights needed to optimize yo
     <ReactMarkdown>{walletPositionsSection}</ReactMarkdown>
 
     ```tsx
-    import { fetchPositionsForOwner, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { fetchPositionsForOwner, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const owner = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt"); // set an owner address
 
-    const positions = await fetchPositionsForOwner(devnetRpc, owner);
+    const positions = await fetchPositionsForOwner(devnetRpc, owner, WhirlpoolDeployment.devnet);
 
     console.log(positions);
     ```
@@ -172,14 +173,13 @@ By effectively monitoring positions, you gain the insights needed to optimize yo
     <ReactMarkdown>{whirlpoolPositionsSection}</ReactMarkdown>
 
     ```tsx
-    import { fetchPositionsInWhirlpool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { fetchPositionsInWhirlpool, WhirlpoolDeployment } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
 
-    await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
 
-    const positions = await fetchPositionsInWhirlpool(devnetRpc, whirlpoolAddress);
+    const positions = await fetchPositionsInWhirlpool(devnetRpc, whirlpoolAddress, WhirlpoolDeployment.devnet);
 
     console.log(positions);
     ```

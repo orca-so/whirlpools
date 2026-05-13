@@ -19,20 +19,19 @@ const testCases = [
   {
     name: "mutable whirlpool",
     whirlpoolDeployment: WhirlpoolDeployment.mainnet,
-    feeTierFeeIndex: 1,
+    feeTierFeeIndex: 2,
     positionAddress: address("2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq"),
     positionMint: address("6sf6fSK6tTubFA2LMCeTzt4c6DeNVyA6WpDDgtWs7a5p"),
     whirlpoolAddress: address("2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS"),
-    tokenMint: address("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"),
     nativeMint: address("So11111111111111111111111111111111111111112"),
     tokenMintA: address("So11111111111111111111111111111111111111112"),
     tokenMintB: address("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"),
-    feeTierExpected: "62dSkn5ktwY1PoKPNMArZA4bZsvyemuknWUnnQ2ATTuN",
+    feeTierExpected: "BH9LXGqLhZV3hdvShYZhgQQEjPVKhHPyHwjnsxjETFRr",
     lockConfigExpected: "3MaMYjnnqyZSs5kD7vbPKTyx3RkD6qHuSF94kvvKukKx",
     oracleExpected: "821SHenpVGYY7BCXUzNhs8Xi4grG557fqRw4wzgaPQcS",
     positionExpected: "2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq",
     positionBundleExpected: "At1QvbnANV6imkdNkfB4h1XsY4jbTzPAmScgjLCnM7jy",
-    bundledPositionExpected: "9Zj8oWYVQdBCtqMn9Z3YyGo8o7hVXLEUZ5x5no5ykVm6",
+    bundledPositionExpected: "4GRbpiDX46zi2AdZ2b9Ho4zfpLXhpsYBhRzkp2AeZej3",
     tickArrayExpected: "8PhPzk7n4wU98Z6XCbVtPai2LtXSxYnfjkmgWuoAU8Zy",
     tokenBadgeExpected: "HX5iftnCxhtu11ys3ZuWbvUqo7cyPYaVNZBrLL67Hrbm",
     whirlpoolExpected: "JDQ9GDphXV5ENDrAQtRFvT98m3JwsVJJk8BYHoX8uTAg",
@@ -45,8 +44,7 @@ const testCases = [
     positionAddress: address("28nFQJH8FHYxUvXc5orSZzcjmzWoByvzfBwi75Ep3f9u"),
     positionMint: address("6LdmNS8p3qLYrGcPeYby6zHRvZPq7cYDZTiBXCC3FNDs"),
     whirlpoolAddress: address("DcMZ4NEbLkh7aAfy7Q4vPcAWVik6tSwfUf3FHDoRBvTG"),
-    tokenMint: address("CgH9igg7DmCYcQzh76o2VdcevuVmVUVAej7HcGeCwho2"),
-    nativeMint: address("CgH9igg7DmCYcQzh76o2VdcevuVmVUVAej7HcGeCwho2"),
+    nativeMint: address("So11111111111111111111111111111111111111112"),
     tokenMintA: address("CgH9igg7DmCYcQzh76o2VdcevuVmVUVAej7HcGeCwho2"),
     tokenMintB: address("E3fyHm5B2ddYnCBgMpt3nVYMXxxLdSZTUCKt9GhLdfLc"),
     feeTierExpected: "eDDRZSrsaprxbkmhRzDWY3gxAGKQj438e2TXcbobQME",
@@ -54,9 +52,9 @@ const testCases = [
     oracleExpected: "F7hHjRkVMEGsgEgyF1N9RrQKBPSU5QL1xmKGCYUwBY9M",
     positionExpected: "28nFQJH8FHYxUvXc5orSZzcjmzWoByvzfBwi75Ep3f9u",
     positionBundleExpected: "CVTZ5u8yjGngtpZ5WRx536ty8jiMCFkzwrr5TJW5FpR7",
-    bundledPositionExpected: "Ew84d962t5uHAnwKifZyotxmxjrZ5xokCtgtxD1ToRzh",
+    bundledPositionExpected: "FMAeLNU3RRb31UXJTmHcVwDYBJQwy7DhZepFk9Vwc1Mi",
     tickArrayExpected: "38qJYa1ZPJHa23wN3Azrt6Pkp7vEiV2Xbxzuz5rdotGh",
-    tokenBadgeExpected: "DsFspoBifWBAZTqo2c6JEXxqxYEuDyNbr8tgATgRYCBu",
+    tokenBadgeExpected: "2JRo82M5t7AymysW2acamjFfAg4qaY7beeSegmsDCAv8",
     whirlpoolExpected: "DcMZ4NEbLkh7aAfy7Q4vPcAWVik6tSwfUf3FHDoRBvTG",
     extensionExpected: "4Bsw8VVuegLmKQh2reevMBr2xw5R76WaJRKCvvxgcQrN",
   },
@@ -73,8 +71,11 @@ testCases.forEach((tc) => {
     });
 
     it("LockConfig", async () => {
+      const position = tc.name.includes("immutable")
+        ? tc.positionMint
+        : tc.positionAddress;
       const [lockConfig] = await getLockConfigAddress(
-        tc.positionAddress,
+        position,
         tc.whirlpoolDeployment.programId,
       );
       assert.strictEqual(lockConfig, tc.lockConfigExpected);
@@ -128,7 +129,7 @@ testCases.forEach((tc) => {
 
     it("TokenBadge", async () => {
       const [tokenBadge] = await getTokenBadgeAddress(
-        tc.tokenMint,
+        tc.tokenMintB,
         tc.whirlpoolDeployment,
       );
       assert.strictEqual(tokenBadge, tc.tokenBadgeExpected);

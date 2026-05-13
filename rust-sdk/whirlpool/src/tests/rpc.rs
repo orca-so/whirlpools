@@ -109,13 +109,6 @@ impl RpcContext {
                 .expect("Failed to add program");
         }
 
-        // Load the immutable whirlpool program fixture
-        svm.add_program(
-            WhirlpoolDeployment::mainnet_immutable().id(),
-            include_bytes!("fixtures/whirlpool_immutable.so"),
-        )
-        .expect("Failed to add immutable whirlpool program");
-
         let svm = Arc::new(Mutex::new(svm));
         let rpc = RpcClient::new_sender(MockRpcSender { svm }, RpcClientConfig::default());
 

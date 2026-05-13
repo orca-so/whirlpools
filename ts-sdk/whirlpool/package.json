@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && cp ../../rust-sdk/whirlpool/src/tests/fixtures/whirlpool_immutable.so ../../target/deploy/ && vitest run tests",
+    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && cp ../../legacy-sdk/whirlpool/tests/external_program/whirlpool_immutable.so ../../target/deploy/ && vitest run tests",
     "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },

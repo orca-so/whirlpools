@@ -3,7 +3,7 @@
   "version": "7.0.2",
   "scripts": {
     "build": "cargo build",
-    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && cargo test --lib",
+    "test": "cp ../../legacy-sdk/whirlpool/tests/external_program/token_2022.20250510.so ../../target/deploy/ && cp ../../legacy-sdk/whirlpool/tests/external_program/whirlpool_immutable.so ../../target/deploy/ && cargo test --lib",
     "deploy": "../../scripts/deploy-cargo",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
     "lint": "cargo clippy && cargo fmt --check",

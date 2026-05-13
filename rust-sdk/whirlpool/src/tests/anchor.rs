@@ -33,6 +33,12 @@ pub fn anchor_programs(path: &str) -> Result<Vec<(String, Pubkey)>, Box<dyn Erro
         Pubkey::from_str("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb").unwrap(),
     ));
 
+    // HACK: whirlpool_immutable.so must exist in /target/deploy
+    programs.push((
+        "whirlpool_immutable".to_string(),
+        Pubkey::from_str("iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN").unwrap(),
+    ));
+
     set_var("SBF_OUT_DIR", sbf_out_dir);
     Ok(programs)
 }

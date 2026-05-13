@@ -53,11 +53,9 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
       await setupTEPosition(pool, { whirlpoolDeployment });
 
       // bundle with 1 position, 2 positions
-      await setupPositionBundle(
-        pool,
-        [{ tickLower: -100, tickUpper: 100 }],
-        { whirlpoolDeployment },
-      );
+      await setupPositionBundle(pool, [{ tickLower: -100, tickUpper: 100 }], {
+        whirlpoolDeployment,
+      });
       await setupPositionBundle(
         splashPool,
         [

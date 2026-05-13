@@ -274,14 +274,15 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
       const tokenABefore = await fetchToken(rpc, ataA);
       const tokenBBefore = await fetchToken(rpc, ataB);
 
-      const { instructions, quote, feesQuote } = await closePositionInstructions(
-        rpc,
-        positionMint,
-        { whirlpoolDeployment },
-      );
+      const { instructions, quote, feesQuote } =
+        await closePositionInstructions(rpc, positionMint, {
+          whirlpoolDeployment,
+        });
       await sendTransaction(instructions);
 
-      const positionAfter = await rpc.getMultipleAccounts([positionMint]).send();
+      const positionAfter = await rpc
+        .getMultipleAccounts([positionMint])
+        .send();
       const tokenAAfter = await fetchToken(rpc, ataA);
       const tokenBAfter = await fetchToken(rpc, ataB);
       assert.strictEqual(positionAfter.value[0], null);

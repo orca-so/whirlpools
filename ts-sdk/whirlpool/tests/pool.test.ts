@@ -4,7 +4,11 @@ import {
   fetchSplashPool,
   fetchWhirlpoolsByTokenPair,
 } from "../src/pool";
-import { getTestContext, rpc, TEST_WHIRLPOOL_DEPLOYMENTS } from "./utils/mockRpc";
+import {
+  getTestContext,
+  rpc,
+  TEST_WHIRLPOOL_DEPLOYMENTS,
+} from "./utils/mockRpc";
 import assert from "assert";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import type { Address } from "@solana/kit";
@@ -123,7 +127,9 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
       assert.strictEqual(pool0?.initialized, true);
       assert.strictEqual(pool0?.tickSpacing, 64);
 
-      const pool1 = pools.find((p) => p.tickSpacing === SPLASH_POOL_TICK_SPACING);
+      const pool1 = pools.find(
+        (p) => p.tickSpacing === SPLASH_POOL_TICK_SPACING,
+      );
       assert.strictEqual(pool1?.initialized, true);
       assert.strictEqual(pool1?.tickSpacing, SPLASH_POOL_TICK_SPACING);
 

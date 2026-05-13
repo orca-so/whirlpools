@@ -163,11 +163,10 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
       const tokenABefore = await fetchToken(rpc, ataAAddress);
       const tokenBBefore = await fetchToken(rpc, ataBAddress);
 
-      const { instructions, quote, feesQuote } = await closePositionInstructions(
-        rpc,
-        positionMintAddress,
-        { whirlpoolDeployment },
-      );
+      const { instructions, quote, feesQuote } =
+        await closePositionInstructions(rpc, positionMintAddress, {
+          whirlpoolDeployment,
+        });
       await sendTransaction(instructions);
 
       const positionAfter = await fetchMaybePosition(rpc, positionAddress);

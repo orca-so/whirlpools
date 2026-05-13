@@ -125,7 +125,7 @@ export async function fetchSplashPool(
  *   tickSpacing,
  *   WhirlpoolDeployment.devnet,
  * );
- * 
+ *
  * if (poolInfo.initialized) {
  *   console.log("Pool is initialized:", poolInfo);
  * } else {
@@ -211,7 +211,7 @@ export async function fetchConcentratedLiquidityPool(
  *   tokenMintTwo,
  *   WhirlpoolDeployment.devnet,
  * );
- * 
+ *
  * poolInfos.forEach((poolInfo) => {
  *   if (poolInfo.initialized) {
  *     console.log("Pool is initialized:", poolInfo);

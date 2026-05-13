@@ -46,7 +46,7 @@ export type ResetPositionRangeConfig = {
 
 /**
  * Generates instructions to reset a position range.
- * 
+ *
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} positionMintAddress - The address of the position mint.
  * @param {number} newLowerPrice - The new lower price of the position.
@@ -71,7 +71,7 @@ export type ResetPositionRangeConfig = {
  *   newLowerPrice,
  *   newUpperPrice,
  *   {
- *      authority: wallet, 
+ *      authority: wallet,
  *      whirlpoolDeployment: WhirlpoolDeployment.devnet,
  *   }
  * );

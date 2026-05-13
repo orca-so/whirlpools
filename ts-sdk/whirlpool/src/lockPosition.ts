@@ -11,7 +11,7 @@ import { SystemProgram } from "@solana/web3.js";
 
 /**
  * Parameters to lock a position (TokenExtensions based position only).
- * 
+ *
  * @param lockType - The type of lock to apply to the position.
  * @param funder - The account that would fund the creation of LockConfig account
  * @param positionAuthority - authority that owns the token corresponding to this desired position.

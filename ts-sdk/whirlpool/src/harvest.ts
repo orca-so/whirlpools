@@ -77,7 +77,7 @@ export type HarvestPositionConfig = {
  * @param {Address} positionMintAddress The position mint address you want to harvest fees and rewards from.
  * @param {HarvestPositionConfig} [config] The parameters to build the harvest position instruction.
  * @returns {Promise<HarvestPositionInstructions>}
- * 
+ *
  * @example
  * import { harvestPositionInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/kit';

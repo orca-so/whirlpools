@@ -226,8 +226,16 @@ export async function setupPosition(
       mint: positionMint.address,
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, lowerTickArrayIndex, deployment.programId).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, upperTickArrayIndex, deployment.programId).then((x) => x[0]),
+    getTickArrayAddress(
+      whirlpool,
+      lowerTickArrayIndex,
+      deployment.programId,
+    ).then((x) => x[0]),
+    getTickArrayAddress(
+      whirlpool,
+      upperTickArrayIndex,
+      deployment.programId,
+    ).then((x) => x[0]),
   ]);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
@@ -391,8 +399,16 @@ export async function setupTEPosition(
       mint: positionMint.address,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, lowerTickArrayIndex, deployment.programId).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, upperTickArrayIndex, deployment.programId).then((x) => x[0]),
+    getTickArrayAddress(
+      whirlpool,
+      lowerTickArrayIndex,
+      deployment.programId,
+    ).then((x) => x[0]),
+    getTickArrayAddress(
+      whirlpool,
+      upperTickArrayIndex,
+      deployment.programId,
+    ).then((x) => x[0]),
   ]);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [

@@ -188,7 +188,7 @@ export type IncreaseLiquidityConfig = {
  * @param {IncreaseLiquidityParam} param - Maximum amounts of token A and B to deposit.
  * @param {IncreaseLiquidityConfig} [config] - The parameters to build the increase liquidity instruction.
  * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions.
- * 
+ *
  * @example
  * import { increaseLiquidityInstructions, WhirlpoolDeployment } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/kit';
@@ -207,7 +207,7 @@ export type IncreaseLiquidityConfig = {
  *     whirlpoolDeployment: WhirlpoolDeployment.devnet,
  *   }
  * );
-*/
+ */
 export async function increaseLiquidityInstructions(
   rpc: IncreaseLiquidityRpc,
   positionMintAddress: Address,
@@ -488,7 +488,7 @@ export type OpenPositionConfig = {
 
 /**
  * Opens a full-range position for a pool, typically used for Splash Pools or other full-range liquidity provisioning.
- * 
+ *
  * @param {SolanaRpc} rpc - RPC client. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi
  * @param {Address} poolAddress - The address of the liquidity pool.
  * @param {IncreaseLiquidityParam} param - Maximum amounts of token A and B to deposit.

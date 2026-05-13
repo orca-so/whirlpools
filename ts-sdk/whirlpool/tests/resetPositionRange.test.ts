@@ -194,13 +194,10 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
 
       // Try to reset the position range with new price range, and assert will be executed.
       await expect(
-        resetPositionRangeInstructions(
-          rpc,
-          positionMintAddress,
-          1000,
-          5000,
-          { authority: signer, whirlpoolDeployment },
-        ),
+        resetPositionRangeInstructions(rpc, positionMintAddress, 1000, 5000, {
+          authority: signer,
+          whirlpoolDeployment,
+        }),
       ).rejects.toThrow("Position must be empty");
     };
 

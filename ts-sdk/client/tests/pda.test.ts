@@ -48,7 +48,7 @@ const testCases = [
     tokenMintA: address("CgH9igg7DmCYcQzh76o2VdcevuVmVUVAej7HcGeCwho2"),
     tokenMintB: address("E3fyHm5B2ddYnCBgMpt3nVYMXxxLdSZTUCKt9GhLdfLc"),
     feeTierExpected: "eDDRZSrsaprxbkmhRzDWY3gxAGKQj438e2TXcbobQME",
-    lockConfigExpected: "3k4JPPrK1yiEZUgHWugbckRkkUrpnnCA4ujmerJzxENU",
+    lockConfigExpected: "DvyANpxwUgtvSGT1AXeuoMjJR6JVBS1TBZDXkpBvg4aX",
     oracleExpected: "F7hHjRkVMEGsgEgyF1N9RrQKBPSU5QL1xmKGCYUwBY9M",
     positionExpected: "28nFQJH8FHYxUvXc5orSZzcjmzWoByvzfBwi75Ep3f9u",
     positionBundleExpected: "CVTZ5u8yjGngtpZ5WRx536ty8jiMCFkzwrr5TJW5FpR7",
@@ -71,11 +71,8 @@ testCases.forEach((tc) => {
     });
 
     it("LockConfig", async () => {
-      const position = tc.name.includes("immutable")
-        ? tc.positionMint
-        : tc.positionAddress;
       const [lockConfig] = await getLockConfigAddress(
-        position,
+        tc.positionAddress,
         tc.whirlpoolDeployment.programId,
       );
       assert.strictEqual(lockConfig, tc.lockConfigExpected);

@@ -5,7 +5,7 @@ import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 /**
  * Derives the position bundle PDA for the given position mint under the supplied target program.
  *
- * Uses the mutable Whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc") when `programAddress` is omitted.
+ * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */
 export async function getPositionBundleAddress(
   positionBundleMint: Address,
@@ -21,7 +21,7 @@ export async function getPositionBundleAddress(
  * Derives the bundled position PDA for the given position bundle address and bundle index
  * under the supplied target program.
  *
- * Uses the mutable Whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc") when `programAddress` is omitted.
+ * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */
 export async function getBundledPositionAddress(
   positionBundleAddress: Address,

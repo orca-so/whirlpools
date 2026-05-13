@@ -5,7 +5,7 @@ import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 /**
  * Derives the tick array PDA for the given whirlpool and start tick index under the supplied target program.
  *
- * Uses the mutable Whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc") when `programAddress` is omitted.
+ * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */
 export async function getTickArrayAddress(
   whirlpool: Address,

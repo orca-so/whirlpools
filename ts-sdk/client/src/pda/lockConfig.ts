@@ -5,7 +5,7 @@ import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 /**
  * Derives the lock config PDA for the given position under the supplied target program.
  *
- * Uses the mutable Whirlpool program ("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc") when `programAddress` is omitted.
+ * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */
 export async function getLockConfigAddress(
   position: Address,

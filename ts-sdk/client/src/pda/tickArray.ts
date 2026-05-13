@@ -3,7 +3,7 @@ import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
 import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 
 /**
- * Derives the tick array PDA for the given whirlpool and start tick index under the supplied target program.
+ * Derives the tick array PDA for the given whirlpool and start tick index under the supplied whirlpool deployment.
  *
  * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */

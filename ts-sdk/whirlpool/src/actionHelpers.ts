@@ -6,7 +6,7 @@ import {
   type Rpc,
   type Signature,
   type SolanaRpcApi,
-  type TransactionSigner,
+  type KeyPairSigner,
 } from "@solana/kit";
 import { getPayer, getRpcConfig } from "./config";
 import {
@@ -19,28 +19,30 @@ import {
  * Result returned by wrapped Whirlpool actions.
  *
  * Combines the instructions result with a `callback` that builds and sends
- * the transaction using the configured payer.
+ * the transaction.
  */
-export type ActionResult<R> = R & { callback: () => Promise<Signature> };
+export type ActionResult<R> = R & {
+  callback: (payer?: KeyPairSigner) => Promise<Signature>;
+};
 
 /**
- * Helper that fetches the configured RPC + payer and wires up the
+ * Helper that fetches the configured RPC and wires up the
  * `callback` for sending the resulting instructions.
  *
  * Use this from each action wrapper to avoid duplicating the boilerplate.
  */
 export async function executeWithCallback<
   R extends { instructions: Instruction[] },
->(
-  build: (rpc: Rpc<SolanaRpcApi>, payer: TransactionSigner) => Promise<R>,
-): Promise<ActionResult<R>> {
+>(build: (rpc: Rpc<SolanaRpcApi>) => Promise<R>): Promise<ActionResult<R>> {
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
-  const payer = getPayer();
-  const result = await build(rpc, payer);
+  const result = await build(rpc);
   return {
     ...result,
-    callback: () => buildAndSendTransaction(result.instructions, payer),
+    callback: (payer?: KeyPairSigner) => {
+      let funder = payer ?? getPayer();
+      return buildAndSendTransaction(result.instructions, funder);
+    },
   };
 }
 

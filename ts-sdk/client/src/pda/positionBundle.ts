@@ -3,7 +3,7 @@ import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
 import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 
 /**
- * Derives the position bundle PDA for the given position mint under the supplied target program.
+ * Derives the position bundle PDA for the given position mint under the supplied whirlpool deployment.
  *
  * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */
@@ -19,7 +19,7 @@ export async function getPositionBundleAddress(
 
 /**
  * Derives the bundled position PDA for the given position bundle address and bundle index
- * under the supplied target program.
+ * under the supplied whirlpool deployment.
  *
  * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */

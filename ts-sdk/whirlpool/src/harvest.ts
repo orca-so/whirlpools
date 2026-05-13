@@ -310,13 +310,10 @@ export async function harvestPositionInstructions(
 
 export function harvestPosition(
   positionMintAddress: Address,
-  config?: Omit<HarvestPositionConfig, "authority">,
+  config?: HarvestPositionConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    harvestPositionInstructions(rpc, positionMintAddress, {
-      ...config,
-      authority: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    harvestPositionInstructions(rpc, positionMintAddress, config),
   );
 }
 

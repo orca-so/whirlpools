@@ -630,25 +630,19 @@ export async function closePositionInstructions(
 
 export function closePosition(
   positionMintAddress: Address,
-  config?: Omit<ClosePositionConfig, "authority">,
+  config?: ClosePositionConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    closePositionInstructions(rpc, positionMintAddress, {
-      ...config,
-      authority: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    closePositionInstructions(rpc, positionMintAddress, config),
   );
 }
 
 export function decreaseLiquidity(
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
-  config?: Omit<DecreaseLiquidityConfig, "authority">,
+  config?: DecreaseLiquidityConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    decreaseLiquidityInstructions(rpc, positionMintAddress, param, {
-      ...config,
-      authority: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    decreaseLiquidityInstructions(rpc, positionMintAddress, param, config),
   );
 }

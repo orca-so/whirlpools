@@ -21,7 +21,11 @@ import type {
 } from "@solana/kit";
 import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { fetchSysvarRent } from "@solana/sysvars";
-import { DEFAULT_ADDRESS, FUNDER, SPLASH_POOL_TICK_SPACING } from "./config";
+import {
+  DEFAULT_ADDRESS,
+  FUNDER,
+  SPLASH_POOL_TICK_SPACING,
+} from "./config";
 import {
   getFullRangeTickIndexes,
   getTickArrayStartTickIndex,
@@ -51,7 +55,7 @@ export type CreatePoolInstructions = {
 /**
  * Options for {@link createSplashPoolInstructions}.
  */
-export type CreateSplashPoolConfig = {
+export type CreatePoolConfig = {
   /** An optional initial price of token A in terms of token B. Defaults to `1` if not provided. */
   initialPrice?: number;
   /** The account funding the initialization process. Defaults to the global funder if not provided. */
@@ -68,7 +72,7 @@ export type CreateSplashPoolConfig = {
  * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
  * @param {Address} tokenMintA - The first token mint address to include in the pool.
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
- * @param {CreateSplashPoolConfig} [config] - The parameters to build the create splash pool instruction.
+ * @param {CreatePoolConfig} [config] - The parameters to build the create splash pool instruction.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
@@ -100,7 +104,7 @@ export function createSplashPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintA: Address,
   tokenMintB: Address,
-  config: CreateSplashPoolConfig = {},
+  config: CreatePoolConfig = {},
 ): Promise<CreatePoolInstructions> {
   return createConcentratedLiquidityPoolInstructions(
     rpc,
@@ -116,27 +120,13 @@ export function createSplashPoolInstructions(
 }
 
 /**
- * Options for {@link createConcentratedLiquidityPoolInstructions}.
- */
-export type CreateConcentratedLiquidityPoolConfig = {
-  /** An optional initial price of token A in terms of token B. Defaults to `1` if not provided. */
-  initialPrice?: number;
-  /** The account funding the initialization process. Defaults to the global funder if not provided. */
-  funder?: TransactionSigner<string>;
-  /**
-   * The Whirlpool program and config account to target. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT if not provided.
-   */
-  whirlpoolDeployment?: WhirlpoolDeployment;
-};
-
-/**
  * Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
  *
  * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
  * @param {Address} tokenMintA - The first token mint address to include in the pool.
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
  * @param {number} tickSpacing - The spacing between price ticks for the pool.
- * @param {CreateConcentratedLiquidityPoolConfig} [config] - The parameters to build the create concentrated liquidity pool instruction.
+ * @param {CreatePoolConfig} [config] - The parameters to build the create concentrated liquidity pool instruction.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
@@ -170,7 +160,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   tokenMintA: Address,
   tokenMintB: Address,
   tickSpacing: number,
-  config: CreateConcentratedLiquidityPoolConfig = {},
+  config: CreatePoolConfig = {},
 ): Promise<CreatePoolInstructions> {
   const initialPrice = config.initialPrice ?? 1;
   const funder = config.funder ?? FUNDER;
@@ -313,13 +303,12 @@ export async function createConcentratedLiquidityPoolInstructions(
 export function createSplashPool(
   tokenMintA: Address,
   tokenMintB: Address,
-  config?: Omit<CreateSplashPoolConfig, "funder">,
+  config?: CreatePoolConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    createSplashPoolInstructions(rpc, tokenMintA, tokenMintB, {
-      ...config,
-      funder: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    createSplashPoolInstructions(rpc, tokenMintA, tokenMintB, 
+      config,
+    ),
   );
 }
 
@@ -327,15 +316,15 @@ export function createConcentratedLiquidityPool(
   tokenMintA: Address,
   tokenMintB: Address,
   tickSpacing: number,
-  config?: Omit<CreateConcentratedLiquidityPoolConfig, "funder">,
+  config?: CreatePoolConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
+  return executeWithCallback((rpc) =>
     createConcentratedLiquidityPoolInstructions(
       rpc,
       tokenMintA,
       tokenMintB,
       tickSpacing,
-      { ...config, funder: owner },
+      config,
     ),
   );
 }

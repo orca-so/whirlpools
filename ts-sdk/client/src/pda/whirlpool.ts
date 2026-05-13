@@ -8,7 +8,7 @@ import type { WhirlpoolDeployment } from "../config";
 import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 
 /**
- * Derives the whirlpool PDA for the given mint pair and fee tier index under the supplied target program.
+ * Derives the whirlpool PDA for the given mint pair and fee tier index under the supplied whirlpool deployment.
  *
  * Uses {@link DEFAULT_WHIRLPOOL_DEPLOYMENT} when `whirlpoolDeployment` is omitted.
  */

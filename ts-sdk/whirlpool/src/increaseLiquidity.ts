@@ -724,26 +724,20 @@ function assertWhirlpoolSupportsConcentratedPosition(whirlpool: Whirlpool) {
 export function increasePosLiquidity(
   positionMintAddress: Address,
   param: IncreaseLiquidityParam,
-  config?: Omit<IncreaseLiquidityConfig, "authority">,
+  config?: IncreaseLiquidityConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    increaseLiquidityInstructions(rpc, positionMintAddress, param, {
-      ...config,
-      authority: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    increaseLiquidityInstructions(rpc, positionMintAddress, param, config),
   );
 }
 
 export function openFullRangePosition(
   poolAddress: Address,
   param: IncreaseLiquidityParam,
-  config?: Omit<OpenPositionConfig, "funder">,
+  config?: OpenPositionConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    openFullRangePositionInstructions(rpc, poolAddress, param, {
-      ...config,
-      funder: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    openFullRangePositionInstructions(rpc, poolAddress, param, config),
   );
 }
 
@@ -752,13 +746,10 @@ export function openConcentratedPosition(
   param: IncreaseLiquidityParam,
   lowerPrice: number,
   upperPrice: number,
-  config?: Omit<OpenPositionConfig, "funder">,
+  config?: OpenPositionConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    openPositionInstructions(rpc, poolAddress, param, lowerPrice, upperPrice, {
-      ...config,
-      funder: owner,
-    }),
+  return executeWithCallback((rpc) =>
+    openPositionInstructions(rpc, poolAddress, param, lowerPrice, upperPrice, config),
   );
 }
 
@@ -767,16 +758,16 @@ export function openConcentratedPositionWithTickBounds(
   param: IncreaseLiquidityParam,
   lowerTickIndex: number,
   upperTickIndex: number,
-  config?: Omit<OpenPositionConfig, "funder">,
+  config?: OpenPositionConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
+  return executeWithCallback((rpc) =>
     openPositionInstructionsWithTickBounds(
       rpc,
       poolAddress,
       param,
       lowerTickIndex,
       upperTickIndex,
-      { ...config, funder: owner },
+      config,
     ),
   );
 }

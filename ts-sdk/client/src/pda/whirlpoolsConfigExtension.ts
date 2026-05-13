@@ -2,7 +2,7 @@ import type { ProgramDerivedAddress } from "@solana/kit";
 import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
 import type { WhirlpoolDeployment } from "../config";
 
-/** Derives the whirlpool config extension PDA under the supplied target program. */
+/** Derives the whirlpool config extension PDA under the supplied whirlpool deployment. */
 export async function getWhirlpoolsConfigExtensionAddress(
   whirlpoolDeployment: WhirlpoolDeployment,
 ): Promise<ProgramDerivedAddress> {

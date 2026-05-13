@@ -397,9 +397,9 @@ export async function swapInstructions<T extends SwapParams>(
 export function swap<T extends SwapParams>(
   params: T,
   poolAddress: Address,
-  config?: Omit<SwapConfig, "signer">,
+  config?: SwapConfig,
 ) {
-  return executeWithCallback((rpc, owner) =>
-    swapInstructions(rpc, params, poolAddress, { ...config, signer: owner }),
+  return executeWithCallback((rpc) =>
+    swapInstructions(rpc, params, poolAddress, config),
   );
 }

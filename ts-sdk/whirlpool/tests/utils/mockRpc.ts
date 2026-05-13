@@ -104,7 +104,7 @@ export async function getTestContext(): Promise<LiteSVM> {
     const whirlpoolImmutableProgram = fs.readFileSync(
       path.join(
         process.cwd(),
-        "../../rust-sdk/whirlpool/src/tests/fixtures/whirlpool_immutable.so",
+        "../../target/deploy/whirlpool_immutable.so",
       ),
     );
     _testContext.addProgram(

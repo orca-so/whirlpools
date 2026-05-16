@@ -121,7 +121,7 @@ export function createSplashPoolInstructions(
  * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
  * @param {Address} tokenMintA - The first token mint address to include in the pool.
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
- * @param {number} tickSpacing - The spacing between price ticks for the pool.
+ * @param {number} feeTierIndex - The fee tier index of the pool.
  * @param {CreatePoolConfig} [config] - The parameters to build the create concentrated liquidity pool instruction.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
@@ -155,7 +155,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintA: Address,
   tokenMintB: Address,
-  tickSpacing: number,
+  feeTierIndex: number,
   config: CreatePoolConfig = {},
 ): Promise<CreatePoolInstructions> {
   const initialPrice = config.initialPrice ?? 1;
@@ -184,6 +184,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   const tokenProgramB = mintB.programAddress;
 
   const initialSqrtPrice = priceToSqrtPrice(initialPrice, decimalsA, decimalsB);
+  const tickSpacing = feeTierIndex;
 
   const [
     poolAddress,
@@ -196,10 +197,10 @@ export async function createConcentratedLiquidityPoolInstructions(
     getWhirlpoolAddress(
       tokenMintA,
       tokenMintB,
-      tickSpacing,
+      feeTierIndex,
       whirlpoolDeployment,
     ).then((x) => x[0]),
-    getFeeTierAddress(tickSpacing, whirlpoolDeployment).then((x) => x[0]),
+    getFeeTierAddress(feeTierIndex, whirlpoolDeployment).then((x) => x[0]),
     getTokenBadgeAddress(tokenMintA, whirlpoolDeployment).then((x) => x[0]),
     getTokenBadgeAddress(tokenMintB, whirlpoolDeployment).then((x) => x[0]),
     generateKeyPairSigner(),
@@ -309,7 +310,7 @@ export function createSplashPool(
 export function createConcentratedLiquidityPool(
   tokenMintA: Address,
   tokenMintB: Address,
-  tickSpacing: number,
+  feeTierIndex: number,
   config?: CreatePoolConfig,
 ) {
   return executeWithCallback((rpc) =>
@@ -317,7 +318,7 @@ export function createConcentratedLiquidityPool(
       rpc,
       tokenMintA,
       tokenMintB,
-      tickSpacing,
+      feeTierIndex,
       config,
     ),
   );

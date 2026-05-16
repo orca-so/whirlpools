@@ -965,6 +965,7 @@ mod tests {
             (pubkey_b, pubkey_a)
         };
 
+        // fee_tier_index == tick_spacing for non-adaptive fee pools
         let tick_spacing = 64;
         let pool_pubkey =
             setup_whirlpool(&ctx, final_a, final_b, tick_spacing, whirlpool_deployment)

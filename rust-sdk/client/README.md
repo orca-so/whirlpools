@@ -38,6 +38,7 @@ fn main() {
     let whirlpool_config_address = Pubkey::from_str("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR").unwrap();
     let token_mint_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(); // wSOL
     let token_mint_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // DevUSDC
+    // tick_spacing == fee_tier_index for non-adaptive fee tier pools
     let tick_spacing = 64;
 
     let (whirlpool_pda, _bump) = get_whirlpool_address(&whirlpool_config_address, &token_mint_a, &token_mint_b, tick_spacing).unwrap();
@@ -69,6 +70,7 @@ fn main() {
     let (token_badge_a, _bump) = get_token_badge_address(&whirlpool_config_address, &token_mint_a).unwrap();
     let (token_badge_b, _bump) = get_token_badge_address(&whirlpool_config_address, &token_mint_b).unwrap();
     let wallet = Keypair::new(); // CAUTION: this wallet is not persistent
+    // tick_spacing == fee_tier_index for non-adaptive fee tier pools
     let tick_spacing = 8;
     let (whirlpool_pda, _bump) = get_whirlpool_address(&whirlpool_config_address, &token_mint_a, &token_mint_b, tick_spacing).unwrap();
     let token_vault_a = Keypair::new();

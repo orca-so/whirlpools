@@ -104,7 +104,7 @@ export async function fetchSplashPool(
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
- * @param {number} tickSpacing - The tick spacing of the pool.
+ * @param {number} feeTierIndex - The fee tier index of the pool.
  * @param {WhirlpoolDeployment} [whirlpoolDeployment] - The whirlpool program and config to query against. Defaults to DEFAULT_WHIRLPOOL_DEPLOYMENT.
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
@@ -116,13 +116,13 @@ export async function fetchSplashPool(
  *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
- * const tickSpacing = 64;
+ * const feeTierIndex = 1025;
  *
  * const poolInfo = await fetchConcentratedLiquidityPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
- *   tickSpacing,
+ *   feeTierIndex,
  *   WhirlpoolDeployment.devnet,
  * );
  *
@@ -136,18 +136,18 @@ export async function fetchConcentratedLiquidityPool(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
-  tickSpacing: number,
+  feeTierIndex: number,
   whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<PoolInfo> {
   const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAddress = await getFeeTierAddress(
-    tickSpacing,
+    feeTierIndex,
     whirlpoolDeployment,
   ).then((x) => x[0]);
   const poolAddress = await getWhirlpoolAddress(
     tokenMintA,
     tokenMintB,
-    tickSpacing,
+    feeTierIndex,
     whirlpoolDeployment,
   ).then((x) => x[0]);
 
@@ -177,7 +177,7 @@ export async function fetchConcentratedLiquidityPool(
       initialized: false,
       address: poolAddress,
       whirlpoolsConfig: whirlpoolDeployment.configAddress,
-      tickSpacing,
+      tickSpacing: feeTierAccount.data.tickSpacing,
       feeRate: feeTierAccount.data.defaultFeeRate,
       protocolFeeRate: configAccount.data.defaultProtocolFeeRate,
       tokenMintA: tokenMintA,
@@ -233,13 +233,16 @@ export async function fetchWhirlpoolsByTokenPair(
     whirlpoolDeployment.programId,
   );
 
-  const supportedTickSpacings = feeTierAccounts.map((x) => x.data.tickSpacing);
+  const supportedFeeTierIndexes = feeTierAccounts.map((x) => x.data.tickSpacing);
 
   const poolAddresses = await Promise.all(
-    supportedTickSpacings.map((x) =>
-      getWhirlpoolAddress(tokenMintA, tokenMintB, x, whirlpoolDeployment).then(
-        (x) => x[0],
-      ),
+    supportedFeeTierIndexes.map((feeTierIndex) =>
+      getWhirlpoolAddress(
+        tokenMintA,
+        tokenMintB,
+        feeTierIndex,
+        whirlpoolDeployment,
+      ).then((x) => x[0]),
     ),
   );
 
@@ -252,9 +255,9 @@ export async function fetchWhirlpoolsByTokenPair(
   const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
 
   const pools: PoolInfo[] = [];
-  for (let i = 0; i < supportedTickSpacings.length; i++) {
-    const tickSpacing = supportedTickSpacings[i];
+  for (let i = 0; i < supportedFeeTierIndexes.length; i++) {
     const feeTierAccount = feeTierAccounts[i];
+    const tickSpacing = feeTierAccount.data.tickSpacing;
     const poolAccount = poolAccounts[i];
     const poolAddress = poolAddresses[i];
 

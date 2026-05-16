@@ -156,7 +156,7 @@ pub async fn fetch_splash_pool(
 
 /// Fetches the details of a specific Concentrated Liquidity Pool.
 ///
-/// This function retrieves information about a pool for the specified tick spacing.
+/// This function retrieves information about a pool for the specified fee tier index.
 /// It determines whether the pool is initialized or not and returns the corresponding details.
 ///
 /// # Arguments
@@ -164,7 +164,7 @@ pub async fn fetch_splash_pool(
 /// * `rpc` - A reference to the Solana RPC client.
 /// * `token_1` - The public key of the first token mint in the pool.
 /// * `token_2` - The public key of the second token mint in the pool.
-/// * `tick_spacing` - The tick spacing of the pool.
+/// * `fee_tier_index` - The fee tier index of the pool.
 /// * `whirlpool_deployment` - The whirlpool program and config to query against. Defaults to the
 ///   mutable whirlpool program and mainnet config if `None`.
 ///
@@ -193,13 +193,13 @@ pub async fn fetch_splash_pool(
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-///     let tick_spacing = 64;
+///     let fee_tier_index = 1025;
 ///
 ///     let pool_info = fetch_concentrated_liquidity_pool(
 ///         &rpc,
 ///         token_a,
 ///         token_b,
-///         tick_spacing,
+///         fee_tier_index,
 ///         Some(WhirlpoolDeployment::devnet()),
 ///     )
 ///     .await
@@ -215,16 +215,21 @@ pub async fn fetch_concentrated_liquidity_pool(
     rpc: &RpcClient,
     token_1: Pubkey,
     token_2: Pubkey,
-    tick_spacing: u16,
+    fee_tier_index: u16,
     whirlpool_deployment: Option<WhirlpoolDeployment>,
 ) -> Result<PoolInfo, Box<dyn Error>> {
     let whirlpool_deployment = whirlpool_deployment.unwrap_or_default();
 
     let [token_a, token_b] = order_mints(token_1, token_2);
-    let whirlpool_address =
-        get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))?.0;
+    let whirlpool_address = get_whirlpool_address(
+        &token_a,
+        &token_b,
+        fee_tier_index,
+        Some(whirlpool_deployment),
+    )?
+    .0;
 
-    let fee_tier_address = get_fee_tier_address(tick_spacing, Some(whirlpool_deployment))?;
+    let fee_tier_address = get_fee_tier_address(fee_tier_index, Some(whirlpool_deployment))?;
 
     let account_infos = rpc
         .get_multiple_accounts(&[
@@ -265,7 +270,7 @@ pub async fn fetch_concentrated_liquidity_pool(
         Ok(PoolInfo::Uninitialized(UninitializedPool {
             address: whirlpool_address,
             whirlpools_config: whirlpool_deployment.config_address(),
-            tick_spacing,
+            tick_spacing: fee_tier.tick_spacing,
             fee_rate: fee_tier.default_fee_rate,
             protocol_fee_rate: whirlpools_config.default_protocol_fee_rate,
             token_mint_a: token_a,
@@ -367,9 +372,14 @@ pub async fn fetch_whirlpools_by_token_pair(
 
     let whirlpool_addresses: Vec<Pubkey> = fee_tiers
         .iter()
-        .map(|fee_tier| fee_tier.data.tick_spacing)
-        .map(|tick_spacing| {
-            get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))
+        .map(|fee_tier| {
+            let fee_tier_index = fee_tier.data.tick_spacing;
+            get_whirlpool_address(
+                &token_a,
+                &token_b,
+                fee_tier_index,
+                Some(whirlpool_deployment),
+            )
         })
         .map(|x| x.map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, ProgramError>>()?;

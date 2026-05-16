@@ -46,13 +46,13 @@ import { address } from '@solana/kit';
 const whirlpoolConfigAddress = address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
 const tokenMintA = address("So11111111111111111111111111111111111111112"); //wSOL
 const tokenMintB = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //DevUSDC
-const tickSpacing = 64;
+const feeTierIndex = 64;
 
 const whirlpoolPda = await getWhirlpoolAddress(
     whirlpoolConfigAddress,
     tokenMintA,
     tokenMintB,
-    tickSpacing,
+    feeTierIndex,
 );
 console.log(whirlpoolPda);
 ```
@@ -70,11 +70,12 @@ const tokenMintB = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // D
 const tokenBadgeA = await getTokenBadgeAddress(whirlpoolConfigAddress, tokenMintA)
 const tokenBadgeB = await getTokenBadgeAddress(whirlpoolConfigAddress, tokenMintB)
 const wallet = await generateKeyPairSigner(); // CAUTION: this wallet is not persistent
-const tickSpacing = 8;
-const whirlpool = await getWhirlpoolAddress(whirlpoolConfigAddress, tokenMintA, tokenMintB, tickSpacing);
+const feeTierIndex = 8;
+const tickSpacing = feeTierIndex;
+const whirlpool = await getWhirlpoolAddress(whirlpoolConfigAddress, tokenMintA, tokenMintB, feeTierIndex);
 const tokenVaultA = await generateKeyPairSigner();
 const tokenVaultB = await generateKeyPairSigner();
-const feeTier = await getFeeTierAddress(whirlpoolConfigAddress, tickSpacing);
+const feeTier = await getFeeTierAddress(whirlpoolConfigAddress, feeTierIndex);
 const tokenProgramA = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const tokenProgramB = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const initialSqrtPrice = BigInt(7459106261056563200n);

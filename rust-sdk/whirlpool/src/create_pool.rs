@@ -147,7 +147,7 @@ pub struct CreateConcentratedLiquidityPoolConfig {
 /// * `rpc` - A reference to a Solana RPC client for communicating with the blockchain.
 /// * `token_a` - The public key of the first token mint address to include in the pool.
 /// * `token_b` - The public key of the second token mint address to include in the pool.
-/// * `tick_spacing` - The spacing between price ticks for the pool.
+/// * `fee_tier_index` - The fee tier index of the pool.
 /// * `config` - The parameters to build the create concentrated liquidity pool instruction.
 ///
 /// # Returns
@@ -206,7 +206,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,
     token_b: Pubkey,
-    tick_spacing: u16,
+    fee_tier_index: u16,
     config: CreateConcentratedLiquidityPoolConfig,
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
     let CreateConcentratedLiquidityPoolConfig {
@@ -243,11 +243,17 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let token_program_b = mint_b_info.owner;
 
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
+    let tick_spacing = fee_tier_index;
 
-    let pool_address =
-        get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))?.0;
+    let pool_address = get_whirlpool_address(
+        &token_a,
+        &token_b,
+        fee_tier_index,
+        Some(whirlpool_deployment),
+    )?
+    .0;
 
-    let fee_tier = get_fee_tier_address(tick_spacing, Some(whirlpool_deployment))?.0;
+    let fee_tier_address = get_fee_tier_address(fee_tier_index, Some(whirlpool_deployment))?.0;
 
     let token_badge_a = get_token_badge_address(&token_a, Some(whirlpool_deployment))?.0;
 
@@ -269,7 +275,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
         whirlpool: pool_address,
         token_vault_a: token_vault_a.pubkey(),
         token_vault_b: token_vault_b.pubkey(),
-        fee_tier,
+        fee_tier: fee_tier_address,
         token_program_a,
         token_program_b,
         system_program: solana_system_interface::program::id(),

@@ -126,20 +126,21 @@ export async function setupConfigAndFeeTiers(
 export async function setupWhirlpool(
   tokenA: Address,
   tokenB: Address,
-  tickSpacing: number,
+  feeTierIndex: number,
   config: {
     initialSqrtPrice?: bigint;
     whirlpoolDeployment?: WhirlpoolDeployment;
   } = {},
 ): Promise<Address> {
   const deployment = config.whirlpoolDeployment ?? TEST_WHIRLPOOL_DEPLOYMENT;
-  const feeTierAddress = await getFeeTierAddress(tickSpacing, deployment);
+  const feeTierAddress = await getFeeTierAddress(feeTierIndex, deployment);
   const whirlpoolAddress = await getWhirlpoolAddress(
     tokenA,
     tokenB,
-    tickSpacing,
+    feeTierIndex,
     deployment,
   );
+  const tickSpacing = feeTierIndex;
   const vaultA = getNextKeypair();
   const vaultB = getNextKeypair();
   const badgeA = await getTokenBadgeAddress(tokenA, deployment);

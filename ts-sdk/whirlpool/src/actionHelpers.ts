@@ -71,3 +71,8 @@ export async function wouldExceedTransactionSize(
 
   return encodedTransaction.length >= TX_BASE64_ENCODED_SIZE_LIMIT;
 }
+
+export {
+  packIntoTransactionSets,
+  type SizeExceedsPredicate,
+} from "./transactionBatching";

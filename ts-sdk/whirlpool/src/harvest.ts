@@ -42,10 +42,15 @@ import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 import {
   executeWithCallback,
+  packIntoTransactionSets,
   wouldExceedTransactionSize,
 } from "./actionHelpers";
 import { rpcFromUrl, buildAndSendTransaction } from "@orca-so/tx-sender";
-import { fetchPositionsForOwner } from "./position";
+import {
+  fetchPositionsForOwner,
+  type HydratedPosition,
+  type PositionData,
+} from "./position";
 
 // TODO: Transfer hook
 
@@ -329,27 +334,25 @@ export async function harvestAllPositionFees(
     owner.address,
     whirlpoolDeployment,
   );
-  const instructionSets: Instruction[][] = [];
-  let currentInstructions: Instruction[] = [];
-  for (const position of positions) {
-    if ("positionMint" in position.data) {
+  const harvestablePositions = positions.filter(
+    (position): position is HydratedPosition & PositionData =>
+      !position.isPositionBundle,
+  );
+  const instructionSets = await packIntoTransactionSets(
+    harvestablePositions,
+    async (position) => {
       const { instructions } = await harvestPositionInstructions(
         rpc,
         position.data.positionMint,
         { authority: owner, whirlpoolDeployment },
       );
-      if (await wouldExceedTransactionSize(currentInstructions, instructions)) {
-        instructionSets.push(currentInstructions);
-        currentInstructions = [...instructions];
-      } else {
-        currentInstructions.push(...instructions);
-      }
-    }
-  }
+      return instructions;
+    },
+    wouldExceedTransactionSize,
+  );
   return Promise.all(
-    instructionSets.map(async (instructions) => {
-      const txHash = await buildAndSendTransaction(instructions, owner);
-      return txHash;
-    }),
+    instructionSets.map((instructions) =>
+      buildAndSendTransaction(instructions, owner),
+    ),
   );
 }

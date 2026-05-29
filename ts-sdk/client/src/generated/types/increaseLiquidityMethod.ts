@@ -21,10 +21,10 @@ import {
   type FixedSizeEncoder,
   type GetDiscriminatedUnionVariant,
   type GetDiscriminatedUnionVariantContent,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type IncreaseLiquidityMethod = {
-  __kind: "ByTokenAmounts";
+  __kind: 'ByTokenAmounts';
   tokenMaxA: bigint;
   tokenMaxB: bigint;
   minSqrtPrice: bigint;
@@ -32,7 +32,7 @@ export type IncreaseLiquidityMethod = {
 };
 
 export type IncreaseLiquidityMethodArgs = {
-  __kind: "ByTokenAmounts";
+  __kind: 'ByTokenAmounts';
   tokenMaxA: number | bigint;
   tokenMaxB: number | bigint;
   minSqrtPrice: number | bigint;
@@ -42,12 +42,12 @@ export type IncreaseLiquidityMethodArgs = {
 export function getIncreaseLiquidityMethodEncoder(): FixedSizeEncoder<IncreaseLiquidityMethodArgs> {
   return getDiscriminatedUnionEncoder([
     [
-      "ByTokenAmounts",
+      'ByTokenAmounts',
       getStructEncoder([
-        ["tokenMaxA", getU64Encoder()],
-        ["tokenMaxB", getU64Encoder()],
-        ["minSqrtPrice", getU128Encoder()],
-        ["maxSqrtPrice", getU128Encoder()],
+        ['tokenMaxA', getU64Encoder()],
+        ['tokenMaxB', getU64Encoder()],
+        ['minSqrtPrice', getU128Encoder()],
+        ['maxSqrtPrice', getU128Encoder()],
       ]),
     ],
   ]) as FixedSizeEncoder<IncreaseLiquidityMethodArgs>;
@@ -56,12 +56,12 @@ export function getIncreaseLiquidityMethodEncoder(): FixedSizeEncoder<IncreaseLi
 export function getIncreaseLiquidityMethodDecoder(): FixedSizeDecoder<IncreaseLiquidityMethod> {
   return getDiscriminatedUnionDecoder([
     [
-      "ByTokenAmounts",
+      'ByTokenAmounts',
       getStructDecoder([
-        ["tokenMaxA", getU64Decoder()],
-        ["tokenMaxB", getU64Decoder()],
-        ["minSqrtPrice", getU128Decoder()],
-        ["maxSqrtPrice", getU128Decoder()],
+        ['tokenMaxA', getU64Decoder()],
+        ['tokenMaxB', getU64Decoder()],
+        ['minSqrtPrice', getU128Decoder()],
+        ['maxSqrtPrice', getU128Decoder()],
       ]),
     ],
   ]) as FixedSizeDecoder<IncreaseLiquidityMethod>;
@@ -73,25 +73,25 @@ export function getIncreaseLiquidityMethodCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getIncreaseLiquidityMethodEncoder(),
-    getIncreaseLiquidityMethodDecoder(),
+    getIncreaseLiquidityMethodDecoder()
   );
 }
 
 // Data Enum Helpers.
 export function increaseLiquidityMethod(
-  kind: "ByTokenAmounts",
+  kind: 'ByTokenAmounts',
   data: GetDiscriminatedUnionVariantContent<
     IncreaseLiquidityMethodArgs,
-    "__kind",
-    "ByTokenAmounts"
-  >,
+    '__kind',
+    'ByTokenAmounts'
+  >
 ): GetDiscriminatedUnionVariant<
   IncreaseLiquidityMethodArgs,
-  "__kind",
-  "ByTokenAmounts"
+  '__kind',
+  'ByTokenAmounts'
 >;
 export function increaseLiquidityMethod<
-  K extends IncreaseLiquidityMethodArgs["__kind"],
+  K extends IncreaseLiquidityMethodArgs['__kind'],
   Data,
 >(kind: K, data?: Data) {
   return Array.isArray(data)
@@ -100,10 +100,10 @@ export function increaseLiquidityMethod<
 }
 
 export function isIncreaseLiquidityMethod<
-  K extends IncreaseLiquidityMethod["__kind"],
+  K extends IncreaseLiquidityMethod['__kind'],
 >(
   kind: K,
-  value: IncreaseLiquidityMethod,
+  value: IncreaseLiquidityMethod
 ): value is IncreaseLiquidityMethod & { __kind: K } {
   return value.__kind === kind;
 }

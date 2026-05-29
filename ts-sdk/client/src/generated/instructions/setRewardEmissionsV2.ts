@@ -33,9 +33,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_REWARD_EMISSIONS_V2_DISCRIMINATOR = new Uint8Array([
   114, 228, 72, 32, 193, 48, 160, 102,
@@ -43,7 +43,7 @@ export const SET_REWARD_EMISSIONS_V2_DISCRIMINATOR = new Uint8Array([
 
 export function getSetRewardEmissionsV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_REWARD_EMISSIONS_V2_DISCRIMINATOR,
+    SET_REWARD_EMISSIONS_V2_DISCRIMINATOR
   );
 }
 
@@ -85,22 +85,22 @@ export type SetRewardEmissionsV2InstructionDataArgs = {
 export function getSetRewardEmissionsV2InstructionDataEncoder(): FixedSizeEncoder<SetRewardEmissionsV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["rewardIndex", getU8Encoder()],
-      ["emissionsPerSecondX64", getU128Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['rewardIndex', getU8Encoder()],
+      ['emissionsPerSecondX64', getU128Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_REWARD_EMISSIONS_V2_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetRewardEmissionsV2InstructionDataDecoder(): FixedSizeDecoder<SetRewardEmissionsV2InstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["rewardIndex", getU8Decoder()],
-    ["emissionsPerSecondX64", getU128Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['rewardIndex', getU8Decoder()],
+    ['emissionsPerSecondX64', getU128Decoder()],
   ]);
 }
 
@@ -110,7 +110,7 @@ export function getSetRewardEmissionsV2InstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetRewardEmissionsV2InstructionDataEncoder(),
-    getSetRewardEmissionsV2InstructionDataDecoder(),
+    getSetRewardEmissionsV2InstructionDataDecoder()
   );
 }
 
@@ -122,8 +122,8 @@ export type SetRewardEmissionsV2Input<
   whirlpool: Address<TAccountWhirlpool>;
   rewardAuthority: TransactionSigner<TAccountRewardAuthority>;
   rewardVault: Address<TAccountRewardVault>;
-  rewardIndex: SetRewardEmissionsV2InstructionDataArgs["rewardIndex"];
-  emissionsPerSecondX64: SetRewardEmissionsV2InstructionDataArgs["emissionsPerSecondX64"];
+  rewardIndex: SetRewardEmissionsV2InstructionDataArgs['rewardIndex'];
+  emissionsPerSecondX64: SetRewardEmissionsV2InstructionDataArgs['emissionsPerSecondX64'];
 };
 
 export function getSetRewardEmissionsV2Instruction<
@@ -137,7 +137,7 @@ export function getSetRewardEmissionsV2Instruction<
     TAccountRewardAuthority,
     TAccountRewardVault
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetRewardEmissionsV2Instruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -164,7 +164,7 @@ export function getSetRewardEmissionsV2Instruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -172,7 +172,7 @@ export function getSetRewardEmissionsV2Instruction<
       getAccountMeta(accounts.rewardVault),
     ],
     data: getSetRewardEmissionsV2InstructionDataEncoder().encode(
-      args as SetRewardEmissionsV2InstructionDataArgs,
+      args as SetRewardEmissionsV2InstructionDataArgs
     ),
     programAddress,
   } as SetRewardEmissionsV2Instruction<
@@ -202,11 +202,11 @@ export function parseSetRewardEmissionsV2Instruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetRewardEmissionsV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -222,7 +222,7 @@ export function parseSetRewardEmissionsV2Instruction<
       rewardVault: getNextAccount(),
     },
     data: getSetRewardEmissionsV2InstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

@@ -61,7 +61,7 @@ runs:
       shell: bash
     - name: Install Anchor via AVM
       run: |
-        cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+        cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 avm --locked --force
         ~/.cargo/bin/avm install ${{ inputs.anchor-version }}
         ~/.cargo/bin/avm use ${{ inputs.anchor-version }}
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH

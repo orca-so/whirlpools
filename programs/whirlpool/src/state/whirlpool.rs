@@ -311,12 +311,6 @@ impl Whirlpool {
     }
 
     pub fn is_non_transferable_position_required(&self) -> bool {
-        // Only newly created pools and migrated pools have control_flags
-        // TODO: remove this check once all whirlpools have been migrated
-        if self.reward_infos[2].extension != [0u8; 32] {
-            return false;
-        }
-
         self.extension_segment_primary()
             .control_flags()
             .contains(WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION)

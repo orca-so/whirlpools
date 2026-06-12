@@ -7,8 +7,8 @@ export default {
   tagline: "Open source concentrated liquidity AMM contract on Solana",
   favicon: "https://orca.so/favicon.ico",
 
-  url: "https://dev.orca.so/",
-  baseUrl: "/",
+  url: "https://orca-so.github.io",
+  baseUrl: "/whirlpools/",
 
   organizationName: "orca-so",
   projectName: "whirlpools",
@@ -29,7 +29,7 @@ export default {
       {
         docs: {
           routeBasePath: "/",
-          sidebarPath: "./sidebars.js",
+          sidebarPath: false,
           editUrl:
             "https://github.com/orca-so/whirlpools/tree/main/docs/whirlpool",
           remarkPlugins: [remarkMath],
@@ -62,43 +62,6 @@ export default {
       },
       items: [
         { to: "/", label: "Docs", position: "left" },
-        {
-          label: "SDK Reference",
-          position: "left",
-          items: [
-            {
-              href: "/orca_whirlpools_docs/",
-              label: "Rust SDK Reference",
-              target: "_blank",
-            },
-            {
-              href: "/ts/",
-              label: "TS Kit SDK Reference",
-              target: "_blank",
-            },
-            {
-              href: "/legacy/",
-              label: "TS Legacy SDK Reference",
-              target: "_blank",
-            },
-            {
-              href: "https://orca-so.github.io/tx-sender/rust/orca_tx_sender",
-              label: "Rust TX Sender",
-              target: "_blank",
-            },
-            {
-              href: "https://orca-so.github.io/tx-sender/ts",
-              label: "TS TX Sender",
-              target: "_blank",
-            },
-          ],
-        },
-        {
-          href: "https://api.orca.so/docs",
-          label: "API Reference",
-          position: "left",
-          target: "_blank",
-        },
         {
           href: "https://github.com/orca-so/whirlpools",
           label: "GitHub",

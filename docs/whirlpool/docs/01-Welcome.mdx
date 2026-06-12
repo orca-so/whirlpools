@@ -1,18 +1,37 @@
 ---
-sidebar_position: 1
 slug: /
 hide_table_of_contents: true
 ---
 import DocCard from '@theme/DocCard';
 
-# Welcome
+# Whirlpools SDK Reference
 
-On both the Solana and Eclipse networks, the Whirlpool Program runs as an open-sourced concentrated liquidity automated market maker (CLAMM). The program enables advanced DeFi operations such as creating liquidity pools and swapping.
+Whirlpools is Orca's open-source concentrated liquidity automated market maker
+(CLAMM) on Solana. This site hosts the auto-generated API reference
+documentation for the Whirlpools SDKs.
+
+For guides, tutorials, and conceptual documentation, see the
+[Orca developer docs](https://docs.orca.so).
+
+## SDK References
 
 <DocCard item={{
   type: 'link',
-  href: 'https://github.com/orca-so/whirlpools',
-  label: 'Whirlpools Program',
-  description: 'https://github.com/orca-so/whirlpools'
+  href: 'pathname:///whirlpools/ts/',
+  label: 'TypeScript SDK (Kit)',
+  description: 'The current high-level TypeScript SDK, with WASM-backed math utilities and the generated on-chain client. Packages: @orca-so/whirlpools, @orca-so/whirlpools-core, @orca-so/whirlpools-client.'
 }} />
 
+<DocCard item={{
+  type: 'link',
+  href: 'pathname:///whirlpools/legacy/',
+  label: 'TypeScript SDK (Legacy)',
+  description: 'The legacy TypeScript SDK and shared utilities, maintained for existing integrations that have not migrated to the Kit SDK. Packages: @orca-so/whirlpools-sdk, @orca-so/common-sdk.'
+}} />
+
+<DocCard item={{
+  type: 'link',
+  href: 'pathname:///whirlpools/orca_whirlpools_docs/',
+  label: 'Rust SDK',
+  description: 'The Rust SDK, including the high-level crate, core types and math, and the generated on-chain client (rustdoc). Crates: orca_whirlpools, orca_whirlpools_core, orca_whirlpools_client.'
+}} />

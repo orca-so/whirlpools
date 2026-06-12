@@ -85,7 +85,7 @@ pub fn handler<'info>(
         sqrt_price_limit,
         amount_specified_is_input,
         a_to_b,
-        &clock,
+        clock.slot,
     )?;
 
     let whirlpool = &mut ctx.accounts.whirlpool;

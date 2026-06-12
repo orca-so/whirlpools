@@ -116,7 +116,7 @@ fn try_prepare_swap<'info>(
         sqrt_price_limit,
         amount_specified_is_input,
         a_to_b,
-        &clock,
+        clock.slot,
     );
 
     let whirlpool = &ctx.accounts.whirlpool;

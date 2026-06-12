@@ -23,9 +23,17 @@ pub const MAX_PREPARED_SWAP_NONCE: u8 = 15; // allows 0..=15, 16 accounts
 // changes.
 pub const PREPARED_SWAP_LAYOUT_VERSION: u16 = 1;
 
+// Maximum number of pending tick updates that can be produced by a swap.
+//
+// A swap can traverse at most three TickArrays. In the worst case, every
+// initialized tick crossed by the swap requires an update, and all ticks in
+// all three TickArrays are crossed. Therefore, the upper bound is the total
+// number of ticks contained in three TickArrays.
+pub const MAX_PENDING_TICK_UPDATES_LEN: usize = TICK_ARRAY_SIZE_USIZE * 3;
+
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PendingWhirlpoolUpdate {
     pub amount_a: u64,
     pub amount_b: u64,
@@ -44,7 +52,7 @@ impl PendingWhirlpoolUpdate {
 
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PendingOracleUpdate {
     pub next_adaptive_fee_variables_is_some: bool,
     pub next_adaptive_fee_variables: AdaptiveFeeVariables,
@@ -56,7 +64,7 @@ impl PendingOracleUpdate {
 
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PendingTickUpdate {
     // We recompute the reward growth outside values.
     // Unlike fee growth outside, they do not depend on intermediate state changes during swap execution,
@@ -108,13 +116,11 @@ pub struct PreparedSwapPendingUpdates {
     pub pending_whirlpool_update: PendingWhirlpoolUpdate,
     pub pending_oracle_update: PendingOracleUpdate,
     pub pending_tick_updates_len: u16,
-    // TODO: remove magic number (3)
-    pub pending_tick_updates: [PendingTickUpdate; TICK_ARRAY_SIZE_USIZE * 3],
+    pub pending_tick_updates: [PendingTickUpdate; MAX_PENDING_TICK_UPDATES_LEN],
 }
 
 impl PreparedSwapPendingUpdates {
-    // TODO: remove magic number (3)
-    pub const LEN: usize = PendingWhirlpoolUpdate::LEN + PendingOracleUpdate::LEN + 2 + PendingTickUpdate::LEN * TICK_ARRAY_SIZE_USIZE * 3; // 9947
+    pub const LEN: usize = PendingWhirlpoolUpdate::LEN + PendingOracleUpdate::LEN + 2 + PendingTickUpdate::LEN * MAX_PENDING_TICK_UPDATES_LEN; // 9947
 }
 
 #[repr(u8)]
@@ -155,8 +161,7 @@ impl PreparedSwap {
             return Err(ErrorCode::PreparedSwapNonceMaxExceeded.into());
         }
 
-        self.version = PREPARED_SWAP_LAYOUT_VERSION;
-        self.state = PreparedSwapState::Unprepared as u8;
+        self.reset();
         Ok(())
     }
 
@@ -176,10 +181,10 @@ impl PreparedSwap {
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
         a_to_b: bool,
-        clock: &Clock,
+        slot: u64,
     ) {
         self.precondition = PreparedSwapPrecondition {
-            slot: clock.slot,
+            slot,
             authority,
             whirlpool: whirlpool.key(),
             // TODO: set
@@ -195,7 +200,11 @@ impl PreparedSwap {
         &mut self,
         tick_update: PendingTickUpdate,
     ) {
-        // TODO: overflow check
+        if self.pending_updates.pending_tick_updates_len as usize == MAX_PENDING_TICK_UPDATES_LEN {
+            unreachable!(
+              "pending tick update capacity exceeded; all ticks crossed by a swap should fit within MAX_PENDING_TICK_UPDATES_LEN"
+            );
+        }
         self.pending_updates.pending_tick_updates[self.pending_updates.pending_tick_updates_len as usize] = tick_update;
         self.pending_updates.pending_tick_updates_len += 1;
     }
@@ -245,7 +254,7 @@ impl PreparedSwap {
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
         a_to_b: bool,
-        clock: &Clock,
+        slot: u64,
     ) -> Result<()> {
         // PreparedSwap is a zero-copy account.
         // A version mismatch means the account data may be interpreted using the wrong
@@ -259,7 +268,7 @@ impl PreparedSwap {
         }
 
         if self.precondition != (PreparedSwapPrecondition {
-            slot: clock.slot,
+            slot,
             authority,
             whirlpool: whirlpool.key(),
             // TODO: set
@@ -274,57 +283,186 @@ impl PreparedSwap {
 
         Ok(())
     }
-
-    /* 
-    pub fn initialize(&mut self, whirlpools_config: Pubkey, token_mint: Pubkey) -> Result<()> {
-        self.whirlpools_config = whirlpools_config;
-        self.token_mint = token_mint;
-        self.attribute_require_non_transferable_position = false;
-        Ok(())
-    }
-
-    pub fn update_attribute(&mut self, attribute: TokenBadgeAttribute) -> Result<()> {
-        match attribute {
-            TokenBadgeAttribute::RequireNonTransferablePosition(value) => {
-                self.attribute_require_non_transferable_position = value;
-            }
-        }
-        Ok(())
-    }
-    */
 }
 
-/* 
 #[cfg(test)]
-mod token_badge_initialize_tests {
+mod prepared_swap_functions_tests {
     use super::*;
-    use std::str::FromStr;
-
-    #[test]
-    fn test_default() {
-        let token_badge = TokenBadge {
-            ..Default::default()
-        };
-        assert_eq!(token_badge.whirlpools_config, Pubkey::default());
-        assert_eq!(token_badge.token_mint, Pubkey::default());
-    }
+    use crate::util::AccountInfoMock;
 
     #[test]
     fn test_initialize() {
-        let mut token_badge = TokenBadge {
-            ..Default::default()
-        };
-        let whirlpools_config =
-            Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
-        let token_mint = Pubkey::from_str("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE").unwrap();
+        let mut prepared_swap_data = [0xffu8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
 
-        let result = token_badge.initialize(whirlpools_config, token_mint);
-        assert!(result.is_ok());
+        assert!(prepared_swap.version != PREPARED_SWAP_LAYOUT_VERSION);
+        assert!(prepared_swap.state != PreparedSwapState::Unprepared as u8);
+        assert!(prepared_swap.pending_updates.pending_tick_updates_len != 0);
 
-        assert_eq!(whirlpools_config, token_badge.whirlpools_config);
-        assert_eq!(token_mint, token_badge.token_mint);
-        assert!(!token_badge.attribute_require_non_transferable_position);
+        let valid_nonce = MAX_PREPARED_SWAP_NONCE;
+        prepared_swap.initialize(valid_nonce).unwrap();
+
+        assert!(prepared_swap.version == PREPARED_SWAP_LAYOUT_VERSION);
+        assert!(prepared_swap.state == PreparedSwapState::Unprepared as u8);
+        assert!(prepared_swap.pending_updates.pending_tick_updates_len == 0);
     }
+
+    #[test]
+    fn test_initialize_fail_invalid_nonce() {
+        let mut prepared_swap_data = [0u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+
+        let invalid_nonce = MAX_PREPARED_SWAP_NONCE.checked_add(1).unwrap();
+        let result = prepared_swap.initialize(invalid_nonce);
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapNonceMaxExceeded.into());
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut prepared_swap_data = [0xffu8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+
+        assert!(prepared_swap.version != PREPARED_SWAP_LAYOUT_VERSION);
+        assert!(prepared_swap.state != PreparedSwapState::Unprepared as u8);
+        assert!(prepared_swap.pending_updates.pending_tick_updates_len != 0);
+
+        prepared_swap.reset();
+
+        assert!(prepared_swap.version == PREPARED_SWAP_LAYOUT_VERSION);
+        assert!(prepared_swap.state == PreparedSwapState::Unprepared as u8);
+        assert!(prepared_swap.pending_updates.pending_tick_updates_len == 0);
+    }
+
+    #[test]
+    fn test_set_recondition() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
+
+        let whirlpool_address = Pubkey::new_unique();
+        let mut account_info_mock =
+            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
+        let account_info = account_info_mock.to_account_info(false);
+        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
+
+        // TODO: state version
+        let whirlpool_state_version = 0;
+
+        let authority = Pubkey::new_unique();
+        let amount = 0x1122334455667788u64;
+        let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
+        let amount_specified_is_input = true;
+        let a_to_b = false;
+        let slot = 0x9988776666778899u64;
+
+        prepared_swap.set_precondition(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+
+        assert!(prepared_swap.precondition == PreparedSwapPrecondition {
+            slot,
+            authority,
+            whirlpool: whirlpool_address,
+            whirlpool_state_version,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+        });
+    }
+
+    #[test]
+    fn test_add_pending_tick_update() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
+
+        assert!(prepared_swap.pending_updates.pending_tick_updates_len == 0);
+
+        for i in 0..MAX_PENDING_TICK_UPDATES_LEN {
+            let pending_update = PendingTickUpdate {
+                array_index: (i & 0xFF) as u8,
+                tick_index: (i as i32) * (if i % 2 == 0 { 1 } else { -1 }),
+                next_fee_growth_outside_a: 0x00112233445566778899aabbccddeeffu128,
+                next_fee_growth_outside_b: 0xffeeddccbbaa99887766554433221100u128,
+            };
+
+            assert!(prepared_swap.pending_updates.pending_tick_updates_len as usize == i);
+            assert!(prepared_swap.pending_updates.pending_tick_updates[i] != pending_update);
+
+            prepared_swap.add_pending_tick_update(pending_update);
+
+            assert!(prepared_swap.pending_updates.pending_tick_updates_len as usize == i + 1);
+            assert!(prepared_swap.pending_updates.pending_tick_updates[i] == pending_update);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_add_pending_tick_update_fail_overflow() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
+
+        let pending_update = PendingTickUpdate {
+            array_index: 0u8,
+            tick_index: 0i32,
+            next_fee_growth_outside_a: 0u128,
+            next_fee_growth_outside_b: 0u128,
+        };
+
+        for _ in 0..=MAX_PENDING_TICK_UPDATES_LEN {
+            prepared_swap.add_pending_tick_update(pending_update);
+        }
+    }
+
+    #[test]
+    fn test_set_pending_swap_update_adaptive_fee_info_is_some() {
+
+    }
+
+    #[test]
+    fn test_set_pending_swap_update_adaptive_fee_info_is_none() {
+
+    }
+
+    #[test]
+    fn test_set_state() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+
+        prepared_swap.reset();
+        assert!(prepared_swap.state == PreparedSwapState::Unprepared as u8);
+
+        prepared_swap.set_state(PreparedSwapState::Prepared);
+        assert!(prepared_swap.state == PreparedSwapState::Prepared as u8);
+
+        prepared_swap.set_state(PreparedSwapState::Committed);
+        assert!(prepared_swap.state == PreparedSwapState::Committed as u8);
+
+        prepared_swap.set_state(PreparedSwapState::Unprepared);
+        assert!(prepared_swap.state == PreparedSwapState::Unprepared as u8);
+    }
+
+    #[test]
+    fn test_validate_for_commit() {}
+
+    #[test]
+    fn test_validate_for_commit_fail_version_mismatch() {}
+
+
+    #[test]
+    fn test_validate_for_commit_fail_state_not_prepared() {}
+
+
+    #[test]
+    fn test_validate_for_commit_fail_precondition_mismatch() {}
 }
 
 #[cfg(test)]
@@ -335,13 +473,13 @@ mod discriminator_tests {
 
     #[test]
     fn test_discriminator() {
-        let discriminator: [u8; 8] = TokenBadge::DISCRIMINATOR.try_into().unwrap();
+        let discriminator: [u8; 8] = PreparedSwap::DISCRIMINATOR.try_into().unwrap();
         // The discriminator is determined by the struct name and not depending on the program id.
-        // $ echo -n account:TokenBadge | sha256sum | cut -c 1-16
-        // 74dbcce5f974ff96
+        // $ echo -n account:PreparedSwap | sha256sum | cut -c 1-16
+        // 414b56b1c43c25ef
         assert_eq!(
             discriminator,
-            [0x74, 0xdb, 0xcc, 0xe5, 0xf9, 0x74, 0xff, 0x96]
+            [0x41, 0x4b, 0x56, 0xb1, 0xc4, 0x3c, 0x25, 0xef]
         );
     }
 }
@@ -351,48 +489,219 @@ mod data_layout_tests {
     use super::*;
 
     #[test]
-    fn test_token_badge_data_layout() {
-        let token_badge_whirlpools_config = Pubkey::new_unique();
-        let token_badge_token_mint = Pubkey::new_unique();
-        let token_badge_attribute_require_non_transferable_position = true;
-        let token_badge_reserved = [0u8; 127];
+    fn test_len_constant() {
+        assert_eq!(PreparedSwap::LEN, 1024 * 10); // 10KB
+    }
 
-        // manually build the expected data layout
-        let mut token_badge_data = [0u8; TokenBadge::LEN];
+    #[test]
+    fn test_prepared_swap_data_layout() {
+        let prepared_swap_reserved = [0u8; PREPARED_SWAP_RESERVED_BYTES];
+        
+        let prepared_swap_version = 0x1122u16;
+        let prepared_swap_state = PreparedSwapState::Committed as u8;
+
+        let precondition_slot = 0x33445566778899aau64;
+        let precondition_authority = Pubkey::new_unique();
+        let precondition_whirlpool = Pubkey::new_unique();
+        let precondition_whirlpool_state_version = 0x44556677u32;
+        let precondition_amount = 0x8899aabbccddeeffu64;
+        let precondition_sqrt_price_limit = 0x112233445566778899aabbccddeeff00u128;
+        let precondition_amount_specified_is_input = true;
+        let precondition_a_to_b = false;
+
+        let pending_whirlpool_amount_a = 0xffeeddccbbaa9988u64;
+        let pending_whirlpool_amount_b = 0x7766554433221100u64;
+        let pending_whirlpool_lp_fee = 0x1122334455667788u64;
+        let pending_whirlpool_next_liquidity = 0x99aabbccddeeff001122334455667788u128;
+        let pending_whirlpool_next_tick_index = 0x00112233i32;
+        let pending_whirlpool_next_sqrt_price = 0xff00ffeeddccbbaaaabbccdd11223344u128;
+        let pending_whirlpool_next_fee_growth_global = 0x11223344443322119988776666778899u128;
+        let pending_whirlpool_next_reward_growth_global = [
+            0x112233445566778899aabbccddeeff00u128,
+            0x112233445566778899aabbccddee00ffu128,
+            0x112233445566778899aabbccdd00eeffu128,
+        ];
+        let pending_whirlpool_next_protocol_fee = 0xccddeeff55667788u64;
+
+        let pending_oracle_next_af_var_is_some = true;
+        let pending_oracle_next_af_var_last_reference_update_timestamp = 0x1122334455667788u64;
+        let pending_oracle_next_af_var_last_major_swap_timestamp = 0x2233445566778899u64;
+        let pending_oracle_next_af_var_volatility_reference = 0x99aabbccu32;
+        let pending_oracle_next_af_var_tick_group_index_reference = 0x00ddeeffi32;
+        let pending_oracle_next_af_var_volatility_accumulator = 0x11223344u32;
+        let pending_oracle_next_af_var_reserved = [0u8; 16];
+
+        let pending_tick_updates_len = 0xffeeu16;
+        let pending_tick_update_array_index = 0xccu8;
+        let pending_tick_update_tick_index = 0x55667788i32;
+        let pending_tick_update_next_fee_growth_outside_a = 0x66778899aabbccdd9988776655443322u128;
+        let pending_tick_update_next_fee_growth_outside_b = 0xddccbbaa998877661122334455667788u128;
+        let mut pending_tick_update = [0u8; PendingTickUpdate::LEN];
+        pending_tick_update[0] = pending_tick_update_array_index;
+        pending_tick_update[1..5].copy_from_slice(&pending_tick_update_tick_index.to_le_bytes());
+        pending_tick_update[5..21].copy_from_slice(&pending_tick_update_next_fee_growth_outside_a.to_le_bytes());
+        pending_tick_update[21..37].copy_from_slice(&pending_tick_update_next_fee_growth_outside_b.to_le_bytes());
+
+        let mut precondition_data = [0u8; PreparedSwapPrecondition::LEN];
         let mut offset = 0;
-        token_badge_data[offset..offset + 8].copy_from_slice(TokenBadge::DISCRIMINATOR);
+        precondition_data[offset..offset + 8].copy_from_slice(&precondition_slot.to_le_bytes());
         offset += 8;
-        token_badge_data[offset..offset + 32]
-            .copy_from_slice(&token_badge_whirlpools_config.to_bytes());
+        precondition_data[offset..offset + 32].copy_from_slice(precondition_authority.as_ref());
         offset += 32;
-        token_badge_data[offset..offset + 32].copy_from_slice(&token_badge_token_mint.to_bytes());
+        precondition_data[offset..offset + 32].copy_from_slice(precondition_whirlpool.as_ref());
         offset += 32;
-        token_badge_data[offset..offset + 1].copy_from_slice(
-            &token_badge_attribute_require_non_transferable_position
-                .try_to_vec()
-                .unwrap(),
-        );
+        precondition_data[offset..offset + 4].copy_from_slice(&precondition_whirlpool_state_version.to_le_bytes());
+        offset += 4;
+        precondition_data[offset..offset + 8].copy_from_slice(&precondition_amount.to_le_bytes());
+        offset += 8;
+        precondition_data[offset..offset + 16].copy_from_slice(&precondition_sqrt_price_limit.to_le_bytes());
+        offset += 16;
+        precondition_data[offset] = precondition_amount_specified_is_input as u8;
         offset += 1;
-        token_badge_data[offset..offset + token_badge_reserved.len()]
-            .copy_from_slice(&token_badge_reserved);
-        offset += token_badge_reserved.len();
-        assert_eq!(offset, TokenBadge::LEN);
+        precondition_data[offset] = precondition_a_to_b as u8;
+        offset += 1;
+        assert_eq!(offset, PreparedSwapPrecondition::LEN);
 
-        // deserialize
-        let deserialized = TokenBadge::try_deserialize(&mut token_badge_data.as_ref()).unwrap();
+        let mut pending_updates_data = [0u8; PreparedSwapPendingUpdates::LEN];
+        let mut offset = 0;
+        // whirlpool
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_amount_a.to_le_bytes());
+        offset += 8;
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_amount_b.to_le_bytes());
+        offset += 8;
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_lp_fee.to_le_bytes());
+        offset += 8;
+        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_whirlpool_next_liquidity.to_le_bytes());
+        offset += 16;
+        pending_updates_data[offset..offset + 4].copy_from_slice(&pending_whirlpool_next_tick_index.to_le_bytes());
+        offset += 4;
+        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_whirlpool_next_sqrt_price.to_le_bytes());
+        offset += 16;
+        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_whirlpool_next_fee_growth_global.to_le_bytes());
+        offset += 16;
+        pending_whirlpool_next_reward_growth_global.iter().for_each(|v| {
+            pending_updates_data[offset..offset + 16].copy_from_slice(&v.to_le_bytes());
+            offset += 16;
+        });
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_next_protocol_fee.to_le_bytes());
+        offset += 8;
+        assert_eq!(offset, PendingWhirlpoolUpdate::LEN);
+        // oracle
+        pending_updates_data[offset] = pending_oracle_next_af_var_is_some as u8;
+        offset += 1;
+        pending_updates_data[offset..offset + 8]
+            .copy_from_slice(&pending_oracle_next_af_var_last_reference_update_timestamp.to_le_bytes());
+        offset += 8;
+        pending_updates_data[offset..offset + 8]
+            .copy_from_slice(&pending_oracle_next_af_var_last_major_swap_timestamp.to_le_bytes());
+        offset += 8;
+        pending_updates_data[offset..offset + 4].copy_from_slice(&pending_oracle_next_af_var_volatility_reference.to_le_bytes());
+        offset += 4;
+        pending_updates_data[offset..offset + 4]
+            .copy_from_slice(&pending_oracle_next_af_var_tick_group_index_reference.to_le_bytes());
+        offset += 4;
+        pending_updates_data[offset..offset + 4]
+            .copy_from_slice(&pending_oracle_next_af_var_volatility_accumulator.to_le_bytes());
+        offset += 4;
+        offset += pending_oracle_next_af_var_reserved.len();
+        assert_eq!(offset, PendingOracleUpdate::LEN + PendingWhirlpoolUpdate::LEN);
+        // tick
+        pending_updates_data[offset..offset + 2].copy_from_slice(&pending_tick_updates_len.to_le_bytes());
+        offset += 2;
+        for _ in 0..MAX_PENDING_TICK_UPDATES_LEN {
+            pending_updates_data[offset..offset + PendingTickUpdate::LEN].copy_from_slice(&pending_tick_update);
+            offset += PendingTickUpdate::LEN;
+        }
+        assert_eq!(offset, PreparedSwapPendingUpdates::LEN);
 
-        assert_eq!(
-            token_badge_whirlpools_config,
-            deserialized.whirlpools_config
-        );
-        assert_eq!(token_badge_token_mint, deserialized.token_mint);
+        // manually build the expected PreparedSwap data layout
+        // note: no discriminator
+        let mut prepared_swap_data = [0u8; PreparedSwap::LEN - 8];
+        let mut offset = 0;
+        prepared_swap_data[offset..offset + 2].copy_from_slice(&prepared_swap_version.to_le_bytes());
+        offset += 2;
+        prepared_swap_data[offset] = prepared_swap_state as u8;
+        offset += 1;
+        prepared_swap_data[offset..offset + PreparedSwapPrecondition::LEN].copy_from_slice(&precondition_data);
+        offset += PreparedSwapPrecondition::LEN;
+        prepared_swap_data[offset..offset + PreparedSwapPendingUpdates::LEN].copy_from_slice(&pending_updates_data);
+        offset += PreparedSwapPendingUpdates::LEN;
+        offset += prepared_swap_reserved.len();
+        assert_eq!(offset, prepared_swap_data.len());
+        assert_eq!(prepared_swap_data.len(), core::mem::size_of::<PreparedSwap>());
 
-        // serialize
-        let mut serialized = Vec::new();
-        deserialized.try_serialize(&mut serialized).unwrap();
-        serialized.extend_from_slice(&token_badge_reserved);
+        // cast from bytes to PreparedSwap (re-interpret)
+        let prepared_swap: &PreparedSwap = bytemuck::from_bytes(&prepared_swap_data);
 
-        assert_eq!(serialized.as_slice(), token_badge_data.as_ref());
+        // check that the data layout matches the expected layout
+        let read_version = prepared_swap.version;
+        assert_eq!(read_version, prepared_swap_version);
+        let read_state = prepared_swap.state;
+        assert_eq!(read_state, prepared_swap_state);
+        // precondition
+        let read_slot = prepared_swap.precondition.slot;
+        assert_eq!(read_slot, precondition_slot);
+        let read_authority = prepared_swap.precondition.authority;
+        assert_eq!(read_authority, precondition_authority);
+        let read_whirlpool = prepared_swap.precondition.whirlpool;
+        assert_eq!(read_whirlpool, precondition_whirlpool);
+        let read_whirlpool_state_version = prepared_swap.precondition.whirlpool_state_version;
+        assert_eq!(read_whirlpool_state_version, precondition_whirlpool_state_version);
+        let read_amount = prepared_swap.precondition.amount;
+        assert_eq!(read_amount, precondition_amount);
+        let read_sqrt_price_limit = prepared_swap.precondition.sqrt_price_limit;
+        assert_eq!(read_sqrt_price_limit, precondition_sqrt_price_limit);
+        let read_amount_specified_is_input = prepared_swap.precondition.amount_specified_is_input;
+        assert_eq!(read_amount_specified_is_input, precondition_amount_specified_is_input);
+        let read_a_to_b = prepared_swap.precondition.a_to_b;
+        assert_eq!(read_a_to_b, precondition_a_to_b);
+        // pendingg updates
+        // whirlpool
+        let read_amount_a = prepared_swap.pending_updates.pending_whirlpool_update.amount_a;
+        assert_eq!(read_amount_a, pending_whirlpool_amount_a);
+        let read_amount_b = prepared_swap.pending_updates.pending_whirlpool_update.amount_b;
+        assert_eq!(read_amount_b, pending_whirlpool_amount_b);
+        let read_lp_fee = prepared_swap.pending_updates.pending_whirlpool_update.lp_fee;
+        assert_eq!(read_lp_fee, pending_whirlpool_lp_fee);
+        let read_next_liquidity = prepared_swap.pending_updates.pending_whirlpool_update.next_liquidity;
+        assert_eq!(read_next_liquidity, pending_whirlpool_next_liquidity);
+        let read_next_tick_index = prepared_swap.pending_updates.pending_whirlpool_update.next_tick_index;
+        assert_eq!(read_next_tick_index, pending_whirlpool_next_tick_index);
+        let read_next_sqrt_price = prepared_swap.pending_updates.pending_whirlpool_update.next_sqrt_price;
+        assert_eq!(read_next_sqrt_price, pending_whirlpool_next_sqrt_price);
+        let read_next_fee_growth_global = prepared_swap.pending_updates.pending_whirlpool_update.next_fee_growth_global;
+        assert_eq!(read_next_fee_growth_global, pending_whirlpool_next_fee_growth_global);
+        let read_next_reward_growth_global = prepared_swap.pending_updates.pending_whirlpool_update.next_reward_growth_global;
+        assert_eq!(read_next_reward_growth_global, pending_whirlpool_next_reward_growth_global);
+        let read_next_protocol_fee = prepared_swap.pending_updates.pending_whirlpool_update.next_protocol_fee;
+        assert_eq!(read_next_protocol_fee, pending_whirlpool_next_protocol_fee);
+        // oracle
+        let read_is_some = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some;
+        assert_eq!(read_is_some, pending_oracle_next_af_var_is_some);
+        let read_last_reference_update_timestamp = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.last_reference_update_timestamp;
+        assert_eq!(read_last_reference_update_timestamp, pending_oracle_next_af_var_last_reference_update_timestamp);
+        let read_last_major_swap_timestamp = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.last_major_swap_timestamp;
+        assert_eq!(read_last_major_swap_timestamp, pending_oracle_next_af_var_last_major_swap_timestamp);
+        let read_volatility_reference = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.volatility_reference;
+        assert_eq!(read_volatility_reference, pending_oracle_next_af_var_volatility_reference);
+        let read_tick_group_index_reference = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.tick_group_index_reference;
+        assert_eq!(read_tick_group_index_reference, pending_oracle_next_af_var_tick_group_index_reference);
+        let read_volatility_accumulator = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.volatility_accumulator;
+        assert_eq!(read_volatility_accumulator, pending_oracle_next_af_var_volatility_accumulator);
+        let read_reserved = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.reserved;
+        assert_eq!(read_reserved, pending_oracle_next_af_var_reserved);
+        // tick
+        let read_tick_updates_len = prepared_swap.pending_updates.pending_tick_updates_len;
+        assert_eq!(read_tick_updates_len, pending_tick_updates_len);
+        for i in 0..MAX_PENDING_TICK_UPDATES_LEN {
+            let read_array_index = prepared_swap.pending_updates.pending_tick_updates[i].array_index;
+            assert_eq!(read_array_index, pending_tick_update_array_index);
+            let read_tick_index = prepared_swap.pending_updates.pending_tick_updates[i].tick_index;
+            assert_eq!(read_tick_index, pending_tick_update_tick_index);
+            let read_next_fee_growth_outside_a = prepared_swap.pending_updates.pending_tick_updates[i].next_fee_growth_outside_a;
+            assert_eq!(read_next_fee_growth_outside_a, pending_tick_update_next_fee_growth_outside_a);
+            let read_next_fee_growth_outside_b = prepared_swap.pending_updates.pending_tick_updates[i].next_fee_growth_outside_b;
+            assert_eq!(read_next_fee_growth_outside_b, pending_tick_update_next_fee_growth_outside_b);
+        }
     }
 }
-*/

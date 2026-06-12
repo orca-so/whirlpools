@@ -10,7 +10,10 @@ pub mod initialize_reward;
 pub mod set_reward_emissions;
 pub mod swap;
 pub mod two_hop_swap;
+
+pub mod initialize_prepared_swap;
 pub mod prepare_swap;
+pub mod commit_swap;
 
 pub mod delete_token_badge;
 pub mod initialize_config_extension;
@@ -29,7 +32,10 @@ pub use initialize_reward::*;
 pub use set_reward_emissions::*;
 pub use swap::*;
 pub use two_hop_swap::*;
+
+pub use initialize_prepared_swap::*;
 pub use prepare_swap::*;
+pub use commit_swap::*;
 
 pub use delete_token_badge::*;
 pub use initialize_config_extension::*;

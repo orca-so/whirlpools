@@ -1,6 +1,27 @@
 use anchor_lang::prelude::*;
 
-use crate::{manager::swap_manager::PostSwapUpdate, state::{AdaptiveFeeVariables, NUM_REWARDS, TICK_ARRAY_SIZE_USIZE, Whirlpool}};
+use crate::{errors::ErrorCode, manager::swap_manager::PostSwapUpdate, state::{AdaptiveFeeVariables, NUM_REWARDS, TICK_ARRAY_SIZE_USIZE, Whirlpool}};
+
+// Maximum nonce value allowed for PreparedSwap.
+//
+// Although the nonce is represented as a u8, allowing all 256 possible
+// PreparedSwap accounts would provide little practical value while
+// significantly increasing rent costs.
+//
+// PreparedSwap is intended to be a short-lived working area for a
+// prepare/commit workflow. Reusing the same PreparedSwap account across
+// multiple transactions within a block may introduce write-lock contention,
+// but this is not expected to be a significant limitation in practice.
+//
+// We therefore start with a conservative limit and can raise it in the
+// future if real-world demand justifies it.
+pub const MAX_PREPARED_SWAP_NONCE: u8 = 15; // allows 0..=15, 16 accounts
+
+// Current PreparedSwap account layout version.
+//
+// Increment this value whenever the PreparedSwap layout or account size
+// changes.
+pub const PREPARED_SWAP_LAYOUT_VERSION: u16 = 1;
 
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
@@ -61,7 +82,7 @@ impl PendingTickUpdate {
 
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PreparedSwapPrecondition {
     pub slot: u64,
 
@@ -96,25 +117,23 @@ impl PreparedSwapPendingUpdates {
     pub const LEN: usize = PendingWhirlpoolUpdate::LEN + PendingOracleUpdate::LEN + 2 + PendingTickUpdate::LEN * TICK_ARRAY_SIZE_USIZE * 3; // 9947
 }
 
-pub const PREPARED_SWAP_LAYOUT_VERSION: u16 = 1;
-const PREPARED_SWAP_RESERVED_BYTES: usize = 180; // total 10KB
-
 #[repr(u8)]
 pub enum PreparedSwapState {
     Unprepared,
     Prepared,
     Committed,
 }
-
 pub type PreparedSwapStateU8 = u8;
+
+const PREPARED_SWAP_RESERVED_BYTES: usize = 180; // total 10KB
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
 #[derive(Debug)]
 
 pub struct PreparedSwap {
-    // QuoteCache account layout version
-    // Guard against stale QuoteCache accounts being used after a program upgrade that modifies the QuoteCache layout or size.
+    // PreparedSwap account layout version
+    // Guard against stale PreparedSwap accounts being used after a program upgrade that modifies the PreparedSwap layout or size.
     // Although instructions are not expected to execute in the same slot after a program upgrade,
     // this version check is included as a safeguard against future changes.
     pub version: u16,
@@ -131,7 +150,11 @@ pub struct PreparedSwap {
 impl PreparedSwap {
     pub const LEN: usize = 8 + 2 + 1 + PreparedSwapPrecondition::LEN + PreparedSwapPendingUpdates::LEN + PREPARED_SWAP_RESERVED_BYTES;
 
-    pub fn initialize(&mut self) -> Result<()> {
+    pub fn initialize(&mut self, nonce: u8) -> Result<()> {
+        if nonce > MAX_PREPARED_SWAP_NONCE {
+            return Err(ErrorCode::PreparedSwapNonceMaxExceeded.into());
+        }
+
         self.version = PREPARED_SWAP_LAYOUT_VERSION;
         self.state = PreparedSwapState::Unprepared as u8;
         Ok(())
@@ -212,6 +235,44 @@ impl PreparedSwap {
         state: PreparedSwapState,
     ) {
         self.state = state as u8;
+    }
+
+    pub fn validate_for_commit(
+        &self,
+        authority: Pubkey,
+        whirlpool: &Account<Whirlpool>,
+        amount: u64,
+        sqrt_price_limit: u128,
+        amount_specified_is_input: bool,
+        a_to_b: bool,
+        clock: &Clock,
+    ) -> Result<()> {
+        // PreparedSwap is a zero-copy account.
+        // A version mismatch means the account data may be interpreted using the wrong
+        // layout, so the version must be checked before performing any other validation.
+        if self.version != PREPARED_SWAP_LAYOUT_VERSION {
+            return Err(ErrorCode::PreparedSwapVersionMismatch.into());
+        }
+
+        if self.state != PreparedSwapState::Prepared as u8 {
+            return Err(ErrorCode::PreparedSwapNotPrepared.into());
+        }
+
+        if self.precondition != (PreparedSwapPrecondition {
+            slot: clock.slot,
+            authority,
+            whirlpool: whirlpool.key(),
+            // TODO: set
+            whirlpool_state_version: 0,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+        }) {
+            return Err(ErrorCode::PreparedSwapPreconditionMismatch.into());
+        }
+
+        Ok(())
     }
 
     /* 

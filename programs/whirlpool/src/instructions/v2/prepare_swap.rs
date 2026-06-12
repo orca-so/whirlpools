@@ -3,6 +3,7 @@ use anchor_spl::token_interface::Mint;
 use anchor_lang::solana_program::program::set_return_data;
 use borsh::BorshSerialize;
 use crate::instructions::swap_with_transfer_fee_extension;
+use crate::util::calculate_transfer_fee_excluded_amount;
 use crate::{
     errors::ErrorCode,
     state::*,

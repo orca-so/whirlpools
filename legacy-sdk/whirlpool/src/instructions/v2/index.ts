@@ -11,6 +11,10 @@ export * from "./swap-ix";
 export * from "./two-hop-swap-ix";
 export * from "./reposition-liquidity-ix";
 
+export * from "./initialize-prepared-swap-ix";
+export * from "./prepare-swap-ix";
+export * from "./commit-swap-ix";
+
 export * from "./initialize-config-extension-ix";
 export * from "./set-config-extension-authority-ix";
 export * from "./set-token-badge-authority-ix";

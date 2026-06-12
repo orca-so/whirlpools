@@ -182,3 +182,9 @@ export const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR = 100_000;
  * @category Constants
  */
 export const MAX_REFERENCE_AGE = 3_600; // 1 hour
+
+/**
+ * Maximum nonce value allowed for PreparedSwap.
+ * @category Constants
+ */
+export const MAX_PREPARED_SWAP_NONCE = 15; // allows 0..=15, 16 accounts

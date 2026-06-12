@@ -30,6 +30,7 @@ export enum AccountName {
   LockConfig = "lockConfig",
   Oracle = "oracle",
   AdaptiveFeeTier = "adaptiveFeeTier",
+  PreparedSwap = "preparedSwap",
 }
 
 export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
@@ -72,6 +73,7 @@ const RESERVED_BYTES: ReservedBytes = {
   [AccountName.LockConfig]: 128,
   [AccountName.Oracle]: 0, // reserved space is occupied as "reserved" field
   [AccountName.AdaptiveFeeTier]: 128,
+  [AccountName.PreparedSwap]: 0, // reserved space is occupied as "reserved" field
 };
 
 type ReservedBytes = {
@@ -365,4 +367,14 @@ export type TokenBadgeAttributeData = {
  */
 export type ConfigFeatureFlagData = {
   tokenBadge: [boolean];
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type PreparedSwapData = {
+  // PreparedSwap is an internal temporary storage account used within an
+  // atomic prepare/commit transaction flow.
+  // Its layout is intentionally not exposed through the TypeScript SDK.
+  // Off-chain clients must NOT depend on the contents of PreparedSwap.
 };

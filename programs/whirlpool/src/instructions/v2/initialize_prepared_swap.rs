@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{errors::ErrorCode, state::*};
+use crate::state::*;
 
 #[derive(Accounts)]
 #[instruction(nonce: u8)]

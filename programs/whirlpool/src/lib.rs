@@ -1328,6 +1328,92 @@ pub mod whirlpool {
         instructions::v2::set_token_badge_attribute::handler(ctx, attribute)
     }
 
+    /// Initializes a prepared_swap account.
+    /// PreparedSwap accounts are shared across the program and are not tied to any particular caller.
+    /// Any user may initialize a PreparedSwap account. The resulting account state is identical
+    /// regardless of who performs the initialization; the caller only determines who pays the rent required to create the account.
+    ///
+    /// ### Parameters
+    /// - `nonce` - Nonce used to derive a unique PreparedSwap PDA.
+    ///             Must be less than or equal to MAX_PREPARED_SWAP_NONCE.
+    ///
+    /// #### Special Errors
+    /// - `PreparedSwapNonceMaxExceeded` - if the provided nonce exceeds MAX_PREPARED_SWAP_NONCE.
+    pub fn initialize_prepared_swap(
+        ctx: Context<InitializePreparedSwap>,
+        nonce: u8,
+    ) -> Result<()> {
+        instructions::v2::initialize_prepared_swap::handler(ctx, nonce)
+    }
+
+    /// Computes a swap quote and stores the resulting state transitions in a
+    /// PreparedSwap account for later execution via commit_swap_v2.
+    ///
+    /// This instruction performs the same quote computation as swap_v2, but
+    /// returns quote failures through return data instead of failing the
+    /// transaction.
+    ///
+    /// ### Parameters
+    /// See swap_v2.
+    /// 
+    /// ### Return Data
+    /// Serialized `PrepareSwapV2ReturnData`.
+    ///
+    /// #### Special Errors
+    /// Most swap-related errors are returned as PrepareSwapV2ReturnData::QuoteError
+    /// rather than causing the transaction to fail.
+    pub fn prepare_swap_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, PrepareSwapV2<'info>>,
+        amount: u64,
+        sqrt_price_limit: u128,
+        amount_specified_is_input: bool,
+        a_to_b: bool,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        instructions::v2::prepare_swap::handler(
+            ctx,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            remaining_accounts_info,
+        )
+    }
+
+    /// Executes a previously prepared swap stored in a PreparedSwap account.
+    ///
+    /// This instruction applies the state transitions computed by
+    /// prepare_swap_v2 after validating the PreparedSwap state and its
+    /// preconditions.
+    ///
+    /// ### Parameters
+    /// See swap_v2.
+    ///
+    /// #### Special Errors
+    /// All swap-related errors from swap_v2 may be returned.
+    ///
+    /// Additional errors:
+    /// - `PreparedSwapVersionMismatch` - if the PreparedSwap account layout version does not match the expected version.
+    /// - `PreparedSwapNotPrepared` - if the PreparedSwap account is not in the Prepared state.
+    /// - `PreparedSwapPreconditionMismatch` - if the PreparedSwap precondition does not match the current Whirlpool state or instruction parameters.
+    pub fn commit_swap_v2<'info>(
+        ctx: Context<'_, '_, '_, 'info, CommitSwapV2<'info>>,
+        amount: u64,
+        sqrt_price_limit: u128,
+        amount_specified_is_input: bool,
+        a_to_b: bool,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
+    ) -> Result<()> {
+        instructions::v2::commit_swap::handler(
+            ctx,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            remaining_accounts_info,
+        )
+    }
+
     // Only for inclusion in the IDL
     pub fn idl_include(ctx: Context<IdlInclude>) -> Result<()> {
         // So compiler doesn't strip out the ctx

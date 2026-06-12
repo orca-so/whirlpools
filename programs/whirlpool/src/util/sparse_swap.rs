@@ -4,8 +4,7 @@ use std::collections::VecDeque;
 use crate::{
     math::floor_division,
     state::{
-        FixedTickArray, Tick, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray,
-        TICK_ARRAY_SIZE,
+        FixedTickArray, LoadedTickArray, PreparedSwap, TICK_ARRAY_SIZE, Tick, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, load_tick_array
     },
     util::SwapTickSequence,
 };
@@ -13,13 +12,18 @@ use crate::{
 use crate::state::{load_tick_array_mut, LoadedTickArrayMut};
 
 pub(crate) enum ProxiedTickArray<'a> {
-    Initialized(LoadedTickArrayMut<'a>),
+    InitializedMut(LoadedTickArrayMut<'a>),
+    Initialized(LoadedTickArray<'a>),
     Uninitialized(ZeroedTickArray),
 }
 
 impl<'a> ProxiedTickArray<'a> {
-    pub fn new_initialized(refmut: LoadedTickArrayMut<'a>) -> Self {
-        ProxiedTickArray::Initialized(refmut)
+    pub fn new_initialized_mut(refmut: LoadedTickArrayMut<'a>) -> Self {
+        ProxiedTickArray::InitializedMut(refmut)
+    }
+
+    pub fn new_initialized(refro: LoadedTickArray<'a>) -> Self {
+        ProxiedTickArray::Initialized(refro)
     }
 
     pub fn new_uninitialized(start_tick_index: i32) -> Self {
@@ -69,6 +73,7 @@ impl<'a> ProxiedTickArray<'a> {
 impl<'a> AsRef<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
     fn as_ref(&self) -> &(dyn TickArrayType + 'a) {
         match self {
+            ProxiedTickArray::InitializedMut(ref array) => &**array,
             ProxiedTickArray::Initialized(ref array) => &**array,
             ProxiedTickArray::Uninitialized(ref array) => array,
         }
@@ -78,8 +83,9 @@ impl<'a> AsRef<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
 impl<'a> AsMut<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
     fn as_mut(&mut self) -> &mut (dyn TickArrayType + 'a) {
         match self {
-            ProxiedTickArray::Initialized(ref mut array) => &mut **array,
-            ProxiedTickArray::Uninitialized(ref mut array) => array,
+            ProxiedTickArray::InitializedMut(ref mut array) => &mut **array,
+            ProxiedTickArray::Initialized(_) => unreachable!("Loaded TickArray is not mutable"),
+            ProxiedTickArray::Uninitialized(_) => unreachable!("ZeroedTickArray is not mutable"),
         }
     }
 }
@@ -131,12 +137,37 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
         &'a self,
         whirlpool: &Account<Whirlpool>,
         a_to_b: bool,
-    ) -> Result<SwapTickSequence<'a>> {
-        let mut loaded_tick_arrays: Vec<LoadedTickArrayMut> = Vec::with_capacity(3);
+    ) -> Result<SwapTickSequence<'a, 'a>> {
+        self._try_build(whirlpool, a_to_b, None)
+    }
+
+    pub fn try_build_with_prepared_swap<'a, 'b>(
+        &'a self,
+        whirlpool: &Account<Whirlpool>,
+        a_to_b: bool,
+        prepared_swap: &'b mut PreparedSwap,
+    ) -> Result<SwapTickSequence<'a, 'b>> {
+        self._try_build(whirlpool, a_to_b, Some(prepared_swap))
+    }
+
+    fn _try_build<'a, 'b>(
+        &'a self,
+        whirlpool: &Account<Whirlpool>,
+        a_to_b: bool,
+        prepared_swap: Option<&'b mut PreparedSwap>,
+    ) -> Result<SwapTickSequence<'a, 'b>> {
+        let mut loaded_tick_arrays: Vec<ProxiedTickArray> = Vec::with_capacity(3);
         for account_info in &self.tick_array_accounts {
-            let tick_array = maybe_load_tick_array(account_info, whirlpool)?;
-            if let Some(tick_array) = tick_array {
-                loaded_tick_arrays.push(tick_array);
+            if prepared_swap.is_none() {
+                let tick_array = maybe_load_tick_array_mut(account_info, whirlpool)?;
+                if let Some(tick_array) = tick_array {
+                    loaded_tick_arrays.push(ProxiedTickArray::new_initialized_mut(tick_array));
+                }
+            } else {
+                let tick_array = maybe_load_tick_array(account_info, whirlpool)?;
+                if let Some(tick_array) = tick_array {
+                    loaded_tick_arrays.push(ProxiedTickArray::new_initialized(tick_array));
+                }
             }
         }
 
@@ -147,8 +178,8 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
                 .iter()
                 .position(|tick_array| tick_array.start_tick_index() == *start_tick_index);
             if let Some(pos) = pos {
-                let tick_array = loaded_tick_arrays.remove(pos);
-                required_tick_arrays.push_back(ProxiedTickArray::new_initialized(tick_array));
+                let proxied_tick_array = loaded_tick_arrays.remove(pos);
+                required_tick_arrays.push_back(proxied_tick_array);
                 continue;
             }
 
@@ -173,11 +204,12 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
             required_tick_arrays.pop_front().unwrap(),
             required_tick_arrays.pop_front(),
             required_tick_arrays.pop_front(),
+            prepared_swap,
         ))
     }
 }
 
-fn maybe_load_tick_array<'a>(
+fn maybe_load_tick_array_mut<'a>(
     account_info: &'a AccountInfo<'_>,
     whirlpool: &Account<Whirlpool>,
 ) -> Result<Option<LoadedTickArrayMut<'a>>> {
@@ -186,6 +218,18 @@ fn maybe_load_tick_array<'a>(
     }
 
     let tick_array = load_tick_array_mut(account_info, &whirlpool.key())?;
+    Ok(Some(tick_array))
+}
+
+fn maybe_load_tick_array<'a>(
+    account_info: &'a AccountInfo<'_>,
+    whirlpool: &Account<Whirlpool>,
+) -> Result<Option<LoadedTickArray<'a>>> {
+    if *account_info.owner == system_program::ID && account_info.data_is_empty() {
+        return Ok(None);
+    }
+
+    let tick_array = load_tick_array(account_info, &whirlpool.key())?;
     Ok(Some(tick_array))
 }
 
@@ -806,7 +850,7 @@ mod sparse_swap_tick_sequence_tests {
                     &mut data.deref_mut()[8..std::mem::size_of::<FixedTickArray>() + 8],
                 )
             });
-            ProxiedTickArray::new_initialized(tick_array_refmut)
+            ProxiedTickArray::new_initialized_mut(tick_array_refmut)
         }
 
         #[test]

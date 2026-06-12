@@ -13,6 +13,7 @@ pub mod tick_array;
 pub mod token_badge;
 pub mod whirlpool;
 pub mod zeroed_tick_array;
+pub mod prepared_swap;
 
 pub use self::whirlpool::*;
 pub use adaptive_fee_tier::*;
@@ -29,3 +30,4 @@ pub use tick::*;
 pub use tick_array::*;
 pub use token_badge::*;
 pub(crate) use zeroed_tick_array::*;
+pub use prepared_swap::*;

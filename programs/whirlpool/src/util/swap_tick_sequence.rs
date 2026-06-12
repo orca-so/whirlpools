@@ -5,20 +5,22 @@ use anchor_lang::prelude::*;
 
 use crate::state::LoadedTickArrayMut;
 
-pub struct SwapTickSequence<'a> {
+pub struct SwapTickSequence<'a, 'b> {
     pub(crate) arrays: Vec<ProxiedTickArray<'a>>,
+    pub(crate) prepared_swap: Option<&'b mut PreparedSwap>,
 }
 
-impl<'a> SwapTickSequence<'a> {
+impl<'a, 'b> SwapTickSequence<'a, 'b> {
     pub fn new(
         ta0: LoadedTickArrayMut<'a>,
         ta1: Option<LoadedTickArrayMut<'a>>,
         ta2: Option<LoadedTickArrayMut<'a>>,
     ) -> Self {
         Self::new_with_proxy(
-            ProxiedTickArray::new_initialized(ta0),
-            ta1.map(ProxiedTickArray::new_initialized),
-            ta2.map(ProxiedTickArray::new_initialized),
+            ProxiedTickArray::new_initialized_mut(ta0),
+            ta1.map(ProxiedTickArray::new_initialized_mut),
+            ta2.map(ProxiedTickArray::new_initialized_mut),
+            None,
         )
     }
 
@@ -26,6 +28,7 @@ impl<'a> SwapTickSequence<'a> {
         ta0: ProxiedTickArray<'a>,
         ta1: Option<ProxiedTickArray<'a>>,
         ta2: Option<ProxiedTickArray<'a>>,
+        prepared_swap: Option<&'b mut PreparedSwap>,
     ) -> Self {
         let mut vec = Vec::with_capacity(3);
         vec.push(ta0);
@@ -35,7 +38,7 @@ impl<'a> SwapTickSequence<'a> {
         if let Some(ta2) = ta2 {
             vec.push(ta2);
         }
-        Self { arrays: vec }
+        Self { arrays: vec, prepared_swap }
     }
 
     /// Get the Tick object at the given tick-index & tick-spacing
@@ -75,6 +78,18 @@ impl<'a> SwapTickSequence<'a> {
         tick_spacing: u16,
         update: &TickUpdate,
     ) -> Result<()> {
+        if let Some(prepared_swap) = &mut self.prepared_swap {
+            prepared_swap.add_pending_tick_update(
+                PendingTickUpdate {
+                    array_index: array_index as u8,
+                    tick_index,
+                    next_fee_growth_outside_a: update.fee_growth_outside_a,
+                    next_fee_growth_outside_b: update.fee_growth_outside_b,
+                }
+            );
+            return Ok(());
+        }
+
         let array = self.arrays.get_mut(array_index);
         match array {
             Some(array) => {

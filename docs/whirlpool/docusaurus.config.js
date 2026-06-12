@@ -63,37 +63,6 @@ export default {
       items: [
         { to: "/", label: "Docs", position: "left" },
         {
-          label: "SDK Reference",
-          position: "left",
-          items: [
-            {
-              href: "/whirlpools/orca_whirlpools_docs/",
-              label: "Rust SDK Reference",
-              target: "_blank",
-            },
-            {
-              href: "/whirlpools/ts/",
-              label: "TS Kit SDK Reference",
-              target: "_blank",
-            },
-            {
-              href: "/whirlpools/legacy/",
-              label: "TS Legacy SDK Reference",
-              target: "_blank",
-            },
-            {
-              href: "https://orca-so.github.io/tx-sender/rust/orca_tx_sender",
-              label: "Rust TX Sender",
-              target: "_blank",
-            },
-            {
-              href: "https://orca-so.github.io/tx-sender/ts",
-              label: "TS TX Sender",
-              target: "_blank",
-            },
-          ],
-        },
-        {
           href: "https://github.com/orca-so/whirlpools",
           label: "GitHub",
           position: "right",

@@ -288,7 +288,7 @@ impl PreparedSwap {
 #[cfg(test)]
 mod prepared_swap_functions_tests {
     use super::*;
-    use crate::util::AccountInfoMock;
+    use crate::{state::{AdaptiveFeeInfo, WhirlpoolRewardInfo}, util::AccountInfoMock};
 
     #[test]
     fn test_initialize() {
@@ -424,12 +424,135 @@ mod prepared_swap_functions_tests {
 
     #[test]
     fn test_set_pending_swap_update_adaptive_fee_info_is_some() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
 
+        let post_swap_update = PostSwapUpdate {
+            amount_a: 0x1122334455667788u64,
+            amount_b: 0x99aabbccddeeff00u64,
+            lp_fee: 0xffeeddccbbaa9988u64,
+            next_liquidity: 0x77665544332211000011223344556677u128,
+            next_tick_index: 0x1122ffeei32,
+            next_sqrt_price: 0xccddeeff0011223333221100ffeeddccu128,
+            next_fee_growth_global: 0xbbaabbaa001100112233223355665566u128,
+            next_reward_infos: [
+                WhirlpoolRewardInfo {
+                    growth_global_x64: 0x55667788ffeeddcc00112233aabbccddu128,
+                    ..Default::default()
+                },
+                WhirlpoolRewardInfo {
+                    growth_global_x64: 0x55667788ffeedd00cc112233aabbccddu128,
+                    ..Default::default()
+                },
+                WhirlpoolRewardInfo {
+                    growth_global_x64: 0x55667788ffee00ddcc112233aabbccddu128,
+                    ..Default::default()
+                },
+            ],
+            next_protocol_fee: 0x1122334499887766u64,
+            next_adaptive_fee_info: Some(AdaptiveFeeInfo {
+                variables: AdaptiveFeeVariables {
+                    last_reference_update_timestamp: 0x9988776655443322u64,
+                    last_major_swap_timestamp: 0x778899aabbccddeeu64,
+                    volatility_reference: 0xff001122u32,
+                    tick_group_index_reference: 0x2211ffeei32,
+                    volatility_accumulator: 0x55665544u32,
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+        };
+
+        let expect_whirlpool_update = PendingWhirlpoolUpdate {
+            amount_a: post_swap_update.amount_a,
+            amount_b: post_swap_update.amount_b,
+            lp_fee: post_swap_update.lp_fee,
+            next_liquidity: post_swap_update.next_liquidity,
+            next_tick_index: post_swap_update.next_tick_index,
+            next_sqrt_price: post_swap_update.next_sqrt_price,
+            next_fee_growth_global: post_swap_update.next_fee_growth_global,
+            next_reward_growth_global: [
+                post_swap_update.next_reward_infos[0].growth_global_x64,
+                post_swap_update.next_reward_infos[1].growth_global_x64,
+                post_swap_update.next_reward_infos[2].growth_global_x64,
+            ],
+            next_protocol_fee: post_swap_update.next_protocol_fee,
+        };
+
+        let expect_oracle_update_af_var_is_some = true;
+        let expect_oracle_update_af_var = post_swap_update.next_adaptive_fee_info.as_ref().unwrap().variables;
+
+        assert!(prepared_swap.pending_updates.pending_whirlpool_update != expect_whirlpool_update);
+        // Note: prepared_swap_data has been initialized with 0x00
+        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some != expect_oracle_update_af_var_is_some);
+        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables != expect_oracle_update_af_var);
+
+        prepared_swap.set_pending_swap_update(&post_swap_update);
+
+        assert!(prepared_swap.pending_updates.pending_whirlpool_update == expect_whirlpool_update);
+        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some == expect_oracle_update_af_var_is_some);
+        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables == expect_oracle_update_af_var);
     }
 
     #[test]
     fn test_set_pending_swap_update_adaptive_fee_info_is_none() {
+        let mut prepared_swap_data = [0x01u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
 
+        let post_swap_update = PostSwapUpdate {
+            amount_a: 0x1122334455667788u64,
+            amount_b: 0x99aabbccddeeff00u64,
+            lp_fee: 0xffeeddccbbaa9988u64,
+            next_liquidity: 0x77665544332211000011223344556677u128,
+            next_tick_index: 0x1122ffeei32,
+            next_sqrt_price: 0xccddeeff0011223333221100ffeeddccu128,
+            next_fee_growth_global: 0xbbaabbaa001100112233223355665566u128,
+            next_reward_infos: [
+                WhirlpoolRewardInfo {
+                    growth_global_x64: 0x55667788ffeeddcc00112233aabbccddu128,
+                    ..Default::default()
+                },
+                WhirlpoolRewardInfo {
+                    growth_global_x64: 0x55667788ffeedd00cc112233aabbccddu128,
+                    ..Default::default()
+                },
+                WhirlpoolRewardInfo {
+                    growth_global_x64: 0x55667788ffee00ddcc112233aabbccddu128,
+                    ..Default::default()
+                },
+            ],
+            next_protocol_fee: 0x1122334499887766u64,
+            next_adaptive_fee_info: None,
+        };
+
+        let expect_whirlpool_update = PendingWhirlpoolUpdate {
+            amount_a: post_swap_update.amount_a,
+            amount_b: post_swap_update.amount_b,
+            lp_fee: post_swap_update.lp_fee,
+            next_liquidity: post_swap_update.next_liquidity,
+            next_tick_index: post_swap_update.next_tick_index,
+            next_sqrt_price: post_swap_update.next_sqrt_price,
+            next_fee_growth_global: post_swap_update.next_fee_growth_global,
+            next_reward_growth_global: [
+                post_swap_update.next_reward_infos[0].growth_global_x64,
+                post_swap_update.next_reward_infos[1].growth_global_x64,
+                post_swap_update.next_reward_infos[2].growth_global_x64,
+            ],
+            next_protocol_fee: post_swap_update.next_protocol_fee,
+        };
+
+        let expect_oracle_update_af_var_is_some = false;
+
+        assert!(prepared_swap.pending_updates.pending_whirlpool_update != expect_whirlpool_update);
+        // Note: prepared_swap_data has been initialized with 0x01
+        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some != expect_oracle_update_af_var_is_some);
+
+        prepared_swap.set_pending_swap_update(&post_swap_update);
+
+        assert!(prepared_swap.pending_updates.pending_whirlpool_update == expect_whirlpool_update);
+        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some == expect_oracle_update_af_var_is_some);
     }
 
     #[test]
@@ -451,18 +574,295 @@ mod prepared_swap_functions_tests {
     }
 
     #[test]
-    fn test_validate_for_commit() {}
+    fn test_validate_for_commit() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
+
+        let whirlpool_address = Pubkey::new_unique();
+        let mut account_info_mock =
+            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
+        let account_info = account_info_mock.to_account_info(false);
+        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
+
+        // TODO: state version
+        let whirlpool_state_version = 0;
+
+        let authority = Pubkey::new_unique();
+        let amount = 0x1122334455667788u64;
+        let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
+        let amount_specified_is_input = true;
+        let a_to_b = false;
+        let slot = 0x9988776666778899u64;
+
+        prepared_swap.set_precondition(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        prepared_swap.set_state(PreparedSwapState::Prepared);
+
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert!(result.is_ok());
+    }
 
     #[test]
-    fn test_validate_for_commit_fail_version_mismatch() {}
+    fn test_validate_for_commit_fail_version_mismatch() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
 
+        let whirlpool_address = Pubkey::new_unique();
+        let mut account_info_mock =
+            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
+        let account_info = account_info_mock.to_account_info(false);
+        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
+
+        // TODO: state version
+        let whirlpool_state_version = 0;
+
+        let authority = Pubkey::new_unique();
+        let amount = 0x1122334455667788u64;
+        let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
+        let amount_specified_is_input = true;
+        let a_to_b = false;
+        let slot = 0x9988776666778899u64;
+
+        prepared_swap.set_precondition(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        prepared_swap.set_state(PreparedSwapState::Prepared);
+
+        // set invalid version
+        prepared_swap.version = PREPARED_SWAP_LAYOUT_VERSION.checked_add(1).unwrap();
+
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapVersionMismatch.into());
+    }
 
     #[test]
-    fn test_validate_for_commit_fail_state_not_prepared() {}
+    fn test_validate_for_commit_fail_state_not_prepared() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
 
+        let whirlpool_address = Pubkey::new_unique();
+        let mut account_info_mock =
+            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
+        let account_info = account_info_mock.to_account_info(false);
+        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
+
+        // TODO: state version
+        let whirlpool_state_version = 0;
+
+        let authority = Pubkey::new_unique();
+        let amount = 0x1122334455667788u64;
+        let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
+        let amount_specified_is_input = true;
+        let a_to_b = false;
+        let slot = 0x9988776666778899u64;
+
+        prepared_swap.set_precondition(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        prepared_swap.set_state(PreparedSwapState::Prepared);
+
+        // set non prepared state
+        prepared_swap.state = PreparedSwapState::Committed as u8;
+
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapNotPrepared.into());
+    }
 
     #[test]
-    fn test_validate_for_commit_fail_precondition_mismatch() {}
+    fn test_validate_for_commit_fail_precondition_mismatch() {
+        let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
+        let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
+        prepared_swap.reset();
+
+        let whirlpool_address = Pubkey::new_unique();
+        let mut account_info_mock =
+            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
+        let account_info = account_info_mock.to_account_info(false);
+        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
+
+        // TODO: state version
+        let whirlpool_state_version = 0;
+
+        let authority = Pubkey::new_unique();
+        let amount = 0x1122334455667788u64;
+        let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
+        let amount_specified_is_input = true;
+        let a_to_b = false;
+        let slot = 0x9988776666778899u64;
+
+        prepared_swap.set_precondition(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        prepared_swap.set_state(PreparedSwapState::Prepared);
+
+        // just to confirm the validity
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert!(result.is_ok());
+
+        // authority mismatch
+        let result = prepared_swap.validate_for_commit(
+            Pubkey::new_unique(), // mismatch
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+
+        // whirlpool pubkey mismatch
+        // TODO: use same whirlpool state version
+        let another_whirlpool_address = Pubkey::new_unique();
+        let mut account_info_mock =
+            AccountInfoMock::new_whirlpool(another_whirlpool_address, 64, 5650, None);
+        let account_info = account_info_mock.to_account_info(false);
+        let another_whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &another_whirlpool, // mismatch
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+
+        // TODO: whirlpool state version mismatch
+        /* 
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+        */
+
+        // amount mismatch
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount.checked_add(1).unwrap(), // mismatch
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+
+        // sqrt_price_limit mismatch
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit.checked_add(1).unwrap(), // mismatch
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+
+        // amount_specified_is_input mismatch
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            !amount_specified_is_input, // mismatch
+            a_to_b,
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+
+        // a_to_b mismatch
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            !a_to_b, // mismatch
+            slot,
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+
+        // slot mismatch
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            &whirlpool,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot.checked_add(1).unwrap(), // mismatch
+        );
+        assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
+    }
 }
 
 #[cfg(test)]

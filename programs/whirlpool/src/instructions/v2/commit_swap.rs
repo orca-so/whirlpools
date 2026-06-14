@@ -153,14 +153,17 @@ pub fn handler<'info>(
         next_reward_infos[i].growth_global_x64 = prepared_swap.pending_updates.pending_whirlpool_update.next_reward_growth_global[i];
     }
 
-    let next_adaptive_fee_info = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some.then_some({
+    
+    let next_adaptive_fee_info = if prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some {
         if let Some(mut next_adaptive_fee_info) = oracle_accessor.get_adaptive_fee_info()? {
             next_adaptive_fee_info.variables = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables;
-            next_adaptive_fee_info
+            Some(next_adaptive_fee_info)
         } else {
             unreachable!("next_adaptive_fee_variables_is_some == true means that this Whirlpool has the initialized Oracle account");
         }
-    });
+    } else {
+        None
+    };
 
     let swap_update = PostSwapUpdate {
         amount_a: prepared_swap.pending_updates.pending_whirlpool_update.amount_a,

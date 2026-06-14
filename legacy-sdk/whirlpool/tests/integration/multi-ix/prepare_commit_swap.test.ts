@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { AccountWithTokenProgram } from "@orca-so/common-sdk";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
 import BN from "bn.js";
 import type {
   InitPoolWithAdaptiveFeeParams,
@@ -38,6 +38,7 @@ import {
   createAndMintToAssociatedTokenAccount,
   createMint,
   getLocalnetAdminKeypair0,
+  getProviderWalletKeypair,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -52,6 +53,7 @@ import {
 } from "../../utils/init-utils";
 import type { WhirlpoolsError } from "../../../src/errors/errors";
 import { SwapErrorCode } from "../../../src/errors/errors";
+import { TransactionBuilder } from "@orca-so/common-sdk/dist/web3/transactions/transactions-builder";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -164,47 +166,70 @@ describe("prepare/commit swap tests", () => {
       )
       .buildAndExecute();
 
-      const tx = (await toTx(
-        testCtx.whirlpoolCtx,
-        /*
-        WhirlpoolIx.prepareSwapV2Ix(testCtx.whirlpoolCtx.program, {
-          ...swapQuote,
-          preparedSwap: preparedSwapPda.publicKey,
-          whirlpool: poolInfo.whirlpool,
-          //tokenOwnerAccountA: poolInfo.tokenAccountA,
-          //tokenOwnerAccountB: poolInfo.tokenAccountB,
-          //tokenVaultA: pool.getData().tokenVaultA,
-          //tokenVaultB: pool.getData().tokenVaultB,
-          tokenAuthority: testCtx.provider.wallet.publicKey,
-          tokenMintA: poolInfo.mintA,
-          tokenMintB: poolInfo.mintB,
-          //tokenProgramA: poolInfo.tokenProgramA,
-          //tokenProgramB: poolInfo.tokenProgramB,
-          oracle: poolInfo.oracle,
-        }),
-        */
-        WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
-          ...swapQuote,
-          whirlpool: poolInfo.whirlpool,
-          tokenOwnerAccountA: poolInfo.tokenAccountA,
-          tokenOwnerAccountB: poolInfo.tokenAccountB,
-          tokenVaultA: pool.getData().tokenVaultA,
-          tokenVaultB: pool.getData().tokenVaultB,
-          tokenAuthority: testCtx.provider.wallet.publicKey,
-          tokenMintA: poolInfo.mintA,
-          tokenMintB: poolInfo.mintB,
-          tokenProgramA: poolInfo.tokenProgramA,
-          tokenProgramB: poolInfo.tokenProgramB,
-          oracle: poolInfo.oracle,
-        }),
-      )
-      .addInstruction(useMaxCU())
-      .build({maxSupportedTransactionVersion: 0})).transaction as VersionedTransaction;
+      const swapIx = WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+        ...swapQuote,
+        whirlpool: poolInfo.whirlpool,
+        tokenOwnerAccountA: poolInfo.tokenAccountA,
+        tokenOwnerAccountB: poolInfo.tokenAccountB,
+        tokenVaultA: pool.getData().tokenVaultA,
+        tokenVaultB: pool.getData().tokenVaultB,
+        tokenAuthority: testCtx.provider.wallet.publicKey,
+        tokenMintA: poolInfo.mintA,
+        tokenMintB: poolInfo.mintB,
+        tokenProgramA: poolInfo.tokenProgramA,
+        tokenProgramB: poolInfo.tokenProgramB,
+        oracle: poolInfo.oracle,
+      });
 
-      const simResult = testCtx.provider.connection.simulateTransaction(tx);
+      const prepareIx = WhirlpoolIx.prepareSwapV2Ix(testCtx.whirlpoolCtx.program, {
+        ...swapQuote,
+        preparedSwap: preparedSwapPda.publicKey,
+        whirlpool: poolInfo.whirlpool,
+        //tokenOwnerAccountA: poolInfo.tokenAccountA,
+        //tokenOwnerAccountB: poolInfo.tokenAccountB,
+        //tokenVaultA: pool.getData().tokenVaultA,
+        //tokenVaultB: pool.getData().tokenVaultB,
+        tokenAuthority: testCtx.provider.wallet.publicKey,
+        tokenMintA: poolInfo.mintA,
+        tokenMintB: poolInfo.mintB,
+        //tokenProgramA: poolInfo.tokenProgramA,
+        //tokenProgramB: poolInfo.tokenProgramB,
+        oracle: poolInfo.oracle,
+      });
 
-      console.log("simResult", simResult);
+      const commitIx = WhirlpoolIx.commitSwapV2Ix(testCtx.whirlpoolCtx.program, {
+        ...swapQuote,
+        preparedSwap: preparedSwapPda.publicKey,
+        whirlpool: poolInfo.whirlpool,
+        tokenOwnerAccountA: poolInfo.tokenAccountA,
+        tokenOwnerAccountB: poolInfo.tokenAccountB,
+        tokenVaultA: pool.getData().tokenVaultA,
+        tokenVaultB: pool.getData().tokenVaultB,
+        tokenAuthority: testCtx.provider.wallet.publicKey,
+        tokenMintA: poolInfo.mintA,
+        tokenMintB: poolInfo.mintB,
+        tokenProgramA: poolInfo.tokenProgramA,
+        tokenProgramB: poolInfo.tokenProgramB,
+        oracle: poolInfo.oracle,
+      });
 
+      const swapTransactionBuilder = newTransactionBuilder();
+      swapTransactionBuilder.addInstructions([swapIx]);
+
+      const prepareSwapTransactionBuilder = newTransactionBuilder();
+      prepareSwapTransactionBuilder.addInstructions([prepareIx]);
+
+      const prepareAndCommitSwapTransactionBuilder = newTransactionBuilder();
+      prepareAndCommitSwapTransactionBuilder.addInstructions([prepareIx, commitIx]);
+
+      const simResult1 = await simulateTransaction(swapTransactionBuilder);
+      console.log("simResult1", simResult1);
+
+      const simResult2 = await simulateTransaction(prepareSwapTransactionBuilder);
+      console.log("simResult2", simResult2);
+
+      const simResult3 = await simulateTransaction(prepareAndCommitSwapTransactionBuilder);
+      console.log("simResult3", simResult3);
 
     });
   });
@@ -388,6 +413,17 @@ describe("prepare/commit swap tests", () => {
     });
   });
 */
+  function newTransactionBuilder() {
+    return new TransactionBuilder(testCtx.provider.connection, testCtx.provider.wallet);
+  }
+
+  async function simulateTransaction(tb: TransactionBuilder) {
+    const tx = await tb.addInstruction(useMaxCU()).build();
+    const vtx = tx.transaction as VersionedTransaction;
+    vtx.sign([getProviderWalletKeypair(testCtx.provider)]);
+    return testCtx.provider.connection.simulateTransaction(vtx);
+  }
+
   async function buildSwapTestPoolForLongestTraverse() {
     buildSwapTestPool(false, PriceMath.tickIndexToSqrtPriceX64(64 * 88 - 32))
   }

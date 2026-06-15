@@ -7,7 +7,12 @@ import type {
   Wallet,
   WrappedSolAccountCreateMethod,
 } from "@orca-so/common-sdk";
-import type { Commitment, Connection, SendOptions } from "@solana/web3.js";
+import type {
+  Commitment,
+  Connection,
+  PublicKey,
+  SendOptions,
+} from "@solana/web3.js";
 import type { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import type { WhirlpoolAccountFetcherInterface } from "./network/public";
@@ -62,12 +67,13 @@ export class WhirlpoolContext {
     ),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
+    programId?: PublicKey,
   ): WhirlpoolContext {
     const anchorProvider = new AnchorProvider(connection, wallet, {
       commitment: opts.userDefaultConfirmCommitment || "confirmed",
       preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
     });
-    const program = new Program(WhirlpoolIDL as Idl, anchorProvider);
+    const program = new Program(getWhirlpoolIdl(programId), anchorProvider);
     return new WhirlpoolContext(
       anchorProvider,
       anchorProvider.wallet,
@@ -104,8 +110,9 @@ export class WhirlpoolContext {
     ),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
+    programId?: PublicKey,
   ): WhirlpoolContext {
-    const program = new Program(WhirlpoolIDL as Idl, provider);
+    const program = new Program(getWhirlpoolIdl(programId), provider);
     return new WhirlpoolContext(
       provider,
       provider.wallet,
@@ -138,4 +145,18 @@ export class WhirlpoolContext {
   }
 
   // TODO: Add another factory method to build from on-chain IDL
+}
+
+/**
+ * Returns the bundled Whirlpool IDL, optionally rebound to a different program by
+ * overriding its embedded `address`. Anchor derives the program id a `Program` targets
+ * from `idl.address`, so cloning the IDL with a new address is what lets the SDK build
+ * instructions and PDAs against the immutable Whirlpool program (or any fork) without a
+ * separate IDL artifact.
+ */
+function getWhirlpoolIdl(programId?: PublicKey): Idl {
+  if (programId === undefined) {
+    return WhirlpoolIDL as Idl;
+  }
+  return { ...(WhirlpoolIDL as Idl), address: programId.toBase58() };
 }

@@ -218,6 +218,25 @@ export async function startLiteSVM(): Promise<LiteSVM> {
   loadProgramFromPath(programId, programPath, undefined, (msg) => {
     throw new Error(`${msg}. Run 'anchor build' first.`);
   });
+  // Load the immutable (non-upgradable) Whirlpool program. Built from the same source as
+  // the mutable program but deployed at a different program id, so tests can exercise
+  // pools created under the immutable deployment.
+  const immutableProgramId = new PublicKey(
+    "iwhrLHdsgrvmnwU8GF2FSmyabSMjfHwFGJAX2ufJ3ZN",
+  );
+  const immutableProgramPath = path.resolve(
+    __dirname,
+    "../external_program/whirlpool_immutable.so",
+  );
+  loadProgramFromPath(
+    immutableProgramId,
+    immutableProgramPath,
+    () => console.info("✅ Loaded immutable Whirlpool program"),
+    () =>
+      console.warn(
+        "⚠️  Immutable Whirlpool program not found - immutable tests may fail",
+      ),
+  );
   // Load the full Token-2022 program to override LiteSVM's built-in version
   // This provides complete instruction support including UpdateRateInterestBearingMint and AmountToUiAmount
   const token2022ProgramId = new PublicKey(
@@ -1370,10 +1389,20 @@ export async function initializeNativeMintIdempotent(provider: AnchorProvider) {
   });
 }
 
-export async function initializeLiteSVMEnvironment() {
+export async function initializeLiteSVMEnvironment(programId?: PublicKey) {
   await startLiteSVM();
   const provider = await createLiteSVMProvider();
-  const idl = whirlpoolIdl as anchor.Idl;
+  // Clone the IDL with the address overridden so the Anchor Program (and therefore all
+  // PDAs and instructions) binds to the requested program. Defaults to the mutable
+  // program embedded in the bundled IDL. LiteSVM has no on-chain IDL account, so we
+  // cannot use WhirlpoolContext.fromOnChainIdl here.
+  const idl =
+    programId === undefined
+      ? (whirlpoolIdl as anchor.Idl)
+      : {
+          ...(whirlpoolIdl as anchor.Idl),
+          address: programId.toBase58(),
+        };
   const program = new anchor.Program(idl, provider);
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -1385,9 +1414,11 @@ export async function initializeLiteSVMEnvironment() {
   };
 }
 
-export async function resetAndInitializeLiteSVMEnvironment() {
+export async function resetAndInitializeLiteSVMEnvironment(
+  programId?: PublicKey,
+) {
   await resetLiteSVM();
-  return await initializeLiteSVMEnvironment();
+  return await initializeLiteSVMEnvironment(programId);
 }
 
 // After calling sendTransaction, performing a remainder operation results in NaN.

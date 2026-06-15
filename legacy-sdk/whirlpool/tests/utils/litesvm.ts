@@ -931,9 +931,15 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
             },
           ],
         ) => {
-          const [, account] = entry;
+          const [pubkey, account] = entry;
           const accountData = account.data();
           return {
+            // HACKHACK: RPC's `simulateTransaction` returns account data in the same order as the input `addresses`,
+            // so the pubkey information itself is unnecessary.
+            // However, LiteSVM only returns writable accounts, which makes its behavior inconsistent with `simulateTransaction`.
+            // To address this, we include the address information as a hidden field.
+            _pubkey: pubkey,
+
             data: [Buffer.from(accountData).toString("base64"), "base64"],
             executable: account.executable(),
             lamports: Number(account.lamports()),

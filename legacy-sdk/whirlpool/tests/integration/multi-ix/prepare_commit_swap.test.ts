@@ -2,9 +2,11 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { AccountWithTokenProgram } from "@orca-so/common-sdk";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
+import { AccountInfo, Keypair, PublicKey, RpcResponseAndContext, SimulatedTransactionResponse, Transaction, VersionedTransaction } from "@solana/web3.js";
 import BN from "bn.js";
-import type {
+import {
+  AccountName,
+  AdaptiveFeeVariablesData,
   InitPoolWithAdaptiveFeeParams,
   OracleData,
   WhirlpoolClient,
@@ -24,6 +26,7 @@ import {
   swapQuoteWithParams,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
+  WHIRLPOOL_IDL,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -54,6 +57,8 @@ import {
 import type { WhirlpoolsError } from "../../../src/errors/errors";
 import { SwapErrorCode } from "../../../src/errors/errors";
 import { TransactionBuilder } from "@orca-so/common-sdk/dist/web3/transactions/transactions-builder";
+import { ParsableWhirlpool } from "../../../dist/network/public/parsing";
+import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -228,9 +233,17 @@ describe("prepare/commit swap tests", () => {
       const simResult2 = await simulateTransaction(prepareSwapTransactionBuilder);
       console.log("simResult2", simResult2);
 
+      console.log("simResult2 compute units", simResult2.unitsConsumed());
+      console.log("simResult2 return data", simResult2.returnData());
+
+      const prepareSwapV2ReturnData = parsePrepareSwapV2ReturnData(simResult2.returnData().data);
+      console.log("simResult2 return data (parsed)", prepareSwapV2ReturnData);
+
+      const preparedSwapData = parsePreparedSwap(simResult2.postWritableAccount(preparedSwapPda.publicKey));
+      console.log("simResult2 prepared swap (parsed)", preparedSwapData);
+
       const simResult3 = await simulateTransaction(prepareAndCommitSwapTransactionBuilder);
       console.log("simResult3", simResult3);
-
     });
   });
 
@@ -414,14 +427,18 @@ describe("prepare/commit swap tests", () => {
   });
 */
   function newTransactionBuilder() {
-    return new TransactionBuilder(testCtx.provider.connection, testCtx.provider.wallet);
+    // 
+    return new TransactionBuilder(testCtx.provider.connection, testCtx.provider.wallet)
+      // `simulateTransaction` returns the return data from the last program executed in the transaction.
+      // To ensure the desired return data is preserved, we place the Compute Budget program instruction at the beginning rather than the end.
+      .addInstruction(useMaxCU());
   }
 
   async function simulateTransaction(tb: TransactionBuilder) {
-    const tx = await tb.addInstruction(useMaxCU()).build();
+    const tx = await tb.build();
     const vtx = tx.transaction as VersionedTransaction;
     vtx.sign([getProviderWalletKeypair(testCtx.provider)]);
-    return testCtx.provider.connection.simulateTransaction(vtx);
+    return new SimulatedTransactionAccessor(await testCtx.provider.connection.simulateTransaction(vtx));
   }
 
   async function buildSwapTestPoolForLongestTraverse() {
@@ -640,4 +657,139 @@ function powBN(base: number, exp: number): BN {
 function debug(msg: string) {
   if (!DEBUG_OUTPUT) return;
   console.debug(msg);
+}
+
+type ReturnData = {
+  programId: PublicKey,
+  data: Buffer,
+}
+class SimulatedTransactionAccessor {
+  constructor(private simResult: RpcResponseAndContext<SimulatedTransactionResponse>) {}
+
+  unitsConsumed(): number {
+    return this.simResult.value.unitsConsumed!
+  }
+
+  returnData(): ReturnData {
+    const programId = new PublicKey(this.simResult.value.returnData!.programId);
+    const data = Buffer.from(this.simResult.value.returnData!.data[0], "base64");
+    return { programId, data };
+  }
+
+  postWritableAccount(pubkey: PublicKey): AccountInfo<Buffer> | null {
+    for (let account of this.simResult.value.accounts!) {
+      // HACK: liteSVM based simulation only
+      const accountPubkey = (account as any)["_pubkey"] as PublicKey;
+
+      if (pubkey.equals(accountPubkey)) {
+        return {
+          executable: account!.executable,
+          lamports: account!.lamports,
+          owner: new PublicKey(account!.owner),
+          data: Buffer.from(account!.data[0], "base64"),
+        };
+      }
+    }
+    return null;
+  }
+}
+
+const WhirlpoolCoder = new anchor.BorshCoder(convertIdlToCamelCase(WHIRLPOOL_IDL));
+
+function parseAnchorAccount(
+  accountName: AccountName,
+  accountData: AccountInfo<Buffer>,
+) {
+  const data = accountData.data;
+  const discriminator = WhirlpoolCoder.accounts.accountDiscriminator(accountName);
+  if (discriminator.compare(data.subarray(0, 8))) {
+    console.error("incorrect account name during parsing");
+    return null;
+  }
+
+  try {
+    return WhirlpoolCoder.accounts.decode(accountName, data);
+  } catch (_e) {
+    console.error("unknown account name during parsing");
+    return null;
+  }
+}
+
+const MAX_PENDING_TICK_UPDATES_LEN = TICK_ARRAY_SIZE * 3;
+type InternalPreparedSwapData = {
+  version: number,
+  state: number,
+  precondition: {
+    slot: BN,
+    authority: PublicKey,
+    whirlpool: PublicKey,
+    whirlpoolStateVersion: number,
+    amount: BN,
+    sqrtPriceLimit: BN,
+    amountSpecifiedIsInput: boolean,
+    aToB: boolean,
+  },
+  pendingWhirlpoolUpdate: {
+    amountA: BN,
+    amountB: BN,
+    lpFee: BN,
+    nextLiquidity: BN,
+    nextTickIndex: number,
+    nextSqrtPrice: BN,
+    nextFeeGrowthGlobal: BN,
+    nextRewardGrowthGlobal: [BN, BN, BN],
+    nextProtocolFee: BN,
+  },
+  pendingOracleUpdate: {
+    nextAdaptiveFeeVariablesIsSome: boolean,
+    nextAdaptiveFeeVariables: AdaptiveFeeVariablesData,
+  },
+  pendingTickUpdatesLen: number,
+  pendingTickUpdates: {
+    arrayIndex: number,
+    tickIndex: number,
+    nextFeeGrowthOutsideA: BN,
+    nextFeeGrowthOutsideB: BN,
+  }[],
+};
+
+function parsePreparedSwap(
+    accountData: AccountInfo<Buffer> | undefined | null,
+): InternalPreparedSwapData | null {
+  if (!accountData?.data) {
+    return null;
+  }
+
+  try {
+    return parseAnchorAccount(AccountName.PreparedSwap, accountData);
+  } catch (e) {
+    console.error(`error while parsing PreparedSwap: ${e}`);
+    return null;
+  }
+}
+
+type PrepareSwapV2ReturnData = PrepareSwapV2ReturnDataQuoteSuccess | PrepareSwapV2ReturnDataQuoteError;
+type PrepareSwapV2ReturnDataQuoteSuccess = {
+  quoteSuccess: {
+    amount: BN,
+    otherAmount: BN,
+    nextSqrtPrice: BN,
+    nextTickIndex: number,
+  },
+};
+type PrepareSwapV2ReturnDataQuoteError = {
+  quoteError: {
+    errorCode: BN;
+  },
+};
+
+function parsePrepareSwapV2ReturnData(
+  returnData: Buffer
+): PrepareSwapV2ReturnData | null {
+  try {
+    return WhirlpoolCoder.types.decode("prepareSwapV2ReturnData", returnData);
+  } catch (e) {
+    console.error("failed during parsing:", e);
+    return null;
+  }
 }

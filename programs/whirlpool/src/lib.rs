@@ -1415,9 +1415,13 @@ pub mod whirlpool {
     }
 
     // Only for inclusion in the IDL
-    pub fn idl_include(ctx: Context<IdlInclude>) -> Result<()> {
+    pub fn idl_include(
+        ctx: Context<IdlInclude>,
+        prepare_swap_v2_return_data: PrepareSwapV2ReturnData,
+    ) -> Result<()> {
         // So compiler doesn't strip out the ctx
         let _ = ctx.program_id;
+        let _ = prepare_swap_v2_return_data;
         Err(ProgramError::InvalidInstructionData.into())
     }
 }

@@ -1,14 +1,20 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Percentage } from "@orca-so/common-sdk";
+import { BN } from "@coral-xyz/anchor";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
+import Decimal from "decimal.js";
 import type {
   PositionData,
+  TickArrayData,
   WhirlpoolData,
   WhirlpoolContext,
 } from "../../../src";
 import {
+  collectFeesQuote,
   ORCA_WHIRLPOOL_PROGRAM_ID,
   ORCA_WHIRLPOOL_PROGRAM_ID_IMMUTABLE,
+  PDAUtil,
+  TickArrayUtil,
   toTx,
   WhirlpoolIx,
 } from "../../../src";
@@ -16,7 +22,12 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../../src/quotes/public/decrease-liquidity-quote";
 import { increaseLiquidityQuoteByLiquidityWithParams } from "../../../src/quotes/public/increase-liquidity-quote";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import { TickSpacing, ZERO_BN } from "../../utils";
+import {
+  createTokenAccount,
+  getTokenBalance,
+  TickSpacing,
+  ZERO_BN,
+} from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { resetAndInitializeLiteSVMEnvironment } from "../../utils/litesvm";
 import type { PublicKey } from "@solana/web3.js";
@@ -35,11 +46,13 @@ const DEPLOYMENTS = [
 describe.each(DEPLOYMENTS)(
   "whirlpool lifecycle ($label)",
   ({ programId }: { programId: PublicKey }) => {
+    let provider: anchor.AnchorProvider;
     let ctx: WhirlpoolContext;
     let fetcher: WhirlpoolContext["fetcher"];
 
     beforeAll(async () => {
       const env = await resetAndInitializeLiteSVMEnvironment(programId);
+      provider = env.provider;
       ctx = env.ctx;
       fetcher = env.fetcher;
     });
@@ -48,20 +61,27 @@ describe.each(DEPLOYMENTS)(
       assert.ok(ctx.program.programId.equals(programId));
     });
 
-    it("runs open position -> add liquidity -> decrease some -> decrease all -> close", async () => {
+    it("runs open position -> add liquidity -> swap -> collect fees -> decrease some -> decrease all -> close", async () => {
       // init config + fee tier + pool, then open an empty position (no liquidity yet)
+      const tickSpacing = TickSpacing.Standard;
       const tickLowerIndex = 29440;
       const tickUpperIndex = 33536;
       const liquidityAmount = new anchor.BN(10_000_000);
       const slippageTolerance = Percentage.fromFraction(1, 100);
       const fixture = await new WhirlpoolTestFixture(ctx).init({
-        tickSpacing: TickSpacing.Standard,
+        tickSpacing,
         positions: [
           { tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN },
         ],
       });
       const {
-        poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+        },
         tokenAccountA,
         tokenAccountB,
         positions,
@@ -127,6 +147,155 @@ describe.each(DEPLOYMENTS)(
         IGNORE_CACHE,
       )) as PositionData;
       assert.ok(positionAfterIncrease.liquidity.eq(liquidityAmount));
+
+      // swap both directions to accrue fees in token A and token B
+      const tickArrayPda = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+        22528,
+      );
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
+
+      const positionBeforeSwap = (await fetcher.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      )) as PositionData;
+      assert.ok(positionBeforeSwap.feeOwedA.eq(ZERO_BN));
+      assert.ok(positionBeforeSwap.feeOwedB.eq(ZERO_BN));
+
+      // accrue fees in token A (a -> b)
+      await toTx(
+        ctx,
+        WhirlpoolIx.swapIx(ctx.program, {
+          amount: new BN(200_000),
+          otherAmountThreshold: ZERO_BN,
+          sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
+          amountSpecifiedIsInput: true,
+          aToB: true,
+          whirlpool: whirlpoolPda.publicKey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArray0: tickArrayPda.publicKey,
+          tickArray1: tickArrayPda.publicKey,
+          tickArray2: tickArrayPda.publicKey,
+          oracle: oraclePda.publicKey,
+        }),
+      ).buildAndExecute();
+
+      // accrue fees in token B (b -> a)
+      await toTx(
+        ctx,
+        WhirlpoolIx.swapIx(ctx.program, {
+          amount: new BN(200_000),
+          otherAmountThreshold: ZERO_BN,
+          sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
+          amountSpecifiedIsInput: true,
+          aToB: false,
+          whirlpool: whirlpoolPda.publicKey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArray0: tickArrayPda.publicKey,
+          tickArray1: tickArrayPda.publicKey,
+          tickArray2: tickArrayPda.publicKey,
+          oracle: oraclePda.publicKey,
+        }),
+      ).buildAndExecute();
+
+      // sync the position's owed fees so they can be collected
+      await toTx(
+        ctx,
+        WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          position: positions[0].publicKey,
+          tickArrayLower: tickArrayPda.publicKey,
+          tickArrayUpper: tickArrayPda.publicKey,
+        }),
+      ).buildAndExecute();
+
+      const positionBeforeCollect = (await fetcher.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      )) as PositionData;
+      // both swaps should have accrued fees on the in-range position
+      assert.ok(positionBeforeCollect.feeOwedA.gt(ZERO_BN));
+      assert.ok(positionBeforeCollect.feeOwedB.gt(ZERO_BN));
+
+      // collect fees into fresh token accounts and verify the on-chain payout
+      const feeAccountA = await createTokenAccount(
+        provider,
+        tokenMintA,
+        provider.wallet.publicKey,
+      );
+      const feeAccountB = await createTokenAccount(
+        provider,
+        tokenMintB,
+        provider.wallet.publicKey,
+      );
+
+      const poolBeforeCollect = (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+      const tickArrayData = (await fetcher.getTickArray(
+        tickArrayPda.publicKey,
+        IGNORE_CACHE,
+      )) as TickArrayData;
+      const lowerTick = TickArrayUtil.getTickFromArray(
+        tickArrayData,
+        tickLowerIndex,
+        tickSpacing,
+      );
+      const upperTick = TickArrayUtil.getTickFromArray(
+        tickArrayData,
+        tickUpperIndex,
+        tickSpacing,
+      );
+      const feeExpectation = collectFeesQuote({
+        whirlpool: poolBeforeCollect,
+        position: positionBeforeCollect,
+        tickLower: lowerTick,
+        tickUpper: upperTick,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          poolBeforeCollect,
+          IGNORE_CACHE,
+        ),
+      });
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: ctx.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        }),
+      ).buildAndExecute();
+
+      const feeBalanceA = await getTokenBalance(provider, feeAccountA);
+      const feeBalanceB = await getTokenBalance(provider, feeAccountB);
+      assert.equal(feeBalanceA, feeExpectation.feeOwedA);
+      assert.equal(feeBalanceB, feeExpectation.feeOwedB);
+
+      const positionAfterCollect = (await fetcher.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      )) as PositionData;
+      assert.ok(positionAfterCollect.feeOwedA.eq(ZERO_BN));
+      assert.ok(positionAfterCollect.feeOwedB.eq(ZERO_BN));
 
       // decrease some liquidity (partial)
       const poolBeforeDecrease = (await fetcher.getPool(

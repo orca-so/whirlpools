@@ -13,7 +13,7 @@ export const ORCA_WHIRLPOOL_PROGRAM_ID = new PublicKey(
  * Program ID hosting Orca's immutable (non-upgradable) Whirlpool program.
  *
  * This is a separate, non-upgradable deployment of the Whirlpool program built from the
- * same source as {@link ORCA_WHIRLPOOL_PROGRAM_ID} at commit hash 
+ * same source as {@link ORCA_WHIRLPOOL_PROGRAM_ID} at commit hash
  * 'b5cb6b8aa69ddbc2c868c3389f2de4f1e2709984'. Because PDA derivation and instruction
  * dispatch both depend on the program ID, pools created under this program are entirely
  * distinct from the mutable ones. Pass this to `WhirlpoolContext.from`/`withProvider`

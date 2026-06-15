@@ -7,6 +7,7 @@ import BN from "bn.js";
 import {
   AccountName,
   AdaptiveFeeVariablesData,
+  getAccountSize,
   InitPoolWithAdaptiveFeeParams,
   OracleData,
   WhirlpoolClient,
@@ -44,7 +45,7 @@ import {
   getProviderWalletKeypair,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { buildTestPoolV2Params, buildTestPoolWithAdaptiveFeeParams } from "../../utils/v2/init-utils-v2";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import type { FundedPositionParams } from "../../utils/init-utils";
@@ -92,7 +93,7 @@ describe("prepare/commit swap tests", () => {
   });
 
   describe("prepare/commit swap", () => {
-    it("test", async () => {
+    it("normal", async () => {
       const poolInfo = await buildSwapTestPool(false); // non-AF
       const pool = await testCtx.whirlpoolClient.getPool(
         poolInfo.whirlpool,
@@ -102,6 +103,7 @@ describe("prepare/commit swap tests", () => {
       const tradeTokenAmount = new BN(5000000);
       const tradeAmountSpecifiedIsInput = true;
       const tradeAToB = true;
+      const tradeSqrtPriceLimit = tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN;
       const swapQuote = swapQuoteWithParams(
         {
           amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
@@ -109,7 +111,7 @@ describe("prepare/commit swap tests", () => {
           otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
             tradeAmountSpecifiedIsInput,
           ),
-          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+          sqrtPriceLimit: tradeSqrtPriceLimit,
           tickArrays: await SwapUtils.getTickArrays(
             pool.getData().tickCurrentIndex,
             pool.getData().tickSpacing,
@@ -132,33 +134,8 @@ describe("prepare/commit swap tests", () => {
         Percentage.fromFraction(0, 100),
       );
 
-      console.log("amount", swapQuote.estimatedAmountIn.toString(), "-->", swapQuote.estimatedAmountOut.toString());
-      console.log("tick", pool.getData().tickCurrentIndex, "-->", swapQuote.estimatedEndTickIndex);
-/*
-      await toTx(
-        testCtx.whirlpoolCtx,
-        WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
-          ...swapQuote,
-          whirlpool: poolInfo.whirlpool,
-          tokenOwnerAccountA: poolInfo.tokenAccountA,
-          tokenOwnerAccountB: poolInfo.tokenAccountB,
-          tokenVaultA: pool.getData().tokenVaultA,
-          tokenVaultB: pool.getData().tokenVaultB,
-          tokenAuthority: testCtx.provider.wallet.publicKey,
-          tokenMintA: poolInfo.mintA,
-          tokenMintB: poolInfo.mintB,
-          tokenProgramA: poolInfo.tokenProgramA,
-          tokenProgramB: poolInfo.tokenProgramB,
-          oracle: poolInfo.oracle,
-        }),
-      )
-      .addInstruction(useMaxCU())
-      .buildAndExecute();
-
-      const postWhirlpool = await pool.refreshData();
-      console.log("post tick", postWhirlpool.tickCurrentIndex);
-      console.log("post sqrt price", postWhirlpool.sqrtPrice.toString(), "expect", swapQuote.estimatedEndSqrtPrice.toString());
-*/
+      //console.log("amount", swapQuote.estimatedAmountIn.toString(), "-->", swapQuote.estimatedAmountOut.toString());
+      //console.log("tick", pool.getData().tickCurrentIndex, "-->", swapQuote.estimatedEndTickIndex);
 
       const preparedSwapPda = PDAUtil.getPreparedSwap(testCtx.whirlpoolCtx.program.programId, 0);
       await toTx(
@@ -190,15 +167,9 @@ describe("prepare/commit swap tests", () => {
         ...swapQuote,
         preparedSwap: preparedSwapPda.publicKey,
         whirlpool: poolInfo.whirlpool,
-        //tokenOwnerAccountA: poolInfo.tokenAccountA,
-        //tokenOwnerAccountB: poolInfo.tokenAccountB,
-        //tokenVaultA: pool.getData().tokenVaultA,
-        //tokenVaultB: pool.getData().tokenVaultB,
         tokenAuthority: testCtx.provider.wallet.publicKey,
         tokenMintA: poolInfo.mintA,
         tokenMintB: poolInfo.mintB,
-        //tokenProgramA: poolInfo.tokenProgramA,
-        //tokenProgramB: poolInfo.tokenProgramB,
         oracle: poolInfo.oracle,
       });
 
@@ -218,8 +189,8 @@ describe("prepare/commit swap tests", () => {
         oracle: poolInfo.oracle,
       });
 
-      const swapTransactionBuilder = newTransactionBuilder();
-      swapTransactionBuilder.addInstructions([swapIx]);
+      const swapV2TransactionBuilder = newTransactionBuilder();
+      swapV2TransactionBuilder.addInstructions([swapIx]);
 
       const prepareSwapTransactionBuilder = newTransactionBuilder();
       prepareSwapTransactionBuilder.addInstructions([prepareIx]);
@@ -227,205 +198,75 @@ describe("prepare/commit swap tests", () => {
       const prepareAndCommitSwapTransactionBuilder = newTransactionBuilder();
       prepareAndCommitSwapTransactionBuilder.addInstructions([prepareIx, commitIx]);
 
-      const simResult1 = await simulateTransaction(swapTransactionBuilder);
-      console.log("simResult1", simResult1);
+      // check prepareSwapV2
+      const prepareSimResult = await simulateTransaction(prepareSwapTransactionBuilder);
 
-      const simResult2 = await simulateTransaction(prepareSwapTransactionBuilder);
-      console.log("simResult2", simResult2);
+      const prepareSwapV2ReturnData = parsePrepareSwapV2ReturnData(prepareSimResult.returnData().data);
+      assert.ok(!!prepareSwapV2ReturnData && "quoteSuccess" in prepareSwapV2ReturnData);
+      const onChainSwapQuote = prepareSwapV2ReturnData.quoteSuccess;
+      assert.ok(onChainSwapQuote.amount.eq(swapQuote.estimatedAmountIn));
+      assert.ok(onChainSwapQuote.otherAmount.eq(swapQuote.estimatedAmountOut));
+      assert.ok(onChainSwapQuote.nextSqrtPrice.eq(swapQuote.estimatedEndSqrtPrice));
+      assert.ok(onChainSwapQuote.nextTickIndex === swapQuote.estimatedEndTickIndex);
 
-      console.log("simResult2 compute units", simResult2.unitsConsumed());
-      console.log("simResult2 return data", simResult2.returnData());
+      const preparedSwapData = parsePreparedSwap(prepareSimResult.postWritableAccount(preparedSwapPda.publicKey));
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(preparedSwapData.precondition.slot.toNumber() === prepareSimResult.slot());
+      assert.ok(preparedSwapData.precondition.authority.equals(testCtx.provider.wallet.publicKey));
+      assert.ok(preparedSwapData.precondition.whirlpool.equals(poolInfo.whirlpool));
+      // TODO: assert.ok(preparedSwapData.precondition.whirlpoolStateVersion 
+      assert.ok(preparedSwapData.precondition.amount.eq(tradeTokenAmount));
+      assert.ok(preparedSwapData.precondition.sqrtPriceLimit.eq(tradeSqrtPriceLimit));
+      assert.ok(preparedSwapData.precondition.amountSpecifiedIsInput === tradeAmountSpecifiedIsInput);
+      assert.ok(preparedSwapData.precondition.aToB === tradeAToB);
 
-      const prepareSwapV2ReturnData = parsePrepareSwapV2ReturnData(simResult2.returnData().data);
-      console.log("simResult2 return data (parsed)", prepareSwapV2ReturnData);
+      // Note: all initializable ticks have been initialized.
+      assert.ok(pool.getData().tickCurrentIndex === 2848 && swapQuote.estimatedEndTickIndex == -2780);
+      const numCrossedInitializableTicks = Math.floor(2848 / 64) + 1 + Math.floor(2780 / 64);
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, numCrossedInitializableTicks);
 
-      const preparedSwapData = parsePreparedSwap(simResult2.postWritableAccount(preparedSwapPda.publicKey));
-      console.log("simResult2 prepared swap (parsed)", preparedSwapData);
+      // check commitSwapV2
+      const prepareAndCommitSimResult = await simulateTransaction(prepareAndCommitSwapTransactionBuilder);
+      const swapV2SimResult = await simulateTransaction(swapV2TransactionBuilder);
 
-      const simResult3 = await simulateTransaction(prepareAndCommitSwapTransactionBuilder);
-      console.log("simResult3", simResult3);
+      const preparedSwapDataAfterCommit = parsePreparedSwap(prepareAndCommitSimResult.postWritableAccount(preparedSwapPda.publicKey));
+      assert.ok(!!preparedSwapDataAfterCommit);
+      assert.ok(preparedSwapDataAfterCommit.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapDataAfterCommit.state === PREPARED_SWAP_STATE_COMMITTED);
+
+      // vs. swapV2 account check
+      // whirlpool
+      const prepareCommitWhirlpoolAccount = prepareAndCommitSimResult.postWritableAccount(poolInfo.whirlpool)!;
+      const whirlpoolData = ParsableWhirlpool.parse(poolInfo.whirlpool, prepareCommitWhirlpoolAccount);
+      assert.ok(!!whirlpoolData);
+      assert.ok(whirlpoolData.sqrtPrice.eq(swapQuote.estimatedEndSqrtPrice));
+      assert.ok(whirlpoolData.tickCurrentIndex === swapQuote.estimatedEndTickIndex);
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, poolInfo.whirlpool, getAccountSize(AccountName.Whirlpool));
+
+      // tickarray
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, swapQuote.tickArray0, getAccountSize(AccountName.DynamicTickArray));
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, swapQuote.tickArray1, getAccountSize(AccountName.DynamicTickArray));
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, swapQuote.tickArray2, getAccountSize(AccountName.DynamicTickArray));
+
+      // token accounts
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, poolInfo.tokenAccountA, ACCOUNT_SIZE);
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, poolInfo.tokenAccountB, ACCOUNT_SIZE);
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, pool.getData().tokenVaultA, ACCOUNT_SIZE);
+      assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, pool.getData().tokenVaultB, ACCOUNT_SIZE);
+
+      // CU check
+      const prepareCommitCU = prepareAndCommitSimResult.unitsConsumed();
+      const swapV2CU = swapV2SimResult.unitsConsumed();
+
+      assert.ok(prepareCommitCU > swapV2CU && swapV2CU > 0);
+      const overheadPercent = Math.floor((prepareCommitCU - swapV2CU) / swapV2CU * 10000) / 100;
+      assert.ok(overheadPercent < 20); // <20% overhead
+      console.info(`swapV2 CU: ${swapV2CU} / prepare & commit CU: ${prepareCommitCU} (overhead: ${overheadPercent}%)`);
     });
   });
 
-  /*
-  describe("trade with AdaptiveFee", () => {
-    describe("swap", () => {
-      const versions = [1, 2];
-      for (const version of versions) {
-        it(`swap V${version}`, async () => {
-          const poolInfo = await buildSwapTestPool(
-            undefined,
-            PriceMath.tickIndexToSqrtPriceX64(150),
-          ); // tick_group_index = 2
-          const pool = await testCtx.whirlpoolClient.getPool(
-            poolInfo.whirlpool,
-            IGNORE_CACHE,
-          );
-
-          const tradeTokenAmount = new BN(20000);
-          const tradeAmountSpecifiedIsInput = true;
-          const tradeAToB = true;
-          const swapQuote = swapQuoteWithParams(
-            {
-              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-              aToB: tradeAToB,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                tradeAmountSpecifiedIsInput,
-              ),
-              sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
-              tickArrays: await SwapUtils.getTickArrays(
-                pool.getData().tickCurrentIndex,
-                pool.getData().tickSpacing,
-                tradeAToB,
-                testCtx.whirlpoolCtx.program.programId,
-                pool.getAddress(),
-                testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE,
-              ),
-              tokenAmount: tradeTokenAmount,
-              whirlpoolData: pool.getData(),
-              tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              oracleData: await SwapUtils.getOracle(
-                testCtx.whirlpoolCtx.program.programId,
-                pool.getAddress(),
-                testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE,
-              ),
-            },
-            Percentage.fromFraction(0, 100),
-          );
-
-          assert.ok(swapQuote.estimatedFeeRateMin === pool.getData().feeRate);
-          assert.ok(swapQuote.estimatedFeeRateMax > pool.getData().feeRate);
-
-          const swapParams = SwapUtils.getSwapParamsFromQuote(
-            swapQuote,
-            testCtx.whirlpoolCtx,
-            pool,
-            swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
-            swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-            testCtx.provider.wallet.publicKey,
-          );
-
-          const preWhirlpool = await pool.refreshData();
-          const preOracle = (await testCtx.whirlpoolCtx.fetcher.getOracle(
-            poolInfo.oracle,
-            IGNORE_CACHE,
-          )) as OracleData;
-
-          const preTokenAccountIn =
-            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
-              swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
-              IGNORE_CACHE,
-            )) as AccountWithTokenProgram;
-          const preTokenAccountOut =
-            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
-              swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-              IGNORE_CACHE,
-            )) as AccountWithTokenProgram;
-
-          // initial state
-          const preVars = preOracle.adaptiveFeeVariables;
-          assert.ok(preVars.lastReferenceUpdateTimestamp.isZero());
-          assert.ok(preVars.lastMajorSwapTimestamp.isZero());
-          assert.ok(preVars.tickGroupIndexReference == 0);
-          assert.ok(preVars.volatilityReference == 0);
-          assert.ok(preVars.volatilityAccumulator == 0);
-
-          if (version == 1) {
-            await toTx(
-              testCtx.whirlpoolCtx,
-              WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, swapParams),
-            ).buildAndExecute();
-          } else {
-            await toTx(
-              testCtx.whirlpoolCtx,
-              WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
-                ...swapParams,
-                tokenMintA: poolInfo.mintA,
-                tokenMintB: poolInfo.mintB,
-                tokenProgramA: TOKEN_PROGRAM_ID,
-                tokenProgramB: TOKEN_PROGRAM_ID,
-              }),
-            ).buildAndExecute();
-          }
-
-          const postWhirlpool = await pool.refreshData();
-          const postOracle = (await pollForCondition(
-            async () =>
-              (await testCtx.whirlpoolCtx.fetcher.getOracle(
-                poolInfo.oracle,
-                IGNORE_CACHE,
-              )) as OracleData,
-            (o) =>
-              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp.gtn(0) &&
-              o.adaptiveFeeVariables.lastReferenceUpdateTimestamp
-                .sub(new BN(getCurrentTimestamp()))
-                .abs()
-                .lten(10),
-            { maxRetries: 50, delayMs: 10 },
-          )) as OracleData;
-
-          const postVars = postOracle.adaptiveFeeVariables;
-          const currentSystemTimestamp = new BN(getCurrentTimestamp());
-          assert.ok(postVars.lastReferenceUpdateTimestamp.gtn(0));
-          assert.ok(
-            postVars.lastReferenceUpdateTimestamp
-              .sub(currentSystemTimestamp)
-              .abs()
-              .lten(10),
-          ); // margin 10s
-          assert.ok(
-            postVars.lastMajorSwapTimestamp.eq(
-              postVars.lastReferenceUpdateTimestamp,
-            ),
-          );
-          assert.ok(
-            postVars.tickGroupIndexReference ==
-              Math.floor(
-                preWhirlpool.tickCurrentIndex / preWhirlpool.tickSpacing,
-              ),
-          );
-          assert.ok(postVars.tickGroupIndexReference == 2);
-          assert.ok(postVars.volatilityReference == 0);
-
-          const updatedTickGroupIndex = Math.floor(
-            PriceMath.sqrtPriceX64ToTickIndex(postWhirlpool.sqrtPrice) /
-              postWhirlpool.tickSpacing,
-          );
-          const tickGroupIndexDelta = Math.abs(
-            updatedTickGroupIndex - postVars.tickGroupIndexReference,
-          );
-          assert.ok(tickGroupIndexDelta > 0);
-          assert.ok(
-            postVars.volatilityAccumulator == tickGroupIndexDelta * 10000,
-          );
-
-          const postTokenAccountIn =
-            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
-              swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
-              IGNORE_CACHE,
-            )) as AccountWithTokenProgram;
-          const postTokenAccountOut =
-            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
-              swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-              IGNORE_CACHE,
-            )) as AccountWithTokenProgram;
-          assert.ok(
-            postTokenAccountIn.amount ===
-              preTokenAccountIn.amount -
-                BigInt(swapQuote.estimatedAmountIn.toString()),
-          );
-          assert.ok(
-            postTokenAccountOut.amount ===
-              preTokenAccountOut.amount +
-                BigInt(swapQuote.estimatedAmountOut.toString()),
-          );
-        });
-      }
-    });
-  });
-*/
   function newTransactionBuilder() {
     // 
     return new TransactionBuilder(testCtx.provider.connection, testCtx.provider.wallet)
@@ -534,12 +375,12 @@ describe("prepare/commit swap tests", () => {
     const poolData = pool.getData();
 
     await (await pool.initTickArrayForTicks(
-      TickUtil.getFullRangeTickIndex(tickSpacing),
+      TickUtil.getFullRangeTickIndex(tickSpacing), undefined, undefined, "dynamic"
     ))!.buildAndExecute();
 
     const offsets = [-3, -2, -1, 0, 1, 2, 3];
     const tickArrayStartIndexes = offsets.map((offset) => TickUtil.getStartTickIndex(poolData.tickCurrentIndex, tickSpacing, offset));
-    await (await pool.initTickArrayForTicks(tickArrayStartIndexes))!.buildAndExecute();
+    await (await pool.initTickArrayForTicks(tickArrayStartIndexes, undefined, undefined, "dynamic"))!.buildAndExecute();
 
     const leftMostInitializableTickIndex = tickArrayStartIndexes[0];
     const rightMostInitializableTickIndex = tickArrayStartIndexes[6] + tickSpacing * (TICK_ARRAY_SIZE - 1);
@@ -666,6 +507,10 @@ type ReturnData = {
 class SimulatedTransactionAccessor {
   constructor(private simResult: RpcResponseAndContext<SimulatedTransactionResponse>) {}
 
+  slot(): number {
+    return this.simResult.context.slot;
+  }
+
   unitsConsumed(): number {
     return this.simResult.value.unitsConsumed!
   }
@@ -694,6 +539,17 @@ class SimulatedTransactionAccessor {
   }
 }
 
+function assertPostWritableAccountMatch(sim0: SimulatedTransactionAccessor, sim1: SimulatedTransactionAccessor, pubkey: PublicKey, expectedDataLen?: number) {
+  const sim0Account = sim0.postWritableAccount(pubkey);
+  const sim1Account = sim1.postWritableAccount(pubkey);
+  assert.ok(!!sim0Account && !!sim1Account);
+
+  if (expectedDataLen !== undefined) {
+    assert.ok(sim0Account.data.length === expectedDataLen);
+  }
+  assert.ok(sim0Account.data.equals(sim1Account.data));
+}
+
 const WhirlpoolCoder = new anchor.BorshCoder(convertIdlToCamelCase(WHIRLPOOL_IDL));
 
 function parseAnchorAccount(
@@ -715,7 +571,12 @@ function parseAnchorAccount(
   }
 }
 
+const PREPARED_SWAP_LAYOUT_VERSION = 1;
+const PREPARED_SWAP_STATE_UNPREPARED = 0;
+const PREPARED_SWAP_STATE_PREPARED = 1;
+const PREPARED_SWAP_STATE_COMMITTED = 2;
 const MAX_PENDING_TICK_UPDATES_LEN = TICK_ARRAY_SIZE * 3;
+
 type InternalPreparedSwapData = {
   version: number,
   state: number,
@@ -729,28 +590,30 @@ type InternalPreparedSwapData = {
     amountSpecifiedIsInput: boolean,
     aToB: boolean,
   },
-  pendingWhirlpoolUpdate: {
-    amountA: BN,
-    amountB: BN,
-    lpFee: BN,
-    nextLiquidity: BN,
-    nextTickIndex: number,
-    nextSqrtPrice: BN,
-    nextFeeGrowthGlobal: BN,
-    nextRewardGrowthGlobal: [BN, BN, BN],
-    nextProtocolFee: BN,
+  pendingUpdates: {
+    pendingWhirlpoolUpdate: {
+      amountA: BN,
+      amountB: BN,
+      lpFee: BN,
+      nextLiquidity: BN,
+      nextTickIndex: number,
+      nextSqrtPrice: BN,
+      nextFeeGrowthGlobal: BN,
+      nextRewardGrowthGlobal: [BN, BN, BN],
+      nextProtocolFee: BN,
+    },
+    pendingOracleUpdate: {
+      nextAdaptiveFeeVariablesIsSome: boolean,
+      nextAdaptiveFeeVariables: AdaptiveFeeVariablesData,
+    },
+    pendingTickUpdatesLen: number,
+    pendingTickUpdates: {
+      arrayIndex: number,
+      tickIndex: number,
+      nextFeeGrowthOutsideA: BN,
+      nextFeeGrowthOutsideB: BN,
+    }[],
   },
-  pendingOracleUpdate: {
-    nextAdaptiveFeeVariablesIsSome: boolean,
-    nextAdaptiveFeeVariables: AdaptiveFeeVariablesData,
-  },
-  pendingTickUpdatesLen: number,
-  pendingTickUpdates: {
-    arrayIndex: number,
-    tickIndex: number,
-    nextFeeGrowthOutsideA: BN,
-    nextFeeGrowthOutsideB: BN,
-  }[],
 };
 
 function parsePreparedSwap(

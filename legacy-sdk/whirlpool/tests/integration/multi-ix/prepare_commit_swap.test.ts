@@ -211,6 +211,7 @@ describe("prepare/commit swap tests", () => {
 
       const preparedSwapData = parsePreparedSwap(prepareSimResult.postWritableAccount(preparedSwapPda.publicKey));
       assert.ok(!!preparedSwapData);
+      console.log("preparedSwapData", preparedSwapData);
       assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
       assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
       assert.ok(preparedSwapData.precondition.slot.toNumber() === prepareSimResult.slot());
@@ -591,7 +592,7 @@ type InternalPreparedSwapData = {
     aToB: boolean,
   },
   pendingUpdates: {
-    pendingWhirlpoolUpdate: {
+    pendingPostSwapUpdate: {
       amountA: BN,
       amountB: BN,
       lpFee: BN,
@@ -601,8 +602,6 @@ type InternalPreparedSwapData = {
       nextFeeGrowthGlobal: BN,
       nextRewardGrowthGlobal: [BN, BN, BN],
       nextProtocolFee: BN,
-    },
-    pendingOracleUpdate: {
       nextAdaptiveFeeVariablesIsSome: boolean,
       nextAdaptiveFeeVariables: AdaptiveFeeVariablesData,
     },

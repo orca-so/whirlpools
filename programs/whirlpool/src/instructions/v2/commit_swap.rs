@@ -80,7 +80,9 @@ pub fn handler<'info>(
     let mut prepared_swap = ctx.accounts.prepared_swap.load_mut()?;
     prepared_swap.validate_for_commit(
         ctx.accounts.token_authority.key(),
-        &ctx.accounts.whirlpool,
+        ctx.accounts.whirlpool.key(),
+        // TODO: set
+        0u32,
         amount,
         sqrt_price_limit,
         amount_specified_is_input,

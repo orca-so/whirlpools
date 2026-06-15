@@ -112,7 +112,9 @@ fn try_prepare_swap<'info>(
 
     prepared_swap.set_precondition(
         ctx.accounts.token_authority.key(),
-        &ctx.accounts.whirlpool,
+        ctx.accounts.whirlpool.key(),
+        // TODO: set
+        0u32,
         amount,
         sqrt_price_limit,
         amount_specified_is_input,

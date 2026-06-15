@@ -54,6 +54,7 @@ impl PendingWhirlpoolUpdate {
 #[repr(C, packed)]
 #[derive(Debug, PartialEq, Eq)]
 pub struct PendingOracleUpdate {
+    // Flattened fixed-size Option<T> for zero-copy serialization.
     pub next_adaptive_fee_variables_is_some: bool,
     pub next_adaptive_fee_variables: AdaptiveFeeVariables,
 }
@@ -176,7 +177,8 @@ impl PreparedSwap {
     pub fn set_precondition(
         &mut self,
         authority: Pubkey,
-        whirlpool: &Account<Whirlpool>,
+        whirlpool: Pubkey,
+        whirlpool_state_version: u32,
         amount: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
@@ -186,9 +188,8 @@ impl PreparedSwap {
         self.precondition = PreparedSwapPrecondition {
             slot,
             authority,
-            whirlpool: whirlpool.key(),
-            // TODO: set
-            whirlpool_state_version: 0,
+            whirlpool,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -249,7 +250,8 @@ impl PreparedSwap {
     pub fn validate_for_commit(
         &self,
         authority: Pubkey,
-        whirlpool: &Account<Whirlpool>,
+        whirlpool: Pubkey,
+        whirlpool_state_version: u32,
         amount: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
@@ -270,9 +272,8 @@ impl PreparedSwap {
         if self.precondition != (PreparedSwapPrecondition {
             slot,
             authority,
-            whirlpool: whirlpool.key(),
-            // TODO: set
-            whirlpool_state_version: 0,
+            whirlpool,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -340,13 +341,7 @@ mod prepared_swap_functions_tests {
         prepared_swap.reset();
 
         let whirlpool_address = Pubkey::new_unique();
-        let mut account_info_mock =
-            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
-        let account_info = account_info_mock.to_account_info(false);
-        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
-
-        // TODO: state version
-        let whirlpool_state_version = 0;
+        let whirlpool_state_version = 0x88776655u32;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -357,7 +352,8 @@ mod prepared_swap_functions_tests {
 
         prepared_swap.set_precondition(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -580,11 +576,6 @@ mod prepared_swap_functions_tests {
         prepared_swap.reset();
 
         let whirlpool_address = Pubkey::new_unique();
-        let mut account_info_mock =
-            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
-        let account_info = account_info_mock.to_account_info(false);
-        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
-
         // TODO: state version
         let whirlpool_state_version = 0;
 
@@ -597,7 +588,8 @@ mod prepared_swap_functions_tests {
 
         prepared_swap.set_precondition(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -608,7 +600,8 @@ mod prepared_swap_functions_tests {
 
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -625,13 +618,7 @@ mod prepared_swap_functions_tests {
         prepared_swap.reset();
 
         let whirlpool_address = Pubkey::new_unique();
-        let mut account_info_mock =
-            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
-        let account_info = account_info_mock.to_account_info(false);
-        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
-
-        // TODO: state version
-        let whirlpool_state_version = 0;
+        let whirlpool_state_version = 0x88776655u32;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -642,7 +629,8 @@ mod prepared_swap_functions_tests {
 
         prepared_swap.set_precondition(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -656,7 +644,8 @@ mod prepared_swap_functions_tests {
 
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -673,13 +662,7 @@ mod prepared_swap_functions_tests {
         prepared_swap.reset();
 
         let whirlpool_address = Pubkey::new_unique();
-        let mut account_info_mock =
-            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
-        let account_info = account_info_mock.to_account_info(false);
-        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
-
-        // TODO: state version
-        let whirlpool_state_version = 0;
+        let whirlpool_state_version = 0x88776655u32;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -690,7 +673,8 @@ mod prepared_swap_functions_tests {
 
         prepared_swap.set_precondition(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -704,7 +688,8 @@ mod prepared_swap_functions_tests {
 
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -721,13 +706,7 @@ mod prepared_swap_functions_tests {
         prepared_swap.reset();
 
         let whirlpool_address = Pubkey::new_unique();
-        let mut account_info_mock =
-            AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
-        let account_info = account_info_mock.to_account_info(false);
-        let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
-
-        // TODO: state version
-        let whirlpool_state_version = 0;
+        let whirlpool_state_version = 0x88776655u32;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -738,7 +717,8 @@ mod prepared_swap_functions_tests {
 
         prepared_swap.set_precondition(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -750,7 +730,8 @@ mod prepared_swap_functions_tests {
         // just to confirm the validity
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -762,7 +743,8 @@ mod prepared_swap_functions_tests {
         // authority mismatch
         let result = prepared_swap.validate_for_commit(
             Pubkey::new_unique(), // mismatch
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -772,15 +754,10 @@ mod prepared_swap_functions_tests {
         assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
 
         // whirlpool pubkey mismatch
-        // TODO: use same whirlpool state version
-        let another_whirlpool_address = Pubkey::new_unique();
-        let mut account_info_mock =
-            AccountInfoMock::new_whirlpool(another_whirlpool_address, 64, 5650, None);
-        let account_info = account_info_mock.to_account_info(false);
-        let another_whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
         let result = prepared_swap.validate_for_commit(
             authority,
-            &another_whirlpool, // mismatch
+            Pubkey::new_unique(), // mismatch
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -789,11 +766,10 @@ mod prepared_swap_functions_tests {
         );
         assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
 
-        // TODO: whirlpool state version mismatch
-        /* 
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            0x11223344u32,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -801,12 +777,12 @@ mod prepared_swap_functions_tests {
             slot,
         );
         assert_eq!(result.unwrap_err(), ErrorCode::PreparedSwapPreconditionMismatch.into());
-        */
 
         // amount mismatch
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount.checked_add(1).unwrap(), // mismatch
             sqrt_price_limit,
             amount_specified_is_input,
@@ -818,7 +794,8 @@ mod prepared_swap_functions_tests {
         // sqrt_price_limit mismatch
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit.checked_add(1).unwrap(), // mismatch
             amount_specified_is_input,
@@ -830,7 +807,8 @@ mod prepared_swap_functions_tests {
         // amount_specified_is_input mismatch
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             !amount_specified_is_input, // mismatch
@@ -842,7 +820,8 @@ mod prepared_swap_functions_tests {
         // a_to_b mismatch
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -854,7 +833,8 @@ mod prepared_swap_functions_tests {
         // slot mismatch
         let result = prepared_swap.validate_for_commit(
             authority,
-            &whirlpool,
+            whirlpool_address,
+            whirlpool_state_version,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,

@@ -143,7 +143,7 @@ pub fn handler<'info>(
             if !reward_info.initialized() {
                 continue;
             }
-            update.reward_growths_outside[i] = prepared_swap.pending_updates.pending_whirlpool_update.next_reward_growth_global[i].wrapping_sub(update.reward_growths_outside[i]);
+            update.reward_growths_outside[i] = prepared_swap.pending_updates.pending_post_swap_update.next_reward_growth_global[i].wrapping_sub(update.reward_growths_outside[i]);
         }
 
         swap_tick_sequence.update_tick(array_index, tick_index, tick_spacing, &update)?;
@@ -152,13 +152,12 @@ pub fn handler<'info>(
     // restore swap_update...
     let mut next_reward_infos = whirlpool.reward_infos;
     for i in 0..NUM_REWARDS {
-        next_reward_infos[i].growth_global_x64 = prepared_swap.pending_updates.pending_whirlpool_update.next_reward_growth_global[i];
+        next_reward_infos[i].growth_global_x64 = prepared_swap.pending_updates.pending_post_swap_update.next_reward_growth_global[i];
     }
 
-    
-    let next_adaptive_fee_info = if prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some {
+    let next_adaptive_fee_info = if prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables_is_some {
         if let Some(mut next_adaptive_fee_info) = oracle_accessor.get_adaptive_fee_info()? {
-            next_adaptive_fee_info.variables = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables;
+            next_adaptive_fee_info.variables = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables;
             Some(next_adaptive_fee_info)
         } else {
             unreachable!("next_adaptive_fee_variables_is_some == true means that this Whirlpool has the initialized Oracle account");
@@ -168,15 +167,15 @@ pub fn handler<'info>(
     };
 
     let swap_update = PostSwapUpdate {
-        amount_a: prepared_swap.pending_updates.pending_whirlpool_update.amount_a,
-        amount_b: prepared_swap.pending_updates.pending_whirlpool_update.amount_b,
-        lp_fee: prepared_swap.pending_updates.pending_whirlpool_update.lp_fee,
-        next_liquidity: prepared_swap.pending_updates.pending_whirlpool_update.next_liquidity,
-        next_tick_index: prepared_swap.pending_updates.pending_whirlpool_update.next_tick_index,
-        next_sqrt_price: prepared_swap.pending_updates.pending_whirlpool_update.next_sqrt_price,
-        next_fee_growth_global: prepared_swap.pending_updates.pending_whirlpool_update.next_fee_growth_global,
+        amount_a: prepared_swap.pending_updates.pending_post_swap_update.amount_a,
+        amount_b: prepared_swap.pending_updates.pending_post_swap_update.amount_b,
+        lp_fee: prepared_swap.pending_updates.pending_post_swap_update.lp_fee,
+        next_liquidity: prepared_swap.pending_updates.pending_post_swap_update.next_liquidity,
+        next_tick_index: prepared_swap.pending_updates.pending_post_swap_update.next_tick_index,
+        next_sqrt_price: prepared_swap.pending_updates.pending_post_swap_update.next_sqrt_price,
+        next_fee_growth_global: prepared_swap.pending_updates.pending_post_swap_update.next_fee_growth_global,
         next_reward_infos,
-        next_protocol_fee: prepared_swap.pending_updates.pending_whirlpool_update.next_protocol_fee,
+        next_protocol_fee: prepared_swap.pending_updates.pending_post_swap_update.next_protocol_fee,
         next_adaptive_fee_info,
     };
 

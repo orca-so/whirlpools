@@ -200,7 +200,7 @@ fn try_prepare_swap<'info>(
         next_tick_index: swap_update.next_tick_index,
     };
 
-    prepared_swap.set_pending_swap_update(&swap_update);
+    prepared_swap.set_pending_post_swap_update(&swap_update);
     prepared_swap.set_state(PreparedSwapState::Prepared);
 
     Ok(return_data)

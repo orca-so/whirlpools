@@ -34,7 +34,7 @@ pub const MAX_PENDING_TICK_UPDATES_LEN: usize = TICK_ARRAY_SIZE_USIZE * 3;
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Debug, PartialEq, Eq)]
-pub struct PendingWhirlpoolUpdate {
+pub struct PendingPostSwapUpdate {
     pub amount_a: u64,
     pub amount_b: u64,
     pub lp_fee: u64,
@@ -44,23 +44,14 @@ pub struct PendingWhirlpoolUpdate {
     pub next_fee_growth_global: u128,
     pub next_reward_growth_global: [u128; NUM_REWARDS],
     pub next_protocol_fee: u64, // delta value (not next absolute value)
-}
 
-impl PendingWhirlpoolUpdate {
-    pub const LEN: usize = 8 + 8 + 8 + 16 + 4 + 16 + 16 + (16 * NUM_REWARDS) + 8; // 132
-}
-
-#[zero_copy(unsafe)]
-#[repr(C, packed)]
-#[derive(Debug, PartialEq, Eq)]
-pub struct PendingOracleUpdate {
     // Flattened fixed-size Option<T> for zero-copy serialization.
     pub next_adaptive_fee_variables_is_some: bool,
     pub next_adaptive_fee_variables: AdaptiveFeeVariables,
 }
 
-impl PendingOracleUpdate {
-    pub const LEN: usize = 1 + 44; // 45
+impl PendingPostSwapUpdate {
+    pub const LEN: usize = 8 + 8 + 8 + 16 + 4 + 16 + 16 + (16 * NUM_REWARDS) + 8 + 1 + 44; // 177
 }
 
 #[zero_copy(unsafe)]
@@ -114,14 +105,13 @@ impl PreparedSwapPrecondition {
 #[repr(C, packed)]
 #[derive(Debug)]
 pub struct PreparedSwapPendingUpdates {
-    pub pending_whirlpool_update: PendingWhirlpoolUpdate,
-    pub pending_oracle_update: PendingOracleUpdate,
+    pub pending_post_swap_update: PendingPostSwapUpdate,
     pub pending_tick_updates_len: u16,
     pub pending_tick_updates: [PendingTickUpdate; MAX_PENDING_TICK_UPDATES_LEN],
 }
 
 impl PreparedSwapPendingUpdates {
-    pub const LEN: usize = PendingWhirlpoolUpdate::LEN + PendingOracleUpdate::LEN + 2 + PendingTickUpdate::LEN * MAX_PENDING_TICK_UPDATES_LEN; // 9947
+    pub const LEN: usize = PendingPostSwapUpdate::LEN + 2 + PendingTickUpdate::LEN * MAX_PENDING_TICK_UPDATES_LEN; // 9947
 }
 
 #[repr(u8)]
@@ -199,45 +189,38 @@ impl PreparedSwap {
 
     pub fn add_pending_tick_update(
         &mut self,
-        tick_update: PendingTickUpdate,
+        update: PendingTickUpdate,
     ) {
         if self.pending_updates.pending_tick_updates_len as usize == MAX_PENDING_TICK_UPDATES_LEN {
             unreachable!(
               "pending tick update capacity exceeded; all ticks crossed by a swap should fit within MAX_PENDING_TICK_UPDATES_LEN"
             );
         }
-        self.pending_updates.pending_tick_updates[self.pending_updates.pending_tick_updates_len as usize] = tick_update;
+        self.pending_updates.pending_tick_updates[self.pending_updates.pending_tick_updates_len as usize] = update;
         self.pending_updates.pending_tick_updates_len += 1;
     }
 
-    pub fn set_pending_swap_update(
+    pub fn set_pending_post_swap_update(
         &mut self,
-        swap_update: &PostSwapUpdate,
+        update: &PostSwapUpdate,
     ) {
-        // pending_oracle_update
-        if let Some(adaptive_fee_info) = &swap_update.next_adaptive_fee_info {
-            self.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some = true;
-            self.pending_updates.pending_oracle_update.next_adaptive_fee_variables = adaptive_fee_info.variables;
+        self.pending_updates.pending_post_swap_update.amount_a = update.amount_a;
+        self.pending_updates.pending_post_swap_update.amount_b = update.amount_b;
+        self.pending_updates.pending_post_swap_update.lp_fee = update.lp_fee;
+        self.pending_updates.pending_post_swap_update.next_liquidity = update.next_liquidity;
+        self.pending_updates.pending_post_swap_update.next_tick_index = update.next_tick_index;
+        self.pending_updates.pending_post_swap_update.next_sqrt_price = update.next_sqrt_price;
+        self.pending_updates.pending_post_swap_update.next_fee_growth_global = update.next_fee_growth_global;
+        self.pending_updates.pending_post_swap_update.next_reward_growth_global[0] =update.next_reward_infos[0].growth_global_x64;
+        self.pending_updates.pending_post_swap_update.next_reward_growth_global[1] =update.next_reward_infos[1].growth_global_x64;
+        self.pending_updates.pending_post_swap_update.next_reward_growth_global[2] =update.next_reward_infos[2].growth_global_x64;
+        self.pending_updates.pending_post_swap_update.next_protocol_fee = update.next_protocol_fee;
+        if let Some(adaptive_fee_info) = &update.next_adaptive_fee_info {
+            self.pending_updates.pending_post_swap_update.next_adaptive_fee_variables_is_some = true;
+            self.pending_updates.pending_post_swap_update.next_adaptive_fee_variables = adaptive_fee_info.variables;
         } else {
-            self.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some = false;
-        }
-
-        // pending_whirlpool_update
-        self.pending_updates.pending_whirlpool_update = PendingWhirlpoolUpdate {
-            amount_a: swap_update.amount_a,
-            amount_b: swap_update.amount_b,
-            lp_fee: swap_update.lp_fee,
-            next_liquidity: swap_update.next_liquidity,
-            next_tick_index: swap_update.next_tick_index,
-            next_sqrt_price: swap_update.next_sqrt_price,
-            next_fee_growth_global: swap_update.next_fee_growth_global,
-            next_reward_growth_global: [
-                swap_update.next_reward_infos[0].growth_global_x64,
-                swap_update.next_reward_infos[1].growth_global_x64,
-                swap_update.next_reward_infos[2].growth_global_x64,
-            ],
-            next_protocol_fee: swap_update.next_protocol_fee,
-        };
+            self.pending_updates.pending_post_swap_update.next_adaptive_fee_variables_is_some = false;
+        }        
     }
 
     pub fn set_state(
@@ -289,7 +272,7 @@ impl PreparedSwap {
 #[cfg(test)]
 mod prepared_swap_functions_tests {
     use super::*;
-    use crate::{state::{AdaptiveFeeInfo, WhirlpoolRewardInfo}, util::AccountInfoMock};
+    use crate::state::{AdaptiveFeeInfo, WhirlpoolRewardInfo};
 
     #[test]
     fn test_initialize() {
@@ -419,7 +402,7 @@ mod prepared_swap_functions_tests {
     }
 
     #[test]
-    fn test_set_pending_swap_update_adaptive_fee_info_is_some() {
+    fn test_set_pending_post_swap_update_adaptive_fee_info_is_some() {
         let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
         let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
         prepared_swap.reset();
@@ -460,7 +443,7 @@ mod prepared_swap_functions_tests {
             })
         };
 
-        let expect_whirlpool_update = PendingWhirlpoolUpdate {
+        let expect_post_swap_update = PendingPostSwapUpdate {
             amount_a: post_swap_update.amount_a,
             amount_b: post_swap_update.amount_b,
             lp_fee: post_swap_update.lp_fee,
@@ -474,25 +457,19 @@ mod prepared_swap_functions_tests {
                 post_swap_update.next_reward_infos[2].growth_global_x64,
             ],
             next_protocol_fee: post_swap_update.next_protocol_fee,
+            next_adaptive_fee_variables_is_some: true,
+            next_adaptive_fee_variables: post_swap_update.next_adaptive_fee_info.as_ref().unwrap().variables,
         };
 
-        let expect_oracle_update_af_var_is_some = true;
-        let expect_oracle_update_af_var = post_swap_update.next_adaptive_fee_info.as_ref().unwrap().variables;
+        assert!(prepared_swap.pending_updates.pending_post_swap_update != expect_post_swap_update);
 
-        assert!(prepared_swap.pending_updates.pending_whirlpool_update != expect_whirlpool_update);
-        // Note: prepared_swap_data has been initialized with 0x00
-        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some != expect_oracle_update_af_var_is_some);
-        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables != expect_oracle_update_af_var);
+        prepared_swap.set_pending_post_swap_update(&post_swap_update);
 
-        prepared_swap.set_pending_swap_update(&post_swap_update);
-
-        assert!(prepared_swap.pending_updates.pending_whirlpool_update == expect_whirlpool_update);
-        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some == expect_oracle_update_af_var_is_some);
-        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables == expect_oracle_update_af_var);
+        assert!(prepared_swap.pending_updates.pending_post_swap_update == expect_post_swap_update);
     }
 
     #[test]
-    fn test_set_pending_swap_update_adaptive_fee_info_is_none() {
+    fn test_set_pending_post_swap_update_adaptive_fee_info_is_none() {
         let mut prepared_swap_data = [0x01u8; PreparedSwap::LEN - 8];
         let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
         prepared_swap.reset();
@@ -523,7 +500,7 @@ mod prepared_swap_functions_tests {
             next_adaptive_fee_info: None,
         };
 
-        let expect_whirlpool_update = PendingWhirlpoolUpdate {
+        let expect_whirlpool_update = PendingPostSwapUpdate {
             amount_a: post_swap_update.amount_a,
             amount_b: post_swap_update.amount_b,
             lp_fee: post_swap_update.lp_fee,
@@ -537,18 +514,23 @@ mod prepared_swap_functions_tests {
                 post_swap_update.next_reward_infos[2].growth_global_x64,
             ],
             next_protocol_fee: post_swap_update.next_protocol_fee,
+            next_adaptive_fee_variables_is_some: false,
+            // Note: prepared_swap_data is initialized with [0x01u8; *]
+            next_adaptive_fee_variables: AdaptiveFeeVariables {
+                last_reference_update_timestamp: 0x0101010101010101u64,
+                last_major_swap_timestamp: 0x0101010101010101u64,
+                volatility_reference: 0x01010101u32,
+                tick_group_index_reference: 0x01010101i32,
+                volatility_accumulator: 0x01010101u32,
+                reserved: [0x01u8; 16]
+            },
         };
 
-        let expect_oracle_update_af_var_is_some = false;
+        assert!(prepared_swap.pending_updates.pending_post_swap_update != expect_whirlpool_update);
 
-        assert!(prepared_swap.pending_updates.pending_whirlpool_update != expect_whirlpool_update);
-        // Note: prepared_swap_data has been initialized with 0x01
-        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some != expect_oracle_update_af_var_is_some);
+        prepared_swap.set_pending_post_swap_update(&post_swap_update);
 
-        prepared_swap.set_pending_swap_update(&post_swap_update);
-
-        assert!(prepared_swap.pending_updates.pending_whirlpool_update == expect_whirlpool_update);
-        assert!(prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some == expect_oracle_update_af_var_is_some);
+        assert!(prepared_swap.pending_updates.pending_post_swap_update == expect_whirlpool_update);
     }
 
     #[test]
@@ -889,27 +871,27 @@ mod data_layout_tests {
         let precondition_amount_specified_is_input = true;
         let precondition_a_to_b = false;
 
-        let pending_whirlpool_amount_a = 0xffeeddccbbaa9988u64;
-        let pending_whirlpool_amount_b = 0x7766554433221100u64;
-        let pending_whirlpool_lp_fee = 0x1122334455667788u64;
-        let pending_whirlpool_next_liquidity = 0x99aabbccddeeff001122334455667788u128;
-        let pending_whirlpool_next_tick_index = 0x00112233i32;
-        let pending_whirlpool_next_sqrt_price = 0xff00ffeeddccbbaaaabbccdd11223344u128;
-        let pending_whirlpool_next_fee_growth_global = 0x11223344443322119988776666778899u128;
-        let pending_whirlpool_next_reward_growth_global = [
+        let pending_post_swap_update_amount_a = 0xffeeddccbbaa9988u64;
+        let pending_post_swap_update_amount_b = 0x7766554433221100u64;
+        let pending_post_swap_update_lp_fee = 0x1122334455667788u64;
+        let pending_post_swap_update_next_liquidity = 0x99aabbccddeeff001122334455667788u128;
+        let pending_post_swap_update_next_tick_index = 0x00112233i32;
+        let pending_post_swap_update_next_sqrt_price = 0xff00ffeeddccbbaaaabbccdd11223344u128;
+        let pending_post_swap_update_next_fee_growth_global = 0x11223344443322119988776666778899u128;
+        let pending_post_swap_update_next_reward_growth_global = [
             0x112233445566778899aabbccddeeff00u128,
             0x112233445566778899aabbccddee00ffu128,
             0x112233445566778899aabbccdd00eeffu128,
         ];
-        let pending_whirlpool_next_protocol_fee = 0xccddeeff55667788u64;
+        let pending_post_swap_update_next_protocol_fee = 0xccddeeff55667788u64;
 
-        let pending_oracle_next_af_var_is_some = true;
-        let pending_oracle_next_af_var_last_reference_update_timestamp = 0x1122334455667788u64;
-        let pending_oracle_next_af_var_last_major_swap_timestamp = 0x2233445566778899u64;
-        let pending_oracle_next_af_var_volatility_reference = 0x99aabbccu32;
-        let pending_oracle_next_af_var_tick_group_index_reference = 0x00ddeeffi32;
-        let pending_oracle_next_af_var_volatility_accumulator = 0x11223344u32;
-        let pending_oracle_next_af_var_reserved = [0u8; 16];
+        let pending_post_swap_update_next_af_var_is_some = true;
+        let pending_post_swap_update_next_af_var_last_reference_update_timestamp = 0x1122334455667788u64;
+        let pending_post_swap_update_next_af_var_last_major_swap_timestamp = 0x2233445566778899u64;
+        let pending_post_swap_update_next_af_var_volatility_reference = 0x99aabbccu32;
+        let pending_post_swap_update_next_af_var_tick_group_index_reference = 0x00ddeeffi32;
+        let pending_post_swap_update_next_af_var_volatility_accumulator = 0x11223344u32;
+        let pending_post_swap_update_next_af_var_reserved = [0u8; 16];
 
         let pending_tick_updates_len = 0xffeeu16;
         let pending_tick_update_array_index = 0xccu8;
@@ -944,47 +926,44 @@ mod data_layout_tests {
 
         let mut pending_updates_data = [0u8; PreparedSwapPendingUpdates::LEN];
         let mut offset = 0;
-        // whirlpool
-        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_amount_a.to_le_bytes());
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_post_swap_update_amount_a.to_le_bytes());
         offset += 8;
-        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_amount_b.to_le_bytes());
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_post_swap_update_amount_b.to_le_bytes());
         offset += 8;
-        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_lp_fee.to_le_bytes());
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_post_swap_update_lp_fee.to_le_bytes());
         offset += 8;
-        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_whirlpool_next_liquidity.to_le_bytes());
+        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_post_swap_update_next_liquidity.to_le_bytes());
         offset += 16;
-        pending_updates_data[offset..offset + 4].copy_from_slice(&pending_whirlpool_next_tick_index.to_le_bytes());
+        pending_updates_data[offset..offset + 4].copy_from_slice(&pending_post_swap_update_next_tick_index.to_le_bytes());
         offset += 4;
-        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_whirlpool_next_sqrt_price.to_le_bytes());
+        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_post_swap_update_next_sqrt_price.to_le_bytes());
         offset += 16;
-        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_whirlpool_next_fee_growth_global.to_le_bytes());
+        pending_updates_data[offset..offset + 16].copy_from_slice(&pending_post_swap_update_next_fee_growth_global.to_le_bytes());
         offset += 16;
-        pending_whirlpool_next_reward_growth_global.iter().for_each(|v| {
+        pending_post_swap_update_next_reward_growth_global.iter().for_each(|v| {
             pending_updates_data[offset..offset + 16].copy_from_slice(&v.to_le_bytes());
             offset += 16;
         });
-        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_whirlpool_next_protocol_fee.to_le_bytes());
+        pending_updates_data[offset..offset + 8].copy_from_slice(&pending_post_swap_update_next_protocol_fee.to_le_bytes());
         offset += 8;
-        assert_eq!(offset, PendingWhirlpoolUpdate::LEN);
-        // oracle
-        pending_updates_data[offset] = pending_oracle_next_af_var_is_some as u8;
+        pending_updates_data[offset] = pending_post_swap_update_next_af_var_is_some as u8;
         offset += 1;
         pending_updates_data[offset..offset + 8]
-            .copy_from_slice(&pending_oracle_next_af_var_last_reference_update_timestamp.to_le_bytes());
+            .copy_from_slice(&pending_post_swap_update_next_af_var_last_reference_update_timestamp.to_le_bytes());
         offset += 8;
         pending_updates_data[offset..offset + 8]
-            .copy_from_slice(&pending_oracle_next_af_var_last_major_swap_timestamp.to_le_bytes());
+            .copy_from_slice(&pending_post_swap_update_next_af_var_last_major_swap_timestamp.to_le_bytes());
         offset += 8;
-        pending_updates_data[offset..offset + 4].copy_from_slice(&pending_oracle_next_af_var_volatility_reference.to_le_bytes());
+        pending_updates_data[offset..offset + 4].copy_from_slice(&pending_post_swap_update_next_af_var_volatility_reference.to_le_bytes());
         offset += 4;
         pending_updates_data[offset..offset + 4]
-            .copy_from_slice(&pending_oracle_next_af_var_tick_group_index_reference.to_le_bytes());
+            .copy_from_slice(&pending_post_swap_update_next_af_var_tick_group_index_reference.to_le_bytes());
         offset += 4;
         pending_updates_data[offset..offset + 4]
-            .copy_from_slice(&pending_oracle_next_af_var_volatility_accumulator.to_le_bytes());
+            .copy_from_slice(&pending_post_swap_update_next_af_var_volatility_accumulator.to_le_bytes());
         offset += 4;
-        offset += pending_oracle_next_af_var_reserved.len();
-        assert_eq!(offset, PendingOracleUpdate::LEN + PendingWhirlpoolUpdate::LEN);
+        offset += pending_post_swap_update_next_af_var_reserved.len();
+        assert_eq!(offset, PendingPostSwapUpdate::LEN);
         // tick
         pending_updates_data[offset..offset + 2].copy_from_slice(&pending_tick_updates_len.to_le_bytes());
         offset += 2;
@@ -1036,40 +1015,40 @@ mod data_layout_tests {
         let read_a_to_b = prepared_swap.precondition.a_to_b;
         assert_eq!(read_a_to_b, precondition_a_to_b);
         // pendingg updates
-        // whirlpool
-        let read_amount_a = prepared_swap.pending_updates.pending_whirlpool_update.amount_a;
-        assert_eq!(read_amount_a, pending_whirlpool_amount_a);
-        let read_amount_b = prepared_swap.pending_updates.pending_whirlpool_update.amount_b;
-        assert_eq!(read_amount_b, pending_whirlpool_amount_b);
-        let read_lp_fee = prepared_swap.pending_updates.pending_whirlpool_update.lp_fee;
-        assert_eq!(read_lp_fee, pending_whirlpool_lp_fee);
-        let read_next_liquidity = prepared_swap.pending_updates.pending_whirlpool_update.next_liquidity;
-        assert_eq!(read_next_liquidity, pending_whirlpool_next_liquidity);
-        let read_next_tick_index = prepared_swap.pending_updates.pending_whirlpool_update.next_tick_index;
-        assert_eq!(read_next_tick_index, pending_whirlpool_next_tick_index);
-        let read_next_sqrt_price = prepared_swap.pending_updates.pending_whirlpool_update.next_sqrt_price;
-        assert_eq!(read_next_sqrt_price, pending_whirlpool_next_sqrt_price);
-        let read_next_fee_growth_global = prepared_swap.pending_updates.pending_whirlpool_update.next_fee_growth_global;
-        assert_eq!(read_next_fee_growth_global, pending_whirlpool_next_fee_growth_global);
-        let read_next_reward_growth_global = prepared_swap.pending_updates.pending_whirlpool_update.next_reward_growth_global;
-        assert_eq!(read_next_reward_growth_global, pending_whirlpool_next_reward_growth_global);
-        let read_next_protocol_fee = prepared_swap.pending_updates.pending_whirlpool_update.next_protocol_fee;
-        assert_eq!(read_next_protocol_fee, pending_whirlpool_next_protocol_fee);
-        // oracle
-        let read_is_some = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables_is_some;
-        assert_eq!(read_is_some, pending_oracle_next_af_var_is_some);
-        let read_last_reference_update_timestamp = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.last_reference_update_timestamp;
-        assert_eq!(read_last_reference_update_timestamp, pending_oracle_next_af_var_last_reference_update_timestamp);
-        let read_last_major_swap_timestamp = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.last_major_swap_timestamp;
-        assert_eq!(read_last_major_swap_timestamp, pending_oracle_next_af_var_last_major_swap_timestamp);
-        let read_volatility_reference = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.volatility_reference;
-        assert_eq!(read_volatility_reference, pending_oracle_next_af_var_volatility_reference);
-        let read_tick_group_index_reference = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.tick_group_index_reference;
-        assert_eq!(read_tick_group_index_reference, pending_oracle_next_af_var_tick_group_index_reference);
-        let read_volatility_accumulator = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.volatility_accumulator;
-        assert_eq!(read_volatility_accumulator, pending_oracle_next_af_var_volatility_accumulator);
-        let read_reserved = prepared_swap.pending_updates.pending_oracle_update.next_adaptive_fee_variables.reserved;
-        assert_eq!(read_reserved, pending_oracle_next_af_var_reserved);
+        let read_amount_a = prepared_swap.pending_updates.pending_post_swap_update.amount_a;
+        assert_eq!(read_amount_a, pending_post_swap_update_amount_a);
+        let read_amount_b = prepared_swap.pending_updates.pending_post_swap_update.amount_b;
+        assert_eq!(read_amount_b, pending_post_swap_update_amount_b);
+        let read_lp_fee = prepared_swap.pending_updates.pending_post_swap_update.lp_fee;
+        assert_eq!(read_lp_fee, pending_post_swap_update_lp_fee);
+        let read_next_liquidity = prepared_swap.pending_updates.pending_post_swap_update.next_liquidity;
+        assert_eq!(read_next_liquidity, pending_post_swap_update_next_liquidity);
+        let read_next_tick_index = prepared_swap.pending_updates.pending_post_swap_update.next_tick_index;
+        assert_eq!(read_next_tick_index, pending_post_swap_update_next_tick_index);
+        let read_next_sqrt_price = prepared_swap.pending_updates.pending_post_swap_update.next_sqrt_price;
+        assert_eq!(read_next_sqrt_price, pending_post_swap_update_next_sqrt_price);
+        let read_next_fee_growth_global = prepared_swap.pending_updates.pending_post_swap_update.next_fee_growth_global;
+        assert_eq!(read_next_fee_growth_global, pending_post_swap_update_next_fee_growth_global);
+        let read_next_reward_growth_global = prepared_swap.pending_updates.pending_post_swap_update.next_reward_growth_global;
+        assert_eq!(read_next_reward_growth_global, pending_post_swap_update_next_reward_growth_global);
+        let read_next_protocol_fee = prepared_swap.pending_updates.pending_post_swap_update.next_protocol_fee;
+        assert_eq!(read_next_protocol_fee, pending_post_swap_update_next_protocol_fee);
+
+        let read_is_some = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables_is_some;
+        assert_eq!(read_is_some, pending_post_swap_update_next_af_var_is_some);
+        let read_last_reference_update_timestamp = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables.last_reference_update_timestamp;
+        assert_eq!(read_last_reference_update_timestamp, pending_post_swap_update_next_af_var_last_reference_update_timestamp);
+        let read_last_major_swap_timestamp = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables.last_major_swap_timestamp;
+        assert_eq!(read_last_major_swap_timestamp, pending_post_swap_update_next_af_var_last_major_swap_timestamp);
+        let read_volatility_reference = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables.volatility_reference;
+        assert_eq!(read_volatility_reference, pending_post_swap_update_next_af_var_volatility_reference);
+        let read_tick_group_index_reference = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables.tick_group_index_reference;
+        assert_eq!(read_tick_group_index_reference, pending_post_swap_update_next_af_var_tick_group_index_reference);
+        let read_volatility_accumulator = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables.volatility_accumulator;
+        assert_eq!(read_volatility_accumulator, pending_post_swap_update_next_af_var_volatility_accumulator);
+        let read_reserved = prepared_swap.pending_updates.pending_post_swap_update.next_adaptive_fee_variables.reserved;
+        assert_eq!(read_reserved, pending_post_swap_update_next_af_var_reserved);
+
         // tick
         let read_tick_updates_len = prepared_swap.pending_updates.pending_tick_updates_len;
         assert_eq!(read_tick_updates_len, pending_tick_updates_len);

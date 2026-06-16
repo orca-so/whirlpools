@@ -4,8 +4,11 @@ set -eo pipefail
 # Get the local version from package.json
 local_version=$(jq -r ".version" package.json)
 
-# Get the published version from github
-published_version=$(curl -s https://orca-so.github.io/whirlpools/ | grep -o '<meta itemprop="version" content="[^"]*"' | cut -d'"' -f4)
+# Get the published version from github.
+# `|| true` keeps the pipeline from aborting the script (set -eo pipefail) when
+# grep finds no match (e.g. the meta tag is missing); an empty value is treated
+# as version 0 by the comparison below, so we fall through to publishing.
+published_version=$(curl -s https://orca-so.github.io/whirlpools/ | grep -o 'itemprop="version" content="[^"]*"' | cut -d'"' -f4 || true)
 
 function semver { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 

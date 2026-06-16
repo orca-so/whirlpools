@@ -72,7 +72,7 @@ pub fn handler<'info>(
     amount: u64,
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
-    a_to_b: bool, // Zero for one
+    a_to_b: bool,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     let clock = Clock::get()?;
@@ -81,8 +81,7 @@ pub fn handler<'info>(
     prepared_swap.validate_for_commit(
         ctx.accounts.token_authority.key(),
         ctx.accounts.whirlpool.key(),
-        // TODO: set
-        0u32,
+        ctx.accounts.whirlpool.state_sequence(),
         amount,
         sqrt_price_limit,
         amount_specified_is_input,

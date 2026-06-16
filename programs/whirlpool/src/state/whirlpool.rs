@@ -194,6 +194,8 @@ impl Whirlpool {
     ) {
         self.reward_last_updated_timestamp = reward_last_updated_timestamp;
         self.reward_infos = reward_infos;
+
+        self.advance_state_sequence();
     }
 
     pub fn update_rewards_and_liquidity(
@@ -204,6 +206,10 @@ impl Whirlpool {
     ) {
         self.update_rewards(reward_infos, reward_last_updated_timestamp);
         self.liquidity = liquidity;
+
+        // This function is currently unused in the Anchor implementation,
+        // but we keep it for consistency with the Pinocchio implementation and to avoid issues if it is used in the future.
+        self.advance_state_sequence();
     }
 
     /// Update the reward authority.
@@ -212,6 +218,7 @@ impl Whirlpool {
             .extension
             .copy_from_slice(&authority.to_bytes());
 
+        self.advance_state_sequence();
         Ok(())
     }
 
@@ -228,6 +235,7 @@ impl Whirlpool {
         self.update_rewards(reward_infos, timestamp);
         self.reward_infos[index].emissions_per_second_x64 = emissions_per_second_x64;
 
+        self.advance_state_sequence();
         Ok(())
     }
 
@@ -248,6 +256,7 @@ impl Whirlpool {
         self.reward_infos[index].mint = mint;
         self.reward_infos[index].vault = vault;
 
+        self.advance_state_sequence();
         Ok(())
     }
 
@@ -277,6 +286,8 @@ impl Whirlpool {
             self.fee_growth_global_b = fee_growth_global;
             self.protocol_fee_owed_b += protocol_fee;
         }
+
+        self.advance_state_sequence();
     }
 
     pub fn update_fee_rate(&mut self, fee_rate: u16) -> Result<()> {
@@ -285,6 +296,7 @@ impl Whirlpool {
         }
         self.fee_rate = fee_rate;
 
+        self.advance_state_sequence();
         Ok(())
     }
 
@@ -294,12 +306,14 @@ impl Whirlpool {
         }
         self.protocol_fee_rate = protocol_fee_rate;
 
+        self.advance_state_sequence();
         Ok(())
     }
 
     pub fn reset_protocol_fees_owed(&mut self) {
         self.protocol_fee_owed_a = 0;
         self.protocol_fee_owed_b = 0;
+        self.advance_state_sequence();
     }
 
     pub fn fee_tier_index(&self) -> u16 {
@@ -328,6 +342,26 @@ impl Whirlpool {
         }
 
         false
+    }
+
+    pub fn state_sequence(&self) -> u32 {
+        self.extension_segment_primary().state_sequence
+    }
+
+    // There are no direct updates to the Whirlpool itself,
+    // but since advance_state_sequence is private, we invoke it through an intermediary.
+    pub fn adaptive_fee_state_updated(&mut self) {
+        self.advance_state_sequence();
+    }
+
+    fn advance_state_sequence(&mut self) {
+        let mut extension = self.extension_segment_primary();
+        extension.state_sequence = extension.state_sequence.wrapping_add(1);
+        self.set_extension_segment_primary(&extension);
+    }
+
+    fn set_extension_segment_primary(&mut self, extension: &WhirlpoolExtensionSegmentPrimary) {
+        self.reward_infos[1].extension = extension.to_bytes();
     }
 }
 
@@ -395,8 +429,26 @@ bitflags! {
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
 pub struct WhirlpoolExtensionSegmentPrimary {
     // total length must be 32 bytes
+
     pub control_flags: u16,
-    pub reserved: [u8; 30],
+    // Advances on each state update and wraps on overflow.
+    //
+    // `state_sequence` alone must not be treated as unique.
+    // Uniqueness is provided by the `(slot, state_sequence)` pair.
+    //
+    // Although `state_sequence` is a wrapping `u32`, causing it to wrap within a
+    // single slot would require more than 2^32 successful state transitions on the
+    // same account in that slot, which is considered infeasible under Solana's
+    // transaction size, block throughput, and per-account write-lock compute
+    // budget limits.
+    //
+    // Note: `state_sequence` is not updated when a TickArray (Fixed & Dynamic) is initialized.
+    //       The primary reason is to avoid a breaking change, since the Whirlpool account is read-only
+    //       in both `initialize_tick_array` and `initialize_dynamic_tick_array`.
+    //       This is acceptable because merely initializing a TickArray does not affect swap behavior.
+    //       In fact, the assumption that account initialization alone has no effect is a fundamental premise of SparseSwap.
+    pub state_sequence: u32,
+    pub reserved: [u8; 26],
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
@@ -417,7 +469,8 @@ impl WhirlpoolExtensionSegmentPrimary {
     pub fn new(control_flags: WhirlpoolControlFlags) -> Self {
         Self {
             control_flags: control_flags.bits(),
-            reserved: [0; 30],
+            state_sequence: 0,
+            reserved: [0; 26],
         }
     }
 
@@ -754,12 +807,15 @@ mod whirlpool_extension_segment_tests {
     #[test]
     fn test_whirlpool_extension_segment_primary_serde() {
         let control_flags = WhirlpoolControlFlags::REQUIRE_NON_TRANSFERABLE_POSITION;
-        let segment = WhirlpoolExtensionSegmentPrimary::new(control_flags);
+        let state_sequence = 0x11223344u32;
+        let mut segment = WhirlpoolExtensionSegmentPrimary::new(control_flags);
+        segment.state_sequence = state_sequence;
         let serialized: [u8; 32] = segment.to_bytes(); // must be 32 bytes
         let deserialized: WhirlpoolExtensionSegmentPrimary =
             WhirlpoolExtensionSegmentPrimary::try_from_slice(&serialized).unwrap();
         assert_eq!(deserialized.control_flags(), control_flags);
-        assert_eq!(deserialized.reserved, [0; 30]);
+        assert_eq!(deserialized.state_sequence, state_sequence);
+        assert_eq!(deserialized.reserved, [0; 26]);
     }
 
     #[test]

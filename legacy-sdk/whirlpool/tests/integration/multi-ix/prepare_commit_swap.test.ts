@@ -585,7 +585,7 @@ type InternalPreparedSwapData = {
     slot: BN,
     authority: PublicKey,
     whirlpool: PublicKey,
-    whirlpoolStateVersion: number,
+    whirlpoolStateSequence: number,
     amount: BN,
     sqrtPriceLimit: BN,
     amountSpecifiedIsInput: boolean,

@@ -28,6 +28,11 @@ impl MemoryMappedWhirlpoolRewardInfo {
     }
 
     #[inline(always)]
+    pub fn extension_mut(&mut self) -> &mut [u8; 32] {
+        &mut self.extension
+    }
+
+    #[inline(always)]
     pub fn emissions_per_second_x64(&self) -> u128 {
         u128::from_le_bytes(self.emissions_per_second_x64)
     }
@@ -154,6 +159,7 @@ impl MemoryMappedWhirlpool {
         self.set_liquidity(liquidity);
         self.set_reward_growth_global(reward_growth_global);
         self.set_reward_last_updated_timestamp(reward_last_updated_timestamp);
+        self.advance_state_sequence();
     }
 
     fn set_liquidity(&mut self, liquidity: u128) {
@@ -171,5 +177,18 @@ impl MemoryMappedWhirlpool {
 
     fn set_reward_last_updated_timestamp(&mut self, last_updated_timestamp: u64) {
         self.reward_last_updated_timestamp = last_updated_timestamp.to_le_bytes();
+    }
+
+    fn advance_state_sequence(&mut self) {
+        let extension = self.reward_infos[1].extension_mut();
+        let state_sequence = u32::from_le_bytes([
+            extension[2],
+            extension[3],
+            extension[4],
+            extension[5],
+        ]);
+
+        let next_state_sequence = state_sequence.wrapping_add(1);
+        extension[2..6].copy_from_slice(&next_state_sequence.to_le_bytes());
     }
 }

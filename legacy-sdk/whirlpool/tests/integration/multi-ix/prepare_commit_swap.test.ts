@@ -60,6 +60,7 @@ import { SwapErrorCode } from "../../../src/errors/errors";
 import { TransactionBuilder } from "@orca-so/common-sdk/dist/web3/transactions/transactions-builder";
 import { ParsableWhirlpool } from "../../../dist/network/public/parsing";
 import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
+import { WhirlpoolData } from "../../../dist";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -100,6 +101,8 @@ describe("prepare/commit swap tests", () => {
         IGNORE_CACHE,
       );
 
+      const stateSequence = getWhirlpoolStateSequence(pool.getData());
+
       const tradeTokenAmount = new BN(5000000);
       const tradeAmountSpecifiedIsInput = true;
       const tradeAToB = true;
@@ -134,6 +137,7 @@ describe("prepare/commit swap tests", () => {
         Percentage.fromFraction(0, 100),
       );
 
+      //console.log("state sequence", stateSequence);
       //console.log("amount", swapQuote.estimatedAmountIn.toString(), "-->", swapQuote.estimatedAmountOut.toString());
       //console.log("tick", pool.getData().tickCurrentIndex, "-->", swapQuote.estimatedEndTickIndex);
 
@@ -211,13 +215,12 @@ describe("prepare/commit swap tests", () => {
 
       const preparedSwapData = parsePreparedSwap(prepareSimResult.postWritableAccount(preparedSwapPda.publicKey));
       assert.ok(!!preparedSwapData);
-      console.log("preparedSwapData", preparedSwapData);
       assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
       assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
       assert.ok(preparedSwapData.precondition.slot.toNumber() === prepareSimResult.slot());
       assert.ok(preparedSwapData.precondition.authority.equals(testCtx.provider.wallet.publicKey));
       assert.ok(preparedSwapData.precondition.whirlpool.equals(poolInfo.whirlpool));
-      // TODO: assert.ok(preparedSwapData.precondition.whirlpoolStateVersion 
+      assert.ok(preparedSwapData.precondition.whirlpoolStateSequence === stateSequence);
       assert.ok(preparedSwapData.precondition.amount.eq(tradeTokenAmount));
       assert.ok(preparedSwapData.precondition.sqrtPriceLimit.eq(tradeSqrtPriceLimit));
       assert.ok(preparedSwapData.precondition.amountSpecifiedIsInput === tradeAmountSpecifiedIsInput);
@@ -244,6 +247,7 @@ describe("prepare/commit swap tests", () => {
       assert.ok(!!whirlpoolData);
       assert.ok(whirlpoolData.sqrtPrice.eq(swapQuote.estimatedEndSqrtPrice));
       assert.ok(whirlpoolData.tickCurrentIndex === swapQuote.estimatedEndTickIndex);
+      assert.ok(getWhirlpoolStateSequence(whirlpoolData) === stateSequence + 1);
       assertPostWritableAccountMatch(prepareAndCommitSimResult, swapV2SimResult, poolInfo.whirlpool, getAccountSize(AccountName.Whirlpool));
 
       // tickarray
@@ -654,4 +658,11 @@ function parsePrepareSwapV2ReturnData(
     console.error("failed during parsing:", e);
     return null;
   }
+}
+
+function getWhirlpoolStateSequence(
+  whirlpoolData: WhirlpoolData,
+): number {
+  const extension = whirlpoolData.rewardInfos[1].extension;
+  return new BN(extension.slice(2, 6), "le").toNumber();
 }

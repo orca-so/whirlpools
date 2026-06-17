@@ -1,0 +1,29 @@
+name: Bug Report
+description: When you want to report something not working as expected.
+title: "[Bug] "
+labels: []
+body:
+  - type: textarea
+  id: details
+  attributes:
+    label: Details
+    description: A clear and concise description of what the issue is.
+    placeholder: Something did not go as expected.
+  validations:
+    required: true
+  - type: textarea
+  id: reproduce
+  attributes:
+    label: Steps to reproduce
+    description: The steps taken to reproduce the behavior.
+    placeholder: "1. Go to '...'\n2. Click on '....'\n3. Scroll down to '....'\n4. See error"
+  validations:
+    required: true
+  - type: textarea
+  id: expected
+  attributes:
+    label: Expected behavior
+    description: A clear and concise description of what was supposed to happen.
+    placeholder: The following things were supposed to happen.
+  validations:
+    required: true

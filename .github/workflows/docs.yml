@@ -1,0 +1,35 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: "docs"
+  cancel-in-progress: false
+
+jobs:
+
+    build:
+      runs-on: ubuntu-latest
+      permissions:
+        pages: write
+        id-token: write
+      steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Anchor
+        uses: ./.github/actions/anchor
+      - name: Setup Github Pages
+        uses: actions/configure-pages@v5
+      - name: Install dependencies
+        run: yarn install
+      - name: Build docs
+        run: yarn build docs/whirlpool --output-style static
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs/whirlpool/dist
+      - name: Deploy artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

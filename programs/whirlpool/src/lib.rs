@@ -1341,7 +1341,7 @@ pub mod whirlpool {
     /// - `PreparedSwapNonceMaxExceeded` - if the provided nonce exceeds MAX_PREPARED_SWAP_NONCE.
     pub fn initialize_prepared_swap(
         ctx: Context<InitializePreparedSwap>,
-        nonce: u8,
+        nonce: u16,
     ) -> Result<()> {
         instructions::v2::initialize_prepared_swap::handler(ctx, nonce)
     }

@@ -299,7 +299,10 @@ export class PDAUtil {
    */
   public static getPreparedSwap(programId: PublicKey, nonce: number) {
     return AddressUtil.findProgramAddress(
-      [Buffer.from(PDA_PREPARED_SWAP_SEED), Buffer.from([nonce])],
+      [
+        Buffer.from(PDA_PREPARED_SWAP_SEED),
+        new BN(nonce).toArrayLike(Buffer, "le", 2),
+      ],
       programId,
     );
   }

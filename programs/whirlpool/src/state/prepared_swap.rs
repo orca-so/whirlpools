@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
-use crate::{errors::ErrorCode, manager::swap_manager::PostSwapUpdate, state::{AdaptiveFeeVariables, NUM_REWARDS, TICK_ARRAY_SIZE_USIZE, Whirlpool}};
+use crate::{errors::ErrorCode, manager::swap_manager::PostSwapUpdate, state::{AdaptiveFeeVariables, NUM_REWARDS, TICK_ARRAY_SIZE_USIZE}};
 
 // Maximum nonce value allowed for PreparedSwap.
 //
-// Although the nonce is represented as a u8, allowing all 256 possible
+// Although the nonce is represented as a u16, allowing all 65536 possible
 // PreparedSwap accounts would provide little practical value while
 // significantly increasing rent costs.
 //
@@ -15,7 +15,7 @@ use crate::{errors::ErrorCode, manager::swap_manager::PostSwapUpdate, state::{Ad
 //
 // We therefore start with a conservative limit and can raise it in the
 // future if real-world demand justifies it.
-pub const MAX_PREPARED_SWAP_NONCE: u8 = 15; // allows 0..=15, 16 accounts
+pub const MAX_PREPARED_SWAP_NONCE: u16 = 15; // allows 0..=15, 16 accounts
 
 // Current PreparedSwap account layout version.
 //
@@ -147,7 +147,7 @@ pub struct PreparedSwap {
 impl PreparedSwap {
     pub const LEN: usize = 8 + 2 + 1 + PreparedSwapPrecondition::LEN + PreparedSwapPendingUpdates::LEN + PREPARED_SWAP_RESERVED_BYTES;
 
-    pub fn initialize(&mut self, nonce: u8) -> Result<()> {
+    pub fn initialize(&mut self, nonce: u16) -> Result<()> {
         if nonce > MAX_PREPARED_SWAP_NONCE {
             return Err(ErrorCode::PreparedSwapNonceMaxExceeded.into());
         }

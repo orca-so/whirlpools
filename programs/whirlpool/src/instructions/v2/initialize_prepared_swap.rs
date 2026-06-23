@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(nonce: u8)]
+#[instruction(nonce: u16)]
 pub struct InitializePreparedSwap<'info> {
     #[account(mut)]
     pub funder: Signer<'info>,
@@ -19,7 +19,7 @@ pub struct InitializePreparedSwap<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<InitializePreparedSwap>, nonce: u8) -> Result<()> {
+pub fn handler(ctx: Context<InitializePreparedSwap>, nonce: u16) -> Result<()> {
     let mut prepared_swap = ctx.accounts.prepared_swap.load_init()?;
     prepared_swap.initialize(nonce)
 }

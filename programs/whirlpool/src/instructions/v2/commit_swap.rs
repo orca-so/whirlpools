@@ -74,6 +74,9 @@ pub fn handler<'info>(
     amount_specified_is_input: bool,
     a_to_b: bool,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
+    // Note: there is no other_amount_threshold parameter.
+    // The caller should evaluate the return data from the prepare_swap_v2 instruction
+    // and only call commit_swap_v2 if the result is acceptable.
 ) -> Result<()> {
     let clock = Clock::get()?;
 

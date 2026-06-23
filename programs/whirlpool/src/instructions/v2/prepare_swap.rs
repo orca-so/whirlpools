@@ -66,6 +66,12 @@ pub fn handler<'info>(
     amount_specified_is_input: bool,
     a_to_b: bool,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
+    // Note: there is no other_amount_threshold parameter.
+    // other_amount_threshold is intended as protection against slippage that may occur between an off-chain quote and on-chain execution.
+    // prepare_swap_v2 and commit_swap_v2 are executed atomically and are intended to be used via CPI,
+    // so there is no slippage risk between quote and execution.
+    // As a result, they do not perform any other_amount threshold checks.
+    // The calling program is expected to evaluate the other amount based on the instruction's return data.
 ) -> Result<()> {
     // Errors that occur during quote computation are wrapped in PrepareSwapV2ReturnData::QuoteError
     // and returned as part of the result, rather than causing the transaction to fail.

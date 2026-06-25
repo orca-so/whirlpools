@@ -59,7 +59,6 @@ pub enum PrepareSwapV2ReturnData {
 }
 
 pub fn handler<'info>(
-    // TODO: consider CU limit param
     ctx: Context<'_, '_, '_, 'info, PrepareSwapV2<'info>>,
     amount: u64,
     sqrt_price_limit: u128,

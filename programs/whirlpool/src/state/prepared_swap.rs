@@ -204,22 +204,23 @@ impl PreparedSwap {
         &mut self,
         update: &PostSwapUpdate,
     ) {
-        self.pending_updates.pending_post_swap_update.amount_a = update.amount_a;
-        self.pending_updates.pending_post_swap_update.amount_b = update.amount_b;
-        self.pending_updates.pending_post_swap_update.lp_fee = update.lp_fee;
-        self.pending_updates.pending_post_swap_update.next_liquidity = update.next_liquidity;
-        self.pending_updates.pending_post_swap_update.next_tick_index = update.next_tick_index;
-        self.pending_updates.pending_post_swap_update.next_sqrt_price = update.next_sqrt_price;
-        self.pending_updates.pending_post_swap_update.next_fee_growth_global = update.next_fee_growth_global;
-        self.pending_updates.pending_post_swap_update.next_reward_growth_global[0] =update.next_reward_infos[0].growth_global_x64;
-        self.pending_updates.pending_post_swap_update.next_reward_growth_global[1] =update.next_reward_infos[1].growth_global_x64;
-        self.pending_updates.pending_post_swap_update.next_reward_growth_global[2] =update.next_reward_infos[2].growth_global_x64;
-        self.pending_updates.pending_post_swap_update.next_protocol_fee = update.next_protocol_fee;
+        let pending = &mut self.pending_updates.pending_post_swap_update;
+        pending.amount_a = update.amount_a;
+        pending.amount_b = update.amount_b;
+        pending.lp_fee = update.lp_fee;
+        pending.next_liquidity = update.next_liquidity;
+        pending.next_tick_index = update.next_tick_index;
+        pending.next_sqrt_price = update.next_sqrt_price;
+        pending.next_fee_growth_global = update.next_fee_growth_global;
+        pending.next_reward_growth_global[0] =update.next_reward_infos[0].growth_global_x64;
+        pending.next_reward_growth_global[1] =update.next_reward_infos[1].growth_global_x64;
+        pending.next_reward_growth_global[2] =update.next_reward_infos[2].growth_global_x64;
+        pending.next_protocol_fee = update.next_protocol_fee;
         if let Some(adaptive_fee_info) = &update.next_adaptive_fee_info {
-            self.pending_updates.pending_post_swap_update.next_adaptive_fee_variables_is_some = true;
-            self.pending_updates.pending_post_swap_update.next_adaptive_fee_variables = adaptive_fee_info.variables;
+            pending.next_adaptive_fee_variables_is_some = true;
+            pending.next_adaptive_fee_variables = adaptive_fee_info.variables;
         } else {
-            self.pending_updates.pending_post_swap_update.next_adaptive_fee_variables_is_some = false;
+            pending.next_adaptive_fee_variables_is_some = false;
         }        
     }
 

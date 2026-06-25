@@ -54,7 +54,7 @@ impl PendingPostSwapUpdate {
     pub const LEN: usize = 8 + 8 + 8 + 16 + 4 + 16 + 16 + (16 * NUM_REWARDS) + 8 + 1 + 44; // 177
 }
 
-#[zero_copy(unsafe)]
+#[zero_copy]
 #[repr(C, packed)]
 #[derive(Debug, PartialEq, Eq)]
 pub struct PendingTickUpdate {

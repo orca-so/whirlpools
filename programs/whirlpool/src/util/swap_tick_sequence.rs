@@ -38,7 +38,10 @@ impl<'a, 'b> SwapTickSequence<'a, 'b> {
         if let Some(ta2) = ta2 {
             vec.push(ta2);
         }
-        Self { arrays: vec, prepared_swap }
+        Self {
+            arrays: vec,
+            prepared_swap,
+        }
     }
 
     /// Get the Tick object at the given tick-index & tick-spacing
@@ -79,14 +82,12 @@ impl<'a, 'b> SwapTickSequence<'a, 'b> {
         update: &TickUpdate,
     ) -> Result<()> {
         if let Some(prepared_swap) = &mut self.prepared_swap {
-            prepared_swap.add_pending_tick_update(
-                PendingTickUpdate {
-                    array_index: array_index as u8,
-                    tick_index,
-                    next_fee_growth_outside_a: update.fee_growth_outside_a,
-                    next_fee_growth_outside_b: update.fee_growth_outside_b,
-                }
-            );
+            prepared_swap.add_pending_tick_update(PendingTickUpdate {
+                array_index: array_index as u8,
+                tick_index,
+                next_fee_growth_outside_a: update.fee_growth_outside_a,
+                next_fee_growth_outside_b: update.fee_growth_outside_b,
+            });
             return Ok(());
         }
 

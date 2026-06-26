@@ -4,7 +4,8 @@ use std::collections::VecDeque;
 use crate::{
     math::floor_division,
     state::{
-        FixedTickArray, LoadedTickArray, PreparedSwap, TICK_ARRAY_SIZE, Tick, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, load_tick_array
+        load_tick_array, FixedTickArray, LoadedTickArray, PreparedSwap, Tick, TickArrayType,
+        TickUpdate, Whirlpool, ZeroedTickArray, TICK_ARRAY_SIZE,
     },
     util::SwapTickSequence,
 };

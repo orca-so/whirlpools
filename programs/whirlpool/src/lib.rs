@@ -1355,7 +1355,7 @@ pub mod whirlpool {
     ///
     /// ### Parameters
     /// See swap_v2.
-    /// 
+    ///
     /// ### Return Data
     /// Serialized `PrepareSwapV2ReturnData`.
     ///

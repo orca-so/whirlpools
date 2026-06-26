@@ -192,7 +192,10 @@ impl Whirlpool {
         reward_infos: [WhirlpoolRewardInfo; NUM_REWARDS],
         reward_last_updated_timestamp: u64,
     ) {
-        self.set_rewards_info_and_last_updated_timestamp(reward_infos, reward_last_updated_timestamp);
+        self.set_rewards_info_and_last_updated_timestamp(
+            reward_infos,
+            reward_last_updated_timestamp,
+        );
         self.advance_state_sequence();
     }
 
@@ -202,7 +205,10 @@ impl Whirlpool {
         liquidity: u128,
         reward_last_updated_timestamp: u64,
     ) {
-        self.set_rewards_info_and_last_updated_timestamp(reward_infos, reward_last_updated_timestamp);
+        self.set_rewards_info_and_last_updated_timestamp(
+            reward_infos,
+            reward_last_updated_timestamp,
+        );
         self.liquidity = liquidity;
 
         // This function is currently unused in the Anchor implementation,
@@ -437,7 +443,6 @@ bitflags! {
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
 pub struct WhirlpoolExtensionSegmentPrimary {
     // total length must be 32 bytes
-
     pub control_flags: u16,
     // Advances on each state update and wraps on overflow.
     // The purpose of this field is to detect state changes that occur between the prepare and commit phases of a swap.
@@ -852,10 +857,9 @@ mod whirlpool_extension_segment_tests {
 
             assert_eq!(whirlpool.state_sequence(), 0);
             whirlpool.reward_infos[1].extension = [
-                0xff, 0xff, 0x11, 0x22, 0x33, 0x44, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0x11, 0x22, 0x33, 0x44, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff,
             ];
             assert_eq!(whirlpool.state_sequence(), 0x44332211); // little endian
         }
@@ -881,7 +885,7 @@ mod whirlpool_extension_segment_tests {
             assert_eq!(whirlpool.state_sequence(), 0x0000ffff);
             whirlpool.advance_state_sequence();
             assert_eq!(whirlpool.state_sequence(), 0x0000ffff + 1);
-            
+
             whirlpool.reward_infos[1].extension[2..6].copy_from_slice(&[0xff, 0xff, 0xff, 0x00]);
             assert_eq!(whirlpool.state_sequence(), 0x00ffffff);
             whirlpool.advance_state_sequence();
@@ -894,10 +898,9 @@ mod whirlpool_extension_segment_tests {
 
             whirlpool.reward_infos[0].extension = [0xf0u8; 32];
             whirlpool.reward_infos[1].extension = [
-                0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0x00, 0x00,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff,
             ];
             whirlpool.reward_infos[2].extension = [0x0fu8; 32];
 
@@ -906,12 +909,14 @@ mod whirlpool_extension_segment_tests {
             assert_eq!(whirlpool.state_sequence(), 0x44332212);
 
             assert_eq!(whirlpool.reward_infos[0].extension, [0xf0u8; 32]);
-            assert_eq!(whirlpool.reward_infos[1].extension, [
-                0xaa, 0xbb, 0x12, 0x22, 0x33, 0x44, 0x00, 0x00,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            ]);
+            assert_eq!(
+                whirlpool.reward_infos[1].extension,
+                [
+                    0xaa, 0xbb, 0x12, 0x22, 0x33, 0x44, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff,
+                    0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
+                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                ]
+            );
             assert_eq!(whirlpool.reward_infos[2].extension, [0x0fu8; 32]);
         }
 
@@ -938,31 +943,67 @@ mod whirlpool_extension_segment_tests {
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
             // update_rewards
-            whirlpool.update_rewards(whirlpool.reward_infos, whirlpool.reward_last_updated_timestamp);
+            whirlpool.update_rewards(
+                whirlpool.reward_infos,
+                whirlpool.reward_last_updated_timestamp,
+            );
             expected_state_sequence += 1;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
             // update_rewards_and_liquidity
-            whirlpool.update_rewards_and_liquidity(whirlpool.reward_infos, whirlpool.liquidity, whirlpool.reward_last_updated_timestamp);
+            whirlpool.update_rewards_and_liquidity(
+                whirlpool.reward_infos,
+                whirlpool.liquidity,
+                whirlpool.reward_last_updated_timestamp,
+            );
             expected_state_sequence += 1;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
             // update_reward_authority
-            whirlpool.update_reward_authority(Pubkey::new_unique()).unwrap();
+            whirlpool
+                .update_reward_authority(Pubkey::new_unique())
+                .unwrap();
             expected_state_sequence += 1;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
             // update_emissions
-            whirlpool.update_emissions(0, whirlpool.reward_infos, whirlpool.reward_last_updated_timestamp, 0).unwrap();
-            whirlpool.update_emissions(1, whirlpool.reward_infos, whirlpool.reward_last_updated_timestamp, 0).unwrap();
-            whirlpool.update_emissions(2, whirlpool.reward_infos, whirlpool.reward_last_updated_timestamp, 0).unwrap();
+            whirlpool
+                .update_emissions(
+                    0,
+                    whirlpool.reward_infos,
+                    whirlpool.reward_last_updated_timestamp,
+                    0,
+                )
+                .unwrap();
+            whirlpool
+                .update_emissions(
+                    1,
+                    whirlpool.reward_infos,
+                    whirlpool.reward_last_updated_timestamp,
+                    0,
+                )
+                .unwrap();
+            whirlpool
+                .update_emissions(
+                    2,
+                    whirlpool.reward_infos,
+                    whirlpool.reward_last_updated_timestamp,
+                    0,
+                )
+                .unwrap();
             expected_state_sequence += 3;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
             // initialize_reward
-            whirlpool.initialize_reward(0, Pubkey::new_unique(), Pubkey::new_unique()).unwrap();
-            whirlpool.initialize_reward(1, Pubkey::new_unique(), Pubkey::new_unique()).unwrap();
-            whirlpool.initialize_reward(2, Pubkey::new_unique(), Pubkey::new_unique()).unwrap();
+            whirlpool
+                .initialize_reward(0, Pubkey::new_unique(), Pubkey::new_unique())
+                .unwrap();
+            whirlpool
+                .initialize_reward(1, Pubkey::new_unique(), Pubkey::new_unique())
+                .unwrap();
+            whirlpool
+                .initialize_reward(2, Pubkey::new_unique(), Pubkey::new_unique())
+                .unwrap();
             expected_state_sequence += 3;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
@@ -975,7 +1016,7 @@ mod whirlpool_extension_segment_tests {
                 whirlpool.reward_infos,
                 whirlpool.protocol_fee_owed_a,
                 true,
-                whirlpool.reward_last_updated_timestamp
+                whirlpool.reward_last_updated_timestamp,
             );
             expected_state_sequence += 1;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
@@ -986,7 +1027,9 @@ mod whirlpool_extension_segment_tests {
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 
             // update_protocol_fee_rate
-            whirlpool.update_protocol_fee_rate(whirlpool.protocol_fee_rate).unwrap();
+            whirlpool
+                .update_protocol_fee_rate(whirlpool.protocol_fee_rate)
+                .unwrap();
             expected_state_sequence += 1;
             assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
 

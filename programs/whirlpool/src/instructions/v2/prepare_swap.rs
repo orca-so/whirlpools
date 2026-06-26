@@ -1,17 +1,17 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token_interface::Mint;
-use anchor_lang::solana_program::program::set_return_data;
-use borsh::BorshSerialize;
 use crate::instructions::swap_with_transfer_fee_extension;
 use crate::util::calculate_transfer_fee_excluded_amount;
 use crate::{
     errors::ErrorCode,
     state::*,
     util::{
-        parse_remaining_accounts, to_timestamp_u64, AccountsType,
-        RemainingAccountsInfo, SparseSwapTickSequenceBuilder,
+        parse_remaining_accounts, to_timestamp_u64, AccountsType, RemainingAccountsInfo,
+        SparseSwapTickSequenceBuilder,
     },
 };
+use anchor_lang::prelude::*;
+use anchor_lang::solana_program::program::set_return_data;
+use anchor_spl::token_interface::Mint;
+use borsh::BorshSerialize;
 
 #[derive(Accounts)]
 pub struct PrepareSwapV2<'info> {
@@ -151,7 +151,7 @@ fn try_prepare_swap<'info>(
     let mut swap_tick_sequence = swap_tick_sequence_builder.try_build_with_prepared_swap(
         whirlpool,
         a_to_b,
-        prepared_swap
+        prepared_swap,
     )?;
 
     let oracle_accessor = OracleAccessor::new(whirlpool, ctx.accounts.oracle.to_account_info())?;
@@ -179,22 +179,22 @@ fn try_prepare_swap<'info>(
         swap_update.amount_b
     };
     let transfer_fee_excluded_output_amount = if a_to_b {
-        calculate_transfer_fee_excluded_amount(
-            &ctx.accounts.token_mint_b,
-            swap_update.amount_b,
-        )?
-        .amount
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_b, swap_update.amount_b)?
+            .amount
     } else {
-        calculate_transfer_fee_excluded_amount(
-            &ctx.accounts.token_mint_a,
-            swap_update.amount_a,
-        )?
-        .amount
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_a, swap_update.amount_a)?
+            .amount
     };
     let (amount, other_amount) = if amount_specified_is_input {
-        (transfer_fee_included_input_amount, transfer_fee_excluded_output_amount)
+        (
+            transfer_fee_included_input_amount,
+            transfer_fee_excluded_output_amount,
+        )
     } else {
-        (transfer_fee_excluded_output_amount, transfer_fee_included_input_amount)
+        (
+            transfer_fee_excluded_output_amount,
+            transfer_fee_included_input_amount,
+        )
     };
 
     let return_data = PrepareSwapV2ReturnData::QuoteSuccess {

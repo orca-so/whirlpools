@@ -181,14 +181,128 @@ impl MemoryMappedWhirlpool {
 
     fn advance_state_sequence(&mut self) {
         let extension = self.reward_infos[1].extension_mut();
-        let state_sequence = u32::from_le_bytes([
-            extension[2],
-            extension[3],
-            extension[4],
-            extension[5],
-        ]);
+        let state_sequence =
+            u32::from_le_bytes([extension[2], extension[3], extension[4], extension[5]]);
 
         let next_state_sequence = state_sequence.wrapping_add(1);
         extension[2..6].copy_from_slice(&next_state_sequence.to_le_bytes());
+    }
+}
+
+#[cfg(test)]
+mod state_sequence_tests {
+    use super::*;
+
+    fn new_memory_mapped_whirlpool() -> MemoryMappedWhirlpool {
+        unsafe { std::mem::MaybeUninit::<MemoryMappedWhirlpool>::zeroed().assume_init() }
+    }
+
+    // test only for now
+    impl MemoryMappedWhirlpool {
+        pub fn state_sequence(&self) -> u32 {
+            let extension = &self.reward_infos[1].extension;
+            u32::from_le_bytes([extension[2], extension[3], extension[4], extension[5]])
+        }
+    }
+
+    #[test]
+    fn test_state_sequence() {
+        let mut whirlpool = new_memory_mapped_whirlpool();
+
+        assert_eq!(whirlpool.state_sequence(), 0);
+        whirlpool.reward_infos[1].extension = [
+            0xff, 0xff, 0x11, 0x22, 0x33, 0x44, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff,
+        ];
+        assert_eq!(whirlpool.state_sequence(), 0x44332211); // little endian
+    }
+
+    #[test]
+    fn test_advance_state_sequence_increment() {
+        let mut whirlpool = new_memory_mapped_whirlpool();
+
+        assert_eq!(whirlpool.state_sequence(), 0);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 1);
+        for expected in 2..100 {
+            whirlpool.advance_state_sequence();
+            assert_eq!(whirlpool.state_sequence(), expected);
+        }
+
+        whirlpool.reward_infos[1].extension[2..6].copy_from_slice(&[0xff, 0x00, 0x00, 0x00]);
+        assert_eq!(whirlpool.state_sequence(), 0x000000ff);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0x000000ff + 1);
+
+        whirlpool.reward_infos[1].extension[2..6].copy_from_slice(&[0xff, 0xff, 0x00, 0x00]);
+        assert_eq!(whirlpool.state_sequence(), 0x0000ffff);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0x0000ffff + 1);
+
+        whirlpool.reward_infos[1].extension[2..6].copy_from_slice(&[0xff, 0xff, 0xff, 0x00]);
+        assert_eq!(whirlpool.state_sequence(), 0x00ffffff);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0x00ffffff + 1);
+    }
+
+    #[test]
+    fn test_advance_state_sequence_other_field_check() {
+        let mut whirlpool = new_memory_mapped_whirlpool();
+
+        whirlpool.reward_infos[0].extension = [0xf0u8; 32];
+        whirlpool.reward_infos[1].extension = [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff,
+        ];
+        whirlpool.reward_infos[2].extension = [0x0fu8; 32];
+
+        assert_eq!(whirlpool.state_sequence(), 0x44332211);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0x44332212);
+
+        assert_eq!(whirlpool.reward_infos[0].extension, [0xf0u8; 32]);
+        assert_eq!(
+            whirlpool.reward_infos[1].extension,
+            [
+                0xaa, 0xbb, 0x12, 0x22, 0x33, 0x44, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff,
+            ]
+        );
+        assert_eq!(whirlpool.reward_infos[2].extension, [0x0fu8; 32]);
+    }
+
+    #[test]
+    fn test_advance_state_sequence_wrap() {
+        let mut whirlpool = new_memory_mapped_whirlpool();
+
+        whirlpool.reward_infos[1].extension[2..6].copy_from_slice(&[0xfe, 0xff, 0xff, 0xff]);
+        assert_eq!(whirlpool.state_sequence(), 0xfffffffe);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0xffffffff);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0x00000000);
+        whirlpool.advance_state_sequence();
+        assert_eq!(whirlpool.state_sequence(), 0x00000001);
+    }
+
+    #[test]
+    fn mut_functions_increment_state_sequence() {
+        let mut whirlpool = new_memory_mapped_whirlpool();
+
+        let mut expected_state_sequence = 0;
+
+        assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
+
+        // update_liquidity_and_reward_growth_global
+        whirlpool.update_liquidity_and_reward_growth_global(
+            whirlpool.liquidity(),
+            &[0, 0, 0],
+            whirlpool.reward_last_updated_timestamp(),
+        );
+        expected_state_sequence += 1;
+        assert_eq!(whirlpool.state_sequence(), expected_state_sequence);
     }
 }

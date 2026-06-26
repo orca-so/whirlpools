@@ -7,9 +7,10 @@ import type {
   WhirlpoolContext,
 } from "../../../../src";
 import { getAccountSize, AccountName, TICK_ARRAY_SIZE, WhirlpoolIx, toTx, MAX_PREPARED_SWAP_NONCE } from "../../../../src";
-import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
+import { expireBlockhash, initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 import { PDAUtil } from "../../../../dist/utils/public/pda-utils";
 import { ONE_SOL, systemTransferTx } from "../../../utils";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 
 describe("initialize_prepared_swap", () => {
   let provider: anchor.AnchorProvider;
@@ -114,6 +115,15 @@ describe("initialize_prepared_swap", () => {
       ).buildAndExecute();
     } catch (e) {}
 
+    // The above transaction and the following transaction may generate the same signature.
+    // This step is needed to ensure that the following transaction generate a different one.
+    // Note: Without this step, I saw the following error, but "6 (NotEnoughAccountKeys" was wrong.
+    //       "6" means "AlreadyProcessed" here.
+    // 
+    // Error: Failed to process transaction: Transaction failed:
+    // Error: 6 (NotEnoughAccountKeys)
+    expireBlockhash();
+
     const preAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
     assert.ok(preAccountInfo);
     assert.ok(preAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap));
@@ -133,48 +143,103 @@ describe("initialize_prepared_swap", () => {
     );
   });
 
+  it("fails when PDA is invalid", async () => {
+    const nonce = 0;
+    const invalidPreparedSwapPda = PDAUtil.getPosition(ctx.program.programId, PublicKey.unique());
 
-  /*
-
-  it("fails when start tick index is not a valid start index", async () => {
-    const tickSpacing = TickSpacing.Standard;
-    const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
-    await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey);
-    const startTick = TICK_ARRAY_SIZE * tickSpacing * 2 + 1;
-
-    const params = generateDefaultInitTickArrayParams(
-      ctx,
-      poolInitInfo.whirlpoolPda.publicKey,
-      startTick,
-    );
-
-    try {
-      await toTx(
+    await assert.rejects(
+      toTx(
         ctx,
-        WhirlpoolIx.initTickArrayIx(ctx.program, params),
-      ).buildAndExecute();
-      assert.fail(
-        "should fail if start-tick is not a multiple of tick spacing and num ticks in array",
+        WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
+          funder: ctx.wallet.publicKey,
+          nonce,
+          preparedSwapPda: invalidPreparedSwapPda,
+        }),
+      ).buildAndExecute(),
+      /0x7d6/, // ConstraintSeeds
+    );
+  });
+
+  it("fails when nonce is invalid", async () => {
+    const invalidNonceArray = [MAX_PREPARED_SWAP_NONCE + 1, 0x00FF, 0xFFFF];
+
+    for (const nonce of invalidNonceArray) {
+      const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
+            funder: ctx.wallet.publicKey,
+            nonce,
+            preparedSwapPda,
+          }),
+        ).buildAndExecute(),
+        /0x17b6/, // PreparedSwapNonceMaxExceeded
       );
-    } catch (e) {
-      const error = e as Error;
-      assert.match(error.message, /0x1771/); // InvalidStartTick
     }
   });
 
-  async function assertTickArrayInitialized(
-    ctx: WhirlpoolContext,
-    tickArrayInitInfo: InitTickArrayParams,
-    poolInitInfo: InitPoolParams,
-    startTick: number,
-  ) {
-    let tickArrayData = (await fetcher.getTickArray(
-      tickArrayInitInfo.tickArrayPda.publicKey,
-    )) as TickArrayData;
-    assert.ok(
-      tickArrayData.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey),
+  it("fails when funder is not signer", async () => {
+    const funderKeypair = anchor.web3.Keypair.generate();
+    await systemTransferTx(
+      provider,
+      funderKeypair.publicKey,
+      ONE_SOL,
+    ).buildAndExecute();
+
+    const nonce = 2;
+    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+
+    const ix = WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
+          funder: funderKeypair.publicKey,
+          nonce,
+          preparedSwapPda,
+        }).instructions[0];
+    
+    assert.equal(ix.keys.length, 3);
+    assert.ok(ix.keys[0].pubkey.equals(funderKeypair.publicKey));
+
+    // unset signer flag
+    ix.keys[0].isSigner = false;
+
+    const tx = toTx(ctx, {
+      instructions: [ix],
+      cleanupInstructions: [],
+      // not add funderKeypair as additional signer
+      signers: [],
+    });
+
+    await assert.rejects(
+      tx.buildAndExecute(),
+      /0xbc2/, // AccountNotSigner
     );
-    assert.ok(tickArrayData.startTickIndex == startTick);
-  }
-    */
+  });
+
+  it("fails when system program is invalid", async () => {
+    const nonce = 2;
+    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+
+    const ix = WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
+          funder: ctx.wallet.publicKey,
+          nonce,
+          preparedSwapPda,
+        }).instructions[0];
+    
+    assert.equal(ix.keys.length, 3);
+    assert.ok(ix.keys[2].pubkey.equals(SystemProgram.programId));
+
+    ix.keys[2].pubkey = PublicKey.unique();
+
+    const tx = toTx(ctx, {
+      instructions: [ix],
+      cleanupInstructions: [],
+      signers: [],
+    });
+
+    await assert.rejects(
+      tx.buildAndExecute(),
+      /0xbc0/, // InvalidProgramId
+    );
+  });
 });

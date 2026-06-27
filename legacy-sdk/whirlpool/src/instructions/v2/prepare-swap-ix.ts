@@ -6,7 +6,7 @@ import {
   RemainingAccountsType,
   toSupplementalTickArrayAccountMetas,
 } from "../../utils/remaining-accounts-util";
-import { CommitSwapV2Params } from "./commit-swap-ix";
+import type { CommitSwapV2Params } from "./commit-swap-ix";
 
 /**
  * Raw parameters and accounts to prepare a swap on a Whirlpool.
@@ -14,7 +14,17 @@ import { CommitSwapV2Params } from "./commit-swap-ix";
  * @category Instruction Types
  * @param CommitSwapV2Params - Parameters in {@link CommitSwapV2Params}
  */
-export type PrepareSwapV2Params = Omit<CommitSwapV2Params, "tokenProgramA" | "tokenProgramB" | "tokenOwnerAccountA" | "tokenVaultA" | "tokenOwnerAccountB" | "tokenVaultB" | "tokenTransferHookAccountsA" | "tokenTransferHookAccountsB">;
+export type PrepareSwapV2Params = Omit<
+  CommitSwapV2Params,
+  | "tokenProgramA"
+  | "tokenProgramB"
+  | "tokenOwnerAccountA"
+  | "tokenVaultA"
+  | "tokenOwnerAccountB"
+  | "tokenVaultB"
+  | "tokenTransferHookAccountsA"
+  | "tokenTransferHookAccountsB"
+>;
 
 /**
  * Prepare a swap on a Whirlpool

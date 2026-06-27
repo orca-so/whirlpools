@@ -19,7 +19,7 @@ import {
  */
 export type CommitSwapV2Params = Omit<SwapV2Params, "otherAmountThreshold"> & {
   preparedSwap: PublicKey;
-}
+};
 
 /**
  * Execute a prepared swap on a Whirlpool

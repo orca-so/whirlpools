@@ -1,14 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type {
-  InitPoolParams,
-  InitTickArrayParams,
-  TickArrayData,
-  WhirlpoolContext,
+import type { WhirlpoolContext } from "../../../../src";
+import {
+  getAccountSize,
+  AccountName,
+  WhirlpoolIx,
+  toTx,
+  MAX_PREPARED_SWAP_NONCE,
+  PDAUtil,
 } from "../../../../src";
-import { getAccountSize, AccountName, TICK_ARRAY_SIZE, WhirlpoolIx, toTx, MAX_PREPARED_SWAP_NONCE } from "../../../../src";
-import { expireBlockhash, initializeLiteSVMEnvironment } from "../../../utils/litesvm";
-import { PDAUtil } from "../../../../dist/utils/public/pda-utils";
+import {
+  expireBlockhash,
+  initializeLiteSVMEnvironment,
+} from "../../../utils/litesvm";
 import { ONE_SOL, systemTransferTx } from "../../../utils";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 
@@ -26,9 +30,14 @@ describe("initialize_prepared_swap", () => {
 
   it("successfully init a PreparedSwap account (nonce = 0)", async () => {
     const nonce = 0;
-    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      nonce,
+    );
 
-    const preAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+    const preAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(preAccountInfo === null);
 
     await toTx(
@@ -39,17 +48,26 @@ describe("initialize_prepared_swap", () => {
         preparedSwapPda,
       }),
     ).buildAndExecute();
-    
-    const postAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+
+    const postAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(postAccountInfo);
-    assert.ok(postAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap));
+    assert.ok(
+      postAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap),
+    );
   });
 
   it("successfully init a PreparedSwap account (nonce = MAX_PREPARED_SWAP_NONCE)", async () => {
     const nonce = MAX_PREPARED_SWAP_NONCE;
-    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      nonce,
+    );
 
-    const preAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+    const preAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(preAccountInfo === null);
 
     await toTx(
@@ -60,10 +78,14 @@ describe("initialize_prepared_swap", () => {
         preparedSwapPda,
       }),
     ).buildAndExecute();
-    
-    const postAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+
+    const postAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(postAccountInfo);
-    assert.ok(postAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap));
+    assert.ok(
+      postAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap),
+    );
   });
 
   it("succeeds when funder is different than account paying for transaction fee", async () => {
@@ -75,9 +97,14 @@ describe("initialize_prepared_swap", () => {
     ).buildAndExecute();
 
     const nonce = 1; // Note: We need to use new nonce because these test cases uses the same liteSVM env.
-    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      nonce,
+    );
 
-    const preAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+    const preAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(preAccountInfo === null);
 
     await toTx(
@@ -88,17 +115,24 @@ describe("initialize_prepared_swap", () => {
         preparedSwapPda,
       }),
     )
-    .addSigner(funderKeypair)
-    .buildAndExecute();
-    
-    const postAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+      .addSigner(funderKeypair)
+      .buildAndExecute();
+
+    const postAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(postAccountInfo);
-    assert.ok(postAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap));
+    assert.ok(
+      postAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap),
+    );
   });
 
   it("fails when the accout has been already initialized", async () => {
     const nonce = 0;
-    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      nonce,
+    );
 
     // Initialize the account if needed.
     // Note: these tests share the same LiteSVM environment, so the account may have
@@ -119,15 +153,19 @@ describe("initialize_prepared_swap", () => {
     // This step is needed to ensure that the following transaction generate a different one.
     // Note: Without this step, I saw the following error, but "6 (NotEnoughAccountKeys" was wrong.
     //       "6" means "AlreadyProcessed" here.
-    // 
+    //
     // Error: Failed to process transaction: Transaction failed:
     // Error: 6 (NotEnoughAccountKeys)
     expireBlockhash();
 
-    const preAccountInfo = await provider.connection.getAccountInfo(preparedSwapPda.publicKey);
+    const preAccountInfo = await provider.connection.getAccountInfo(
+      preparedSwapPda.publicKey,
+    );
     assert.ok(preAccountInfo);
-    assert.ok(preAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap));
-    
+    assert.ok(
+      preAccountInfo.data.length == getAccountSize(AccountName.PreparedSwap),
+    );
+
     await assert.rejects(
       toTx(
         ctx,
@@ -145,7 +183,10 @@ describe("initialize_prepared_swap", () => {
 
   it("fails when PDA is invalid", async () => {
     const nonce = 0;
-    const invalidPreparedSwapPda = PDAUtil.getPosition(ctx.program.programId, PublicKey.unique());
+    const invalidPreparedSwapPda = PDAUtil.getPosition(
+      ctx.program.programId,
+      PublicKey.unique(),
+    );
 
     await assert.rejects(
       toTx(
@@ -161,10 +202,13 @@ describe("initialize_prepared_swap", () => {
   });
 
   it("fails when nonce is invalid", async () => {
-    const invalidNonceArray = [MAX_PREPARED_SWAP_NONCE + 1, 0x00FF, 0xFFFF];
+    const invalidNonceArray = [MAX_PREPARED_SWAP_NONCE + 1, 0x00ff, 0xffff];
 
     for (const nonce of invalidNonceArray) {
-      const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+      const preparedSwapPda = PDAUtil.getPreparedSwap(
+        ctx.program.programId,
+        nonce,
+      );
 
       await assert.rejects(
         toTx(
@@ -189,14 +233,17 @@ describe("initialize_prepared_swap", () => {
     ).buildAndExecute();
 
     const nonce = 2;
-    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      nonce,
+    );
 
     const ix = WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
-          funder: funderKeypair.publicKey,
-          nonce,
-          preparedSwapPda,
-        }).instructions[0];
-    
+      funder: funderKeypair.publicKey,
+      nonce,
+      preparedSwapPda,
+    }).instructions[0];
+
     assert.equal(ix.keys.length, 3);
     assert.ok(ix.keys[0].pubkey.equals(funderKeypair.publicKey));
 
@@ -218,14 +265,17 @@ describe("initialize_prepared_swap", () => {
 
   it("fails when system program is invalid", async () => {
     const nonce = 2;
-    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, nonce);
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      nonce,
+    );
 
     const ix = WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
-          funder: ctx.wallet.publicKey,
-          nonce,
-          preparedSwapPda,
-        }).instructions[0];
-    
+      funder: ctx.wallet.publicKey,
+      nonce,
+      preparedSwapPda,
+    }).instructions[0];
+
     assert.equal(ix.keys.length, 3);
     assert.ok(ix.keys[2].pubkey.equals(SystemProgram.programId));
 

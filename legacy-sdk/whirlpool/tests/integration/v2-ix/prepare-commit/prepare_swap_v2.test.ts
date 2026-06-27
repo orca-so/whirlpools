@@ -35,15 +35,11 @@ import { initTickArrayRange } from "../../../utils/init-utils";
 import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
 import {
   fundPositionsV2,
-  initTestPoolV2,
-  initTestPoolWithLiquidityV2,
   initTestPoolWithTokensV2,
-  withdrawPositionsV2,
 } from "../../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../../utils/v2/token-2022";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import { PublicKey } from "@solana/web3.js";
-import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
 import {
   parsePrepareSwapV2ReturnData,
   simulateTransaction,
@@ -246,13 +242,12 @@ describe("prepare_swap_v2", () => {
     });
 
     it("fails when passed token_mint_a/b does not match whirlpool's token_mint_a/b", async () => {
-      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-        await initTestPoolWithTokensV2(
-          ctx,
-          tokenTraits.tokenTraitA,
-          tokenTraits.tokenTraitB,
-          TickSpacing.Standard,
-        );
+      const { poolInitInfo, whirlpoolPda } = await initTestPoolWithTokensV2(
+        ctx,
+        tokenTraits.tokenTraitA,
+        tokenTraits.tokenTraitB,
+        TickSpacing.Standard,
+      );
 
       const tickArrays = await initTickArrayRange(
         ctx,
@@ -1049,7 +1044,7 @@ describe("prepare_swap_v2", () => {
     });
 
     // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
-    it("ExactOut, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
+    it("QuoteSuccess: ExactOut, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
       const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
       const whirlpoolData = whirlpool.getData();
 

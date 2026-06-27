@@ -19,13 +19,11 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 describe("initialize_prepared_swap", () => {
   let provider: anchor.AnchorProvider;
   let ctx: WhirlpoolContext;
-  let fetcher: WhirlpoolContext["fetcher"];
 
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
     provider = env.provider;
     ctx = env.ctx;
-    fetcher = env.fetcher;
   });
 
   it("successfully init a PreparedSwap account (nonce = 0)", async () => {
@@ -147,7 +145,7 @@ describe("initialize_prepared_swap", () => {
           preparedSwapPda,
         }),
       ).buildAndExecute();
-    } catch (e) {}
+    } catch (_e) {}
 
     // The above transaction and the following transaction may generate the same signature.
     // This step is needed to ensure that the following transaction generate a different one.

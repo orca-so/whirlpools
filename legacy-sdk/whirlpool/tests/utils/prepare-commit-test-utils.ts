@@ -15,10 +15,15 @@ import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import type { TransactionBuilder } from "@orca-so/common-sdk";
 import { getProviderWalletKeypair } from "./utils";
 
+type HasHiddenPubkey = {
+  _pubkey: PublicKey;
+};
+
 export type ReturnData = {
   programId: PublicKey;
   data: Buffer;
 };
+
 export class SimulatedTransactionAccessor {
   constructor(
     private simResult: RpcResponseAndContext<SimulatedTransactionResponse>,
@@ -44,7 +49,7 @@ export class SimulatedTransactionAccessor {
   postWritableAccount(pubkey: PublicKey): AccountInfo<Buffer> | null {
     for (let account of this.simResult.value.accounts!) {
       // HACK: liteSVM based simulation only
-      const accountPubkey = (account as any)["_pubkey"] as PublicKey;
+      const accountPubkey = (account as unknown as HasHiddenPubkey)._pubkey;
 
       if (pubkey.equals(accountPubkey)) {
         return {

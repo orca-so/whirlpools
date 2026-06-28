@@ -48,10 +48,7 @@ export async function estimateComputeBudgetLimit(
     if (!simulation.value.unitsConsumed) {
       return DEFAULT_MAX_COMPUTE_UNIT_LIMIT;
     }
-    const marginUnits = Math.max(
-      100_000,
-      margin * simulation.value.unitsConsumed,
-    );
+    const marginUnits = margin * simulation.value.unitsConsumed;
     const estimatedUnits = Math.ceil(
       simulation.value.unitsConsumed + marginUnits,
     );

@@ -399,36 +399,19 @@ describe("two-hop swap", () => {
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
   });
 
-  it.skip("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
-    const env = await resetAndInitializeLiteSVMEnvironment();
-    provider = env.provider;
-    program = env.program;
-    ctx = env.ctx;
-    fetcher = env.fetcher;
-
-    anchor.setProvider(provider);
-    client = buildWhirlpoolClient(ctx);
-
-    // Add another mint and update pool so there is no overlapping mint
-    aqConfig = getDefaultAquarium();
+  it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
     aqConfig.initFeeTierParams.push({ tickSpacing: TickSpacing.ThirtyTwo });
     aqConfig.initPoolParams[1] = {
       mintIndices: [0, 1],
       tickSpacing: TickSpacing.ThirtyTwo,
       feeTierIndex: 1,
     };
-    aqConfig.initTickArrayRangeParams.push({
-      poolIndex: 1,
-      startTickIndex: 22528,
-      arrayCount: 12,
-      aToB: true,
-    });
-    aqConfig.initTickArrayRangeParams.push({
+    aqConfig.initTickArrayRangeParams[1] = {
       poolIndex: 1,
       startTickIndex: 22528,
       arrayCount: 12,
       aToB: false,
-    });
+    };
 
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;

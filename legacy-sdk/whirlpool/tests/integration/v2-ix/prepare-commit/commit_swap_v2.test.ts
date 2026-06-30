@@ -1,31 +1,22 @@
 import type * as anchor from "@coral-xyz/anchor";
-import { MathUtil, Percentage, U64_MAX } from "@orca-so/common-sdk";
-import type { PDA } from "@orca-so/common-sdk";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import type {
-  WhirlpoolContext,
-  CommitSwapV2Params} from "../../../../src";
+import type { WhirlpoolContext, CommitSwapV2Params ,
+  WhirlpoolData} from "../../../../src";
 import {
-  InitPoolV2Params,
-  WhirlpoolData,
-  SwapQuote,
   TickUtil,
+  PROTOCOL_FEE_RATE_MUL_VALUE,
 } from "../../../../src";
 import {
   MAX_PREPARED_SWAP_NONCE,
-  MAX_SQRT_PRICE_BN,
   MEMO_PROGRAM_ADDRESS,
-  MIN_SQRT_PRICE_BN,
   NO_ORACLE_DATA,
   PDAUtil,
-  PriceMath,
   SwapUtils,
   WhirlpoolIx,
   buildWhirlpoolClient,
-  swapQuoteByInputToken,
-  swapQuoteByOutputToken,
   swapQuoteWithParams,
   toTx,
 } from "../../../../src";
@@ -34,6 +25,7 @@ import {
   TickSpacing,
   ZERO_BN,
   initializeLiteSVMEnvironment,
+  pollForCondition,
   warpClock,
 } from "../../../utils";
 import { initTickArrayRange } from "../../../utils/init-utils";
@@ -48,20 +40,16 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   getWhirlpoolStateSequence,
   parsePreparedSwap,
-  parsePrepareSwapV2ReturnData,
   PREPARED_SWAP_STATE_COMMITTED,
   PREPARED_SWAP_STATE_PREPARED,
   PREPARED_SWAP_STATE_UNPREPARED,
-  simulateTransaction,
 } from "../../../utils/prepare-commit-test-utils";
-import type { PrepareSwapV2Params } from "../../../../dist";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("commit_swap_v2", () => {
   let provider: anchor.AnchorProvider;
   let ctx: WhirlpoolContext;
   let fetcher: WhirlpoolContext["fetcher"];
-  let client: ReturnType<typeof buildWhirlpoolClient>;
 
   const tokenTraits = {
     tokenTraitA: { isToken2022: true },
@@ -872,5 +860,149 @@ describe("commit_swap_v2", () => {
         /0x17b9/, // PreparedSwapPreconditionMismatch
       );
     });
+  });
+
+  it("emit Traded event", async () => {
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokensV2(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        TickSpacing.Standard,
+      );
+    const aToB = false;
+    await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      22528, // to 33792
+      3,
+      TickSpacing.Standard,
+      aToB,
+    );
+
+    const fundParams: FundedPositionV2Params[] = [
+      {
+        liquidityAmount: new BN(10_000_000),
+        tickLowerIndex: 29440,
+        tickUpperIndex: 33536,
+      },
+    ];
+
+    await fundPositionsV2(
+      ctx,
+      poolInitInfo,
+      tokenAccountA,
+      tokenAccountB,
+      fundParams,
+    );
+
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
+
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    const whirlpoolDataPre = (await fetcher.getPool(
+      whirlpoolKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
+    const quote = swapQuoteWithParams(
+      {
+        amountSpecifiedIsInput: true,
+        aToB: false,
+        tokenAmount: new BN(100000),
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
+        whirlpoolData: whirlpoolDataPre,
+        tickArrays: await SwapUtils.getTickArrays(
+          whirlpoolDataPre.tickCurrentIndex,
+          whirlpoolDataPre.tickSpacing,
+          false,
+          ctx.program.programId,
+          whirlpoolKey,
+          fetcher,
+          IGNORE_CACHE,
+        ),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          whirlpoolDataPre,
+          IGNORE_CACHE,
+        ),
+        oracleData: NO_ORACLE_DATA,
+      },
+      Percentage.fromFraction(1, 100),
+    );
+
+    const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
+    // event verification
+    let eventVerified: boolean = false;
+    let detectedSignature: string | null = null;
+    const listener = ctx.program.addEventListener(
+      "traded",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.ok(event.aToB === aToB);
+        assert.ok(event.preSqrtPrice.eq(preSqrtPrice));
+        assert.ok(event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice));
+        assert.ok(event.inputAmount.eq(quote.estimatedAmountIn));
+        assert.ok(event.outputAmount.eq(quote.estimatedAmountOut));
+        assert.ok(event.inputTransferFee.isZero());
+        assert.ok(event.outputTransferFee.isZero());
+
+        const protocolFee = quote.estimatedFeeAmount
+          .muln(whirlpoolDataPre.protocolFeeRate)
+          .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+        const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
+        assert.ok(event.lpFee.eq(lpFee));
+        assert.ok(event.protocolFee.eq(protocolFee));
+
+        eventVerified = true;
+      },
+    );
+
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      initializedPreparedSwapNonce,
+    );
+    const params: CommitSwapV2Params = {
+      ...quote,
+      preparedSwap: preparedSwapPda.publicKey,
+      whirlpool: whirlpoolPda.publicKey,
+      tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
+      tokenOwnerAccountA: tokenAccountA,
+      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+      tokenOwnerAccountB: tokenAccountB,
+      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+      oracle: oraclePda.publicKey,
+    };
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.prepareSwapV2Ix(ctx.program, params),
+    ).buildAndExecute();
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.commitSwapV2Ix(ctx.program, params),
+    ).buildAndExecute();
+
+    warpClock(2);
+    const polled = await pollForCondition(
+      async () => ({ detectedSignature: detectedSignature, eventVerified }),
+      (r) =>
+        !!r.detectedSignature &&
+        !!(r as { eventVerified?: boolean }).eventVerified,
+      { maxRetries: 100, delayMs: 10 },
+    );
+    assert.ok(!!polled.detectedSignature);
+    assert.ok(polled.eventVerified);
+
+    ctx.program.removeEventListener(listener);
   });
 });

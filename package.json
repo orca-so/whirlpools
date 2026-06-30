@@ -14,8 +14,8 @@
     "generate": "nx run-many --target generate --projects && nx run-many --target format --projects @orca-so/whirlpools-lint,@orca-so/whirlpools-rust-client"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.29.7",
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.0",
     "@types/node": "^24.9.1",
     "nx": "^22.0.4",
     "rimraf": "^6.0.1",

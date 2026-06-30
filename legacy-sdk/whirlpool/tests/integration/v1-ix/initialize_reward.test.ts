@@ -11,6 +11,7 @@ import {
 } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initializeReward, initTestPool } from "../../utils/init-utils";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("initialize_reward", () => {
   let provider: anchor.AnchorProvider;
@@ -89,6 +90,11 @@ describe("initialize_reward", () => {
     assert.ok(
       whirlpool2.rewardInfos[2].vault.equals(anchor.web3.PublicKey.default),
     );
+
+    // state sequence must be incremented
+    const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+    const postStateSequence = getWhirlpoolStateSequence(whirlpool2);
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("succeeds when funder is different than account paying for transaction fee", async () => {

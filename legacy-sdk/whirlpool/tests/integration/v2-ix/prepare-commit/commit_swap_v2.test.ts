@@ -3,12 +3,12 @@ import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import type { WhirlpoolContext, CommitSwapV2Params ,
-  WhirlpoolData} from "../../../../src";
-import {
-  TickUtil,
-  PROTOCOL_FEE_RATE_MUL_VALUE,
+import type {
+  WhirlpoolContext,
+  CommitSwapV2Params,
+  WhirlpoolData,
 } from "../../../../src";
+import { TickUtil, PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../src";
 import {
   MAX_PREPARED_SWAP_NONCE,
   MEMO_PROGRAM_ADDRESS,
@@ -16,7 +16,6 @@ import {
   PDAUtil,
   SwapUtils,
   WhirlpoolIx,
-  buildWhirlpoolClient,
   swapQuoteWithParams,
   toTx,
 } from "../../../../src";
@@ -63,7 +62,6 @@ describe("commit_swap_v2", () => {
     provider = env.provider;
     ctx = env.ctx;
     fetcher = env.fetcher;
-    client = buildWhirlpoolClient(ctx);
 
     const preparedSwapPda = PDAUtil.getPreparedSwap(
       ctx.program.programId,

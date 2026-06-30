@@ -37,6 +37,7 @@ import {
   getTokenAccsForPools,
 } from "../../utils/init-utils";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("two-hop swap", () => {
   let provider: anchor.AnchorProvider;
@@ -1905,6 +1906,63 @@ describe("two-hop swap", () => {
     assert.ok(eventVerifiedTwo);
 
     ctx.program.removeEventListener(listener);
+  });
+
+  it("increment state sequence", async () => {
+    const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
+    const { tokenAccounts, mintKeys, pools } = aquarium;
+
+    const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+    const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+
+    const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+    const quote = await swapQuoteByInputToken(
+      whirlpoolOne,
+      inputToken,
+      new BN(1000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpoolTwo,
+      intermediaryToken,
+      quote.estimatedAmountOut,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+    const whirlpoolOnePre = whirlpoolOne.getData();
+    const whirlpoolTwoPre = whirlpoolTwo.getData();
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.twoHopSwapIx(ctx.program, {
+        ...twoHopQuote,
+        ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+        tokenAuthority: ctx.wallet.publicKey,
+      }),
+    ).buildAndExecute();
+
+    const whirlpoolOnePost = await whirlpoolOne.refreshData();
+    const whirlpoolTwoPost = await whirlpoolTwo.refreshData();
+
+    // state sequence must be incremented
+    const preStateSequenceOne = getWhirlpoolStateSequence(whirlpoolOnePre);
+    const preStateSequenceTwo = getWhirlpoolStateSequence(whirlpoolTwoPre);
+    const postStateSequenceOne = getWhirlpoolStateSequence(whirlpoolOnePost);
+    const postStateSequenceTwo = getWhirlpoolStateSequence(whirlpoolTwoPost);
+    assert.equal(postStateSequenceOne, preStateSequenceOne + 1);
+    assert.equal(postStateSequenceTwo, preStateSequenceTwo + 1);
   });
 
   function getParamsFromPools(

@@ -41,6 +41,7 @@ import {
   createAndMintToTokenAccount as createAndMintToTokenAccountForPosition,
 } from "../../../utils/token";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("decrease_liquidity_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -193,6 +194,11 @@ describe("decrease_liquidity_v2", () => {
 
           // No balance change in the position
           assert.equal(positionInfoBefore.lamports, positionInfoAfter.lamports);
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("successfully decrease liquidity (full) from position in one fixed tick array", async () => {
@@ -295,6 +301,11 @@ describe("decrease_liquidity_v2", () => {
 
           // No balance change in the position
           assert.equal(positionInfoBefore.lamports, positionInfoAfter.lamports);
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("successfully decrease liquidity (partial) from position in two fixed tick arrays", async () => {
@@ -409,6 +420,11 @@ describe("decrease_liquidity_v2", () => {
 
           // No balance change in the position
           assert.equal(positionInfoBefore.lamports, positionInfoAfter.lamports);
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("successfully decrease liquidity (full) from position in two fixed tick arrays", async () => {
@@ -510,6 +526,11 @@ describe("decrease_liquidity_v2", () => {
 
           // No balance change in the position
           assert.equal(positionInfoBefore.lamports, positionInfoAfter.lamports);
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("successfully decrease liquidity from position in one dynamic tick array", async () => {
@@ -637,6 +658,11 @@ describe("decrease_liquidity_v2", () => {
             tickArrayAfter.data.length,
             tickArrayBefore.data.length - TICK_INIT_SIZE * 2,
           );
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("successfully decrease liquidity from position in two dynamic tick arrays", async () => {
@@ -790,6 +816,11 @@ describe("decrease_liquidity_v2", () => {
             tickArrayUpperAfter.data.length,
             tickArrayUpperBefore.data.length,
           );
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("successfully decrease liquidity with approved delegate", async () => {

@@ -3,7 +3,11 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import { Percentage } from "@orca-so/common-sdk";
-import type { AdaptiveFeeConstantsData, WhirlpoolContext } from "../../../src";
+import type {
+  AdaptiveFeeConstantsData,
+  WhirlpoolContext,
+  WhirlpoolData,
+} from "../../../src";
 import {
   IGNORE_CACHE,
   PDAUtil,
@@ -27,6 +31,7 @@ import {
   getDefaultPresetAdaptiveFeeConstants,
 } from "../../utils/test-builders";
 import BN from "bn.js";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("set_adaptive_fee_constants", () => {
   let ctx: WhirlpoolContext;
@@ -217,6 +222,13 @@ describe("set_adaptive_fee_constants", () => {
       0,
     );
 
+    const preStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
+    );
+
     // Update only filter_period and decay_period
     await toTx(
       ctx,
@@ -231,6 +243,13 @@ describe("set_adaptive_fee_constants", () => {
     )
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
+
+    const postStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
+    );
 
     // Verify only specified constants were updated
     const oracleAfterUpdate = await fetcher.getOracle(
@@ -281,6 +300,9 @@ describe("set_adaptive_fee_constants", () => {
       oracleAfterUpdate?.adaptiveFeeVariables.volatilityAccumulator,
       0,
     );
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("sets all constants", async () => {
@@ -462,6 +484,13 @@ describe("set_adaptive_fee_constants", () => {
       majorSwapThresholdTicks: 16,
     };
 
+    const preStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
+    );
+
     await toTx(
       ctx,
       WhirlpoolIx.setAdaptiveFeeConstantsIx(ctx.program, {
@@ -474,6 +503,13 @@ describe("set_adaptive_fee_constants", () => {
     )
       .addSigner(configKeypairs.feeAuthorityKeypair)
       .buildAndExecute();
+
+    const postStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
+    );
 
     // Verify all constants were updated
     const oracleAfterUpdate = await fetcher.getOracle(
@@ -528,6 +564,9 @@ describe("set_adaptive_fee_constants", () => {
       oracleAfterUpdate?.adaptiveFeeVariables.volatilityAccumulator,
       0,
     );
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when all constants are null", async () => {

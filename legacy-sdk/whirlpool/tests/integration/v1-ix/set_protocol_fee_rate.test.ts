@@ -11,6 +11,7 @@ import {
 import { initTestPool } from "../../utils/init-utils";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
 import type { Whirlpool } from "../../../dist/artifacts/whirlpool";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("set_protocol_fee_rate", () => {
   let program: anchor.Program<Whirlpool>;
@@ -46,6 +47,8 @@ describe("set_protocol_fee_rate", () => {
       configInitInfo.defaultProtocolFeeRate,
     );
 
+    const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+
     const txBuilder = toTx(
       ctx,
       WhirlpoolIx.setProtocolFeeRateIx(program, {
@@ -67,6 +70,11 @@ describe("set_protocol_fee_rate", () => {
       { maxRetries: 50, delayMs: 10 },
     );
     assert.equal(whirlpool.protocolFeeRate, newProtocolFeeRate);
+
+    const postStateSequence = getWhirlpoolStateSequence(whirlpool);
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when protocol fee rate exceeds max", async () => {

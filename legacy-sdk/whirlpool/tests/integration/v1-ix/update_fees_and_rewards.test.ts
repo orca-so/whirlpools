@@ -3,13 +3,18 @@ import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, WhirlpoolContext } from "../../../src";
+import type {
+  PositionData,
+  WhirlpoolContext,
+  WhirlpoolData,
+} from "../../../src";
 import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, warpClock } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("update_fees_and_rewards", () => {
   let ctx: WhirlpoolContext;
@@ -94,6 +99,13 @@ describe("update_fees_and_rewards", () => {
     // Advance blockchain time in LiteSVM so rewards accrue
     warpClock(2);
 
+    const preStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
+    );
+
     await toTx(
       ctx,
       WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
@@ -103,6 +115,14 @@ describe("update_fees_and_rewards", () => {
         tickArrayUpper: tickArrayPda.publicKey,
       }),
     ).buildAndExecute();
+
+    const postStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
+    );
+
     const positionAfter = (await fetcher.getPosition(
       positions[0].publicKey,
       IGNORE_CACHE,
@@ -130,6 +150,9 @@ describe("update_fees_and_rewards", () => {
       ),
     );
     assert.ok(positionAfter.liquidity.eq(positionBefore.liquidity));
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when position has zero liquidity", async () => {

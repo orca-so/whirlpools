@@ -52,6 +52,7 @@ import {
   generateDefaultInitTickArrayParams,
   generateDefaultOpenPositionParams,
 } from "../../../utils/test-builders";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("increase_liquidity_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -210,6 +211,11 @@ describe("increase_liquidity_v2", () => {
 
           // No balance change in the position
           assert.equal(positionInfoBefore.lamports, positionInfoAfter.lamports);
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("increase liquidity of a position contained in one tick array", async () => {
@@ -328,6 +334,11 @@ describe("increase_liquidity_v2", () => {
 
           // No balance change in the position
           assert.equal(positionInfoBefore.lamports, positionInfoAfter.lamports);
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("increase liquidity of a position spanning two dynamic tick arrays", async () => {
@@ -495,6 +506,11 @@ describe("increase_liquidity_v2", () => {
             tickArrayUpperAfter.data.length,
             tickArrayUpperBefore.data.length,
           );
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("increase liquidity of a position contained in one dynamic tick array", async () => {
@@ -637,6 +653,11 @@ describe("increase_liquidity_v2", () => {
             tickArrayAfter.data.length,
             tickArrayBefore.data.length + TICK_INIT_SIZE * 2,
           );
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(poolBefore);
+          const postStateSequence = getWhirlpoolStateSequence(poolAfter);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("initialize and increase liquidity of a position in a single transaction", async () => {

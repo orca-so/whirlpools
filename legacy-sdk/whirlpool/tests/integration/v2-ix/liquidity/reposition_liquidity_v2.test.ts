@@ -3,7 +3,7 @@ import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { WhirlpoolContext } from "../../../../src";
+import type { WhirlpoolContext, WhirlpoolData } from "../../../../src";
 import {
   AccountName,
   getAccountSize,
@@ -33,6 +33,7 @@ import {
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../../utils/v2/token-2022";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 export interface LiquidityRepositionedEventData {
   whirlpool: anchor.web3.PublicKey;
@@ -175,6 +176,13 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(repositionTickUpper, tickSpacing),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           await toTx(
             ctx,
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
@@ -205,6 +213,13 @@ describe("reposition_v2", () => {
             }),
           ).buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
             IGNORE_CACHE,
@@ -224,6 +239,9 @@ describe("reposition_v2", () => {
               newTickArrayUpper.publicKey.toString(),
             "new lower tick array should be different from the new upper tick array",
           );
+
+          // state sequence must be incremented (for reposition, 2 increment is expected result)
+          assert.equal(postStateSequence, preStateSequence + 2);
         });
 
         it("reposition: 1-sided position below price to 1-sided above price", async () => {
@@ -287,6 +305,13 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           await toTx(
             ctx,
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
@@ -317,6 +342,13 @@ describe("reposition_v2", () => {
             }),
           ).buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
             IGNORE_CACHE,
@@ -346,6 +378,9 @@ describe("reposition_v2", () => {
               newTickArrayUpper.publicKey.toString(),
             "new lower and upper tick arrays should be different",
           );
+
+          // state sequence must be incremented (for reposition, 2 increment is expected result)
+          assert.equal(postStateSequence, preStateSequence + 2);
         });
 
         it("reposition: 1-sided position below price to 50:50 ratio", async () => {
@@ -409,6 +444,13 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           await toTx(
             ctx,
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
@@ -439,6 +481,13 @@ describe("reposition_v2", () => {
             }),
           ).buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
             IGNORE_CACHE,
@@ -458,6 +507,9 @@ describe("reposition_v2", () => {
               newTickArrayUpper.publicKey.toString(),
             "new lower tick array should be different from the new upper tick array",
           );
+
+          // state sequence must be incremented (for reposition, 2 increment is expected result)
+          assert.equal(postStateSequence, preStateSequence + 2);
         });
 
         it("reposition: tighten position width", async () => {
@@ -510,6 +562,13 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           // A lower liquidity amount on a tigher position should trigger a transfer from vault -> owner
           const repositionLiquidityAmount = new BN(1_000_000);
           await toTx(
@@ -542,6 +601,13 @@ describe("reposition_v2", () => {
             }),
           ).buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
             IGNORE_CACHE,
@@ -559,6 +625,9 @@ describe("reposition_v2", () => {
             positions[0].tickArrayUpper.toString(),
             newTickArrayUpper.publicKey.toString(),
           );
+
+          // state sequence must be incremented (for reposition, 2 increment is expected result)
+          assert.equal(postStateSequence, preStateSequence + 2);
         });
 
         it("reposition: widen position width", async () => {
@@ -623,6 +692,13 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           await toTx(
             ctx,
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
@@ -653,6 +729,13 @@ describe("reposition_v2", () => {
             }),
           ).buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
             IGNORE_CACHE,
@@ -678,6 +761,9 @@ describe("reposition_v2", () => {
             newTickArrayLower.publicKey.toString(),
             newTickArrayUpper.publicKey.toString(),
           );
+
+          // state sequence must be incremented (for reposition, 2 increment is expected result)
+          assert.equal(postStateSequence, preStateSequence + 2);
         });
 
         it("reposition: dual-sided to 1-sided above price", async () => {
@@ -741,6 +827,13 @@ describe("reposition_v2", () => {
             TickUtil.getStartTickIndex(newTickUpper, tickSpacing),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           await toTx(
             ctx,
             WhirlpoolIx.repositionLiquidityV2Ix(ctx.program, {
@@ -771,6 +864,13 @@ describe("reposition_v2", () => {
             }),
           ).buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const positionAfter = await fetcher.getPosition(
             positions[0].publicKey,
             IGNORE_CACHE,
@@ -790,6 +890,9 @@ describe("reposition_v2", () => {
             newTickArrayUpper.publicKey.toString(),
             "new lower tick array should be the same as the new upper tick array",
           );
+
+          // state sequence must be incremented (for reposition, 2 increment is expected result)
+          assert.equal(postStateSequence, preStateSequence + 2);
         });
 
         it("fails to reposition liquidity with zero liquidity", async () => {

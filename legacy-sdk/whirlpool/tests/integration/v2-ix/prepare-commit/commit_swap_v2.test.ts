@@ -5,11 +5,13 @@ import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import type {
+  WhirlpoolContext,
+  CommitSwapV2Params} from "../../../../src";
+import {
   InitPoolV2Params,
   WhirlpoolData,
-  WhirlpoolContext,
   SwapQuote,
-  CommitSwapV2Params,
+  TickUtil,
 } from "../../../../src";
 import {
   MAX_PREPARED_SWAP_NONCE,
@@ -32,6 +34,7 @@ import {
   TickSpacing,
   ZERO_BN,
   initializeLiteSVMEnvironment,
+  warpClock,
 } from "../../../utils";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
@@ -43,7 +46,12 @@ import { createMintV2 } from "../../../utils/v2/token-2022";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import {
+  getWhirlpoolStateSequence,
+  parsePreparedSwap,
   parsePrepareSwapV2ReturnData,
+  PREPARED_SWAP_STATE_COMMITTED,
+  PREPARED_SWAP_STATE_PREPARED,
+  PREPARED_SWAP_STATE_UNPREPARED,
   simulateTransaction,
 } from "../../../utils/prepare-commit-test-utils";
 import type { PrepareSwapV2Params } from "../../../../dist";
@@ -83,69 +91,75 @@ describe("commit_swap_v2", () => {
     ).buildAndExecute();
   });
 
+  async function setup() {
+    const {
+      configKeypairs,
+      poolInitInfo,
+      whirlpoolPda,
+      tokenAccountA,
+      tokenAccountB,
+    } = await initTestPoolWithTokensV2(
+      ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
+      TickSpacing.Standard,
+    );
+
+    const tickArrays = await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      22528,
+      3,
+      TickSpacing.Standard,
+      false,
+    );
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
+
+    const preparedSwapPda = PDAUtil.getPreparedSwap(
+      ctx.program.programId,
+      initializedPreparedSwapNonce,
+    );
+
+    const params: CommitSwapV2Params = {
+      preparedSwap: preparedSwapPda.publicKey,
+      amount: new BN(10),
+      sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+      amountSpecifiedIsInput: true,
+      aToB: true,
+      whirlpool: whirlpoolPda.publicKey,
+      tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
+      tokenOwnerAccountA: tokenAccountA,
+      tokenOwnerAccountB: tokenAccountB,
+      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+      tickArray0: tickArrays[0].publicKey,
+      tickArray1: tickArrays[0].publicKey,
+      tickArray2: tickArrays[0].publicKey,
+      oracle: oraclePda.publicKey,
+    };
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.prepareSwapV2Ix(ctx.program, params), // CommitSwapV2Params works as PrepareSwapV2Params
+    ).buildAndExecute();
+
+    return {
+      params,
+      configKeypairs,
+      poolInitInfo,
+      tokenAccountA,
+      tokenAccountB,
+    };
+  }
+
   describe("invalid accounts", () => {
-    async function setup() {
-      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-        await initTestPoolWithTokensV2(
-          ctx,
-          tokenTraits.tokenTraitA,
-          tokenTraits.tokenTraitB,
-          TickSpacing.Standard,
-        );
-
-      const tickArrays = await initTickArrayRange(
-        ctx,
-        whirlpoolPda.publicKey,
-        22528,
-        3,
-        TickSpacing.Standard,
-        false,
-      );
-      const oraclePda = PDAUtil.getOracle(
-        ctx.program.programId,
-        whirlpoolPda.publicKey,
-      );
-
-      const preparedSwapPda = PDAUtil.getPreparedSwap(
-        ctx.program.programId,
-        initializedPreparedSwapNonce,
-      );
-
-      const params: CommitSwapV2Params = {
-        preparedSwap: preparedSwapPda.publicKey,
-        amount: new BN(10),
-        sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
-        amountSpecifiedIsInput: true,
-        aToB: true,
-        whirlpool: whirlpoolPda.publicKey,
-        tokenAuthority: ctx.wallet.publicKey,
-        tokenMintA: poolInitInfo.tokenMintA,
-        tokenMintB: poolInitInfo.tokenMintB,
-        tokenProgramA: poolInitInfo.tokenProgramA,
-        tokenProgramB: poolInitInfo.tokenProgramB,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArray0: tickArrays[0].publicKey,
-        tickArray1: tickArrays[0].publicKey,
-        tickArray2: tickArrays[0].publicKey,
-        oracle: oraclePda.publicKey,
-      };
-
-      await toTx(
-        ctx,
-        WhirlpoolIx.prepareSwapV2Ix(ctx.program, params), // CommitSwapV2Params works as PrepareSwapV2Params
-      ).buildAndExecute();
-
-      return {
-        params,
-        poolInitInfo,
-        tokenAccountA,
-        tokenAccountB,
-      };
-    }
-
     it("fails when the PreparedSwap account is not initialized", async () => {
       const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
         await initTestPoolWithTokensV2(
@@ -230,6 +244,13 @@ describe("commit_swap_v2", () => {
       );
 
       // no prepareSwapV2 call = not in Prepared state
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        preparedSwapPda.publicKey,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_UNPREPARED);
 
       await assert.rejects(
         toTx(
@@ -255,6 +276,40 @@ describe("commit_swap_v2", () => {
             tickArray2: tickArrays[0].publicKey,
             oracle: oraclePda.publicKey,
           }),
+        ).buildAndExecute(),
+        /0x17b8/, // PreparedSwapNotPrepared
+      );
+    });
+
+    it("fails when the PreparedSwap account is in Committed state", async () => {
+      const { params } = await setup();
+
+      const preparedSwapAccountInfo0 = await ctx.connection.getAccountInfo(
+        params.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo0);
+      const preparedSwapData0 = parsePreparedSwap(preparedSwapAccountInfo0);
+      assert.ok(preparedSwapData0);
+      assert.ok(preparedSwapData0.state === PREPARED_SWAP_STATE_PREPARED);
+
+      // commit successfully
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, params),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo1 = await ctx.connection.getAccountInfo(
+        params.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo1);
+      const preparedSwapData1 = parsePreparedSwap(preparedSwapAccountInfo1);
+      assert.ok(preparedSwapData1);
+      assert.ok(preparedSwapData1.state === PREPARED_SWAP_STATE_COMMITTED);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, params),
         ).buildAndExecute(),
         /0x17b8/, // PreparedSwapNotPrepared
       );
@@ -329,24 +384,6 @@ describe("commit_swap_v2", () => {
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc2/, // AccountNotSigner
-      );
-    });
-
-    it("fails when token authority is invalid (doesn't match the autority on PreparedSwap account)", async () => {
-      const { params } = await setup();
-
-      const anotherWalletKeypair = Keypair.generate();
-      await assert.rejects(
-        toTx(
-          ctx,
-          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
-            ...params,
-            tokenAuthority: anotherWalletKeypair.publicKey,
-          }),
-        )
-          .addSigner(anotherWalletKeypair)
-          .buildAndExecute(),
-        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
     });
 
@@ -527,12 +564,30 @@ describe("commit_swap_v2", () => {
     });
   });
 
-  /*
-  describe("return data", () => {
-    let prepareSwapV2Params: PrepareSwapV2Params;
-    let quote: SwapQuote;
+  describe("precondition mismatch", () => {
+    it("authority mismatch", async () => {
+      const { params } = await setup();
 
-    beforeAll(async () => {
+      const anotherWalletKeypair = Keypair.generate();
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...params,
+            tokenAuthority: anotherWalletKeypair.publicKey,
+          }),
+        )
+          .addSigner(anotherWalletKeypair)
+          .buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
+      );
+    });
+
+    it("whirlpool mismatch", async () => {
+      const {
+        params: { preparedSwap },
+      } = await setup();
+
       const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
         await initTestPoolWithTokensV2(
           ctx,
@@ -540,24 +595,136 @@ describe("commit_swap_v2", () => {
           tokenTraits.tokenTraitB,
           TickSpacing.Standard,
         );
-      const aToB = false;
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false,
+      );
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            preparedSwap, // Prepared, but for the other whirlpool
+            amount: new BN(10),
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          }),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
+      );
+    });
+
+    it("whirlpool state sequence mismatch", async () => {
+      const { params, poolInitInfo, configKeypairs } = await setup();
+
+      // update fee rate after prepare_swap_v2 ix in setup().
+      const preWhirlpool = await fetcher.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      assert.ok(preWhirlpool);
+      assert.ok(preWhirlpool.feeRate > 0);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.setFeeRateIx(ctx.program, {
+          feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
+          whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          feeRate: preWhirlpool.feeRate * 2,
+        }),
+      )
+        .addSigner(configKeypairs.feeAuthorityKeypair)
+        .buildAndExecute();
+
+      const postWhirlpool = await fetcher.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      assert.ok(postWhirlpool);
+      assert.ok(postWhirlpool.feeRate === preWhirlpool.feeRate * 2);
+
+      // check state sequence increment
+      const preStateSequence = getWhirlpoolStateSequence(preWhirlpool);
+      const postStateSequence = getWhirlpoolStateSequence(postWhirlpool);
+      assert.ok(postStateSequence === preStateSequence + 1);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, params),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
+      );
+    });
+
+    it("swap params mismatch", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          tokenTraits.tokenTraitA,
+          tokenTraits.tokenTraitB,
+          TickSpacing.Standard,
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false,
+      );
+
+      // add small Full-range liquidity
+      const fullRange = TickUtil.getFullRangeTickIndex(TickSpacing.Standard);
       await initTickArrayRange(
         ctx,
         whirlpoolPda.publicKey,
-        22528, // to 33792
-        3,
+        TickUtil.getStartTickIndex(fullRange[0], TickSpacing.Standard),
+        1,
         TickSpacing.Standard,
-        aToB,
+        false,
       );
-
+      await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        TickUtil.getStartTickIndex(fullRange[1], TickSpacing.Standard),
+        1,
+        TickSpacing.Standard,
+        false,
+      );
       const fundParams: FundedPositionV2Params[] = [
         {
-          liquidityAmount: new anchor.BN(10_000_000),
-          tickLowerIndex: 29440,
-          tickUpperIndex: 33536,
+          liquidityAmount: new BN(10_000_000),
+          tickLowerIndex: fullRange[0],
+          tickUpperIndex: fullRange[1],
         },
       ];
-
       await fundPositionsV2(
         ctx,
         poolInitInfo,
@@ -571,691 +738,139 @@ describe("commit_swap_v2", () => {
         whirlpoolPda.publicKey,
       );
 
-      const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-      const whirlpoolData = (await fetcher.getPool(
-        whirlpoolKey,
-        IGNORE_CACHE,
-      )) as WhirlpoolData;
-
-      quote = swapQuoteWithParams(
-        {
-          amountSpecifiedIsInput: true,
-          aToB: false,
-          tokenAmount: new BN(100000),
-          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
-          whirlpoolData,
-          tickArrays: await SwapUtils.getTickArrays(
-            whirlpoolData.tickCurrentIndex,
-            whirlpoolData.tickSpacing,
-            false,
-            ctx.program.programId,
-            whirlpoolKey,
-            fetcher,
-            IGNORE_CACHE,
-          ),
-          tokenExtensionCtx:
-            await TokenExtensionUtil.buildTokenExtensionContext(
-              fetcher,
-              whirlpoolData,
-              IGNORE_CACHE,
-            ),
-          oracleData: NO_ORACLE_DATA,
-        },
-        Percentage.fromFraction(1, 100),
-      );
-
       const preparedSwapPda = PDAUtil.getPreparedSwap(
         ctx.program.programId,
         initializedPreparedSwapNonce,
       );
 
-      prepareSwapV2Params = {
-        ...quote,
+      const params: CommitSwapV2Params = {
         preparedSwap: preparedSwapPda.publicKey,
+        amount: new BN(20),
+        sqrtPriceLimit: ZERO_BN,
+        amountSpecifiedIsInput: true,
+        aToB: true,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
         tokenMintA: poolInitInfo.tokenMintA,
         tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrays[0].publicKey,
+        tickArray1: tickArrays[0].publicKey,
+        tickArray2: tickArrays[0].publicKey,
         oracle: oraclePda.publicKey,
       };
-    });
 
-    it("QuoteSuccess", async () => {
-      const sim = await simulateTransaction(
-        ctx.provider,
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, params), // CommitSwapV2Params works as PrepareSwapV2Params
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        preparedSwapPda.publicKey,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapAccountData = parsePreparedSwap(
+        preparedSwapAccountInfo,
+      );
+      assert.ok(preparedSwapAccountData);
+
+      // amount
+      assert.ok(preparedSwapAccountData.precondition.amount.eq(params.amount));
+      await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...prepareSwapV2Params,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...params,
+            amount: params.amount.addn(1),
           }),
-        ),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
 
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.amount));
+      // sqrt_price_limit
       assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountOut),
+        preparedSwapAccountData.precondition.sqrtPriceLimit.eq(ZERO_BN),
       );
       assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
+        !preparedSwapAccountData.precondition.sqrtPriceLimit.eq(
+          SwapUtils.getDefaultSqrtPriceLimit(params.aToB),
+        ),
       );
+      assert.ok(params.sqrtPriceLimit.eq(ZERO_BN));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...params,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(params.aToB),
+          }),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
+      );
+
+      // amount_specified_is_input
       assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
+        preparedSwapAccountData.precondition.amountSpecifiedIsInput ===
+          params.amountSpecifiedIsInput,
+      );
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...params,
+            amountSpecifiedIsInput: !params.amountSpecifiedIsInput,
+          }),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
+      );
+
+      // a_to_b
+      assert.ok(preparedSwapAccountData.precondition.aToB === params.aToB);
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...params,
+            aToB: !params.aToB,
+          }),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
     });
 
-    it("QuoteError: ZeroTradableAmount", async () => {
-      const sim = await simulateTransaction(
-        ctx.provider,
+    it("slot mismatch", async () => {
+      const preSlot = (await ctx.connection.getEpochInfo()).absoluteSlot;
+      const { params } = await setup();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        params.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapAccountData = parsePreparedSwap(
+        preparedSwapAccountInfo,
+      );
+      assert.ok(preparedSwapAccountData);
+      assert.ok(
+        preparedSwapAccountData.precondition.slot.toNumber() === preSlot,
+      );
+
+      warpClock(1);
+
+      const postSlot = (await ctx.connection.getEpochInfo()).absoluteSlot;
+      assert.ok(postSlot > preSlot);
+
+      await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...prepareSwapV2Params,
-            amount: ZERO_BN,
-          }),
-        ),
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, params),
+        ).buildAndExecute(),
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1793); // ZeroTradableAmount
-    });
-
-    it("QuoteError: InvalidSqrtPriceLimitDirection", async () => {
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...prepareSwapV2Params,
-            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(
-              !prepareSwapV2Params.aToB,
-            ),
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1792); // InvalidSqrtPriceLimitDirection
-    });
-
-    it("QuoteError: SqrtPriceOutOfBounds", async () => {
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...prepareSwapV2Params,
-            sqrtPriceLimit: MAX_SQRT_PRICE_BN.addn(1), // exceeds MAX_SQRT_PRICE
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x177b); // SqrtPriceOutOfBounds
-    });
-
-    it("QuoteError: InvalidTickArraySequence", async () => {
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...prepareSwapV2Params,
-            tickArray0: PublicKey.unique(),
-            tickArray1: PublicKey.unique(),
-            tickArray2: PublicKey.unique(),
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1787); // InvalidTickArraySequence
-    });
-
-    it("QuoteError: TickArraySequenceInvalidIndex", async () => {
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...prepareSwapV2Params,
-            amount: U64_MAX,
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1796); // TickArraySequenceInvalidIndex
     });
   });
-
-  describe("return data: partial fill, b to a", () => {
-    const tickSpacing = 128;
-    const aToB = false;
-    // client initialized in beforeAll
-
-    let poolInitInfo: InitPoolV2Params;
-    let whirlpoolPda: PDA;
-    let tokenAccountA: PublicKey;
-    let tokenAccountB: PublicKey;
-    let whirlpoolKey: PublicKey;
-    let oraclePda: PDA;
-    let preparedSwapPda: PDA;
-
-    beforeEach(async () => {
-      const init = await initTestPoolWithTokensV2(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: true },
-        tickSpacing,
-        PriceMath.tickIndexToSqrtPriceX64(439296 + 1),
-        new BN("10000000000000000000000"),
-      );
-
-      poolInitInfo = init.poolInitInfo;
-      whirlpoolPda = poolInitInfo.whirlpoolPda;
-      tokenAccountA = init.tokenAccountA;
-      tokenAccountB = init.tokenAccountB;
-      whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-      oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolKey);
-      preparedSwapPda = PDAUtil.getPreparedSwap(
-        ctx.program.programId,
-        initializedPreparedSwapNonce,
-      );
-
-      await initTickArrayRange(
-        ctx,
-        whirlpoolPda.publicKey,
-        439296, // right most TickArray
-        1,
-        tickSpacing,
-        aToB,
-      );
-
-      // a: 1 (round up)
-      // b: 223379095563402706 (to get 1, need >= 223379095563402706)
-      const fundParams: FundedPositionV2Params[] = [
-        {
-          liquidityAmount: new anchor.BN(10_000_000_000),
-          tickLowerIndex: 439424,
-          tickUpperIndex: 439552,
-        },
-      ];
-
-      await fundPositionsV2(
-        ctx,
-        poolInitInfo,
-        tokenAccountA,
-        tokenAccountB,
-        fundParams,
-      );
-    });
-
-    // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
-    it("QuoteSuccess: ExactIn, sqrt_price_limit = 0", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("223379095563402706");
-      const quote = await swapQuoteByInputToken(
-        whirlpool,
-        whirlpoolData.tokenMintB,
-        amount.muln(2), // x2 input
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = 0
-            sqrtPriceLimit: ZERO_BN,
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.lt(quote.amount)); // partial fill
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.estimatedAmountIn));
-      assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountOut),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
-      );
-      assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MAX_SQRT_PRICE_BN));
-      assert.ok(returnData.quoteSuccess.otherAmount.isZero());
-    });
-
-    // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
-    it("QuoteSuccess: ExactIn, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("223379095563402706");
-      const quote = await swapQuoteByInputToken(
-        whirlpool,
-        whirlpoolData.tokenMintB,
-        amount.muln(2), // x2 input
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = MAX_SQRT_PRICE
-            sqrtPriceLimit: MAX_SQRT_PRICE_BN,
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.lt(quote.amount)); // partial fill
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.estimatedAmountIn));
-      assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountOut),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
-      );
-      assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MAX_SQRT_PRICE_BN));
-      assert.ok(returnData.quoteSuccess.otherAmount.isZero());
-    });
-
-    // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
-    it("QuoteError: ExactOut, sqrt_price_limit = 0", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("1");
-      const quote = await swapQuoteByOutputToken(
-        whirlpool,
-        whirlpoolData.tokenMintA,
-        amount,
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = 0
-            sqrtPriceLimit: ZERO_BN,
-            amount, // 1
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x17a9); // PartialFillError
-    });
-
-    // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
-    it("QuoteSuccess: ExactOut, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("1");
-      const quote = await swapQuoteByOutputToken(
-        whirlpool,
-        whirlpoolData.tokenMintA,
-        amount,
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = MAX_SQRT_PRICE
-            sqrtPriceLimit: MAX_SQRT_PRICE_BN,
-            amount, // 1
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.lt(quote.amount)); // partial fill
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.estimatedAmountOut));
-      assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountIn),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
-      );
-      assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MAX_SQRT_PRICE_BN));
-      assert.ok(returnData.quoteSuccess.amount.isZero());
-    });
-  });
-
-  describe("return data: partial fill, a to b", () => {
-    const tickSpacing = 128;
-    const aToB = true;
-    // client initialized in beforeAll
-
-    let poolInitInfo: InitPoolV2Params;
-    let whirlpoolPda: PDA;
-    let tokenAccountA: PublicKey;
-    let tokenAccountB: PublicKey;
-    let whirlpoolKey: PublicKey;
-    let oraclePda: PDA;
-    let preparedSwapPda: PDA;
-
-    beforeEach(async () => {
-      const init = await initTestPoolWithTokensV2(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: true },
-        tickSpacing,
-        PriceMath.tickIndexToSqrtPriceX64(-439296 - 1),
-        new BN("10000000000000000000000"),
-      );
-
-      poolInitInfo = init.poolInitInfo;
-      whirlpoolPda = poolInitInfo.whirlpoolPda;
-      tokenAccountA = init.tokenAccountA;
-      tokenAccountB = init.tokenAccountB;
-      whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-      oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolKey);
-      preparedSwapPda = PDAUtil.getPreparedSwap(
-        ctx.program.programId,
-        initializedPreparedSwapNonce,
-      );
-
-      await initTickArrayRange(
-        ctx,
-        whirlpoolPda.publicKey,
-        -450560, // left most TickArray
-        1,
-        tickSpacing,
-        aToB,
-      );
-
-      // a: 223379098170764880 (to get 1, need >= 223379098170764880)
-      // b: 1 (round up)
-      const fundParams: FundedPositionV2Params[] = [
-        {
-          liquidityAmount: new anchor.BN(10_000_000_000),
-          tickLowerIndex: -439552,
-          tickUpperIndex: -439424,
-        },
-      ];
-
-      await fundPositionsV2(
-        ctx,
-        poolInitInfo,
-        tokenAccountA,
-        tokenAccountB,
-        fundParams,
-      );
-    });
-
-    // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
-    it("QuoteSuccess: ExactIn, sqrt_price_limit = 0", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("223379098170764880");
-      const quote = await swapQuoteByInputToken(
-        whirlpool,
-        whirlpoolData.tokenMintA,
-        amount.muln(2), // x2 input
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = 0
-            sqrtPriceLimit: ZERO_BN,
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.lt(quote.amount)); // partial fill
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.estimatedAmountIn));
-      assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountOut),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
-      );
-      assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MIN_SQRT_PRICE_BN));
-      assert.ok(returnData.quoteSuccess.otherAmount.isZero());
-    });
-
-    // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
-    it("QuoteSuccess: ExactIn, sqrt_price_limit = MIN_SQRT_PRICE", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("223379098170764880");
-      const quote = await swapQuoteByInputToken(
-        whirlpool,
-        whirlpoolData.tokenMintA,
-        amount.muln(2), // x2 input
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = MIN_SQRT_PRICE
-            sqrtPriceLimit: MIN_SQRT_PRICE_BN,
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.lt(quote.amount)); // partial fill
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.estimatedAmountIn));
-      assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountOut),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
-      );
-      assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MIN_SQRT_PRICE_BN));
-      assert.ok(returnData.quoteSuccess.otherAmount.isZero());
-    });
-
-    // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
-    it("QuoteError: ExactOut, sqrt_price_limit = 0", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("1");
-      const quote = await swapQuoteByOutputToken(
-        whirlpool,
-        whirlpoolData.tokenMintB,
-        amount,
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = 0
-            sqrtPriceLimit: ZERO_BN,
-            amount, // 1
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteError" in returnData);
-      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x17a9); // PartialFillError
-    });
-
-    // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
-    it("QuoteSuccess: ExactOut, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
-      const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-      const whirlpoolData = whirlpool.getData();
-
-      const amount = new BN("1");
-      const quote = await swapQuoteByOutputToken(
-        whirlpool,
-        whirlpoolData.tokenMintB,
-        amount,
-        Percentage.fromFraction(1, 100),
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE,
-      );
-
-      const sim = await simulateTransaction(
-        ctx.provider,
-        toTx(
-          ctx,
-          WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
-            ...quote,
-            preparedSwap: preparedSwapPda.publicKey,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            oracle: oraclePda.publicKey,
-            tokenMintA: whirlpoolData.tokenMintA,
-            tokenMintB: whirlpoolData.tokenMintB,
-
-            // sqrt_price_limit = MIN_SQRT_PRICE
-            sqrtPriceLimit: MIN_SQRT_PRICE_BN,
-            amount, // 1
-          }),
-        ),
-      );
-      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
-
-      assert.ok(!!returnData && "quoteSuccess" in returnData);
-      assert.ok(returnData.quoteSuccess.amount.lt(quote.amount)); // partial fill
-      assert.ok(returnData.quoteSuccess.amount.eq(quote.estimatedAmountOut));
-      assert.ok(
-        returnData.quoteSuccess.otherAmount.eq(quote.estimatedAmountIn),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextSqrtPrice.eq(quote.estimatedEndSqrtPrice),
-      );
-      assert.ok(
-        returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
-      );
-      assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MIN_SQRT_PRICE_BN));
-      assert.ok(returnData.quoteSuccess.amount.isZero());
-    });
-  });
-  */
 });

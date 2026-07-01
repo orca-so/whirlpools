@@ -29,11 +29,13 @@ import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
   TickSpacing,
   ZERO_BN,
+  getCurrentTimestamp,
   initializeLiteSVMEnvironment,
 } from "../../../utils";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
 import {
+  buildTestPoolWithAdaptiveFeeParams,
   fundPositionsV2,
   initTestPoolWithTokensV2,
 } from "../../../utils/v2/init-utils-v2";
@@ -45,6 +47,7 @@ import {
   simulateTransaction,
 } from "../../../utils/prepare-commit-test-utils";
 import type { PrepareSwapV2Params } from "../../../../dist";
+import { getDefaultPresetAdaptiveFeeConstants } from "../../../utils/test-builders";
 
 describe("prepare_swap_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -572,6 +575,89 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1796); // TickArraySequenceInvalidIndex
+    });
+
+    it("QuoteError: TradeIsNotEnabled (AF-enabled pool)", async () => {
+      const currentTimeInSec = new anchor.BN(getCurrentTimestamp());
+      const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
+      const tickspacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickspacing;
+
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        tokenTraits.tokenTraitA,
+        tokenTraits.tokenTraitB,
+        feeTierIndex,
+        tickspacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickspacing, tickspacing, 1),
+        ctx.wallet.publicKey,
+        PublicKey.default,
+      );
+      const whirlpoolPda = poolInitInfo.whirlpoolPda;
+
+      const modifiedPoolInitInfo = {
+        ...poolInitInfo,
+        tradeEnableTimestamp,
+      };
+      await toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+          ctx.program,
+          modifiedPoolInitInfo,
+        ),
+      ).buildAndExecute();
+
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
+
+      const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      const tickArrays = SwapUtils.getTickArrayPublicKeys(
+        whirlpoolData.tickCurrentIndex,
+        whirlpoolData.tickSpacing,
+        false,
+        ctx.program.programId,
+        whirlpoolKey,
+      );
+
+      const preparedSwapPda = PDAUtil.getPreparedSwap(
+        ctx.program.programId,
+        initializedPreparedSwapNonce,
+      );
+
+      const params = {
+        amountSpecifiedIsInput: true,
+        aToB: false,
+        amount: new BN(100000),
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
+        tickArray0: tickArrays[0],
+        tickArray1: tickArrays[1],
+        tickArray2: tickArrays[2],
+
+        preparedSwap: preparedSwapPda.publicKey,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        oracle: oraclePda.publicKey,
+      };
+
+      const sim = await simulateTransaction(
+        ctx.provider,
+        toTx(ctx, WhirlpoolIx.prepareSwapV2Ix(ctx.program, params)),
+      );
+      const returnData = parsePrepareSwapV2ReturnData(sim.returnData().data);
+
+      assert.ok(!!returnData && "quoteError" in returnData);
+      assert.equal(returnData.quoteError.errorCode.toNumber(), 0x17b0); // TradeIsNotEnabled
     });
   });
 

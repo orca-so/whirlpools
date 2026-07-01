@@ -29,6 +29,10 @@ export class SimulatedTransactionAccessor {
     private simResult: RpcResponseAndContext<SimulatedTransactionResponse>,
   ) {}
 
+  isSuccessful(): boolean {
+    return this.simResult.value.err === null;
+  }
+
   slot(): number {
     return this.simResult.context.slot;
   }

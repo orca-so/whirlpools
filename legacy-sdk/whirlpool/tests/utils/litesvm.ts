@@ -5,7 +5,7 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
-import { LiteSVM, Clock, FeatureSet } from "litesvm";
+import { LiteSVM, Clock, FeatureSet, ComputeBudget } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
 import * as path from "path";
@@ -1179,6 +1179,19 @@ export function warpClock(seconds: number): void {
   console.info(
     `⏰ Warped clock: +${seconds}s (slot: ${currentClock.slot} -> ${newSlot}, time: ${currentClock.unixTimestamp} -> ${newTimestamp})`,
   );
+}
+
+/**
+ * Set the compute unit limit for transactions in LiteSVM
+ * This allows testing of transactions that consume more compute units than the default limit
+ *
+ * @param limit - New compute unit limit (as bigint)
+ */
+export function setComputeUnitLimit(limit: bigint): void {
+  const litesvm = getLiteSVM();
+  const budget = new ComputeBudget();
+  budget.computeUnitLimit = limit;
+  litesvm.withComputeBudget(budget);
 }
 
 /**

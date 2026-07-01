@@ -52,6 +52,7 @@ import {
   createMint,
   getLocalnetAdminKeypair0,
   getProviderWalletKeypair,
+  MAX_U64,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -104,6 +105,7 @@ describe("prepare/commit swap tests", () => {
 
   let poolInfoNonAF: SwapTestPoolInfo;
   let poolInfoAF: SwapTestPoolInfo;
+  let poolInfoLongestTraverse: SwapTestPoolInfo;
   let preparedSwap: PublicKey;
 
   beforeAll(async () => {
@@ -128,6 +130,7 @@ describe("prepare/commit swap tests", () => {
 
     poolInfoNonAF = await buildSwapTestPool(false);
     poolInfoAF = await buildSwapTestPool(true);
+    poolInfoLongestTraverse = await buildSwapTestPoolForLongestTraverse();
 
     const preparedSwapPda = PDAUtil.getPreparedSwap(
       testCtx.whirlpoolCtx.program.programId,
@@ -154,6 +157,7 @@ describe("prepare/commit swap tests", () => {
       expectedInitialTickCurrentIndex: number;
       expectedEstimatedEndTickIndex: number;
       expectedNumCrossedInitializableTicks: number;
+      allowPartialFill?: boolean;
     }) {
       const {
         poolInfo,
@@ -166,6 +170,7 @@ describe("prepare/commit swap tests", () => {
         expectedInitialTickCurrentIndex,
         expectedEstimatedEndTickIndex,
         expectedNumCrossedInitializableTicks,
+        allowPartialFill = false,
       } = tryParams;
 
       const pool = await testCtx.whirlpoolClient.getPool(
@@ -278,6 +283,9 @@ describe("prepare/commit swap tests", () => {
       } else {
         assert.ok(onChainSwapQuote.amount.eq(swapQuote.estimatedAmountOut));
         assert.ok(onChainSwapQuote.otherAmount.eq(swapQuote.estimatedAmountIn));
+      }
+      if (!allowPartialFill) {
+        assert.ok(onChainSwapQuote.amount.eq(tradeTokenAmount));
       }
 
       assert.ok(
@@ -740,6 +748,44 @@ describe("prepare/commit swap tests", () => {
         });
       });
     });
+
+    describe("longest traverse prepare / commit swap", () => {
+      it("ExactIn, tick: 5600 -> -11264 (A to B), pending tick updates: 264(88 x 3)", async () => {
+        const expectedInitialTickCurrentIndex = 5600;
+        const expectedEstimatedEndTickIndex = -11264 - 1; // -1 shift
+        const expectedNumCrossedInitializableTicks = 88 * 3;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoLongestTraverse,
+          tradeTokenAmount: MAX_U64,
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: true,
+          tradeSqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(-11264),
+          allowPartialFill: true, // allow partial fill for this test
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 5600 -> 22464 (B to A), pending tick updates: 264(88 x 3)", async () => {
+        const expectedInitialTickCurrentIndex = 5600;
+        const expectedEstimatedEndTickIndex = 22464;
+        const expectedNumCrossedInitializableTicks = 88 * 3;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoLongestTraverse,
+          tradeTokenAmount: MAX_U64,
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: false,
+          tradeSqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(expectedEstimatedEndTickIndex),
+          allowPartialFill: true, // allow partial fill for this test
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+    });
   });
 
   function newTransactionBuilder() {
@@ -756,7 +802,7 @@ describe("prepare/commit swap tests", () => {
   }
 
   async function buildSwapTestPoolForLongestTraverse() {
-    buildSwapTestPool(false, PriceMath.tickIndexToSqrtPriceX64(64 * 88 - 32));
+    return buildSwapTestPool(false, PriceMath.tickIndexToSqrtPriceX64(64 * 88 - 32));
   }
 
   async function buildSwapTestPool(

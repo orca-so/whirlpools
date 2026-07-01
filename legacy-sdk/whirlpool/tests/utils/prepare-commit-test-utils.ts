@@ -79,7 +79,7 @@ export function assertPostWritableAccountMatch(
   assert.ok(!!sim0Account && !!sim1Account);
 
   if (expectedDataLen !== undefined) {
-    assert.ok(sim0Account.data.length === expectedDataLen);
+    assert.equal(sim0Account.data.length, expectedDataLen);
   }
   assert.ok(sim0Account.data.equals(sim1Account.data));
 }

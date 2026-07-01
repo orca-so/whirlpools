@@ -19,7 +19,14 @@ import type {
   WhirlpoolClient,
   WhirlpoolData,
 } from "../../../src";
-import { AccountName, getAccountSize, OracleData } from "../../../src";
+import {
+  AccountName,
+  getAccountSize,
+  MAX_TICK_INDEX,
+  MIN_TICK_INDEX,
+  NO_ORACLE_DATA,
+  OracleData,
+} from "../../../src";
 import {
   TICK_ARRAY_SIZE,
   MAX_SQRT_PRICE_BN,
@@ -66,6 +73,7 @@ import {
   buildTestAquariums,
   getDefaultAquarium,
   getTokenAccsForPools,
+  initTestPoolWithTokens,
   useCU,
   useMaxCU,
 } from "../../utils/init-utils";
@@ -395,11 +403,16 @@ describe("prepare/commit swap tests", () => {
         swapQuote.tickArray2,
       ];
       for (const tickArray of tickArrays) {
+        const tickArrayAccountInfo =
+          await testCtx.whirlpoolCtx.connection.getAccountInfo(tickArray);
+        if (!tickArrayAccountInfo) continue;
+
+        assert.ok(tickArrayAccountInfo.data.length > 0);
         assertPostWritableAccountMatch(
           prepareAndCommitSimResult,
           swapV2SimResult,
           tickArray,
-          getAccountSize(AccountName.DynamicTickArray),
+          tickArrayAccountInfo.data.length,
         );
       }
 
@@ -1132,6 +1145,370 @@ describe("prepare/commit swap tests", () => {
         });
       });
     });
+
+    describe("prepare / commit swap on splash pool", () => {
+      type TestVariation = {
+        figure: string;
+        poolTickSpacing: number;
+        poolInitialTickIndex: number;
+        poolLiquidity: BN;
+        tradeMode: "exactIn" | "exactOut";
+        tradeDirection: "AtoB" | "BtoA";
+        tradeTokenAmount: BN;
+        expectedPartialFill: boolean;
+        expectedEstimatedEndTickIndex: number;
+        expectedNumCrossedInitializableTicks: number;
+      };
+
+      const testVariations: TestVariation[] = [
+        // Notation
+        //
+        // l: lower tick index for FullRange
+        // u: upper tick index for FullRange
+        // m: MIN_TICK_INDEX (-443636)
+        // x: MAX_TICK_INDEX (+443636)
+        // *: liquidity (flat distribution)
+        // S: trade start
+        // T: trade end
+        //
+        // Limit
+        //
+        // 2^33 is almost max liquidity to realize single side deposit at tick index MIN_TICK_INDEX or MAX_TICK_INDEX
+        // 2^64 is almost max liquidity to realize 50:50 deposit at tick index 0
+        //
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // ExactIn
+        ////////////////////////////////////////////////////////////////////////////////
+
+        // ExactIn, BtoA, min to ...
+        {
+          figure:
+            "(toB) |-----mS----l**********T*********|********************u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MIN_TICK_INDEX + 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactIn",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN(20000),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: -259476,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----mS----l********************|**********T*********u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MIN_TICK_INDEX + 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactIn",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN(200000000000),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: 62897,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----mS----l********************|********************u----Tx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MIN_TICK_INDEX + 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactIn",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN(MAX_U64), // partial fill
+          expectedPartialFill: true,
+          expectedEstimatedEndTickIndex: 443636,
+          expectedNumCrossedInitializableTicks: 2,
+        },
+
+        // ExactIn, AtoB, max to ...
+        {
+          figure:
+            "(toB) |-----m-----l********************|**********T*********u----Sx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MAX_TICK_INDEX - 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactIn",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN(20000),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: 259475,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----m-----l**********T*********|********************u----Sx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MAX_TICK_INDEX - 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactIn",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN(200000000000),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: -62898,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----mT----l********************|********************u----Sx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MAX_TICK_INDEX - 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactIn",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN(MAX_U64), // partial fill
+          expectedPartialFill: true,
+          expectedEstimatedEndTickIndex: -443637, // -1 shift
+          expectedNumCrossedInitializableTicks: 2,
+        },
+
+        // ExactIn, BtoA, 1 to ...
+        {
+          figure:
+            "(toB) |-----m-----l********************|S****T**************u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: 0,
+          poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
+          tradeMode: "exactIn",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN(MAX_U64).divn(2),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: 13833,
+          expectedNumCrossedInitializableTicks: 0,
+        },
+
+        // ExactIn, AtoB, 1 to ...
+        {
+          figure:
+            "(toB) |-----m-----l**************T****S|********************u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: 0,
+          poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
+          tradeMode: "exactIn",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN(MAX_U64).divn(2),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: -13834,
+          expectedNumCrossedInitializableTicks: 0,
+        },
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // ExactOut
+        ////////////////////////////////////////////////////////////////////////////////
+
+        // ExactOut, BtoA, min to ...
+        {
+          figure:
+            "(toB) |-----mS----l**********T*********|********************u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MIN_TICK_INDEX + 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactOut",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN("16583913771126114400"),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: -259476,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----mS----l********************|**********T*********u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MIN_TICK_INDEX + 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactOut",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN("16587613395589958784"),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: 62897,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----mS----l********************|********************u----Tx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MIN_TICK_INDEX + 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactOut",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN(MAX_U64), // partial fill
+          expectedPartialFill: true,
+          expectedEstimatedEndTickIndex: 443636,
+          expectedNumCrossedInitializableTicks: 2,
+        },
+
+        // ExactOut, AtoB, max to ...
+        {
+          figure:
+            "(toB) |-----m-----l********************|**********T*********u----Sx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MAX_TICK_INDEX - 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactOut",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN("16583913770960970547"),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: 259475,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----m-----l**********T*********|********************u----Sx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MAX_TICK_INDEX - 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactOut",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN("16587613395424814923"),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: -62898,
+          expectedNumCrossedInitializableTicks: 1,
+        },
+        {
+          figure:
+            "(toB) |-----mT----l********************|********************u----Sx-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: MAX_TICK_INDEX - 1,
+          poolLiquidity: powBN(2, 33),
+          tradeMode: "exactOut",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN(MAX_U64), // partial fill
+          expectedPartialFill: true,
+          expectedEstimatedEndTickIndex: -443637, // -1 shift
+          expectedNumCrossedInitializableTicks: 2,
+        },
+
+        // ExactOut, BtoA, 1 to ...
+        {
+          figure:
+            "(toB) |-----m-----l********************|S****T**************u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: 0,
+          poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
+          tradeMode: "exactOut",
+          tradeDirection: "BtoA",
+          tradeTokenAmount: new BN("4604758097518383314"),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: 13833,
+          expectedNumCrossedInitializableTicks: 0,
+        },
+
+        // ExactOut, AtoB, 1 to ...
+        {
+          figure:
+            "(toB) |-----m-----l**************T****S|********************u-----x-----| (toA)",
+          poolTickSpacing: 32768 + 128,
+          poolInitialTickIndex: 0,
+          poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
+          tradeMode: "exactOut",
+          tradeDirection: "AtoB",
+          tradeTokenAmount: new BN("4604758097518383314"),
+          expectedPartialFill: false,
+          expectedEstimatedEndTickIndex: -13834,
+          expectedNumCrossedInitializableTicks: 0,
+        },
+      ];
+
+      testVariations.forEach((variation) => {
+        const caseName = `${variation.figure}, mode=${variation.tradeMode}, liq=${variation.poolLiquidity}, amount=${variation.tradeTokenAmount}`;
+
+        it(caseName, async () => {
+          const {
+            poolTickSpacing,
+            poolInitialTickIndex,
+            poolLiquidity,
+            tradeMode,
+            tradeDirection,
+            tradeTokenAmount,
+            expectedPartialFill,
+            expectedEstimatedEndTickIndex,
+            expectedNumCrossedInitializableTicks,
+          } = variation;
+          const tradeAmountSpecifiedIsInput = tradeMode === "exactIn";
+          const tradeAToB = tradeDirection === "AtoB";
+
+          const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+            await initTestPoolWithTokens(
+              testCtx.whirlpoolCtx,
+              poolTickSpacing,
+              PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex),
+              MAX_U64,
+            );
+
+          const pool = await testCtx.whirlpoolClient.getPool(
+            whirlpoolPda.publicKey,
+          );
+          const poolData = pool.getData();
+          const priceDeviation = Percentage.fromFraction(1, 10_000);
+          const { lowerBound, upperBound } =
+            PriceMath.getSlippageBoundForSqrtPrice(
+              poolData.sqrtPrice,
+              priceDeviation,
+            );
+
+          // SplashPool has only 2 TickArrays for negative and positive ticks
+          await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
+
+          const fullRange = TickUtil.getFullRangeTickIndex(
+            pool.getData().tickSpacing,
+          );
+
+          // provide liquidity
+          const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+            liquidity: poolLiquidity,
+            slippageTolerance: Percentage.fromFraction(0, 100),
+            sqrtPrice: poolData.sqrtPrice,
+            tickCurrentIndex: poolData.tickCurrentIndex,
+            tickLowerIndex: fullRange[0],
+            tickUpperIndex: fullRange[1],
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          });
+          const txAndMint = await pool.openPosition(
+            fullRange[0],
+            fullRange[1],
+            {
+              ...depositQuote,
+              minSqrtPrice: lowerBound[0],
+              maxSqrtPrice: upperBound[0],
+            },
+          );
+          await txAndMint.tx.buildAndExecute();
+          await pool.refreshData(); // reflect new liquidity
+
+          debug(
+            `pool state: tick = ${pool.getData().tickCurrentIndex}, liquidity = ${depositQuote.liquidityAmount.toString()}, tokenA = ${depositQuote.tokenEstA.toString()}, tokenB = ${depositQuote.tokenEstB.toString()}`,
+          );
+
+          const poolInfo: SwapTestPoolInfo = {
+            tokenProgramA: TOKEN_PROGRAM_ID,
+            tokenProgramB: TOKEN_PROGRAM_ID,
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAccountA,
+            tokenAccountB,
+            mintA: poolData.tokenMintA,
+            mintB: poolData.tokenMintB,
+            oracle: PDAUtil.getOracle(
+              testCtx.whirlpoolCtx.program.programId,
+              whirlpoolPda.publicKey,
+            ).publicKey,
+          };
+
+          const expectedInitialTickCurrentIndex = poolInitialTickIndex;
+
+          await tryPrepareCommitSwap({
+            poolInfo,
+            tradeTokenAmount,
+            tradeAmountSpecifiedIsInput,
+            tradeAToB,
+            expectedInitialTickCurrentIndex,
+            expectedEstimatedEndTickIndex,
+            expectedNumCrossedInitializableTicks,
+            allowPartialFill: expectedPartialFill,
+          });
+        });
+      });
+    });
   });
 
   function newTransactionBuilder() {
@@ -1389,7 +1766,7 @@ function powBN(base: number, exp: number): BN {
   return new BN(base).pow(new BN(exp));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function debug(msg: string) {
   if (!DEBUG_OUTPUT) return;
   console.debug(msg);

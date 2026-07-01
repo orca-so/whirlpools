@@ -29,9 +29,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const COLLECT_FEES_DISCRIMINATOR = new Uint8Array([
   164, 152, 207, 99, 30, 186, 19, 182,
@@ -39,7 +39,7 @@ export const COLLECT_FEES_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectFeesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_FEES_DISCRIMINATOR,
+    COLLECT_FEES_DISCRIMINATOR
   );
 }
 
@@ -55,7 +55,7 @@ export type CollectFeesInstruction<
   TAccountTokenVaultB extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -99,14 +99,14 @@ export type CollectFeesInstructionDataArgs = {};
 
 export function getCollectFeesInstructionDataEncoder(): FixedSizeEncoder<CollectFeesInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: COLLECT_FEES_DISCRIMINATOR }),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: COLLECT_FEES_DISCRIMINATOR })
   );
 }
 
 export function getCollectFeesInstructionDataDecoder(): FixedSizeDecoder<CollectFeesInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -116,7 +116,7 @@ export function getCollectFeesInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectFeesInstructionDataEncoder(),
-    getCollectFeesInstructionDataDecoder(),
+    getCollectFeesInstructionDataDecoder()
   );
 }
 
@@ -165,7 +165,7 @@ export function getCollectFeesInstruction<
     TAccountTokenVaultB,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): CollectFeesInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -213,10 +213,10 @@ export function getCollectFeesInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -270,11 +270,11 @@ export function parseCollectFeesInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCollectFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

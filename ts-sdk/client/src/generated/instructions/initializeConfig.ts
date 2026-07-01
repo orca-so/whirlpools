@@ -32,9 +32,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
   208, 127, 21, 1, 194, 190, 196, 70,
@@ -42,7 +42,7 @@ export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeConfigDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_CONFIG_DISCRIMINATOR,
+    INITIALIZE_CONFIG_DISCRIMINATOR
   );
 }
 
@@ -52,7 +52,7 @@ export type InitializeConfigInstruction<
   TAccountFunder extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | AccountMeta<string> = "11111111111111111111111111111111",
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -91,23 +91,23 @@ export type InitializeConfigInstructionDataArgs = {
 export function getInitializeConfigInstructionDataEncoder(): FixedSizeEncoder<InitializeConfigInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["feeAuthority", getAddressEncoder()],
-      ["collectProtocolFeesAuthority", getAddressEncoder()],
-      ["rewardEmissionsSuperAuthority", getAddressEncoder()],
-      ["defaultProtocolFeeRate", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['feeAuthority', getAddressEncoder()],
+      ['collectProtocolFeesAuthority', getAddressEncoder()],
+      ['rewardEmissionsSuperAuthority', getAddressEncoder()],
+      ['defaultProtocolFeeRate', getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR })
   );
 }
 
 export function getInitializeConfigInstructionDataDecoder(): FixedSizeDecoder<InitializeConfigInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["feeAuthority", getAddressDecoder()],
-    ["collectProtocolFeesAuthority", getAddressDecoder()],
-    ["rewardEmissionsSuperAuthority", getAddressDecoder()],
-    ["defaultProtocolFeeRate", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['feeAuthority', getAddressDecoder()],
+    ['collectProtocolFeesAuthority', getAddressDecoder()],
+    ['rewardEmissionsSuperAuthority', getAddressDecoder()],
+    ['defaultProtocolFeeRate', getU16Decoder()],
   ]);
 }
 
@@ -117,7 +117,7 @@ export function getInitializeConfigInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeConfigInstructionDataEncoder(),
-    getInitializeConfigInstructionDataDecoder(),
+    getInitializeConfigInstructionDataDecoder()
   );
 }
 
@@ -129,10 +129,10 @@ export type InitializeConfigInput<
   config: TransactionSigner<TAccountConfig>;
   funder: TransactionSigner<TAccountFunder>;
   systemProgram?: Address<TAccountSystemProgram>;
-  feeAuthority: InitializeConfigInstructionDataArgs["feeAuthority"];
-  collectProtocolFeesAuthority: InitializeConfigInstructionDataArgs["collectProtocolFeesAuthority"];
-  rewardEmissionsSuperAuthority: InitializeConfigInstructionDataArgs["rewardEmissionsSuperAuthority"];
-  defaultProtocolFeeRate: InitializeConfigInstructionDataArgs["defaultProtocolFeeRate"];
+  feeAuthority: InitializeConfigInstructionDataArgs['feeAuthority'];
+  collectProtocolFeesAuthority: InitializeConfigInstructionDataArgs['collectProtocolFeesAuthority'];
+  rewardEmissionsSuperAuthority: InitializeConfigInstructionDataArgs['rewardEmissionsSuperAuthority'];
+  defaultProtocolFeeRate: InitializeConfigInstructionDataArgs['defaultProtocolFeeRate'];
 };
 
 export function getInitializeConfigInstruction<
@@ -146,7 +146,7 @@ export function getInitializeConfigInstruction<
     TAccountFunder,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializeConfigInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -173,10 +173,10 @@ export function getInitializeConfigInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.config),
@@ -184,7 +184,7 @@ export function getInitializeConfigInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
-      args as InitializeConfigInstructionDataArgs,
+      args as InitializeConfigInstructionDataArgs
     ),
     programAddress,
   } as InitializeConfigInstruction<
@@ -214,11 +214,11 @@ export function parseInitializeConfigInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitializeConfigInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {

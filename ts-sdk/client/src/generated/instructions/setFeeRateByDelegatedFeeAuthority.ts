@@ -31,16 +31,16 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_FEE_RATE_BY_DELEGATED_FEE_AUTHORITY_DISCRIMINATOR =
   new Uint8Array([121, 121, 54, 114, 131, 230, 162, 104]);
 
 export function getSetFeeRateByDelegatedFeeAuthorityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_FEE_RATE_BY_DELEGATED_FEE_AUTHORITY_DISCRIMINATOR,
+    SET_FEE_RATE_BY_DELEGATED_FEE_AUTHORITY_DISCRIMINATOR
   );
 }
 
@@ -80,20 +80,20 @@ export type SetFeeRateByDelegatedFeeAuthorityInstructionDataArgs = {
 export function getSetFeeRateByDelegatedFeeAuthorityInstructionDataEncoder(): FixedSizeEncoder<SetFeeRateByDelegatedFeeAuthorityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["feeRate", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['feeRate', getU16Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_FEE_RATE_BY_DELEGATED_FEE_AUTHORITY_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetFeeRateByDelegatedFeeAuthorityInstructionDataDecoder(): FixedSizeDecoder<SetFeeRateByDelegatedFeeAuthorityInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["feeRate", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['feeRate', getU16Decoder()],
   ]);
 }
 
@@ -103,7 +103,7 @@ export function getSetFeeRateByDelegatedFeeAuthorityInstructionDataCodec(): Fixe
 > {
   return combineCodec(
     getSetFeeRateByDelegatedFeeAuthorityInstructionDataEncoder(),
-    getSetFeeRateByDelegatedFeeAuthorityInstructionDataDecoder(),
+    getSetFeeRateByDelegatedFeeAuthorityInstructionDataDecoder()
   );
 }
 
@@ -115,7 +115,7 @@ export type SetFeeRateByDelegatedFeeAuthorityInput<
   whirlpool: Address<TAccountWhirlpool>;
   adaptiveFeeTier: Address<TAccountAdaptiveFeeTier>;
   delegatedFeeAuthority: TransactionSigner<TAccountDelegatedFeeAuthority>;
-  feeRate: SetFeeRateByDelegatedFeeAuthorityInstructionDataArgs["feeRate"];
+  feeRate: SetFeeRateByDelegatedFeeAuthorityInstructionDataArgs['feeRate'];
 };
 
 export function getSetFeeRateByDelegatedFeeAuthorityInstruction<
@@ -129,7 +129,7 @@ export function getSetFeeRateByDelegatedFeeAuthorityInstruction<
     TAccountAdaptiveFeeTier,
     TAccountDelegatedFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetFeeRateByDelegatedFeeAuthorityInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -159,7 +159,7 @@ export function getSetFeeRateByDelegatedFeeAuthorityInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -167,7 +167,7 @@ export function getSetFeeRateByDelegatedFeeAuthorityInstruction<
       getAccountMeta(accounts.delegatedFeeAuthority),
     ],
     data: getSetFeeRateByDelegatedFeeAuthorityInstructionDataEncoder().encode(
-      args as SetFeeRateByDelegatedFeeAuthorityInstructionDataArgs,
+      args as SetFeeRateByDelegatedFeeAuthorityInstructionDataArgs
     ),
     programAddress,
   } as SetFeeRateByDelegatedFeeAuthorityInstruction<
@@ -197,11 +197,11 @@ export function parseSetFeeRateByDelegatedFeeAuthorityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetFeeRateByDelegatedFeeAuthorityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -217,7 +217,7 @@ export function parseSetFeeRateByDelegatedFeeAuthorityInstruction<
       delegatedFeeAuthority: getNextAccount(),
     },
     data: getSetFeeRateByDelegatedFeeAuthorityInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

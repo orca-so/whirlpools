@@ -24,7 +24,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LiquidityRepositioned = {
   whirlpool: Address;
@@ -70,47 +70,47 @@ export type LiquidityRepositionedArgs = {
 
 export function getLiquidityRepositionedEncoder(): FixedSizeEncoder<LiquidityRepositionedArgs> {
   return getStructEncoder([
-    ["whirlpool", getAddressEncoder()],
-    ["position", getAddressEncoder()],
-    ["existingRangeTickLowerIndex", getI32Encoder()],
-    ["existingRangeTickUpperIndex", getI32Encoder()],
-    ["newRangeTickLowerIndex", getI32Encoder()],
-    ["newRangeTickUpperIndex", getI32Encoder()],
-    ["existingRangeLiquidity", getU128Encoder()],
-    ["newRangeLiquidity", getU128Encoder()],
-    ["existingRangeTokenAAmount", getU64Encoder()],
-    ["existingRangeTokenBAmount", getU64Encoder()],
-    ["newRangeTokenAAmount", getU64Encoder()],
-    ["newRangeTokenBAmount", getU64Encoder()],
-    ["tokenATransferAmount", getU64Encoder()],
-    ["tokenATransferFee", getU64Encoder()],
-    ["isTokenATransferFromOwner", getBooleanEncoder()],
-    ["tokenBTransferAmount", getU64Encoder()],
-    ["tokenBTransferFee", getU64Encoder()],
-    ["isTokenBTransferFromOwner", getBooleanEncoder()],
+    ['whirlpool', getAddressEncoder()],
+    ['position', getAddressEncoder()],
+    ['existingRangeTickLowerIndex', getI32Encoder()],
+    ['existingRangeTickUpperIndex', getI32Encoder()],
+    ['newRangeTickLowerIndex', getI32Encoder()],
+    ['newRangeTickUpperIndex', getI32Encoder()],
+    ['existingRangeLiquidity', getU128Encoder()],
+    ['newRangeLiquidity', getU128Encoder()],
+    ['existingRangeTokenAAmount', getU64Encoder()],
+    ['existingRangeTokenBAmount', getU64Encoder()],
+    ['newRangeTokenAAmount', getU64Encoder()],
+    ['newRangeTokenBAmount', getU64Encoder()],
+    ['tokenATransferAmount', getU64Encoder()],
+    ['tokenATransferFee', getU64Encoder()],
+    ['isTokenATransferFromOwner', getBooleanEncoder()],
+    ['tokenBTransferAmount', getU64Encoder()],
+    ['tokenBTransferFee', getU64Encoder()],
+    ['isTokenBTransferFromOwner', getBooleanEncoder()],
   ]);
 }
 
 export function getLiquidityRepositionedDecoder(): FixedSizeDecoder<LiquidityRepositioned> {
   return getStructDecoder([
-    ["whirlpool", getAddressDecoder()],
-    ["position", getAddressDecoder()],
-    ["existingRangeTickLowerIndex", getI32Decoder()],
-    ["existingRangeTickUpperIndex", getI32Decoder()],
-    ["newRangeTickLowerIndex", getI32Decoder()],
-    ["newRangeTickUpperIndex", getI32Decoder()],
-    ["existingRangeLiquidity", getU128Decoder()],
-    ["newRangeLiquidity", getU128Decoder()],
-    ["existingRangeTokenAAmount", getU64Decoder()],
-    ["existingRangeTokenBAmount", getU64Decoder()],
-    ["newRangeTokenAAmount", getU64Decoder()],
-    ["newRangeTokenBAmount", getU64Decoder()],
-    ["tokenATransferAmount", getU64Decoder()],
-    ["tokenATransferFee", getU64Decoder()],
-    ["isTokenATransferFromOwner", getBooleanDecoder()],
-    ["tokenBTransferAmount", getU64Decoder()],
-    ["tokenBTransferFee", getU64Decoder()],
-    ["isTokenBTransferFromOwner", getBooleanDecoder()],
+    ['whirlpool', getAddressDecoder()],
+    ['position', getAddressDecoder()],
+    ['existingRangeTickLowerIndex', getI32Decoder()],
+    ['existingRangeTickUpperIndex', getI32Decoder()],
+    ['newRangeTickLowerIndex', getI32Decoder()],
+    ['newRangeTickUpperIndex', getI32Decoder()],
+    ['existingRangeLiquidity', getU128Decoder()],
+    ['newRangeLiquidity', getU128Decoder()],
+    ['existingRangeTokenAAmount', getU64Decoder()],
+    ['existingRangeTokenBAmount', getU64Decoder()],
+    ['newRangeTokenAAmount', getU64Decoder()],
+    ['newRangeTokenBAmount', getU64Decoder()],
+    ['tokenATransferAmount', getU64Decoder()],
+    ['tokenATransferFee', getU64Decoder()],
+    ['isTokenATransferFromOwner', getBooleanDecoder()],
+    ['tokenBTransferAmount', getU64Decoder()],
+    ['tokenBTransferFee', getU64Decoder()],
+    ['isTokenBTransferFromOwner', getBooleanDecoder()],
   ]);
 }
 
@@ -120,6 +120,6 @@ export function getLiquidityRepositionedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLiquidityRepositionedEncoder(),
-    getLiquidityRepositionedDecoder(),
+    getLiquidityRepositionedDecoder()
   );
 }

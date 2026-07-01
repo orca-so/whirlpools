@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type PositionOpened = {
   whirlpool: Address;
@@ -31,19 +31,19 @@ export type PositionOpenedArgs = PositionOpened;
 
 export function getPositionOpenedEncoder(): FixedSizeEncoder<PositionOpenedArgs> {
   return getStructEncoder([
-    ["whirlpool", getAddressEncoder()],
-    ["position", getAddressEncoder()],
-    ["tickLowerIndex", getI32Encoder()],
-    ["tickUpperIndex", getI32Encoder()],
+    ['whirlpool', getAddressEncoder()],
+    ['position', getAddressEncoder()],
+    ['tickLowerIndex', getI32Encoder()],
+    ['tickUpperIndex', getI32Encoder()],
   ]);
 }
 
 export function getPositionOpenedDecoder(): FixedSizeDecoder<PositionOpened> {
   return getStructDecoder([
-    ["whirlpool", getAddressDecoder()],
-    ["position", getAddressDecoder()],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
+    ['whirlpool', getAddressDecoder()],
+    ['position', getAddressDecoder()],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
   ]);
 }
 

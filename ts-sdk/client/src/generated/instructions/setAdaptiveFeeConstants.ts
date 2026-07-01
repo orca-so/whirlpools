@@ -37,9 +37,9 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const SET_ADAPTIVE_FEE_CONSTANTS_DISCRIMINATOR = new Uint8Array([
   133, 158, 212, 189, 237, 12, 73, 39,
@@ -47,7 +47,7 @@ export const SET_ADAPTIVE_FEE_CONSTANTS_DISCRIMINATOR = new Uint8Array([
 
 export function getSetAdaptiveFeeConstantsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_ADAPTIVE_FEE_CONSTANTS_DISCRIMINATOR,
+    SET_ADAPTIVE_FEE_CONSTANTS_DISCRIMINATOR
   );
 }
 
@@ -103,32 +103,32 @@ export type SetAdaptiveFeeConstantsInstructionDataArgs = {
 export function getSetAdaptiveFeeConstantsInstructionDataEncoder(): Encoder<SetAdaptiveFeeConstantsInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["filterPeriod", getOptionEncoder(getU16Encoder())],
-      ["decayPeriod", getOptionEncoder(getU16Encoder())],
-      ["reductionFactor", getOptionEncoder(getU16Encoder())],
-      ["adaptiveFeeControlFactor", getOptionEncoder(getU32Encoder())],
-      ["maxVolatilityAccumulator", getOptionEncoder(getU32Encoder())],
-      ["tickGroupSize", getOptionEncoder(getU16Encoder())],
-      ["majorSwapThresholdTicks", getOptionEncoder(getU16Encoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['filterPeriod', getOptionEncoder(getU16Encoder())],
+      ['decayPeriod', getOptionEncoder(getU16Encoder())],
+      ['reductionFactor', getOptionEncoder(getU16Encoder())],
+      ['adaptiveFeeControlFactor', getOptionEncoder(getU32Encoder())],
+      ['maxVolatilityAccumulator', getOptionEncoder(getU32Encoder())],
+      ['tickGroupSize', getOptionEncoder(getU16Encoder())],
+      ['majorSwapThresholdTicks', getOptionEncoder(getU16Encoder())],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_ADAPTIVE_FEE_CONSTANTS_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetAdaptiveFeeConstantsInstructionDataDecoder(): Decoder<SetAdaptiveFeeConstantsInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["filterPeriod", getOptionDecoder(getU16Decoder())],
-    ["decayPeriod", getOptionDecoder(getU16Decoder())],
-    ["reductionFactor", getOptionDecoder(getU16Decoder())],
-    ["adaptiveFeeControlFactor", getOptionDecoder(getU32Decoder())],
-    ["maxVolatilityAccumulator", getOptionDecoder(getU32Decoder())],
-    ["tickGroupSize", getOptionDecoder(getU16Decoder())],
-    ["majorSwapThresholdTicks", getOptionDecoder(getU16Decoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['filterPeriod', getOptionDecoder(getU16Decoder())],
+    ['decayPeriod', getOptionDecoder(getU16Decoder())],
+    ['reductionFactor', getOptionDecoder(getU16Decoder())],
+    ['adaptiveFeeControlFactor', getOptionDecoder(getU32Decoder())],
+    ['maxVolatilityAccumulator', getOptionDecoder(getU32Decoder())],
+    ['tickGroupSize', getOptionDecoder(getU16Decoder())],
+    ['majorSwapThresholdTicks', getOptionDecoder(getU16Decoder())],
   ]);
 }
 
@@ -138,7 +138,7 @@ export function getSetAdaptiveFeeConstantsInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetAdaptiveFeeConstantsInstructionDataEncoder(),
-    getSetAdaptiveFeeConstantsInstructionDataDecoder(),
+    getSetAdaptiveFeeConstantsInstructionDataDecoder()
   );
 }
 
@@ -152,13 +152,13 @@ export type SetAdaptiveFeeConstantsInput<
   whirlpoolsConfig: Address<TAccountWhirlpoolsConfig>;
   oracle: Address<TAccountOracle>;
   feeAuthority: TransactionSigner<TAccountFeeAuthority>;
-  filterPeriod: SetAdaptiveFeeConstantsInstructionDataArgs["filterPeriod"];
-  decayPeriod: SetAdaptiveFeeConstantsInstructionDataArgs["decayPeriod"];
-  reductionFactor: SetAdaptiveFeeConstantsInstructionDataArgs["reductionFactor"];
-  adaptiveFeeControlFactor: SetAdaptiveFeeConstantsInstructionDataArgs["adaptiveFeeControlFactor"];
-  maxVolatilityAccumulator: SetAdaptiveFeeConstantsInstructionDataArgs["maxVolatilityAccumulator"];
-  tickGroupSize: SetAdaptiveFeeConstantsInstructionDataArgs["tickGroupSize"];
-  majorSwapThresholdTicks: SetAdaptiveFeeConstantsInstructionDataArgs["majorSwapThresholdTicks"];
+  filterPeriod: SetAdaptiveFeeConstantsInstructionDataArgs['filterPeriod'];
+  decayPeriod: SetAdaptiveFeeConstantsInstructionDataArgs['decayPeriod'];
+  reductionFactor: SetAdaptiveFeeConstantsInstructionDataArgs['reductionFactor'];
+  adaptiveFeeControlFactor: SetAdaptiveFeeConstantsInstructionDataArgs['adaptiveFeeControlFactor'];
+  maxVolatilityAccumulator: SetAdaptiveFeeConstantsInstructionDataArgs['maxVolatilityAccumulator'];
+  tickGroupSize: SetAdaptiveFeeConstantsInstructionDataArgs['tickGroupSize'];
+  majorSwapThresholdTicks: SetAdaptiveFeeConstantsInstructionDataArgs['majorSwapThresholdTicks'];
 };
 
 export function getSetAdaptiveFeeConstantsInstruction<
@@ -174,7 +174,7 @@ export function getSetAdaptiveFeeConstantsInstruction<
     TAccountOracle,
     TAccountFeeAuthority
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetAdaptiveFeeConstantsInstruction<
   TProgramAddress,
   TAccountWhirlpool,
@@ -203,7 +203,7 @@ export function getSetAdaptiveFeeConstantsInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.whirlpool),
@@ -212,7 +212,7 @@ export function getSetAdaptiveFeeConstantsInstruction<
       getAccountMeta(accounts.feeAuthority),
     ],
     data: getSetAdaptiveFeeConstantsInstructionDataEncoder().encode(
-      args as SetAdaptiveFeeConstantsInstructionDataArgs,
+      args as SetAdaptiveFeeConstantsInstructionDataArgs
     ),
     programAddress,
   } as SetAdaptiveFeeConstantsInstruction<
@@ -244,11 +244,11 @@ export function parseSetAdaptiveFeeConstantsInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetAdaptiveFeeConstantsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -265,7 +265,7 @@ export function parseSetAdaptiveFeeConstantsInstruction<
       feeAuthority: getNextAccount(),
     },
     data: getSetAdaptiveFeeConstantsInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

@@ -35,21 +35,21 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from "../shared";
+} from '../shared';
 
 export const OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR = new Uint8Array(
-  [212, 47, 95, 92, 114, 102, 131, 250],
+  [212, 47, 95, 92, 114, 102, 131, 250]
 );
 
 export function getOpenPositionWithTokenExtensionsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
+    OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR
   );
 }
 
@@ -63,16 +63,16 @@ export type OpenPositionWithTokenExtensionsInstruction<
   TAccountWhirlpool extends string | AccountMeta<string> = string,
   TAccountToken2022Program extends
     | string
-    | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    | AccountMeta<string> = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
   TAccountSystemProgram extends
     | string
-    | AccountMeta<string> = "11111111111111111111111111111111",
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends
     | string
-    | AccountMeta<string> = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+    | AccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountMetadataUpdateAuth extends
     | string
-    | AccountMeta<string> = "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
+    | AccountMeta<string> = '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -130,24 +130,24 @@ export type OpenPositionWithTokenExtensionsInstructionDataArgs = {
 export function getOpenPositionWithTokenExtensionsInstructionDataEncoder(): FixedSizeEncoder<OpenPositionWithTokenExtensionsInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["tickLowerIndex", getI32Encoder()],
-      ["tickUpperIndex", getI32Encoder()],
-      ["withTokenMetadataExtension", getBooleanEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tickLowerIndex', getI32Encoder()],
+      ['tickUpperIndex', getI32Encoder()],
+      ['withTokenMetadataExtension', getBooleanEncoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getOpenPositionWithTokenExtensionsInstructionDataDecoder(): FixedSizeDecoder<OpenPositionWithTokenExtensionsInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["tickLowerIndex", getI32Decoder()],
-    ["tickUpperIndex", getI32Decoder()],
-    ["withTokenMetadataExtension", getBooleanDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tickLowerIndex', getI32Decoder()],
+    ['tickUpperIndex', getI32Decoder()],
+    ['withTokenMetadataExtension', getBooleanDecoder()],
   ]);
 }
 
@@ -157,7 +157,7 @@ export function getOpenPositionWithTokenExtensionsInstructionDataCodec(): FixedS
 > {
   return combineCodec(
     getOpenPositionWithTokenExtensionsInstructionDataEncoder(),
-    getOpenPositionWithTokenExtensionsInstructionDataDecoder(),
+    getOpenPositionWithTokenExtensionsInstructionDataDecoder()
   );
 }
 
@@ -183,9 +183,9 @@ export type OpenPositionWithTokenExtensionsAsyncInput<
   systemProgram?: Address<TAccountSystemProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   metadataUpdateAuth?: Address<TAccountMetadataUpdateAuth>;
-  tickLowerIndex: OpenPositionWithTokenExtensionsInstructionDataArgs["tickLowerIndex"];
-  tickUpperIndex: OpenPositionWithTokenExtensionsInstructionDataArgs["tickUpperIndex"];
-  withTokenMetadataExtension: OpenPositionWithTokenExtensionsInstructionDataArgs["withTokenMetadataExtension"];
+  tickLowerIndex: OpenPositionWithTokenExtensionsInstructionDataArgs['tickLowerIndex'];
+  tickUpperIndex: OpenPositionWithTokenExtensionsInstructionDataArgs['tickUpperIndex'];
+  withTokenMetadataExtension: OpenPositionWithTokenExtensionsInstructionDataArgs['withTokenMetadataExtension'];
 };
 
 export async function getOpenPositionWithTokenExtensionsInstructionAsync<
@@ -213,7 +213,7 @@ export async function getOpenPositionWithTokenExtensionsInstructionAsync<
     TAccountAssociatedTokenProgram,
     TAccountMetadataUpdateAuth
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   OpenPositionWithTokenExtensionsInstruction<
     TProgramAddress,
@@ -271,7 +271,7 @@ export async function getOpenPositionWithTokenExtensionsInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110])
         ),
         getAddressEncoder().encode(expectAddress(accounts.positionMint.value)),
       ],
@@ -279,22 +279,22 @@ export async function getOpenPositionWithTokenExtensionsInstructionAsync<
   }
   if (!accounts.token2022Program.value) {
     accounts.token2022Program.value =
-      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" as Address<"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb">;
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
-      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" as Address<"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL">;
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
   }
   if (!accounts.metadataUpdateAuth.value) {
     accounts.metadataUpdateAuth.value =
-      "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr" as Address<"3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr">;
+      '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr' as Address<'3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -309,7 +309,7 @@ export async function getOpenPositionWithTokenExtensionsInstructionAsync<
       getAccountMeta(accounts.metadataUpdateAuth),
     ],
     data: getOpenPositionWithTokenExtensionsInstructionDataEncoder().encode(
-      args as OpenPositionWithTokenExtensionsInstructionDataArgs,
+      args as OpenPositionWithTokenExtensionsInstructionDataArgs
     ),
     programAddress,
   } as OpenPositionWithTokenExtensionsInstruction<
@@ -349,9 +349,9 @@ export type OpenPositionWithTokenExtensionsInput<
   systemProgram?: Address<TAccountSystemProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   metadataUpdateAuth?: Address<TAccountMetadataUpdateAuth>;
-  tickLowerIndex: OpenPositionWithTokenExtensionsInstructionDataArgs["tickLowerIndex"];
-  tickUpperIndex: OpenPositionWithTokenExtensionsInstructionDataArgs["tickUpperIndex"];
-  withTokenMetadataExtension: OpenPositionWithTokenExtensionsInstructionDataArgs["withTokenMetadataExtension"];
+  tickLowerIndex: OpenPositionWithTokenExtensionsInstructionDataArgs['tickLowerIndex'];
+  tickUpperIndex: OpenPositionWithTokenExtensionsInstructionDataArgs['tickUpperIndex'];
+  withTokenMetadataExtension: OpenPositionWithTokenExtensionsInstructionDataArgs['withTokenMetadataExtension'];
 };
 
 export function getOpenPositionWithTokenExtensionsInstruction<
@@ -379,7 +379,7 @@ export function getOpenPositionWithTokenExtensionsInstruction<
     TAccountAssociatedTokenProgram,
     TAccountMetadataUpdateAuth
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): OpenPositionWithTokenExtensionsInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -432,22 +432,22 @@ export function getOpenPositionWithTokenExtensionsInstruction<
   // Resolve default values.
   if (!accounts.token2022Program.value) {
     accounts.token2022Program.value =
-      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" as Address<"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb">;
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
-      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" as Address<"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL">;
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
   }
   if (!accounts.metadataUpdateAuth.value) {
     accounts.metadataUpdateAuth.value =
-      "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr" as Address<"3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr">;
+      '3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr' as Address<'3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -462,7 +462,7 @@ export function getOpenPositionWithTokenExtensionsInstruction<
       getAccountMeta(accounts.metadataUpdateAuth),
     ],
     data: getOpenPositionWithTokenExtensionsInstructionDataEncoder().encode(
-      args as OpenPositionWithTokenExtensionsInstructionDataArgs,
+      args as OpenPositionWithTokenExtensionsInstructionDataArgs
     ),
     programAddress,
   } as OpenPositionWithTokenExtensionsInstruction<
@@ -506,11 +506,11 @@ export function parseOpenPositionWithTokenExtensionsInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedOpenPositionWithTokenExtensionsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 10) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -533,7 +533,7 @@ export function parseOpenPositionWithTokenExtensionsInstruction<
       metadataUpdateAuth: getNextAccount(),
     },
     data: getOpenPositionWithTokenExtensionsInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

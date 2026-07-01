@@ -21,10 +21,10 @@ import {
   type FixedSizeEncoder,
   type GetDiscriminatedUnionVariant,
   type GetDiscriminatedUnionVariantContent,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type RepositionLiquidityMethod = {
-  __kind: "ByLiquidity";
+  __kind: 'ByLiquidity';
   newLiquidityAmount: bigint;
   existingRangeTokenMinA: bigint;
   existingRangeTokenMinB: bigint;
@@ -33,7 +33,7 @@ export type RepositionLiquidityMethod = {
 };
 
 export type RepositionLiquidityMethodArgs = {
-  __kind: "ByLiquidity";
+  __kind: 'ByLiquidity';
   newLiquidityAmount: number | bigint;
   existingRangeTokenMinA: number | bigint;
   existingRangeTokenMinB: number | bigint;
@@ -44,13 +44,13 @@ export type RepositionLiquidityMethodArgs = {
 export function getRepositionLiquidityMethodEncoder(): FixedSizeEncoder<RepositionLiquidityMethodArgs> {
   return getDiscriminatedUnionEncoder([
     [
-      "ByLiquidity",
+      'ByLiquidity',
       getStructEncoder([
-        ["newLiquidityAmount", getU128Encoder()],
-        ["existingRangeTokenMinA", getU64Encoder()],
-        ["existingRangeTokenMinB", getU64Encoder()],
-        ["newRangeTokenMaxA", getU64Encoder()],
-        ["newRangeTokenMaxB", getU64Encoder()],
+        ['newLiquidityAmount', getU128Encoder()],
+        ['existingRangeTokenMinA', getU64Encoder()],
+        ['existingRangeTokenMinB', getU64Encoder()],
+        ['newRangeTokenMaxA', getU64Encoder()],
+        ['newRangeTokenMaxB', getU64Encoder()],
       ]),
     ],
   ]) as FixedSizeEncoder<RepositionLiquidityMethodArgs>;
@@ -59,13 +59,13 @@ export function getRepositionLiquidityMethodEncoder(): FixedSizeEncoder<Repositi
 export function getRepositionLiquidityMethodDecoder(): FixedSizeDecoder<RepositionLiquidityMethod> {
   return getDiscriminatedUnionDecoder([
     [
-      "ByLiquidity",
+      'ByLiquidity',
       getStructDecoder([
-        ["newLiquidityAmount", getU128Decoder()],
-        ["existingRangeTokenMinA", getU64Decoder()],
-        ["existingRangeTokenMinB", getU64Decoder()],
-        ["newRangeTokenMaxA", getU64Decoder()],
-        ["newRangeTokenMaxB", getU64Decoder()],
+        ['newLiquidityAmount', getU128Decoder()],
+        ['existingRangeTokenMinA', getU64Decoder()],
+        ['existingRangeTokenMinB', getU64Decoder()],
+        ['newRangeTokenMaxA', getU64Decoder()],
+        ['newRangeTokenMaxB', getU64Decoder()],
       ]),
     ],
   ]) as FixedSizeDecoder<RepositionLiquidityMethod>;
@@ -77,25 +77,25 @@ export function getRepositionLiquidityMethodCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getRepositionLiquidityMethodEncoder(),
-    getRepositionLiquidityMethodDecoder(),
+    getRepositionLiquidityMethodDecoder()
   );
 }
 
 // Data Enum Helpers.
 export function repositionLiquidityMethod(
-  kind: "ByLiquidity",
+  kind: 'ByLiquidity',
   data: GetDiscriminatedUnionVariantContent<
     RepositionLiquidityMethodArgs,
-    "__kind",
-    "ByLiquidity"
-  >,
+    '__kind',
+    'ByLiquidity'
+  >
 ): GetDiscriminatedUnionVariant<
   RepositionLiquidityMethodArgs,
-  "__kind",
-  "ByLiquidity"
+  '__kind',
+  'ByLiquidity'
 >;
 export function repositionLiquidityMethod<
-  K extends RepositionLiquidityMethodArgs["__kind"],
+  K extends RepositionLiquidityMethodArgs['__kind'],
   Data,
 >(kind: K, data?: Data) {
   return Array.isArray(data)
@@ -104,10 +104,10 @@ export function repositionLiquidityMethod<
 }
 
 export function isRepositionLiquidityMethod<
-  K extends RepositionLiquidityMethod["__kind"],
+  K extends RepositionLiquidityMethod['__kind'],
 >(
   kind: K,
-  value: RepositionLiquidityMethod,
+  value: RepositionLiquidityMethod
 ): value is RepositionLiquidityMethod & { __kind: K } {
   return value.__kind === kind;
 }

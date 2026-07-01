@@ -621,6 +621,27 @@ describe("prepare/commit swap tests", () => {
         });
       });
 
+      it("ExactOut, tick: 2848 -> -8771 (A to B), pending tick updates: 182", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = -8771;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedInitialTickCurrentIndex / 64) +
+          1 +
+          Math.floor(Math.abs(expectedEstimatedEndTickIndex) / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 182);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoNonAF,
+          tradeTokenAmount: new BN(8000000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
       it("ExactOut, tick: 2848 -> -2656 (A to B), pending tick updates: 86", async () => {
         const expectedInitialTickCurrentIndex = 2848;
         const expectedEstimatedEndTickIndex = -2656;
@@ -668,6 +689,26 @@ describe("prepare/commit swap tests", () => {
           tradeTokenAmount: new BN(5000),
           tradeAmountSpecifiedIsInput: false,
           tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 14483 (B to A), pending tick updates: 182", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 14483;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedEstimatedEndTickIndex / 64) -
+          Math.floor(expectedInitialTickCurrentIndex / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 182);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoNonAF,
+          tradeTokenAmount: new BN(6000000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: false,
           expectedInitialTickCurrentIndex,
           expectedEstimatedEndTickIndex,
           expectedNumCrossedInitializableTicks,
@@ -728,6 +769,27 @@ describe("prepare/commit swap tests", () => {
     });
 
     describe("successfully execute prepare / commit swap on AF pool", () => {
+      it("ExactIn, tick: 2848 -> -7583 (A to B), pending tick updates: 163", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = -7583;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedInitialTickCurrentIndex / 64) +
+          1 +
+          Math.floor(Math.abs(expectedEstimatedEndTickIndex) / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 163);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(10000000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
       it("ExactIn, tick: 2848 -> -2327 (A to B), pending tick updates: 81", async () => {
         const expectedInitialTickCurrentIndex = 2848;
         const expectedEstimatedEndTickIndex = -2327;
@@ -742,6 +804,288 @@ describe("prepare/commit swap tests", () => {
           tradeTokenAmount: new BN(5000000),
           tradeAmountSpecifiedIsInput: true,
           tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 2793 (A to B), pending tick updates: 1", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2793;
+        const expectedNumCrossedInitializableTicks = 1;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(50000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 2842 (A to B), pending tick updates: 0", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2842;
+        const expectedNumCrossedInitializableTicks = 0;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 2848 (A to B), pending tick updates: 0", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2848;
+        const expectedNumCrossedInitializableTicks = 0;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(1), // 1u64 will be consumed as fee
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 14678 (B to A), pending tick updates: 185", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 14678;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedEstimatedEndTickIndex / 64) -
+          Math.floor(expectedInitialTickCurrentIndex / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 185);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(15000000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 6757 (B to A), pending tick updates: 61", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 6757;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedEstimatedEndTickIndex / 64) -
+          Math.floor(expectedInitialTickCurrentIndex / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 61);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 2889 (B to A), pending tick updates: 1", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2889;
+        const expectedNumCrossedInitializableTicks = 1;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(50000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 2852 (B to A), pending tick updates: 0", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2852;
+        const expectedNumCrossedInitializableTicks = 0;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000),
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactIn, tick: 2848 -> 2848 (B to A), pending tick updates: 0", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2848;
+        const expectedNumCrossedInitializableTicks = 0;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(1), // 1u64 will be consumed as fee
+          tradeAmountSpecifiedIsInput: true,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> -8771 (A to B), pending tick updates: 182", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = -8771;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedInitialTickCurrentIndex / 64) +
+          1 +
+          Math.floor(Math.abs(expectedEstimatedEndTickIndex) / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 182);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(8000000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> -2656 (A to B), pending tick updates: 86", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = -2656;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedInitialTickCurrentIndex / 64) +
+          1 +
+          Math.floor(Math.abs(expectedEstimatedEndTickIndex) / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 86);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 2806 (A to B), pending tick updates: 1", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2806;
+        const expectedNumCrossedInitializableTicks = 1;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(50000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 2843 (A to B), pending tick updates: 0", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2843;
+        const expectedNumCrossedInitializableTicks = 0;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: true,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 14483 (B to A), pending tick updates: 182", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 14483;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedEstimatedEndTickIndex / 64) -
+          Math.floor(expectedInitialTickCurrentIndex / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 182);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoNonAF,
+          tradeTokenAmount: new BN(6000000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 11282 (B to A), pending tick updates: 132", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 11282;
+
+        const expectedNumCrossedInitializableTicks =
+          Math.floor(expectedEstimatedEndTickIndex / 64) -
+          Math.floor(expectedInitialTickCurrentIndex / 64);
+        assert.equal(expectedNumCrossedInitializableTicks, 132);
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 2903 (B to A), pending tick updates: 1", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2903;
+        const expectedNumCrossedInitializableTicks = 1;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(50000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: false,
+          expectedInitialTickCurrentIndex,
+          expectedEstimatedEndTickIndex,
+          expectedNumCrossedInitializableTicks,
+        });
+      });
+
+      it("ExactOut, tick: 2848 -> 2853 (B to A), pending tick updates: 0", async () => {
+        const expectedInitialTickCurrentIndex = 2848;
+        const expectedEstimatedEndTickIndex = 2853;
+        const expectedNumCrossedInitializableTicks = 0;
+
+        await tryPrepareCommitSwap({
+          poolInfo: poolInfoAF,
+          tradeTokenAmount: new BN(5000),
+          tradeAmountSpecifiedIsInput: false,
+          tradeAToB: false,
           expectedInitialTickCurrentIndex,
           expectedEstimatedEndTickIndex,
           expectedNumCrossedInitializableTicks,
@@ -778,7 +1122,9 @@ describe("prepare/commit swap tests", () => {
           tradeTokenAmount: MAX_U64,
           tradeAmountSpecifiedIsInput: true,
           tradeAToB: false,
-          tradeSqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(expectedEstimatedEndTickIndex),
+          tradeSqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(
+            expectedEstimatedEndTickIndex,
+          ),
           allowPartialFill: true, // allow partial fill for this test
           expectedInitialTickCurrentIndex,
           expectedEstimatedEndTickIndex,
@@ -802,7 +1148,10 @@ describe("prepare/commit swap tests", () => {
   }
 
   async function buildSwapTestPoolForLongestTraverse() {
-    return buildSwapTestPool(false, PriceMath.tickIndexToSqrtPriceX64(64 * 88 - 32));
+    return buildSwapTestPool(
+      false,
+      PriceMath.tickIndexToSqrtPriceX64(64 * 88 - 32),
+    );
   }
 
   async function buildSwapTestPool(

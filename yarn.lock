@@ -4275,7 +4275,7 @@ __metadata:
     "@solana/web3.js": "npm:^1.98.4"
     decimal.js: "npm:^10.5.0"
     tiny-invariant: "npm:^1.3.1"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
   peerDependencies:
     "@solana/spl-token": ^0.4.14
     "@solana/web3.js": ^1.98.4
@@ -4306,7 +4306,7 @@ __metadata:
     "@solana/kit": "npm:^5.0.0"
     codama: "npm:^1.3.7"
     tsup: "npm:^8.4.0"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     vitest: "npm:^3.2.4"
   peerDependencies:
     "@solana/kit": ^5.0.0
@@ -4320,7 +4320,7 @@ __metadata:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     tsup: "npm:^8.4.0"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     vitest: "npm:^3.2.4"
     wasm-pack: "npm:^0.13.1"
   languageName: unknown
@@ -4333,7 +4333,7 @@ __metadata:
     "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
     typedoc: "npm:^0.28.1"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -4356,7 +4356,7 @@ __metadata:
     "@orca-so/whirlpools-core": "npm:*"
     typedoc: "npm:^0.28.1"
     typedoc-plugin-merge-modules: "npm:^7.0.0"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -4416,7 +4416,7 @@ __metadata:
     react: "npm:^19.2.0"
     react-dom: "npm:^19.2.0"
     tailwindcss: "npm:^3.4.0"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -4426,7 +4426,7 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools": "npm:*"
     tsx: "npm:^4.19.3"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
@@ -4437,7 +4437,7 @@ __metadata:
   dependencies:
     eslint: "npm:^9.23.0"
     prettier: "npm:^3.5.3"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     typescript-eslint: "npm:^8.46.1"
   languageName: unknown
   linkType: soft
@@ -4513,7 +4513,7 @@ __metadata:
     js-convert-case: "npm:^4.2.0"
     prompts: "npm:^2.4.2"
     tsx: "npm:^4.19.3"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     yaml: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
@@ -4541,7 +4541,7 @@ __metadata:
     decimal.js: "npm:^10.5.0"
     litesvm: "npm:^0.4.0"
     tiny-invariant: "npm:^1.3.1"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     vitest: "npm:^3.2.4"
   peerDependencies:
     "@coral-xyz/anchor": ~0.32.1
@@ -4565,7 +4565,7 @@ __metadata:
     "@solana/sysvars": "npm:^5.0.0"
     litesvm: "npm:^0.4.0"
     tsup: "npm:^8.4.0"
-    typescript: "npm:^5.9.3"
+    typescript: "npm:^6.0.3"
     vitest: "npm:^3.2.4"
   peerDependencies:
     "@solana/kit": ^5.0.0
@@ -18330,23 +18330,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.9.3":
-  version: 5.9.3
-  resolution: "typescript@npm:5.9.3"
+"typescript@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "typescript@npm:6.0.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  checksum: 10c0/4a25ff5045b984370f48f196b3a0120779b1b343d40b9a68d114ea5e5fff099809b2bb777576991a63a5cd59cf7bffd96ff6fe10afcefbcb8bd6fb96ad4b6606
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
-  version: 5.9.3
-  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+"typescript@patch:typescript@npm%3A^6.0.3#optional!builtin<compat/typescript>":
+  version: 6.0.3
+  resolution: "typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>::version=6.0.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
+  checksum: 10c0/2f25c74e65663c248fa1ade2b8459d9ce5372ff9dad07067310f132966ebec1d93f6c42f0baf77a6b6a7a91460463f708e6887013aaade22111037457c6b25df
   languageName: node
   linkType: hard
 

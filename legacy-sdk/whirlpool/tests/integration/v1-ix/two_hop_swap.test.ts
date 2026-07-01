@@ -25,7 +25,6 @@ import { getTokenBalance, TickSpacing, warpClock } from "../../utils";
 import {
   pollForCondition,
   initializeLiteSVMEnvironment,
-  resetAndInitializeLiteSVMEnvironment,
 } from "../../utils/litesvm";
 import type {
   FundedPositionParams,

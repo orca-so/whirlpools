@@ -64,6 +64,7 @@ import {
   RemainingAccountsBuilder,
   RemainingAccountsType,
 } from "../../../src/utils/remaining-accounts-util";
+import { verifyPrepareAndCommitSwapV2Equivalence } from "../../utils/prepare-commit-test-utils";
 
 describe("TokenExtension/TransferHook", () => {
   let provider: anchor.AnchorProvider;
@@ -71,12 +72,25 @@ describe("TokenExtension/TransferHook", () => {
   let fetcher: WhirlpoolContext["fetcher"];
   let client: ReturnType<typeof buildWhirlpoolClient>;
 
+  let preparedSwap: PublicKey;
+
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
     provider = env.provider;
     ctx = env.ctx;
     fetcher = env.fetcher;
     client = buildWhirlpoolClient(ctx);
+
+    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, 0);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
+        funder: ctx.wallet.publicKey,
+        nonce: 0,
+        preparedSwapPda,
+      }),
+    ).buildAndExecute();
+    preparedSwap = preparedSwapPda.publicKey;
   });
 
   describe("collect_fees_v2, collect_protocol_fees_v2", () => {
@@ -2841,25 +2855,30 @@ describe("TokenExtension/TransferHook", () => {
         poolInitInfo.tokenMintB,
       );
 
-      await toTx(
+      const params = {
+        ...quoteAToB,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+        tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
+        tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
+      };
+
+      await verifyPrepareAndCommitSwapV2Equivalence(
         ctx,
-        WhirlpoolIx.swapV2Ix(ctx.program, {
-          ...quoteAToB,
-          whirlpool: whirlpoolPda.publicKey,
-          tokenAuthority: ctx.wallet.publicKey,
-          tokenMintA: poolInitInfo.tokenMintA,
-          tokenMintB: poolInitInfo.tokenMintB,
-          tokenProgramA: poolInitInfo.tokenProgramA,
-          tokenProgramB: poolInitInfo.tokenProgramB,
-          tokenOwnerAccountA: tokenAccountA,
-          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-          tokenOwnerAccountB: tokenAccountB,
-          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          oracle: oraclePubkey,
-          tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
-          tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
-        }),
-      )
+        { ...params, preparedSwap },
+        quoteAToB,
+      );
+
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params))
         .prependInstruction(useMaxCU())
         .buildAndExecute();
 
@@ -2885,25 +2904,30 @@ describe("TokenExtension/TransferHook", () => {
         poolInitInfo.tokenMintB,
       );
 
-      await toTx(
+      const params = {
+        ...quoteBToA,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+        tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
+        tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
+      };
+
+      await verifyPrepareAndCommitSwapV2Equivalence(
         ctx,
-        WhirlpoolIx.swapV2Ix(ctx.program, {
-          ...quoteBToA,
-          whirlpool: whirlpoolPda.publicKey,
-          tokenAuthority: ctx.wallet.publicKey,
-          tokenMintA: poolInitInfo.tokenMintA,
-          tokenMintB: poolInitInfo.tokenMintB,
-          tokenProgramA: poolInitInfo.tokenProgramA,
-          tokenProgramB: poolInitInfo.tokenProgramB,
-          tokenOwnerAccountA: tokenAccountA,
-          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-          tokenOwnerAccountB: tokenAccountB,
-          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          oracle: oraclePubkey,
-          tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
-          tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
-        }),
-      )
+        { ...params, preparedSwap },
+        quoteBToA,
+      );
+
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params))
         .prependInstruction(useMaxCU())
         .buildAndExecute();
 
@@ -2920,26 +2944,41 @@ describe("TokenExtension/TransferHook", () => {
     });
 
     it("swap_v2: [Fail] with transfer hook, a to b, but no extra accounts provided for A", async () => {
+      const params = {
+        ...quoteAToB,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+        tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
+        tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
+      };
+
+      await assert.rejects(
+        toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params))
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
+        /0x17a2/, // NoExtraAccountsForTransferHook
+      );
+
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.swapV2Ix(ctx.program, {
-            ...quoteAToB,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            tokenMintA: poolInitInfo.tokenMintA,
-            tokenMintB: poolInitInfo.tokenMintB,
-            tokenProgramA: poolInitInfo.tokenProgramA,
-            tokenProgramB: poolInitInfo.tokenProgramB,
-            tokenOwnerAccountA: tokenAccountA,
-            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountB: tokenAccountB,
-            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-            oracle: oraclePubkey,
-            tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
-            tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
-          }),
+          WhirlpoolIx.prepareSwapV2Ix(ctx.program, { ...params, preparedSwap }),
         )
+          .addInstruction(
+            WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+              ...params,
+              preparedSwap,
+            }),
+          )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
@@ -2947,26 +2986,41 @@ describe("TokenExtension/TransferHook", () => {
     });
 
     it("swap_v2: [Fail] with transfer hook, a to b, but no extra accounts provided for B", async () => {
+      const params = {
+        ...quoteAToB,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+        tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
+        tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
+      };
+
+      await assert.rejects(
+        toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params))
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
+        /0x17a2/, // NoExtraAccountsForTransferHook
+      );
+
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.swapV2Ix(ctx.program, {
-            ...quoteAToB,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            tokenMintA: poolInitInfo.tokenMintA,
-            tokenMintB: poolInitInfo.tokenMintB,
-            tokenProgramA: poolInitInfo.tokenProgramA,
-            tokenProgramB: poolInitInfo.tokenProgramB,
-            tokenOwnerAccountA: tokenAccountA,
-            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountB: tokenAccountB,
-            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-            oracle: oraclePubkey,
-            tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
-            tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
-          }),
+          WhirlpoolIx.prepareSwapV2Ix(ctx.program, { ...params, preparedSwap }),
         )
+          .addInstruction(
+            WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+              ...params,
+              preparedSwap,
+            }),
+          )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
@@ -2974,26 +3028,41 @@ describe("TokenExtension/TransferHook", () => {
     });
 
     it("swap_v2: [Fail] with transfer hook, b to a, but no extra accounts provided for A", async () => {
+      const params = {
+        ...quoteBToA,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+        tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
+        tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
+      };
+
+      await assert.rejects(
+        toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params))
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
+        /0x17a2/, // NoExtraAccountsForTransferHook
+      );
+
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.swapV2Ix(ctx.program, {
-            ...quoteBToA,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            tokenMintA: poolInitInfo.tokenMintA,
-            tokenMintB: poolInitInfo.tokenMintB,
-            tokenProgramA: poolInitInfo.tokenProgramA,
-            tokenProgramB: poolInitInfo.tokenProgramB,
-            tokenOwnerAccountA: tokenAccountA,
-            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountB: tokenAccountB,
-            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-            oracle: oraclePubkey,
-            tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
-            tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
-          }),
+          WhirlpoolIx.prepareSwapV2Ix(ctx.program, { ...params, preparedSwap }),
         )
+          .addInstruction(
+            WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+              ...params,
+              preparedSwap,
+            }),
+          )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
@@ -3001,26 +3070,41 @@ describe("TokenExtension/TransferHook", () => {
     });
 
     it("swap_v2: [Fail] with transfer hook, b to a, but no extra accounts provided for B", async () => {
+      const params = {
+        ...quoteBToA,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+        tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
+        tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
+      };
+
+      await assert.rejects(
+        toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params))
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
+        /0x17a2/, // NoExtraAccountsForTransferHook
+      );
+
       await assert.rejects(
         toTx(
           ctx,
-          WhirlpoolIx.swapV2Ix(ctx.program, {
-            ...quoteBToA,
-            whirlpool: whirlpoolPda.publicKey,
-            tokenAuthority: ctx.wallet.publicKey,
-            tokenMintA: poolInitInfo.tokenMintA,
-            tokenMintB: poolInitInfo.tokenMintB,
-            tokenProgramA: poolInitInfo.tokenProgramA,
-            tokenProgramB: poolInitInfo.tokenProgramB,
-            tokenOwnerAccountA: tokenAccountA,
-            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountB: tokenAccountB,
-            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-            oracle: oraclePubkey,
-            tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
-            tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
-          }),
+          WhirlpoolIx.prepareSwapV2Ix(ctx.program, { ...params, preparedSwap }),
         )
+          .addInstruction(
+            WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+              ...params,
+              preparedSwap,
+            }),
+          )
           .prependInstruction(useMaxCU())
           .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
@@ -4409,6 +4493,10 @@ describe("TokenExtension/TransferHook", () => {
         /0xbbd/, // Anchor AccountNotEnoughKeys Error (3005)
       );
     });
+  });
+
+  describe.skip("prepare_swap_v2/commit_swap_v2", () => {
+    // Added verifyPrepareAndCommitSwapV2Equivalence to swap_v2 to avoid a large amount of duplicated test code.
   });
 
   describe("Special Errors", () => {

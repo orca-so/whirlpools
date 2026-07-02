@@ -108,8 +108,6 @@ describe("prepare/commit swap tests", () => {
   let provider: anchor.AnchorProvider;
   let program: anchor.Program;
   let testCtx: SharedTestContext;
-  let admin: Keypair;
-  const priceDeviation = Percentage.fromFraction(1, 10_000);
 
   let poolInfoNonAF: SwapTestPoolInfo;
   let poolInfoAF: SwapTestPoolInfo;
@@ -129,7 +127,6 @@ describe("prepare/commit swap tests", () => {
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
-    admin = await getLocalnetAdminKeypair0(whirlpoolCtx);
     testCtx = {
       provider,
       whirlpoolCtx,
@@ -1766,7 +1763,6 @@ function powBN(base: number, exp: number): BN {
   return new BN(base).pow(new BN(exp));
 }
 
- 
 function debug(msg: string) {
   if (!DEBUG_OUTPUT) return;
   console.debug(msg);

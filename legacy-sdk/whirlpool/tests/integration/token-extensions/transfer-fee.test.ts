@@ -88,6 +88,7 @@ import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-ut
 import invariant from "tiny-invariant";
 import type { LiquidityRepositionedEventData } from "../v2-ix/liquidity/reposition_liquidity_v2.test";
 import type { RepositionLiquidityV2Params } from "../../../src/instructions/v2/reposition-liquidity-ix";
+import { verifyPrepareAndCommitSwapV2Equivalence } from "../../utils/prepare-commit-test-utils";
 
 describe("TokenExtension/TransferFee", () => {
   let provider: anchor.AnchorProvider;
@@ -95,12 +96,25 @@ describe("TokenExtension/TransferFee", () => {
   let fetcher: WhirlpoolContext["fetcher"];
   let client: ReturnType<typeof buildWhirlpoolClient>;
 
+  let preparedSwap: PublicKey;
+
   beforeAll(async () => {
     const env = await initializeLiteSVMEnvironment();
     provider = env.provider;
     ctx = env.ctx;
     fetcher = env.fetcher;
     client = buildWhirlpoolClient(ctx);
+
+    const preparedSwapPda = PDAUtil.getPreparedSwap(ctx.program.programId, 0);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializePreparedSwapIx(ctx.program, {
+        funder: ctx.wallet.publicKey,
+        nonce: 0,
+        preparedSwapPda,
+      }),
+    ).buildAndExecute();
+    preparedSwap = preparedSwapPda.publicKey;
   });
 
   const dummyTokenMintWithProgram: MintWithTokenProgram = {
@@ -4234,25 +4248,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1794/, // AmountOutBelowMinimum
           );
 
+          const params = {
+            ...quoteAToB,
+            amount: inputAmount, // transfer fee included
+            otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteAToB,
+              estimatedAmountIn: inputAmount,
+              estimatedAmountOut: transferFeeExcludedOutputAmount.amount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteAToB,
-              amount: inputAmount, // transfer fee included
-              otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -4401,25 +4427,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1794/, // AmountOutBelowMinimum
           );
 
+          const params = {
+            ...quoteBToA,
+            amount: inputAmount, // transfer fee included
+            otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteBToA,
+              estimatedAmountIn: inputAmount,
+              estimatedAmountOut: transferFeeExcludedOutputAmount.amount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteBToA,
-              amount: inputAmount, // transfer fee included
-              otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -4568,25 +4606,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1795/, // AmountInAboveMaximum
           );
 
+          const params = {
+            ...quoteAToB,
+            amount: outputAmount, // transfer fee excluded
+            otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteAToB,
+              estimatedAmountIn: transferFeeIncludedInputAmount.amount,
+              estimatedAmountOut: outputAmount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteAToB,
-              amount: outputAmount, // transfer fee excluded
-              otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -4735,25 +4785,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1795/, // AmountInAboveMaximum
           );
 
+          const params = {
+            ...quoteBToA,
+            amount: outputAmount, // transfer fee excluded
+            otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteBToA,
+              estimatedAmountIn: transferFeeIncludedInputAmount.amount,
+              estimatedAmountOut: outputAmount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteBToA,
-              amount: outputAmount, // transfer fee excluded
-              otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -5118,25 +5180,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1794/, // AmountOutBelowMinimum
           );
 
+          const params = {
+            ...quoteAToB,
+            amount: inputAmount, // transfer fee included
+            otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteAToB,
+              estimatedAmountIn: inputAmount,
+              estimatedAmountOut: transferFeeExcludedOutputAmount.amount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteAToB,
-              amount: inputAmount, // transfer fee included
-              otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -5333,25 +5407,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1794/, // AmountOutBelowMinimum
           );
 
+          const params = {
+            ...quoteBToA,
+            amount: inputAmount, // transfer fee included
+            otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteBToA,
+              estimatedAmountIn: inputAmount,
+              estimatedAmountOut: transferFeeExcludedOutputAmount.amount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteBToA,
-              amount: inputAmount, // transfer fee included
-              otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -5594,25 +5680,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1795/, // AmountInAboveMaximum
           );
 
+          const params = {
+            ...quoteAToB,
+            amount: outputAmount, // transfer fee excluded
+            otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteAToB,
+              estimatedAmountIn: transferFeeIncludedInputAmount.amount,
+              estimatedAmountOut: outputAmount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteAToB,
-              amount: outputAmount, // transfer fee excluded
-              otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -5855,25 +5953,37 @@ describe("TokenExtension/TransferFee", () => {
             /0x1795/, // AmountInAboveMaximum
           );
 
+          const params = {
+            ...quoteBToA,
+            amount: outputAmount, // transfer fee excluded
+            otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
+
+            whirlpool: whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: oraclePubkey,
+          };
+
+          await verifyPrepareAndCommitSwapV2Equivalence(
+            ctx,
+            { ...params, preparedSwap },
+            {
+              ...quoteBToA,
+              estimatedAmountIn: transferFeeIncludedInputAmount.amount,
+              estimatedAmountOut: outputAmount,
+            },
+          );
+
           await toTx(
             ctx,
-            WhirlpoolIx.swapV2Ix(ctx.program, {
-              ...quoteBToA,
-              amount: outputAmount, // transfer fee excluded
-              otherAmountThreshold: transferFeeIncludedInputAmount.amount, // transfer fee included
-
-              whirlpool: whirlpoolPda.publicKey,
-              tokenAuthority: ctx.wallet.publicKey,
-              tokenMintA: poolInitInfo.tokenMintA,
-              tokenMintB: poolInitInfo.tokenMintB,
-              tokenProgramA: poolInitInfo.tokenProgramA,
-              tokenProgramB: poolInitInfo.tokenProgramB,
-              tokenOwnerAccountA: tokenAccountA,
-              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-              tokenOwnerAccountB: tokenAccountB,
-              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-              oracle: oraclePubkey,
-            }),
+            WhirlpoolIx.swapV2Ix(ctx.program, params),
           ).buildAndExecute();
 
           const postVaultBalanceA = new BN(
@@ -12072,6 +12182,332 @@ describe("TokenExtension/TransferFee", () => {
       assert.ok(!tokenBQuote.fromOwner);
       assert.ok(event.tokenBTransferAmount.eq(tokenBQuote.amountWithoutFee));
       assert.ok(event.tokenBTransferFee.eq(tokenBQuote.fee));
+    });
+  });
+
+  describe("prepare_swap_v2/commit_swap_v2", () => {
+    // Added verifyPrepareAndCommitSwapV2Equivalence to swap_v2 to avoid a large amount of duplicated test code.
+
+    it("transferFee on Traded event (A to B)", async () => {
+      const tokenA = {
+        isToken2022: true,
+        hasTransferFeeExtension: true,
+        transferFeeInitialBps: 500,
+      };
+      const tokenB = {
+        isToken2022: true,
+        hasTransferFeeExtension: true,
+        transferFeeInitialBps: 1000,
+      };
+
+      const init = await initTestPoolWithTokensV2(
+        ctx,
+        tokenA,
+        tokenB,
+        TickSpacing.Standard,
+      );
+      const poolInitInfo = init.poolInitInfo;
+      const whirlpoolPda = init.whirlpoolPda;
+      const tokenAccountA = init.tokenAccountA;
+      const tokenAccountB = init.tokenAccountB;
+
+      await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528, // to 33792
+        3,
+        TickSpacing.Standard,
+        false,
+      );
+
+      const fundParams: FundedPositionV2Params[] = [
+        {
+          liquidityAmount: new anchor.BN(10_000_000),
+          tickLowerIndex: 29440,
+          tickUpperIndex: 33536,
+        },
+      ];
+
+      await fundPositionsV2(
+        ctx,
+        poolInitInfo,
+        tokenAccountA,
+        tokenAccountB,
+        fundParams,
+      );
+      const oraclePubkey = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      ).publicKey;
+
+      const transferFeeA = await getTransferFee(poolInitInfo.tokenMintA);
+      const transferFeeB = await getTransferFee(poolInitInfo.tokenMintB);
+      assert.equal(
+        transferFeeA.transferFeeBasisPoints,
+        tokenA.transferFeeInitialBps!,
+      );
+      assert.equal(
+        transferFeeB.transferFeeBasisPoints,
+        tokenB.transferFeeInitialBps!,
+      );
+
+      const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      const aToB = true;
+      const inputAmount = new BN(100000);
+      const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(
+        transferFeeA,
+        inputAmount,
+      );
+      assert.ok(transferFeeExcludedInputAmount.fee.gtn(0));
+
+      const quoteAToB = swapQuoteWithParams(
+        {
+          // A --> B, ExactIn
+          amountSpecifiedIsInput: true,
+          aToB,
+          tokenAmount: transferFeeExcludedInputAmount.amount,
+
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          whirlpoolData,
+          tickArrays: await SwapUtils.getTickArrays(
+            whirlpoolData.tickCurrentIndex,
+            whirlpoolData.tickSpacing,
+            aToB,
+            ctx.program.programId,
+            whirlpoolKey,
+            fetcher,
+            IGNORE_CACHE,
+          ),
+          tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+          oracleData: NO_ORACLE_DATA,
+        },
+        Percentage.fromFraction(0, 100), // 0% slippage
+      );
+
+      const transferFeeExcludedOutputAmount =
+        calculateTransferFeeExcludedAmount(
+          transferFeeB,
+          quoteAToB.estimatedAmountOut,
+        );
+      assert.ok(transferFeeExcludedOutputAmount.fee.gtn(0));
+
+      let eventVerified = false;
+      let detectedSignature = null;
+      const listener = ctx.program.addEventListener(
+        "traded",
+        (event, _slot, signature) => {
+          detectedSignature = signature;
+          assert.ok(event.inputAmount.eq(inputAmount));
+          assert.ok(event.outputAmount.eq(quoteAToB.estimatedAmountOut));
+          assert.ok(
+            event.inputTransferFee.eq(transferFeeExcludedInputAmount.fee),
+          );
+          assert.ok(
+            event.outputTransferFee.eq(transferFeeExcludedOutputAmount.fee),
+          );
+          eventVerified = true;
+        },
+      );
+
+      const params = {
+        preparedSwap,
+
+        ...quoteAToB,
+        amount: inputAmount, // transfer fee included
+        otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
+
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+      };
+
+      const signature = await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, params),
+      )
+        .addInstruction(WhirlpoolIx.commitSwapV2Ix(ctx.program, params))
+        .buildAndExecute();
+
+      await sleep(2000);
+      assert.equal(signature, detectedSignature);
+      assert.ok(eventVerified);
+
+      ctx.program.removeEventListener(listener);
+    });
+
+    it("transferFee on Traded event (B to A)", async () => {
+      const tokenA = {
+        isToken2022: true,
+        hasTransferFeeExtension: true,
+        transferFeeInitialBps: 500,
+      };
+      const tokenB = {
+        isToken2022: true,
+        hasTransferFeeExtension: true,
+        transferFeeInitialBps: 1000,
+      };
+
+      const init = await initTestPoolWithTokensV2(
+        ctx,
+        tokenA,
+        tokenB,
+        TickSpacing.Standard,
+      );
+      const poolInitInfo = init.poolInitInfo;
+      const whirlpoolPda = init.whirlpoolPda;
+      const tokenAccountA = init.tokenAccountA;
+      const tokenAccountB = init.tokenAccountB;
+
+      await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528, // to 33792
+        3,
+        TickSpacing.Standard,
+        false,
+      );
+
+      const fundParams: FundedPositionV2Params[] = [
+        {
+          liquidityAmount: new anchor.BN(10_000_000),
+          tickLowerIndex: 29440,
+          tickUpperIndex: 33536,
+        },
+      ];
+
+      await fundPositionsV2(
+        ctx,
+        poolInitInfo,
+        tokenAccountA,
+        tokenAccountB,
+        fundParams,
+      );
+      const oraclePubkey = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      ).publicKey;
+
+      const transferFeeA = await getTransferFee(poolInitInfo.tokenMintA);
+      const transferFeeB = await getTransferFee(poolInitInfo.tokenMintB);
+      assert.equal(
+        transferFeeA.transferFeeBasisPoints,
+        tokenA.transferFeeInitialBps!,
+      );
+      assert.equal(
+        transferFeeB.transferFeeBasisPoints,
+        tokenB.transferFeeInitialBps!,
+      );
+
+      const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      const aToB = false;
+      const inputAmount = new BN(100000);
+      const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(
+        transferFeeB,
+        inputAmount,
+      );
+      assert.ok(transferFeeExcludedInputAmount.fee.gtn(0));
+
+      const quoteBToA = swapQuoteWithParams(
+        {
+          // B --> A, ExactIn
+          amountSpecifiedIsInput: true,
+          aToB,
+          tokenAmount: transferFeeExcludedInputAmount.amount,
+
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          whirlpoolData,
+          tickArrays: await SwapUtils.getTickArrays(
+            whirlpoolData.tickCurrentIndex,
+            whirlpoolData.tickSpacing,
+            aToB,
+            ctx.program.programId,
+            whirlpoolKey,
+            fetcher,
+            IGNORE_CACHE,
+          ),
+          tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
+          oracleData: NO_ORACLE_DATA,
+        },
+        Percentage.fromFraction(0, 100), // 0% slippage
+      );
+
+      const transferFeeExcludedOutputAmount =
+        calculateTransferFeeExcludedAmount(
+          transferFeeA,
+          quoteBToA.estimatedAmountOut,
+        );
+      assert.ok(transferFeeExcludedOutputAmount.fee.gtn(0));
+
+      let eventVerified = false;
+      let detectedSignature = null;
+      const listener = ctx.program.addEventListener(
+        "traded",
+        (event, _slot, signature) => {
+          detectedSignature = signature;
+          assert.ok(event.inputAmount.eq(inputAmount));
+          assert.ok(event.outputAmount.eq(quoteBToA.estimatedAmountOut));
+          assert.ok(
+            event.inputTransferFee.eq(transferFeeExcludedInputAmount.fee),
+          );
+          assert.ok(
+            event.outputTransferFee.eq(transferFeeExcludedOutputAmount.fee),
+          );
+          eventVerified = true;
+        },
+      );
+
+      const params = {
+        preparedSwap,
+
+        ...quoteBToA,
+        amount: inputAmount, // transfer fee included
+        otherAmountThreshold: transferFeeExcludedOutputAmount.amount, // transfer fee excluded
+
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePubkey,
+      };
+
+      const signature = await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, params),
+      )
+        .addInstruction(WhirlpoolIx.commitSwapV2Ix(ctx.program, params))
+        .buildAndExecute();
+
+      await sleep(2000);
+      assert.equal(signature, detectedSignature);
+      assert.ok(eventVerified);
+
+      ctx.program.removeEventListener(listener);
     });
   });
 

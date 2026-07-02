@@ -8,12 +8,25 @@ import type {
 } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import type { AdaptiveFeeVariablesData, WhirlpoolData } from "../../src";
-import { AccountName } from "../../src";
-import { TICK_ARRAY_SIZE, WHIRLPOOL_IDL } from "../../src";
+import type {
+  AdaptiveFeeVariablesData,
+  CommitSwapV2Params,
+  SwapQuote,
+  SwapV2Params,
+  WhirlpoolContext,
+  WhirlpoolData,
+} from "../../src";
+import {
+  AccountName,
+  ParsableWhirlpool,
+  PoolUtil,
+  WhirlpoolIx,
+} from "../../src";
+import { TICK_ARRAY_SIZE, WHIRLPOOL_IDL, getAccountSize } from "../../src";
 import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
-import type { TransactionBuilder } from "@orca-so/common-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
 import { getProviderWalletKeypair } from "./utils";
+import { useMaxCU } from "./init-utils";
 
 type HasHiddenPubkey = {
   _pubkey: PublicKey;
@@ -211,4 +224,181 @@ export async function simulateTransaction(
   return new SimulatedTransactionAccessor(
     await provider.connection.simulateTransaction(vtx),
   );
+}
+
+export async function verifyPrepareAndCommitSwapV2Equivalence(
+  ctx: WhirlpoolContext,
+  params: CommitSwapV2Params & SwapV2Params,
+  swapQuote: SwapQuote,
+) {
+  function newTransactionBuilder() {
+    return new TransactionBuilder(ctx.connection, ctx.wallet).addInstruction(
+      useMaxCU(),
+    );
+  }
+
+  const pool = await ctx.fetcher.getPool(params.whirlpool);
+  assert.ok(pool);
+  const stateSequence = getWhirlpoolStateSequence(pool);
+
+  const swapIx = WhirlpoolIx.swapV2Ix(ctx.program, params);
+  const prepareIx = WhirlpoolIx.prepareSwapV2Ix(ctx.program, params);
+  const commitIx = WhirlpoolIx.commitSwapV2Ix(ctx.program, params);
+
+  const swapV2TransactionBuilder = newTransactionBuilder();
+  swapV2TransactionBuilder.addInstructions([swapIx]);
+
+  const prepareSwapTransactionBuilder = newTransactionBuilder();
+  prepareSwapTransactionBuilder.addInstructions([prepareIx]);
+
+  const prepareAndCommitSwapTransactionBuilder = newTransactionBuilder();
+  prepareAndCommitSwapTransactionBuilder.addInstructions([prepareIx, commitIx]);
+
+  // check prepareSwapV2
+  const prepareSimResult = await simulateTransaction(
+    ctx.provider,
+    prepareSwapTransactionBuilder,
+  );
+
+  const prepareSwapV2ReturnData = parsePrepareSwapV2ReturnData(
+    prepareSimResult.returnData().data,
+  );
+  assert.ok(
+    !!prepareSwapV2ReturnData && "quoteSuccess" in prepareSwapV2ReturnData,
+  );
+  const onChainSwapQuote = prepareSwapV2ReturnData.quoteSuccess;
+  if (params.amountSpecifiedIsInput) {
+    assert.ok(onChainSwapQuote.amount.eq(swapQuote.estimatedAmountIn));
+    assert.ok(onChainSwapQuote.otherAmount.eq(swapQuote.estimatedAmountOut));
+  } else {
+    assert.ok(onChainSwapQuote.amount.eq(swapQuote.estimatedAmountOut));
+    assert.ok(onChainSwapQuote.otherAmount.eq(swapQuote.estimatedAmountIn));
+  }
+
+  assert.ok(onChainSwapQuote.nextSqrtPrice.eq(swapQuote.estimatedEndSqrtPrice));
+  assert.ok(onChainSwapQuote.nextTickIndex === swapQuote.estimatedEndTickIndex);
+
+  const preparedSwapData = parsePreparedSwap(
+    prepareSimResult.postWritableAccount(params.preparedSwap),
+  );
+  assert.ok(!!preparedSwapData);
+  assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+  assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+  assert.ok(
+    preparedSwapData.precondition.slot.toNumber() === prepareSimResult.slot(),
+  );
+  assert.ok(
+    preparedSwapData.precondition.authority.equals(
+      ctx.provider.wallet.publicKey,
+    ),
+  );
+  assert.ok(preparedSwapData.precondition.whirlpool.equals(params.whirlpool));
+  assert.ok(
+    preparedSwapData.precondition.whirlpoolStateSequence === stateSequence,
+  );
+  assert.ok(preparedSwapData.precondition.amount.eq(params.amount));
+  assert.ok(
+    preparedSwapData.precondition.sqrtPriceLimit.eq(params.sqrtPriceLimit),
+  );
+  assert.ok(
+    preparedSwapData.precondition.amountSpecifiedIsInput ===
+      params.amountSpecifiedIsInput,
+  );
+  assert.ok(preparedSwapData.precondition.aToB === params.aToB);
+
+  // check commitSwapV2
+  const prepareAndCommitSimResult = await simulateTransaction(
+    ctx.provider,
+    prepareAndCommitSwapTransactionBuilder,
+  );
+  const swapV2SimResult = await simulateTransaction(
+    ctx.provider,
+    swapV2TransactionBuilder,
+  );
+
+  assert.ok(prepareAndCommitSimResult.isSuccessful());
+  assert.ok(swapV2SimResult.isSuccessful());
+
+  const preparedSwapDataAfterCommit = parsePreparedSwap(
+    prepareAndCommitSimResult.postWritableAccount(params.preparedSwap),
+  );
+  assert.ok(!!preparedSwapDataAfterCommit);
+  assert.equal(
+    preparedSwapDataAfterCommit.version,
+    PREPARED_SWAP_LAYOUT_VERSION,
+  );
+  assert.equal(
+    preparedSwapDataAfterCommit.state,
+    PREPARED_SWAP_STATE_COMMITTED,
+  );
+
+  // vs. swapV2 account check
+  // whirlpool
+  const prepareCommitWhirlpoolAccount =
+    prepareAndCommitSimResult.postWritableAccount(params.whirlpool)!;
+  const whirlpoolData = ParsableWhirlpool.parse(
+    params.whirlpool,
+    prepareCommitWhirlpoolAccount,
+  );
+  assert.ok(!!whirlpoolData);
+  assert.ok(whirlpoolData.sqrtPrice.eq(swapQuote.estimatedEndSqrtPrice));
+  assert.equal(whirlpoolData.tickCurrentIndex, swapQuote.estimatedEndTickIndex);
+  assert.equal(getWhirlpoolStateSequence(whirlpoolData), stateSequence + 1);
+  assertPostWritableAccountMatch(
+    prepareAndCommitSimResult,
+    swapV2SimResult,
+    params.whirlpool,
+    getAccountSize(AccountName.Whirlpool),
+  );
+
+  // tickarray
+  const tickArrays = [
+    swapQuote.tickArray0,
+    swapQuote.tickArray1,
+    swapQuote.tickArray2,
+  ];
+  for (const tickArray of tickArrays) {
+    const tickArrayAccountInfo = await ctx.connection.getAccountInfo(tickArray);
+    if (!tickArrayAccountInfo) continue;
+
+    assert.ok(tickArrayAccountInfo.data.length > 0);
+    assertPostWritableAccountMatch(
+      prepareAndCommitSimResult,
+      swapV2SimResult,
+      tickArray,
+      tickArrayAccountInfo.data.length,
+    );
+  }
+
+  // oracle
+  if (PoolUtil.isInitializedWithAdaptiveFee(whirlpoolData)) {
+    assertPostWritableAccountMatch(
+      prepareAndCommitSimResult,
+      swapV2SimResult,
+      params.oracle,
+      getAccountSize(AccountName.Oracle),
+    );
+  }
+
+  // token accounts
+  const tokenAccounts = [
+    params.tokenOwnerAccountA,
+    params.tokenOwnerAccountB,
+    pool.tokenVaultA,
+    pool.tokenVaultB,
+  ];
+  for (const tokenAccount of tokenAccounts) {
+    const tokenAccountAccountInfo =
+      await ctx.connection.getAccountInfo(tokenAccount);
+    if (!tokenAccountAccountInfo) continue;
+
+    assert.ok(tokenAccountAccountInfo.data.length > 0);
+
+    assertPostWritableAccountMatch(
+      prepareAndCommitSimResult,
+      swapV2SimResult,
+      tokenAccount,
+      tokenAccountAccountInfo.data.length,
+    );
+  }
 }

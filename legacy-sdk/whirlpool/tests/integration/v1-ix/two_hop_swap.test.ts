@@ -25,7 +25,6 @@ import { getTokenBalance, TickSpacing, warpClock } from "../../utils";
 import {
   pollForCondition,
   initializeLiteSVMEnvironment,
-  resetAndInitializeLiteSVMEnvironment,
 } from "../../utils/litesvm";
 import type {
   FundedPositionParams,
@@ -37,6 +36,7 @@ import {
   getTokenAccsForPools,
 } from "../../utils/init-utils";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("two-hop swap", () => {
   let provider: anchor.AnchorProvider;
@@ -398,36 +398,19 @@ describe("two-hop swap", () => {
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
   });
 
-  it.skip("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
-    const env = await resetAndInitializeLiteSVMEnvironment();
-    provider = env.provider;
-    program = env.program;
-    ctx = env.ctx;
-    fetcher = env.fetcher;
-
-    anchor.setProvider(provider);
-    client = buildWhirlpoolClient(ctx);
-
-    // Add another mint and update pool so there is no overlapping mint
-    aqConfig = getDefaultAquarium();
+  it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
     aqConfig.initFeeTierParams.push({ tickSpacing: TickSpacing.ThirtyTwo });
     aqConfig.initPoolParams[1] = {
       mintIndices: [0, 1],
       tickSpacing: TickSpacing.ThirtyTwo,
       feeTierIndex: 1,
     };
-    aqConfig.initTickArrayRangeParams.push({
-      poolIndex: 1,
-      startTickIndex: 22528,
-      arrayCount: 12,
-      aToB: true,
-    });
-    aqConfig.initTickArrayRangeParams.push({
+    aqConfig.initTickArrayRangeParams[1] = {
       poolIndex: 1,
       startTickIndex: 22528,
       arrayCount: 12,
       aToB: false,
-    });
+    };
 
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
@@ -1905,6 +1888,63 @@ describe("two-hop swap", () => {
     assert.ok(eventVerifiedTwo);
 
     ctx.program.removeEventListener(listener);
+  });
+
+  it("increment state sequence", async () => {
+    const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
+    const { tokenAccounts, mintKeys, pools } = aquarium;
+
+    const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+    const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+
+    const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+    const quote = await swapQuoteByInputToken(
+      whirlpoolOne,
+      inputToken,
+      new BN(1000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpoolTwo,
+      intermediaryToken,
+      quote.estimatedAmountOut,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+    const whirlpoolOnePre = whirlpoolOne.getData();
+    const whirlpoolTwoPre = whirlpoolTwo.getData();
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.twoHopSwapIx(ctx.program, {
+        ...twoHopQuote,
+        ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+        tokenAuthority: ctx.wallet.publicKey,
+      }),
+    ).buildAndExecute();
+
+    const whirlpoolOnePost = await whirlpoolOne.refreshData();
+    const whirlpoolTwoPost = await whirlpoolTwo.refreshData();
+
+    // state sequence must be incremented
+    const preStateSequenceOne = getWhirlpoolStateSequence(whirlpoolOnePre);
+    const preStateSequenceTwo = getWhirlpoolStateSequence(whirlpoolTwoPre);
+    const postStateSequenceOne = getWhirlpoolStateSequence(whirlpoolOnePost);
+    const postStateSequenceTwo = getWhirlpoolStateSequence(whirlpoolTwoPost);
+    assert.equal(postStateSequenceOne, preStateSequenceOne + 1);
+    assert.equal(postStateSequenceTwo, preStateSequenceTwo + 1);
   });
 
   function getParamsFromPools(

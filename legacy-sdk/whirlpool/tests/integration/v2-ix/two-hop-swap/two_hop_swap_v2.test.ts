@@ -57,6 +57,7 @@ import {
   TokenExtensionUtil,
 } from "../../../../src/utils/public/token-extension-util";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("two_hop_swap_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -2247,6 +2248,123 @@ describe("two_hop_swap_v2", () => {
           assert.ok(polled.eventVerifiedTwo);
 
           ctx.program.removeEventListener(listener);
+        });
+
+        it("increment state sequence", async () => {
+          const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
+          const { tokenAccounts, mintKeys, pools } = aquarium;
+
+          const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+          const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+          const whirlpoolDataOne = (await fetcher.getPool(
+            whirlpoolOneKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+          const whirlpoolDataTwo = (await fetcher.getPool(
+            whirlpoolTwoKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+
+          const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+          const aToBOne = whirlpoolDataOne.tokenMintA.equals(inputToken);
+          const quote = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: true,
+              aToB: aToBOne,
+              tokenAmount: new BN(1000),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
+              whirlpoolData: whirlpoolDataOne,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolDataOne.tickCurrentIndex,
+                whirlpoolDataOne.tickSpacing,
+                aToBOne,
+                ctx.program.programId,
+                whirlpoolOneKey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
+              oracleData: NO_ORACLE_DATA,
+            },
+            Percentage.fromFraction(1, 100),
+          );
+
+          const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
+          const quote2 = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: true,
+              aToB: aToBTwo,
+              tokenAmount: quote.estimatedAmountOut,
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
+              whirlpoolData: whirlpoolDataTwo,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolDataTwo.tickCurrentIndex,
+                whirlpoolDataTwo.tickSpacing,
+                aToBTwo,
+                ctx.program.programId,
+                whirlpoolTwoKey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
+              oracleData: NO_ORACLE_DATA,
+            },
+            Percentage.fromFraction(1, 100),
+          );
+
+          const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+          const whirlpoolOnePre = whirlpoolDataOne;
+          const whirlpoolTwoPre = whirlpoolDataTwo;
+
+          await toTx(
+            ctx,
+            WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+              ...twoHopQuote,
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
+              tokenAuthority: ctx.wallet.publicKey,
+            }),
+          ).buildAndExecute();
+
+          const whirlpoolOnePost = (await fetcher.getPool(
+            whirlpoolOneKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+          const whirlpoolTwoPost = (await fetcher.getPool(
+            whirlpoolTwoKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+
+          // state sequence must be incremented
+          const preStateSequenceOne =
+            getWhirlpoolStateSequence(whirlpoolOnePre);
+          const preStateSequenceTwo =
+            getWhirlpoolStateSequence(whirlpoolTwoPre);
+          const postStateSequenceOne =
+            getWhirlpoolStateSequence(whirlpoolOnePost);
+          const postStateSequenceTwo =
+            getWhirlpoolStateSequence(whirlpoolTwoPost);
+          assert.equal(postStateSequenceOne, preStateSequenceOne + 1);
+          assert.equal(postStateSequenceTwo, preStateSequenceTwo + 1);
         });
       });
     });

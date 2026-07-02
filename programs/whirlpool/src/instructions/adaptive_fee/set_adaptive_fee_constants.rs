@@ -7,7 +7,7 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct SetAdaptiveFeeConstants<'info> {
-    #[account(has_one = whirlpools_config)]
+    #[account(mut, has_one = whirlpools_config)]
     pub whirlpool: Account<'info, Whirlpool>,
 
     pub whirlpools_config: Account<'info, WhirlpoolsConfig>,
@@ -30,7 +30,7 @@ pub fn handler(
     tick_group_size: Option<u16>,
     major_swap_threshold_ticks: Option<u16>,
 ) -> Result<()> {
-    let whirlpool = &ctx.accounts.whirlpool;
+    let whirlpool = &mut ctx.accounts.whirlpool;
     let mut oracle = ctx.accounts.oracle.load_mut()?;
 
     let existing_constants = oracle.adaptive_fee_constants;
@@ -54,6 +54,8 @@ pub fn handler(
 
     oracle.initialize_adaptive_fee_constants(updated_constants, whirlpool.tick_spacing)?;
     oracle.reset_adaptive_fee_variables();
+
+    whirlpool.oracle_state_updated();
 
     Ok(())
 }

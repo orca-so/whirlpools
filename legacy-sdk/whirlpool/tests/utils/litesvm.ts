@@ -5,7 +5,7 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
-import { LiteSVM, Clock, FeatureSet } from "litesvm";
+import { LiteSVM, Clock, FeatureSet, ComputeBudget } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
 import * as path from "path";
@@ -950,9 +950,15 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
             },
           ],
         ) => {
-          const [, account] = entry;
+          const [pubkey, account] = entry;
           const accountData = account.data();
           return {
+            // HACKHACK: RPC's `simulateTransaction` returns account data in the same order as the input `addresses`,
+            // so the pubkey information itself is unnecessary.
+            // However, LiteSVM only returns writable accounts, which makes its behavior inconsistent with `simulateTransaction`.
+            // To address this, we include the address information as a hidden field.
+            _pubkey: pubkey,
+
             data: [Buffer.from(accountData).toString("base64"), "base64"],
             executable: account.executable(),
             lamports: Number(account.lamports()),
@@ -1192,6 +1198,19 @@ export function warpClock(seconds: number): void {
   console.info(
     `⏰ Warped clock: +${seconds}s (slot: ${currentClock.slot} -> ${newSlot}, time: ${currentClock.unixTimestamp} -> ${newTimestamp})`,
   );
+}
+
+/**
+ * Set the compute unit limit for transactions in LiteSVM
+ * This allows testing of transactions that consume more compute units than the default limit
+ *
+ * @param limit - New compute unit limit (as bigint)
+ */
+export function setComputeUnitLimit(limit: bigint): void {
+  const litesvm = getLiteSVM();
+  const budget = new ComputeBudget();
+  budget.computeUnitLimit = limit;
+  litesvm.withComputeBudget(budget);
 }
 
 /**

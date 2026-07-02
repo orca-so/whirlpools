@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { AccountWithTokenProgram } from "@orca-so/common-sdk";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import type {
+import {
   AccountInfo,
   Keypair,
   RpcResponseAndContext,
@@ -60,6 +60,8 @@ import {
   getLocalnetAdminKeypair0,
   getProviderWalletKeypair,
   MAX_U64,
+  mintToDestination,
+  ZERO_BN,
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -92,6 +94,7 @@ import {
   PREPARED_SWAP_STATE_PREPARED,
   SimulatedTransactionAccessor,
   simulateTransaction,
+  verifyPrepareAndCommitSwapV2Equivalence,
 } from "../../utils/prepare-commit-test-utils";
 
 interface SharedTestContext {
@@ -1425,7 +1428,7 @@ describe("prepare/commit swap tests", () => {
           const tradeAmountSpecifiedIsInput = tradeMode === "exactIn";
           const tradeAToB = tradeDirection === "AtoB";
 
-          const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+          const { whirlpoolPda, tokenAccountA, tokenAccountB, configKeypairs } =
             await initTestPoolWithTokens(
               testCtx.whirlpoolCtx,
               poolTickSpacing,
@@ -1489,6 +1492,8 @@ describe("prepare/commit swap tests", () => {
               testCtx.whirlpoolCtx.program.programId,
               whirlpoolPda.publicKey,
             ).publicKey,
+            rewardAuthorityKeypair:
+              configKeypairs.rewardEmissionsSuperAuthorityKeypair,
           };
 
           const expectedInitialTickCurrentIndex = poolInitialTickIndex;
@@ -1506,10 +1511,285 @@ describe("prepare/commit swap tests", () => {
         });
       });
     });
+
+    it(
+      "long run with reward distribution",
+      async () => {
+        const poolInfo = await buildSwapTestPool(false);
+
+        // initialize 3 reward
+        const rewardMints = await Promise.all([
+          createMint(testCtx.provider, testCtx.provider.wallet.publicKey),
+          createMint(testCtx.provider, testCtx.provider.wallet.publicKey),
+          createMint(testCtx.provider, testCtx.provider.wallet.publicKey),
+        ]);
+        for (let i = 0; i < rewardMints.length; i++) {
+          const rewardVaultKeypair = Keypair.generate();
+          const emissionsPerSecondX64 = new BN(1_000_000 * (i + 1)).shln(64); // 1M * (i + 1) tokens per second
+
+          await toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.initializeRewardIx(testCtx.whirlpoolCtx.program, {
+              funder: testCtx.provider.wallet.publicKey,
+              whirlpool: poolInfo.whirlpool,
+              rewardAuthority: poolInfo.rewardAuthorityKeypair.publicKey,
+              rewardIndex: i,
+              rewardMint: rewardMints[i],
+              rewardVaultKeypair,
+            }),
+          )
+            .addSigner(poolInfo.rewardAuthorityKeypair)
+            .buildAndExecute();
+
+          await mintToDestination(
+            testCtx.provider,
+            rewardMints[i],
+            rewardVaultKeypair.publicKey,
+            U64_MAX,
+          );
+
+          await toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.setRewardEmissionsIx(testCtx.whirlpoolCtx.program, {
+              whirlpool: poolInfo.whirlpool,
+              rewardIndex: i,
+              rewardAuthority: poolInfo.rewardAuthorityKeypair.publicKey,
+              rewardVaultKey: rewardVaultKeypair.publicKey,
+              emissionsPerSecondX64,
+            }),
+          )
+            .addSigner(poolInfo.rewardAuthorityKeypair)
+            .buildAndExecute();
+        }
+
+        const tickSpacing = 64;
+        const tickUpperBound = tickSpacing * TICK_ARRAY_SIZE * 3 - 32; // 16864
+        const tickLowerBound = -tickUpperBound; // -16864
+        let tickCurrentIndex =
+          tickSpacing * (TICK_ARRAY_SIZE / 2) + tickSpacing / 2; // 2848
+
+        assert.equal(tickUpperBound, 16864);
+        assert.equal(tickLowerBound, -16864);
+        assert.equal(tickCurrentIndex, 2848);
+
+        const initialPoolState = await testCtx.whirlpoolCtx.fetcher.getPool(
+          poolInfo.whirlpool,
+          IGNORE_CACHE,
+        );
+        assert.ok(initialPoolState);
+
+        assert.equal(initialPoolState.tickCurrentIndex, tickCurrentIndex);
+        assert.ok(
+          initialPoolState.rewardInfos.every(
+            (r) => !r.emissionsPerSecondX64.isZero(),
+          ),
+        );
+        assert.ok(
+          initialPoolState.rewardInfos.every((r) => r.growthGlobalX64.isZero()),
+        );
+
+        const randBlockTimeDelta = () => Math.floor(Math.random() * 21); // return 0, 1, 2, ..., or 20;
+        const randTickIndexDelta = () => Math.floor(Math.random() * 5) + 1; // return 1, 2, 3, 4 or 5;
+
+        const baseParams = {
+          preparedSwap,
+          whirlpool: poolInfo.whirlpool,
+          tokenOwnerAccountA: poolInfo.tokenAccountA,
+          tokenOwnerAccountB: poolInfo.tokenAccountB,
+          tokenVaultA: initialPoolState.tokenVaultA,
+          tokenVaultB: initialPoolState.tokenVaultB,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+          tokenMintA: poolInfo.mintA,
+          tokenMintB: poolInfo.mintB,
+          tokenProgramA: poolInfo.tokenProgramA,
+          tokenProgramB: poolInfo.tokenProgramB,
+          oracle: poolInfo.oracle,
+        };
+
+        const NUM_ITERATION = 10;
+        const tickCurrentIndexHistory = [];
+        for (let iteration = 0; iteration < NUM_ITERATION; iteration++) {
+          // left to right
+          while (tickCurrentIndex < tickUpperBound) {
+            warpClock(randBlockTimeDelta()); // accrue rewards
+
+            const state = (await testCtx.whirlpoolCtx.fetcher.getPool(
+              poolInfo.whirlpool,
+              IGNORE_CACHE,
+            )) as WhirlpoolData;
+            assert.equal(state.tickCurrentIndex, tickCurrentIndex);
+            tickCurrentIndexHistory.push(tickCurrentIndex);
+
+            const delta = tickSpacing * randTickIndexDelta();
+            const tickNextIndex = tickCurrentIndex + delta;
+            console.log(
+              "trying",
+              tickCurrentIndex,
+              "->",
+              tickNextIndex,
+              `delta: ${delta}`,
+            );
+
+            const aToB = false;
+            const quote = swapQuoteWithParams(
+              {
+                amountSpecifiedIsInput: true,
+                aToB,
+                otherAmountThreshold: ZERO_BN,
+                sqrtPriceLimit:
+                  PriceMath.tickIndexToSqrtPriceX64(tickNextIndex),
+                tickArrays: await SwapUtils.getTickArrays(
+                  state.tickCurrentIndex,
+                  state.tickSpacing,
+                  aToB,
+                  testCtx.whirlpoolCtx.program.programId,
+                  poolInfo.whirlpool,
+                  testCtx.whirlpoolCtx.fetcher,
+                  IGNORE_CACHE,
+                ),
+                tokenAmount: U64_MAX, // partial-fill
+                whirlpoolData: state,
+                tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+                oracleData: null, // non-AF pool
+              },
+              Percentage.fromFraction(0, 100),
+            );
+
+            const params = { ...baseParams, ...quote };
+            await verifyPrepareAndCommitSwapV2Equivalence(
+              testCtx.whirlpoolCtx,
+              params,
+              quote,
+            );
+
+            await toTx(
+              testCtx.whirlpoolCtx,
+              WhirlpoolIx.prepareSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+            )
+              .addInstruction(
+                WhirlpoolIx.commitSwapV2Ix(
+                  testCtx.whirlpoolCtx.program,
+                  params,
+                ),
+              )
+              .buildAndExecute();
+
+            tickCurrentIndex = tickNextIndex;
+          }
+
+          // right to left
+          while (tickCurrentIndex > tickLowerBound) {
+            warpClock(randBlockTimeDelta()); // accrue rewards
+
+            const state = (await testCtx.whirlpoolCtx.fetcher.getPool(
+              poolInfo.whirlpool,
+              IGNORE_CACHE,
+            )) as WhirlpoolData;
+            assert.equal(state.tickCurrentIndex, tickCurrentIndex);
+            tickCurrentIndexHistory.push(tickCurrentIndex);
+
+            const delta = tickSpacing * randTickIndexDelta();
+            const tickNextIndex = tickCurrentIndex - delta;
+            console.log(
+              "trying",
+              tickNextIndex,
+              "<-",
+              tickCurrentIndex,
+              `delta: ${delta}`,
+            );
+
+            const aToB = true;
+            const quote = swapQuoteWithParams(
+              {
+                amountSpecifiedIsInput: true,
+                aToB,
+                otherAmountThreshold: ZERO_BN,
+                sqrtPriceLimit:
+                  PriceMath.tickIndexToSqrtPriceX64(tickNextIndex),
+                tickArrays: await SwapUtils.getTickArrays(
+                  state.tickCurrentIndex,
+                  state.tickSpacing,
+                  aToB,
+                  testCtx.whirlpoolCtx.program.programId,
+                  poolInfo.whirlpool,
+                  testCtx.whirlpoolCtx.fetcher,
+                  IGNORE_CACHE,
+                ),
+                tokenAmount: U64_MAX, // partial-fill
+                whirlpoolData: state,
+                tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+                oracleData: null, // non-AF pool
+              },
+              Percentage.fromFraction(0, 100),
+            );
+
+            const params = { ...baseParams, ...quote };
+            await verifyPrepareAndCommitSwapV2Equivalence(
+              testCtx.whirlpoolCtx,
+              params,
+              quote,
+            );
+
+            await toTx(
+              testCtx.whirlpoolCtx,
+              WhirlpoolIx.prepareSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+            )
+              .addInstruction(
+                WhirlpoolIx.commitSwapV2Ix(
+                  testCtx.whirlpoolCtx.program,
+                  params,
+                ),
+              )
+              .buildAndExecute();
+
+            tickCurrentIndex = tickNextIndex;
+          }
+        }
+
+        console.info("tickCurrentIndex hist", tickCurrentIndexHistory);
+
+        const lastPoolState = await testCtx.whirlpoolCtx.fetcher.getPool(
+          poolInfo.whirlpool,
+          IGNORE_CACHE,
+        );
+        assert.ok(lastPoolState);
+        assert.ok(
+          lastPoolState.rewardInfos.every((r) => !r.growthGlobalX64.isZero()),
+        );
+
+        console.info(
+          "reward growth",
+          lastPoolState.rewardInfos.map((r, i) => r.growthGlobalX64.toString()),
+        );
+
+        const traversedTickArrayStartIndexes = [
+          -16896, -11264, -5632, 0, 5632, 11264,
+        ];
+        const tickArrayAddresses = traversedTickArrayStartIndexes.map(
+          (startTick) =>
+            PDAUtil.getTickArray(
+              testCtx.whirlpoolCtx.program.programId,
+              poolInfo.whirlpool,
+              startTick,
+            ).publicKey,
+        );
+        const tickArrays =
+          await testCtx.whirlpoolCtx.fetcher.getTickArrays(tickArrayAddresses);
+        for (const tickArray of tickArrays) {
+          assert.ok(tickArray);
+
+          const nonZeroGrowthTicks = tickArray.ticks.filter((tick) => {
+            return tick.rewardGrowthsOutside.every((g) => !g.isZero());
+          });
+
+          assert.ok(nonZeroGrowthTicks.length > TICK_ARRAY_SIZE * 0.8); // we use rand, but 0.8 should be safe.
+        }
+      },
+      { timeout: 120 * 1000 /* 120s */ },
+    );
   });
 
   function newTransactionBuilder() {
-    //
     return (
       new TransactionBuilder(
         testCtx.provider.connection,
@@ -1549,24 +1829,26 @@ describe("prepare/commit swap tests", () => {
     let whirlpoolAddress: PublicKey;
     let tokenMintAAddress: PublicKey;
     let tokenMintBAddress: PublicKey;
+    let rewardAuthorityKeypair: Keypair;
     if (withAdaptiveFee) {
       const feeTierIndex = 1024 + tickSpacing;
-      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
-        testCtx.whirlpoolCtx,
-        { isToken2022: false },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        baseFeeRate,
-        initialSqrtPrice,
-        getDefaultPresetAdaptiveFeeConstants(
+      const { poolInitInfo, configKeypairs } =
+        await buildTestPoolWithAdaptiveFeeParams(
+          testCtx.whirlpoolCtx,
+          { isToken2022: false },
+          { isToken2022: false },
+          feeTierIndex,
           tickSpacing,
-          tickSpacing,
-          tickSpacing,
-        ),
-        provider.wallet.publicKey, // permissioned
-        PublicKey.default,
-      );
+          baseFeeRate,
+          initialSqrtPrice,
+          getDefaultPresetAdaptiveFeeConstants(
+            tickSpacing,
+            tickSpacing,
+            tickSpacing,
+          ),
+          provider.wallet.publicKey, // permissioned
+          PublicKey.default,
+        );
 
       await toTx(
         testCtx.whirlpoolCtx,
@@ -1585,8 +1867,10 @@ describe("prepare/commit swap tests", () => {
       whirlpoolAddress = poolInitInfo.whirlpoolPda.publicKey;
       tokenMintAAddress = poolInitInfo.tokenMintA;
       tokenMintBAddress = poolInitInfo.tokenMintB;
+      rewardAuthorityKeypair =
+        configKeypairs.rewardEmissionsSuperAuthorityKeypair;
     } else {
-      const { poolInitInfo } = await buildTestPoolV2Params(
+      const { poolInitInfo, configKeypairs } = await buildTestPoolV2Params(
         testCtx.whirlpoolCtx,
         { isToken2022: false },
         { isToken2022: false },
@@ -1606,6 +1890,8 @@ describe("prepare/commit swap tests", () => {
       whirlpoolAddress = poolInitInfo.whirlpoolPda.publicKey;
       tokenMintAAddress = poolInitInfo.tokenMintA;
       tokenMintBAddress = poolInitInfo.tokenMintB;
+      rewardAuthorityKeypair =
+        configKeypairs.rewardEmissionsSuperAuthorityKeypair;
     }
 
     // init TickArrays
@@ -1755,6 +2041,7 @@ describe("prepare/commit swap tests", () => {
       tokenProgramB: TOKEN_PROGRAM_ID,
       tokenAccountA,
       tokenAccountB,
+      rewardAuthorityKeypair,
     };
   }
 });
@@ -1777,4 +2064,5 @@ type SwapTestPoolInfo = {
   tokenProgramB: PublicKey;
   tokenAccountA: PublicKey;
   tokenAccountB: PublicKey;
+  rewardAuthorityKeypair: Keypair;
 };

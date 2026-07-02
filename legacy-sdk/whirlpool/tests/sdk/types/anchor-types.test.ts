@@ -17,6 +17,7 @@ describe("anchor-types", () => {
       [AccountName.LockConfig]: 241,
       [AccountName.AdaptiveFeeTier]: 256,
       [AccountName.Oracle]: 254,
+      [AccountName.PreparedSwap]: 10240,
     };
     Object.values(AccountName).forEach((name) => {
       try {

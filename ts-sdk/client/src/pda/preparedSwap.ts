@@ -1,8 +1,5 @@
 import type { ProgramDerivedAddress } from "@solana/kit";
-import {
-  getProgramDerivedAddress,
-  getU16Encoder,
-} from "@solana/kit";
+import { getProgramDerivedAddress, getU16Encoder } from "@solana/kit";
 import type { WhirlpoolDeployment } from "../config";
 import { DEFAULT_WHIRLPOOL_DEPLOYMENT } from "../config";
 
@@ -17,9 +14,6 @@ export async function getPreparedSwapAddress(
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
     programAddress: whirlpoolDeployment.programId,
-    seeds: [
-      "prepared_swap",
-      getU16Encoder().encode(nonce),
-    ],
+    seeds: ["prepared_swap", getU16Encoder().encode(nonce)],
   });
 }

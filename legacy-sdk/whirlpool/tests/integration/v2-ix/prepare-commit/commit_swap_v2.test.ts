@@ -8,7 +8,14 @@ import type {
   CommitSwapV2Params,
   WhirlpoolData,
 } from "../../../../src";
-import { TickUtil, PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../src";
+import {
+  TickUtil,
+  PROTOCOL_FEE_RATE_MUL_VALUE,
+  PriceMath,
+  buildWhirlpoolClient,
+  PoolUtil,
+  increaseLiquidityQuoteByLiquidityWithParams,
+} from "../../../../src";
 import {
   MAX_PREPARED_SWAP_NONCE,
   MEMO_PROGRAM_ADDRESS,
@@ -21,20 +28,27 @@ import {
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
+  MAX_U64,
   TickSpacing,
   ZERO_BN,
   initializeLiteSVMEnvironment,
   pollForCondition,
   warpClock,
 } from "../../../utils";
-import { initTickArrayRange } from "../../../utils/init-utils";
+import {
+  initTestPoolWithTokens,
+  initTickArrayRange,
+} from "../../../utils/init-utils";
 import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
 } from "../../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../../utils/v2/token-2022";
-import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
+import {
+  NO_TOKEN_EXTENSION_CONTEXT,
+  TokenExtensionUtil,
+} from "../../../../src/utils/public/token-extension-util";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   getWhirlpoolStateSequence,
@@ -856,6 +870,1024 @@ describe("commit_swap_v2", () => {
           WhirlpoolIx.commitSwapV2Ix(ctx.program, params),
         ).buildAndExecute(),
         /0x17b9/, // PreparedSwapPreconditionMismatch
+      );
+    });
+  });
+
+  describe("provided tickarrays are not sufficient (prepare/commit mismatch)", () => {
+    async function setupSparsePool() {
+      // Test pool state
+      // Note: [initialized TA], (uninitialized TA)
+      //
+      // init price                                           p
+      // liq 3 (on -11264TA)          |-----|
+      // liq 2 (on 5632TA)                                           |-----|
+      // liq 1 (full)       |------------------------------------------------------------------------|
+      // TA  [full range lower TA]...[-11264 TA](-5632 TA)(0 TA    )[5632 TA   ](11264TA   ) ... [full range upper TA]
+      const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokens(
+          ctx,
+          TickSpacing.SixtyFour,
+          PriceMath.tickIndexToSqrtPriceX64(2816),
+          MAX_U64,
+        );
+
+      const client = buildWhirlpoolClient(ctx);
+
+      const pool = await client.getPool(whirlpoolPda.publicKey);
+
+      const fullRange = TickUtil.getFullRangeTickIndex(
+        pool.getData().tickSpacing,
+      );
+      await (await pool.initTickArrayForTicks([
+        ...fullRange,
+        -11264,
+        5632,
+      ]))!.buildAndExecute();
+
+      // provide liquidity
+      const priceDeviation = Percentage.fromFraction(1, 10_000);
+      const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+        pool.getData().sqrtPrice,
+        priceDeviation,
+      );
+      // liq 1 (full range)
+      {
+        const liquidity = new BN(100000000);
+        const tickLowerIndex = fullRange[0];
+        const tickUpperIndex = fullRange[1];
+        const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+          liquidity: liquidity,
+          slippageTolerance: Percentage.fromFraction(0, 100),
+          sqrtPrice: pool.getData().sqrtPrice,
+          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          tickLowerIndex,
+          tickUpperIndex,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        });
+        const mintAndTx = await pool.openPosition(
+          tickLowerIndex,
+          tickUpperIndex,
+          {
+            ...depositQuote,
+            minSqrtPrice: lowerBound[0],
+            maxSqrtPrice: upperBound[0],
+          },
+        );
+        await mintAndTx.tx.buildAndExecute();
+      }
+      // liq 2
+      {
+        const liquidity = new BN(200000);
+        const tickLowerIndex = 5632 + 64;
+        const tickUpperIndex = 5632 + 64 + 64;
+        const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+          liquidity: liquidity,
+          slippageTolerance: Percentage.fromFraction(0, 100),
+          sqrtPrice: pool.getData().sqrtPrice,
+          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          tickLowerIndex,
+          tickUpperIndex,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        });
+        const mintAndTx = await pool.openPosition(
+          tickLowerIndex,
+          tickUpperIndex,
+          {
+            ...depositQuote,
+            minSqrtPrice: lowerBound[0],
+            maxSqrtPrice: upperBound[0],
+          },
+        );
+        await mintAndTx.tx.buildAndExecute();
+      }
+      // liq 3
+      {
+        const liquidity = new BN(300000);
+        const tickLowerIndex = -5632 - 128 - 64;
+        const tickUpperIndex = -5632 - 128;
+        const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+          liquidity: liquidity,
+          slippageTolerance: Percentage.fromFraction(0, 100),
+          sqrtPrice: pool.getData().sqrtPrice,
+          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          tickLowerIndex,
+          tickUpperIndex,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        });
+        const mintAndTx = await pool.openPosition(
+          tickLowerIndex,
+          tickUpperIndex,
+          {
+            ...depositQuote,
+            minSqrtPrice: lowerBound[0],
+            maxSqrtPrice: upperBound[0],
+          },
+        );
+        await mintAndTx.tx.buildAndExecute();
+      }
+
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
+      const preparedSwapPda = PDAUtil.getPreparedSwap(
+        ctx.program.programId,
+        initializedPreparedSwapNonce,
+      );
+
+      return {
+        whirlpool: whirlpoolPda.publicKey,
+        oracle: oraclePda.publicKey,
+        preparedSwap: preparedSwapPda.publicKey,
+        tokenAccountA,
+        tokenAccountB,
+      };
+    }
+
+    async function setupSparsePoolAndQuote(
+      aToB: boolean,
+      tokenAmount: anchor.BN,
+    ) {
+      const { whirlpool, oracle, preparedSwap, tokenAccountA, tokenAccountB } =
+        await setupSparsePool();
+
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+      const quote = swapQuoteWithParams(
+        {
+          amountSpecifiedIsInput: true,
+          aToB,
+          tokenAmount,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          whirlpoolData: whirlpoolData,
+          tickArrays: await SwapUtils.getTickArrays(
+            whirlpoolData.tickCurrentIndex,
+            whirlpoolData.tickSpacing,
+            aToB,
+            ctx.program.programId,
+            whirlpool,
+            fetcher,
+            IGNORE_CACHE,
+          ),
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          oracleData: NO_ORACLE_DATA,
+        },
+        Percentage.fromFraction(1, 100),
+      );
+
+      const params: CommitSwapV2Params = {
+        ...quote,
+        preparedSwap,
+        whirlpool,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: whirlpoolData.tokenMintA,
+        tokenMintB: whirlpoolData.tokenMintB,
+        tokenProgramA: TOKEN_PROGRAM_ID,
+        tokenProgramB: TOKEN_PROGRAM_ID,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: whirlpoolData.tokenVaultA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: whirlpoolData.tokenVaultB,
+        oracle,
+      };
+
+      const tickArrayPos0 = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpool,
+        0,
+      ).publicKey;
+      const tickArrayPos5632 = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpool,
+        5632,
+      ).publicKey;
+      const tickArrayPos11264 = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpool,
+        11264,
+      ).publicKey;
+      const tickArrayNeg5632 = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpool,
+        -5632,
+      ).publicKey;
+      const tickArrayNeg11264 = PDAUtil.getTickArray(
+        ctx.program.programId,
+        whirlpool,
+        -11264,
+      ).publicKey;
+
+      return {
+        whirlpool,
+        oracle,
+        preparedSwap,
+        tokenAccountA,
+        tokenAccountB,
+        quote,
+        params,
+        tickArrayPos0,
+        tickArrayPos5632,
+        tickArrayPos11264,
+        tickArrayNeg5632,
+        tickArrayNeg11264,
+      };
+    }
+
+    it("walk & stop on one uninitialized TickArray (B to A, tick: 2816 -> 4477)", async () => {
+      const aToB = false;
+      const tokenAmount = new BN(10000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, 4477);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos0,
+          tickArray2: setupInfo.tickArrayPos0,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 0);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos0,
+          tickArray2: setupInfo.tickArrayPos0,
+        }),
+      ).buildAndExecute();
+
+      const postWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.ok(postWhirlpoolData.sqrtPrice.eq(quote.estimatedEndSqrtPrice));
+      assert.ok(
+        postWhirlpoolData.tickCurrentIndex === quote.estimatedEndTickIndex,
+      );
+    });
+
+    it("stop on an initialized TickArray (B to A, tick: 2816 -> 7435)", async () => {
+      const aToB = false;
+      const tokenAmount = new BN(30000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, 7435);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos5632,
+          tickArray2: setupInfo.tickArrayPos5632,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 2);
+
+      // TickArray with the start tick 5632 has initialized ticks (pending updates).
+      // So commit instruction must receive it.
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos0,
+            tickArray2: setupInfo.tickArrayPos0,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      // tickArrayPos5632 skipped
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos11264,
+            tickArray2: setupInfo.tickArrayPos11264,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos5632,
+          tickArray2: setupInfo.tickArrayPos5632,
+        }),
+      ).buildAndExecute();
+
+      const postWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.ok(postWhirlpoolData.sqrtPrice.eq(quote.estimatedEndSqrtPrice));
+      assert.ok(
+        postWhirlpoolData.tickCurrentIndex === quote.estimatedEndTickIndex,
+      );
+    });
+
+    it("stop on an uninitialized TickArray (B to A, tick: 2816 -> 13344)", async () => {
+      const aToB = false;
+      const tokenAmount = new BN(80000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, 13344);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos5632,
+          tickArray2: setupInfo.tickArrayPos11264,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 2);
+
+      // TickArray with the start tick 5632 has initialized ticks (pending updates).
+      // So commit instruction must receive it.
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos0,
+            tickArray2: setupInfo.tickArrayPos0,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      // missing tickArrayPos5632
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos11264,
+            tickArray2: setupInfo.tickArrayPos11264,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      // Swap will stop on tick 13344.
+      // The tick 13344 is on TickArray with the start tick 11264.
+      // It is not initialized and so it doesn't have any initialized ticks.
+      // So no pending tick updates on it.
+      // But it SHOULD receive same TickArrays as the prepare instruction receives.
+      //
+      // Note: Even if this TickArray were not provided, no data inconsistency would occur because the TickArray is uninitialized.
+      // However, traversing a TickArray that was not passed in is an unnatural situation,
+      // and there is no reason for prepare and commit to receive different sets of TickArrays. Therefore, this is treated as an error.
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos5632,
+            tickArray2: setupInfo.tickArrayPos5632,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos5632,
+          tickArray2: setupInfo.tickArrayPos11264,
+        }),
+      ).buildAndExecute();
+
+      const postWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.ok(postWhirlpoolData.sqrtPrice.eq(quote.estimatedEndSqrtPrice));
+      assert.ok(
+        postWhirlpoolData.tickCurrentIndex === quote.estimatedEndTickIndex,
+      );
+    });
+
+    it("walk & stop on one uninitialized TickArray (A to B, tick: 2816 -> 1699)", async () => {
+      const aToB = true;
+      const tokenAmount = new BN(5000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, 1699);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos0,
+          tickArray2: setupInfo.tickArrayPos0,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 0);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos0,
+          tickArray2: setupInfo.tickArrayPos0,
+        }),
+      ).buildAndExecute();
+
+      const postWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.ok(postWhirlpoolData.sqrtPrice.eq(quote.estimatedEndSqrtPrice));
+      assert.ok(
+        postWhirlpoolData.tickCurrentIndex === quote.estimatedEndTickIndex,
+      );
+    });
+
+    it("stop on an uninitialized TickArray (A to B, tick: 2816 -> -3103)", async () => {
+      const aToB = true;
+      const tokenAmount = new BN(30000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, -3103);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayNeg5632,
+          tickArray2: setupInfo.tickArrayNeg5632,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 0);
+
+      // Swap will stop on tick -3103.
+      // The tick -3103 is on TickArray with the start tick -5632.
+      // It is not initialized and so it doesn't have any initialized ticks.
+      // So no pending tick updates on it.
+      // But it SHOULD receive same TickArrays as the prepare instruction receives.
+      //
+      // Note: Even if this TickArray were not provided, no data inconsistency would occur because the TickArray is uninitialized.
+      // However, traversing a TickArray that was not passed in is an unnatural situation,
+      // and there is no reason for prepare and commit to receive different sets of TickArrays. Therefore, this is treated as an error.
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos0,
+            tickArray2: setupInfo.tickArrayPos0,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayNeg5632,
+          tickArray2: setupInfo.tickArrayNeg5632,
+        }),
+      ).buildAndExecute();
+
+      const postWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.ok(postWhirlpoolData.sqrtPrice.eq(quote.estimatedEndSqrtPrice));
+      assert.ok(
+        postWhirlpoolData.tickCurrentIndex === quote.estimatedEndTickIndex,
+      );
+    });
+
+    it("stop on an initialized TickArray (A to B, tick: 2816 -> -11148)", async () => {
+      const aToB = true;
+      const tokenAmount = new BN(88000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, -11148);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayNeg5632,
+          tickArray2: setupInfo.tickArrayNeg11264,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 2);
+
+      // tickArrayNeg11264 has pending updates.
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos0,
+            tickArray2: setupInfo.tickArrayPos0,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      // tickArrayNeg11264 has pending updates.
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayNeg5632,
+            tickArray2: setupInfo.tickArrayNeg5632,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      // no tickArrayNeg5632
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayNeg11264,
+            tickArray2: setupInfo.tickArrayNeg11264,
+          }),
+        ).buildAndExecute(),
+        /0x1773/, // TickArrayIndexOutofBounds
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayNeg5632,
+          tickArray2: setupInfo.tickArrayNeg11264,
+        }),
+      ).buildAndExecute();
+
+      const postWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.ok(postWhirlpoolData.sqrtPrice.eq(quote.estimatedEndSqrtPrice));
+      assert.ok(
+        postWhirlpoolData.tickCurrentIndex === quote.estimatedEndTickIndex,
+      );
+    });
+
+    it("commit instruction receive more tick arrays than prepare (B to A, tick: 2816 -> 4477)", async () => {
+      const aToB = false;
+      const tokenAmount = new BN(10000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, 4477);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos0,
+          tickArray2: setupInfo.tickArrayPos0,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 0);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayPos5632,
+            tickArray2: setupInfo.tickArrayPos5632,
+          }),
+        ).buildAndExecute(),
+        /0xFFFFFFFF/, // to be assigned (or precondition mismatch)
+      );
+    });
+
+    it("commit instruction receive more tick arrays than prepare  (A to B, tick: 2816 -> 1699)", async () => {
+      const aToB = true;
+      const tokenAmount = new BN(5000000);
+
+      const setupInfo = await setupSparsePoolAndQuote(aToB, tokenAmount);
+      const quote = setupInfo.quote;
+      const baseParams = setupInfo.params;
+
+      const preWhirlpoolData = (await fetcher.getPool(
+        setupInfo.whirlpool,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      assert.equal(preWhirlpoolData.tickCurrentIndex, 2816);
+      assert.equal(quote.estimatedEndTickIndex, 1699);
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.prepareSwapV2Ix(ctx.program, {
+          ...baseParams,
+          tickArray0: setupInfo.tickArrayPos0,
+          tickArray1: setupInfo.tickArrayPos0,
+          tickArray2: setupInfo.tickArrayPos0,
+        }),
+      ).buildAndExecute();
+
+      const preparedSwapAccountInfo = await ctx.connection.getAccountInfo(
+        setupInfo.preparedSwap,
+      );
+      assert.ok(preparedSwapAccountInfo);
+      const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+      assert.ok(preparedSwapData);
+
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.precondition.whirlpool.equals(setupInfo.whirlpool),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
+      assert.ok(
+        quote.estimatedAmountIn.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB,
+        ),
+      );
+      assert.ok(
+        quote.estimatedAmountOut.eq(
+          aToB
+            ? preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountB
+            : preparedSwapData.pendingUpdates.pendingPostSwapUpdate.amountA,
+        ),
+      );
+      assert.equal(preparedSwapData.pendingUpdates.pendingTickUpdatesLen, 0);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.commitSwapV2Ix(ctx.program, {
+            ...baseParams,
+            tickArray0: setupInfo.tickArrayPos0,
+            tickArray1: setupInfo.tickArrayNeg5632,
+            tickArray2: setupInfo.tickArrayNeg5632,
+          }),
+        ).buildAndExecute(),
+        /0xffffffffff/, // TBA
       );
     });
   });

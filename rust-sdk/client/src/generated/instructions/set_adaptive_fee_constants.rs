@@ -35,7 +35,7 @@ impl SetAdaptiveFeeConstants {
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, args: SetAdaptiveFeeConstantsInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
     let mut accounts = Vec::with_capacity(4+ remaining_accounts.len());
-                            accounts.push(solana_instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new(
             self.whirlpool,
             false
           ));
@@ -111,7 +111,7 @@ impl SetAdaptiveFeeConstantsInstructionArgs {
 ///
 /// ### Accounts:
 ///
-          ///   0. `[]` whirlpool
+                ///   0. `[writable]` whirlpool
           ///   1. `[]` whirlpools_config
                 ///   2. `[writable]` oracle
                 ///   3. `[signer]` fee_authority
@@ -303,7 +303,7 @@ impl<'a, 'b> SetAdaptiveFeeConstantsCpi<'a, 'b> {
     remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program_error::ProgramResult {
     let mut accounts = Vec::with_capacity(4+ remaining_accounts.len());
-                            accounts.push(solana_instruction::AccountMeta::new_readonly(
+                            accounts.push(solana_instruction::AccountMeta::new(
             *self.whirlpool.key,
             false
           ));
@@ -355,7 +355,7 @@ impl<'a, 'b> SetAdaptiveFeeConstantsCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-          ///   0. `[]` whirlpool
+                ///   0. `[writable]` whirlpool
           ///   1. `[]` whirlpools_config
                 ///   2. `[writable]` oracle
                 ///   3. `[signer]` fee_authority

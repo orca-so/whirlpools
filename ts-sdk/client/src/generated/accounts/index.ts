@@ -14,6 +14,7 @@ export * from "./lockConfig";
 export * from "./oracle";
 export * from "./position";
 export * from "./positionBundle";
+export * from "./preparedSwap";
 export * from "./tokenBadge";
 export * from "./whirlpool";
 export * from "./whirlpoolsConfig";

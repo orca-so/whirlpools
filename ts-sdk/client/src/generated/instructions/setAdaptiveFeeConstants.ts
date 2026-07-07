@@ -63,7 +63,7 @@ export type SetAdaptiveFeeConstantsInstruction<
   InstructionWithAccounts<
     [
       TAccountWhirlpool extends string
-        ? ReadonlyAccount<TAccountWhirlpool>
+        ? WritableAccount<TAccountWhirlpool>
         : TAccountWhirlpool,
       TAccountWhirlpoolsConfig extends string
         ? ReadonlyAccount<TAccountWhirlpoolsConfig>
@@ -187,7 +187,7 @@ export function getSetAdaptiveFeeConstantsInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    whirlpool: { value: input.whirlpool ?? null, isWritable: false },
+    whirlpool: { value: input.whirlpool ?? null, isWritable: true },
     whirlpoolsConfig: {
       value: input.whirlpoolsConfig ?? null,
       isWritable: false,

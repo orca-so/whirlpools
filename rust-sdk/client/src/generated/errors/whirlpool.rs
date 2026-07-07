@@ -220,6 +220,18 @@ pub enum WhirlpoolError {
     /// 6069 - Price outside slippage bounds
     #[error("Price outside slippage bounds")]
     PriceSlippageOutOfBounds = 0x17B5,
+    /// 6070 - PreparedSwap nonce exceeds the maximum allowed value
+    #[error("PreparedSwap nonce exceeds the maximum allowed value")]
+    PreparedSwapNonceMaxExceeded = 0x17B6,
+    /// 6071 - PreparedSwap account version does not match the expected version
+    #[error("PreparedSwap account version does not match the expected version")]
+    PreparedSwapVersionMismatch = 0x17B7,
+    /// 6072 - PreparedSwap is not in Prepared state
+    #[error("PreparedSwap is not in Prepared state")]
+    PreparedSwapNotPrepared = 0x17B8,
+    /// 6073 - PreparedSwap precondition does not match current state
+    #[error("PreparedSwap precondition does not match current state")]
+    PreparedSwapPreconditionMismatch = 0x17B9,
 }
 
 impl From<WhirlpoolError> for solana_program_error::ProgramError {

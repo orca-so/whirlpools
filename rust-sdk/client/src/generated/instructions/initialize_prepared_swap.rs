@@ -5,33 +5,39 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::generated::types::PrepareSwapV2ReturnData;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
-pub const IDL_INCLUDE_DISCRIMINATOR: [u8; 8] = [223, 253, 121, 121, 60, 193, 129, 31];
+pub const INITIALIZE_PREPARED_SWAP_DISCRIMINATOR: [u8; 8] = [87, 29, 144, 47, 96, 8, 34, 45];
 
 /// Accounts.
 #[derive(Debug)]
-pub struct IdlInclude {
+pub struct InitializePreparedSwap {
       
               
-          pub tick_array: solana_pubkey::Pubkey,
+          pub funder: solana_pubkey::Pubkey,
+          
+              
+          pub prepared_swap: solana_pubkey::Pubkey,
           
               
           pub system_program: solana_pubkey::Pubkey,
       }
 
-impl IdlInclude {
-  pub fn instruction(&self, args: IdlIncludeInstructionArgs) -> solana_instruction::Instruction {
+impl InitializePreparedSwap {
+  pub fn instruction(&self, args: InitializePreparedSwapInstructionArgs) -> solana_instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::arithmetic_side_effects)]
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: IdlIncludeInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
-    let mut accounts = Vec::with_capacity(2+ remaining_accounts.len());
-                            accounts.push(solana_instruction::AccountMeta::new_readonly(
-            self.tick_array,
+  pub fn instruction_with_remaining_accounts(&self, args: InitializePreparedSwapInstructionArgs, remaining_accounts: &[solana_instruction::AccountMeta]) -> solana_instruction::Instruction {
+    let mut accounts = Vec::with_capacity(3+ remaining_accounts.len());
+                            accounts.push(solana_instruction::AccountMeta::new(
+            self.funder,
+            true
+          ));
+                                          accounts.push(solana_instruction::AccountMeta::new(
+            self.prepared_swap,
             false
           ));
                                           accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -39,7 +45,7 @@ impl IdlInclude {
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = IdlIncludeInstructionData::new().try_to_vec().unwrap();
+    let mut data = InitializePreparedSwapInstructionData::new().try_to_vec().unwrap();
           let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
@@ -53,14 +59,14 @@ impl IdlInclude {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
- pub struct IdlIncludeInstructionData {
+ pub struct InitializePreparedSwapInstructionData {
             discriminator: [u8; 8],
             }
 
-impl IdlIncludeInstructionData {
+impl InitializePreparedSwapInstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [223, 253, 121, 121, 60, 193, 129, 31],
+                        discriminator: [87, 29, 144, 47, 96, 8, 34, 45],
                                 }
   }
 
@@ -69,7 +75,7 @@ impl IdlIncludeInstructionData {
   }
   }
 
-impl Default for IdlIncludeInstructionData {
+impl Default for InitializePreparedSwapInstructionData {
   fn default() -> Self {
     Self::new()
   }
@@ -77,38 +83,45 @@ impl Default for IdlIncludeInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
- pub struct IdlIncludeInstructionArgs {
-                  pub prepare_swap_v2_return_data: PrepareSwapV2ReturnData,
+ pub struct InitializePreparedSwapInstructionArgs {
+                  pub nonce: u16,
       }
 
-impl IdlIncludeInstructionArgs {
+impl InitializePreparedSwapInstructionArgs {
   pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
     borsh::to_vec(self)
   }
 }
 
 
-/// Instruction builder for `IdlInclude`.
+/// Instruction builder for `InitializePreparedSwap`.
 ///
 /// ### Accounts:
 ///
-          ///   0. `[]` tick_array
-                ///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                      ///   0. `[writable, signer]` funder
+                ///   1. `[writable]` prepared_swap
+                ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct IdlIncludeBuilder {
-            tick_array: Option<solana_pubkey::Pubkey>,
+pub struct InitializePreparedSwapBuilder {
+            funder: Option<solana_pubkey::Pubkey>,
+                prepared_swap: Option<solana_pubkey::Pubkey>,
                 system_program: Option<solana_pubkey::Pubkey>,
-                        prepare_swap_v2_return_data: Option<PrepareSwapV2ReturnData>,
+                        nonce: Option<u16>,
         __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
-impl IdlIncludeBuilder {
+impl InitializePreparedSwapBuilder {
   pub fn new() -> Self {
     Self::default()
   }
             #[inline(always)]
-    pub fn tick_array(&mut self, tick_array: solana_pubkey::Pubkey) -> &mut Self {
-                        self.tick_array = Some(tick_array);
+    pub fn funder(&mut self, funder: solana_pubkey::Pubkey) -> &mut Self {
+                        self.funder = Some(funder);
+                    self
+    }
+            #[inline(always)]
+    pub fn prepared_swap(&mut self, prepared_swap: solana_pubkey::Pubkey) -> &mut Self {
+                        self.prepared_swap = Some(prepared_swap);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
@@ -118,8 +131,8 @@ impl IdlIncludeBuilder {
                     self
     }
                     #[inline(always)]
-      pub fn prepare_swap_v2_return_data(&mut self, prepare_swap_v2_return_data: PrepareSwapV2ReturnData) -> &mut Self {
-        self.prepare_swap_v2_return_data = Some(prepare_swap_v2_return_data);
+      pub fn nonce(&mut self, nonce: u16) -> &mut Self {
+        self.nonce = Some(nonce);
         self
       }
         /// Add an additional account to the instruction.
@@ -136,51 +149,59 @@ impl IdlIncludeBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_instruction::Instruction {
-    let accounts = IdlInclude {
-                              tick_array: self.tick_array.expect("tick_array is not set"),
+    let accounts = InitializePreparedSwap {
+                              funder: self.funder.expect("funder is not set"),
+                                        prepared_swap: self.prepared_swap.expect("prepared_swap is not set"),
                                         system_program: self.system_program.unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
                       };
-          let args = IdlIncludeInstructionArgs {
-                                                              prepare_swap_v2_return_data: self.prepare_swap_v2_return_data.clone().expect("prepare_swap_v2_return_data is not set"),
+          let args = InitializePreparedSwapInstructionArgs {
+                                                              nonce: self.nonce.clone().expect("nonce is not set"),
                                     };
     
     accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
-  /// `idl_include` CPI accounts.
-  pub struct IdlIncludeCpiAccounts<'a, 'b> {
+  /// `initialize_prepared_swap` CPI accounts.
+  pub struct InitializePreparedSwapCpiAccounts<'a, 'b> {
           
                     
-              pub tick_array: &'b solana_account_info::AccountInfo<'a>,
+              pub funder: &'b solana_account_info::AccountInfo<'a>,
+                
+                    
+              pub prepared_swap: &'b solana_account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_account_info::AccountInfo<'a>,
             }
 
-/// `idl_include` CPI instruction.
-pub struct IdlIncludeCpi<'a, 'b> {
+/// `initialize_prepared_swap` CPI instruction.
+pub struct InitializePreparedSwapCpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_account_info::AccountInfo<'a>,
       
               
-          pub tick_array: &'b solana_account_info::AccountInfo<'a>,
+          pub funder: &'b solana_account_info::AccountInfo<'a>,
+          
+              
+          pub prepared_swap: &'b solana_account_info::AccountInfo<'a>,
           
               
           pub system_program: &'b solana_account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
-    pub __args: IdlIncludeInstructionArgs,
+    pub __args: InitializePreparedSwapInstructionArgs,
   }
 
-impl<'a, 'b> IdlIncludeCpi<'a, 'b> {
+impl<'a, 'b> InitializePreparedSwapCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_account_info::AccountInfo<'a>,
-          accounts: IdlIncludeCpiAccounts<'a, 'b>,
-              args: IdlIncludeInstructionArgs,
+          accounts: InitializePreparedSwapCpiAccounts<'a, 'b>,
+              args: InitializePreparedSwapInstructionArgs,
       ) -> Self {
     Self {
       __program: program,
-              tick_array: accounts.tick_array,
+              funder: accounts.funder,
+              prepared_swap: accounts.prepared_swap,
               system_program: accounts.system_program,
                     __args: args,
           }
@@ -205,9 +226,13 @@ impl<'a, 'b> IdlIncludeCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program_error::ProgramResult {
-    let mut accounts = Vec::with_capacity(2+ remaining_accounts.len());
-                            accounts.push(solana_instruction::AccountMeta::new_readonly(
-            *self.tick_array.key,
+    let mut accounts = Vec::with_capacity(3+ remaining_accounts.len());
+                            accounts.push(solana_instruction::AccountMeta::new(
+            *self.funder.key,
+            true
+          ));
+                                          accounts.push(solana_instruction::AccountMeta::new(
+            *self.prepared_swap.key,
             false
           ));
                                           accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -221,7 +246,7 @@ impl<'a, 'b> IdlIncludeCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let mut data = IdlIncludeInstructionData::new().try_to_vec().unwrap();
+    let mut data = InitializePreparedSwapInstructionData::new().try_to_vec().unwrap();
           let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
@@ -230,9 +255,10 @@ impl<'a, 'b> IdlIncludeCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(3 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(4 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
-                  account_infos.push(self.tick_array.clone());
+                  account_infos.push(self.funder.clone());
+                        account_infos.push(self.prepared_swap.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -244,31 +270,38 @@ impl<'a, 'b> IdlIncludeCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `IdlInclude` via CPI.
+/// Instruction builder for `InitializePreparedSwap` via CPI.
 ///
 /// ### Accounts:
 ///
-          ///   0. `[]` tick_array
-          ///   1. `[]` system_program
+                      ///   0. `[writable, signer]` funder
+                ///   1. `[writable]` prepared_swap
+          ///   2. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct IdlIncludeCpiBuilder<'a, 'b> {
-  instruction: Box<IdlIncludeCpiBuilderInstruction<'a, 'b>>,
+pub struct InitializePreparedSwapCpiBuilder<'a, 'b> {
+  instruction: Box<InitializePreparedSwapCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> IdlIncludeCpiBuilder<'a, 'b> {
+impl<'a, 'b> InitializePreparedSwapCpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(IdlIncludeCpiBuilderInstruction {
+    let instruction = Box::new(InitializePreparedSwapCpiBuilderInstruction {
       __program: program,
-              tick_array: None,
+              funder: None,
+              prepared_swap: None,
               system_program: None,
-                                            prepare_swap_v2_return_data: None,
+                                            nonce: None,
                     __remaining_accounts: Vec::new(),
     });
     Self { instruction }
   }
       #[inline(always)]
-    pub fn tick_array(&mut self, tick_array: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.tick_array = Some(tick_array);
+    pub fn funder(&mut self, funder: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.funder = Some(funder);
+                    self
+    }
+      #[inline(always)]
+    pub fn prepared_swap(&mut self, prepared_swap: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.prepared_swap = Some(prepared_swap);
                     self
     }
       #[inline(always)]
@@ -277,8 +310,8 @@ impl<'a, 'b> IdlIncludeCpiBuilder<'a, 'b> {
                     self
     }
                     #[inline(always)]
-      pub fn prepare_swap_v2_return_data(&mut self, prepare_swap_v2_return_data: PrepareSwapV2ReturnData) -> &mut Self {
-        self.instruction.prepare_swap_v2_return_data = Some(prepare_swap_v2_return_data);
+      pub fn nonce(&mut self, nonce: u16) -> &mut Self {
+        self.instruction.nonce = Some(nonce);
         self
       }
         /// Add an additional account to the instruction.
@@ -303,13 +336,15 @@ impl<'a, 'b> IdlIncludeCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
-          let args = IdlIncludeInstructionArgs {
-                                                              prepare_swap_v2_return_data: self.instruction.prepare_swap_v2_return_data.clone().expect("prepare_swap_v2_return_data is not set"),
+          let args = InitializePreparedSwapInstructionArgs {
+                                                              nonce: self.instruction.nonce.clone().expect("nonce is not set"),
                                     };
-        let instruction = IdlIncludeCpi {
+        let instruction = InitializePreparedSwapCpi {
         __program: self.instruction.__program,
                   
-          tick_array: self.instruction.tick_array.expect("tick_array is not set"),
+          funder: self.instruction.funder.expect("funder is not set"),
+                  
+          prepared_swap: self.instruction.prepared_swap.expect("prepared_swap is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
                           __args: args,
@@ -319,11 +354,12 @@ impl<'a, 'b> IdlIncludeCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct IdlIncludeCpiBuilderInstruction<'a, 'b> {
+struct InitializePreparedSwapCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_account_info::AccountInfo<'a>,
-            tick_array: Option<&'b solana_account_info::AccountInfo<'a>>,
+            funder: Option<&'b solana_account_info::AccountInfo<'a>>,
+                prepared_swap: Option<&'b solana_account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-                        prepare_swap_v2_return_data: Option<PrepareSwapV2ReturnData>,
+                        nonce: Option<u16>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

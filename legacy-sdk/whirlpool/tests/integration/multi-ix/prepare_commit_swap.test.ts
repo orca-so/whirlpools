@@ -1,20 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { AccountWithTokenProgram } from "@orca-so/common-sdk";
-import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import {
-  AccountInfo,
-  Keypair,
-  RpcResponseAndContext,
-  SimulatedTransactionResponse,
-  VersionedTransaction,
-} from "@solana/web3.js";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { Percentage, U64_MAX } from "@orca-so/common-sdk";
+import { Keypair } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type {
-  AdaptiveFeeVariablesData,
   CommitSwapV2Params,
-  InitPoolWithAdaptiveFeeParams,
   SwapV2Params,
   WhirlpoolClient,
   WhirlpoolData,
@@ -24,13 +15,9 @@ import {
   getAccountSize,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
-  NO_ORACLE_DATA,
-  OracleData,
 } from "../../../src";
 import {
   TICK_ARRAY_SIZE,
-  MAX_SQRT_PRICE_BN,
-  MIN_SQRT_PRICE_BN,
   PDAUtil,
   PriceMath,
   SwapUtils,
@@ -38,27 +25,20 @@ import {
   WhirlpoolIx,
   buildWhirlpoolClient,
   increaseLiquidityQuoteByLiquidityWithParams,
-  swapQuoteByInputToken,
   swapQuoteWithParams,
   toTx,
-  twoHopSwapQuoteFromSwapQuotes,
-  WHIRLPOOL_IDL,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   warpClock,
-  getCurrentTimestamp,
   initializeLiteSVMEnvironment,
-  pollForCondition,
   setComputeUnitLimit,
 } from "../../utils/litesvm";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
-  getLocalnetAdminKeypair0,
-  getProviderWalletKeypair,
   MAX_U64,
   mintToDestination,
   ZERO_BN,
@@ -70,20 +50,9 @@ import {
   buildTestPoolWithAdaptiveFeeParams,
 } from "../../utils/v2/init-utils-v2";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
-import type { FundedPositionParams } from "../../utils/init-utils";
-import {
-  buildTestAquariums,
-  getDefaultAquarium,
-  getTokenAccsForPools,
-  initTestPoolWithTokens,
-  useCU,
-  useMaxCU,
-} from "../../utils/init-utils";
-import type { WhirlpoolsError } from "../../../src/errors/errors";
-import { SwapErrorCode } from "../../../src/errors/errors";
+import { initTestPoolWithTokens, useCU } from "../../utils/init-utils";
 import { TransactionBuilder } from "@orca-so/common-sdk/dist/web3/transactions/transactions-builder";
 import { ParsableWhirlpool } from "../../../dist/network/public/parsing";
-import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import {
   assertPostWritableAccountMatch,
   getWhirlpoolStateSequence,
@@ -92,7 +61,6 @@ import {
   PREPARED_SWAP_LAYOUT_VERSION,
   PREPARED_SWAP_STATE_COMMITTED,
   PREPARED_SWAP_STATE_PREPARED,
-  SimulatedTransactionAccessor,
   simulateTransaction,
   verifyPrepareAndCommitSwapV2Equivalence,
 } from "../../utils/prepare-commit-test-utils";
@@ -216,20 +184,6 @@ describe("prepare/commit swap tests", () => {
           ),
         },
         Percentage.fromFraction(0, 100),
-      );
-
-      console.log("state sequence", stateSequence);
-      console.log(
-        "amount",
-        swapQuote.estimatedAmountIn.toString(),
-        "-->",
-        swapQuote.estimatedAmountOut.toString(),
-      );
-      console.log(
-        "tick",
-        pool.getData().tickCurrentIndex,
-        "-->",
-        swapQuote.estimatedEndTickIndex,
       );
 
       const params: CommitSwapV2Params & SwapV2Params = {
@@ -1622,13 +1576,6 @@ describe("prepare/commit swap tests", () => {
 
             const delta = tickSpacing * randTickIndexDelta();
             const tickNextIndex = tickCurrentIndex + delta;
-            console.log(
-              "trying",
-              tickCurrentIndex,
-              "->",
-              tickNextIndex,
-              `delta: ${delta}`,
-            );
 
             const aToB = false;
             const quote = swapQuoteWithParams(
@@ -1690,13 +1637,6 @@ describe("prepare/commit swap tests", () => {
 
             const delta = tickSpacing * randTickIndexDelta();
             const tickNextIndex = tickCurrentIndex - delta;
-            console.log(
-              "trying",
-              tickNextIndex,
-              "<-",
-              tickCurrentIndex,
-              `delta: ${delta}`,
-            );
 
             const aToB = true;
             const quote = swapQuoteWithParams(
@@ -1759,7 +1699,7 @@ describe("prepare/commit swap tests", () => {
 
         console.info(
           "reward growth",
-          lastPoolState.rewardInfos.map((r, i) => r.growthGlobalX64.toString()),
+          lastPoolState.rewardInfos.map((r) => r.growthGlobalX64.toString()),
         );
 
         const traversedTickArrayStartIndexes = [

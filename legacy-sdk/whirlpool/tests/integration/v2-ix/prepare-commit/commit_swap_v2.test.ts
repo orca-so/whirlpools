@@ -13,7 +13,6 @@ import {
   PROTOCOL_FEE_RATE_MUL_VALUE,
   PriceMath,
   buildWhirlpoolClient,
-  PoolUtil,
   increaseLiquidityQuoteByLiquidityWithParams,
 } from "../../../../src";
 import {

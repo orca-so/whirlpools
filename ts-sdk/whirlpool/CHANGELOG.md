@@ -1,5 +1,11 @@
 # @orca-so/whirlpools
 
+## 8.0.1
+
+### Patch Changes
+
+- [#1307](https://github.com/orca-so/whirlpools/pull/1307) [`9e97031`](https://github.com/orca-so/whirlpools/commit/9e970314dc8e543aa46229b7fa0ab86e4d9165be) Thanks [@shubhamessier](https://github.com/shubhamessier)! - Fix `harvestAllPositionFees` to flush the final instruction batch so all positions are harvested when instructions stay within or cross the transaction size limit.
+
 ## 8.0.0
 
 ### Major Changes

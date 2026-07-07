@@ -2515,7 +2515,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools"
-version = "7.0.2"
+version = "8.0.0"
 dependencies = [
  "agave-feature-set",
  "approx",
@@ -2563,7 +2563,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_client"
-version = "7.2.0"
+version = "8.0.0"
 dependencies = [
  "borsh",
  "num-derive",

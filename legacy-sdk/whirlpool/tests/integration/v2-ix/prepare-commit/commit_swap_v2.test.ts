@@ -1254,7 +1254,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos0,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       // tickArrayPos5632 skipped
@@ -1268,7 +1268,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos11264,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       await toTx(
@@ -1366,7 +1366,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos0,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       // missing tickArrayPos5632
@@ -1380,7 +1380,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos11264,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       // Swap will stop on tick 13344.
@@ -1402,7 +1402,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos5632,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       await toTx(
@@ -1590,7 +1590,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos0,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       await toTx(
@@ -1687,7 +1687,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos0,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       // tickArrayNeg11264 has pending updates.
@@ -1701,7 +1701,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayNeg5632,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       // no tickArrayNeg5632
@@ -1715,7 +1715,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayNeg11264,
           }),
         ).buildAndExecute(),
-        /0x1773/, // TickArrayIndexOutofBounds
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
 
       await toTx(
@@ -1811,7 +1811,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayPos5632,
           }),
         ).buildAndExecute(),
-        /0xFFFFFFFF/, // to be assigned (or precondition mismatch)
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
     });
 
@@ -1887,7 +1887,7 @@ describe("commit_swap_v2", () => {
             tickArray2: setupInfo.tickArrayNeg5632,
           }),
         ).buildAndExecute(),
-        /0xffffffffff/, // TBA
+        /0x17b9/, // PreparedSwapPreconditionMismatch
       );
     });
   });

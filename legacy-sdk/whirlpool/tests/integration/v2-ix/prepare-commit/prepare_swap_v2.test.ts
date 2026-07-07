@@ -43,7 +43,10 @@ import { createMintV2 } from "../../../utils/v2/token-2022";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import { PublicKey } from "@solana/web3.js";
 import {
+  parsePreparedSwap,
   parsePrepareSwapV2ReturnData,
+  PREPARED_SWAP_LAYOUT_VERSION,
+  PREPARED_SWAP_STATE_PREPARED,
   simulateTransaction,
 } from "../../../utils/prepare-commit-test-utils";
 import type { PrepareSwapV2Params } from "../../../../dist";
@@ -486,6 +489,22 @@ describe("prepare_swap_v2", () => {
       assert.ok(
         returnData.quoteSuccess.nextTickIndex === quote.estimatedEndTickIndex,
       );
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
 
     it("QuoteError: ZeroTradableAmount", async () => {
@@ -503,6 +522,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1793); // ZeroTradableAmount
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     it("QuoteError: InvalidSqrtPriceLimitDirection", async () => {
@@ -522,6 +548,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1792); // InvalidSqrtPriceLimitDirection
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     it("QuoteError: SqrtPriceOutOfBounds", async () => {
@@ -539,6 +572,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x177b); // SqrtPriceOutOfBounds
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     it("QuoteError: InvalidTickArraySequence", async () => {
@@ -558,6 +598,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1787); // InvalidTickArraySequence
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     it("QuoteError: TickArraySequenceInvalidIndex", async () => {
@@ -575,6 +622,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x1796); // TickArraySequenceInvalidIndex
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     it("QuoteError: TradeIsNotEnabled (AF-enabled pool)", async () => {
@@ -658,13 +712,19 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x17b0); // TradeIsNotEnabled
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(prepareSwapV2Params.preparedSwap),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
   });
 
   describe("return data: partial fill, b to a", () => {
     const tickSpacing = 128;
     const aToB = false;
-    /* client initialized in beforeAll */
 
     let poolInitInfo: InitPoolV2Params;
     let whirlpoolPda: PDA;
@@ -773,6 +833,22 @@ describe("prepare_swap_v2", () => {
       );
       assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MAX_SQRT_PRICE_BN));
       assert.ok(returnData.quoteSuccess.otherAmount.isZero());
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
 
     // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
@@ -825,6 +901,22 @@ describe("prepare_swap_v2", () => {
       );
       assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MAX_SQRT_PRICE_BN));
       assert.ok(returnData.quoteSuccess.otherAmount.isZero());
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
 
     // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
@@ -866,6 +958,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x17a9); // PartialFillError
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     // |-S-***-------T,max----|  (*: liquidity, S: start, T: end)
@@ -919,6 +1018,22 @@ describe("prepare_swap_v2", () => {
       );
       assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MAX_SQRT_PRICE_BN));
       assert.ok(returnData.quoteSuccess.amount.isZero());
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
   });
 
@@ -1034,6 +1149,22 @@ describe("prepare_swap_v2", () => {
       );
       assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MIN_SQRT_PRICE_BN));
       assert.ok(returnData.quoteSuccess.otherAmount.isZero());
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
 
     // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
@@ -1086,6 +1217,22 @@ describe("prepare_swap_v2", () => {
       );
       assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MIN_SQRT_PRICE_BN));
       assert.ok(returnData.quoteSuccess.otherAmount.isZero());
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
 
     // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
@@ -1127,6 +1274,13 @@ describe("prepare_swap_v2", () => {
 
       assert.ok(!!returnData && "quoteError" in returnData);
       assert.equal(returnData.quoteError.errorCode.toNumber(), 0x17a9); // PartialFillError
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state !== PREPARED_SWAP_STATE_PREPARED);
     });
 
     // |-min,T---------***-S-|  (*: liquidity, S: start, T: end)
@@ -1180,6 +1334,22 @@ describe("prepare_swap_v2", () => {
       );
       assert.ok(returnData.quoteSuccess.nextSqrtPrice.eq(MIN_SQRT_PRICE_BN));
       assert.ok(returnData.quoteSuccess.amount.isZero());
+
+      const preparedSwapData = parsePreparedSwap(
+        sim.postWritableAccount(preparedSwapPda.publicKey),
+      );
+      assert.ok(!!preparedSwapData);
+      assert.ok(preparedSwapData.version === PREPARED_SWAP_LAYOUT_VERSION);
+      assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+          quote.estimatedEndSqrtPrice,
+        ),
+      );
+      assert.ok(
+        preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextTickIndex ===
+          quote.estimatedEndTickIndex,
+      );
     });
   });
 });

@@ -94,6 +94,7 @@ pub struct PreparedSwapPrecondition {
 
     pub whirlpool: Pubkey,
     pub whirlpool_state_sequence: u32,
+    pub swap_tick_sequence_len: u8,
 
     pub amount: u64,
     pub sqrt_price_limit: u128,
@@ -102,7 +103,7 @@ pub struct PreparedSwapPrecondition {
 }
 
 impl PreparedSwapPrecondition {
-    pub const LEN: usize = 8 + 32 + 32 + 4 + 8 + 16 + 1 + 1; // 102
+    pub const LEN: usize = 8 + 32 + 32 + 4 + 1 + 8 + 16 + 1 + 1; // 103
 }
 
 #[zero_copy(unsafe)]
@@ -127,7 +128,7 @@ pub enum PreparedSwapState {
 }
 pub type PreparedSwapStateU8 = u8;
 
-const PREPARED_SWAP_RESERVED_BYTES: usize = 180; // total 10KB
+const PREPARED_SWAP_RESERVED_BYTES: usize = 179; // total 10KB
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
@@ -177,6 +178,7 @@ impl PreparedSwap {
         authority: Pubkey,
         whirlpool: Pubkey,
         whirlpool_state_sequence: u32,
+        swap_tick_sequence_len: u8,
         amount: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
@@ -188,6 +190,7 @@ impl PreparedSwap {
             authority,
             whirlpool,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -236,6 +239,7 @@ impl PreparedSwap {
         authority: Pubkey,
         whirlpool: Pubkey,
         whirlpool_state_sequence: u32,
+        swap_tick_sequence_len: u8,
         amount: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
@@ -259,6 +263,7 @@ impl PreparedSwap {
                 authority,
                 whirlpool,
                 whirlpool_state_sequence,
+                swap_tick_sequence_len,
                 amount,
                 sqrt_price_limit,
                 amount_specified_is_input,
@@ -324,13 +329,14 @@ mod prepared_swap_functions_tests {
     }
 
     #[test]
-    fn test_set_recondition() {
+    fn test_set_precondition() {
         let mut prepared_swap_data = [0x00u8; PreparedSwap::LEN - 8];
         let prepared_swap: &mut PreparedSwap = bytemuck::from_bytes_mut(&mut prepared_swap_data);
         prepared_swap.reset();
 
         let whirlpool_address = Pubkey::new_unique();
         let whirlpool_state_sequence = 0x88776655u32;
+        let swap_tick_sequence_len = 0x88;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -343,6 +349,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -357,6 +364,7 @@ mod prepared_swap_functions_tests {
                     authority,
                     whirlpool: whirlpool_address,
                     whirlpool_state_sequence,
+                    swap_tick_sequence_len,
                     amount,
                     sqrt_price_limit,
                     amount_specified_is_input,
@@ -572,6 +580,7 @@ mod prepared_swap_functions_tests {
 
         let whirlpool_address = Pubkey::new_unique();
         let whirlpool_state_sequence = 0x88776655u32;
+        let swap_tick_sequence_len = 0x99u8;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -584,6 +593,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -596,6 +606,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -613,6 +624,7 @@ mod prepared_swap_functions_tests {
 
         let whirlpool_address = Pubkey::new_unique();
         let whirlpool_state_sequence = 0x88776655u32;
+        let swap_tick_sequence_len = 0x99u8;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -625,6 +637,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -640,6 +653,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -660,6 +674,7 @@ mod prepared_swap_functions_tests {
 
         let whirlpool_address = Pubkey::new_unique();
         let whirlpool_state_sequence = 0x88776655u32;
+        let swap_tick_sequence_len = 0x99u8;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -672,6 +687,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -687,6 +703,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -707,6 +724,7 @@ mod prepared_swap_functions_tests {
 
         let whirlpool_address = Pubkey::new_unique();
         let whirlpool_state_sequence = 0x88776655u32;
+        let swap_tick_sequence_len = 0x99u8;
 
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
@@ -719,6 +737,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -732,6 +751,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -745,6 +765,7 @@ mod prepared_swap_functions_tests {
             Pubkey::new_unique(), // mismatch
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -761,6 +782,7 @@ mod prepared_swap_functions_tests {
             authority,
             Pubkey::new_unique(), // mismatch
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -776,7 +798,25 @@ mod prepared_swap_functions_tests {
         let result = prepared_swap.validate_for_commit(
             authority,
             whirlpool_address,
-            0x11223344u32,
+            0x11223344u32, // mismatch
+            swap_tick_sequence_len,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // swap_tick_sequence_len mismatch
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len.checked_add(1).unwrap(), // mismatch
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -793,6 +833,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount.checked_add(1).unwrap(), // mismatch
             sqrt_price_limit,
             amount_specified_is_input,
@@ -809,6 +850,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit.checked_add(1).unwrap(), // mismatch
             amount_specified_is_input,
@@ -825,6 +867,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             !amount_specified_is_input, // mismatch
@@ -841,6 +884,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -857,6 +901,7 @@ mod prepared_swap_functions_tests {
             authority,
             whirlpool_address,
             whirlpool_state_sequence,
+            swap_tick_sequence_len,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -895,7 +940,29 @@ mod data_layout_tests {
 
     #[test]
     fn test_len_constant() {
+        assert_eq!(PendingPostSwapUpdate::LEN, 177);
+        assert_eq!(PendingTickUpdate::LEN, 37);
+        assert_eq!(PreparedSwapPrecondition::LEN, 103);
+        assert_eq!(PreparedSwapPendingUpdates::LEN, 9947);
         assert_eq!(PreparedSwap::LEN, 1024 * 10); // 10KB
+    }
+
+    #[test]
+    fn test_struct_size() {
+        assert_eq!(
+            size_of::<PendingPostSwapUpdate>(),
+            PendingPostSwapUpdate::LEN
+        );
+        assert_eq!(size_of::<PendingTickUpdate>(), PendingTickUpdate::LEN);
+        assert_eq!(
+            size_of::<PreparedSwapPrecondition>(),
+            PreparedSwapPrecondition::LEN
+        );
+        assert_eq!(
+            size_of::<PreparedSwapPendingUpdates>(),
+            PreparedSwapPendingUpdates::LEN
+        );
+        assert_eq!(size_of::<PreparedSwap>() + 8, PreparedSwap::LEN); // +8: discriminator
     }
 
     #[test]
@@ -909,6 +976,7 @@ mod data_layout_tests {
         let precondition_authority = Pubkey::new_unique();
         let precondition_whirlpool = Pubkey::new_unique();
         let precondition_whirlpool_state_sequence = 0x44556677u32;
+        let precondition_swap_tick_sequence_len = 0x66u8;
         let precondition_amount = 0x8899aabbccddeeffu64;
         let precondition_sqrt_price_limit = 0x112233445566778899aabbccddeeff00u128;
         let precondition_amount_specified_is_input = true;
@@ -962,6 +1030,8 @@ mod data_layout_tests {
         precondition_data[offset..offset + 4]
             .copy_from_slice(&precondition_whirlpool_state_sequence.to_le_bytes());
         offset += 4;
+        precondition_data[offset] = precondition_swap_tick_sequence_len;
+        offset += 1;
         precondition_data[offset..offset + 8].copy_from_slice(&precondition_amount.to_le_bytes());
         offset += 8;
         precondition_data[offset..offset + 16]
@@ -1081,6 +1151,11 @@ mod data_layout_tests {
         assert_eq!(
             read_whirlpool_state_sequence,
             precondition_whirlpool_state_sequence
+        );
+        let read_swap_tick_sequence_len = prepared_swap.precondition.swap_tick_sequence_len;
+        assert_eq!(
+            read_swap_tick_sequence_len,
+            precondition_swap_tick_sequence_len
         );
         let read_amount = prepared_swap.precondition.amount;
         assert_eq!(read_amount, precondition_amount);

@@ -80,18 +80,6 @@ pub fn handler<'info>(
 ) -> Result<()> {
     let clock = Clock::get()?;
 
-    let mut prepared_swap = ctx.accounts.prepared_swap.load_mut()?;
-    prepared_swap.validate_for_commit(
-        ctx.accounts.token_authority.key(),
-        ctx.accounts.whirlpool.key(),
-        ctx.accounts.whirlpool.state_sequence(),
-        amount,
-        sqrt_price_limit,
-        amount_specified_is_input,
-        a_to_b,
-        clock.slot,
-    )?;
-
     let whirlpool = &mut ctx.accounts.whirlpool;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
@@ -117,6 +105,19 @@ pub fn handler<'info>(
     let mut swap_tick_sequence = swap_tick_sequence_builder.try_build(whirlpool, a_to_b)?;
 
     let oracle_accessor = OracleAccessor::new(whirlpool, ctx.accounts.oracle.to_account_info())?;
+
+    let mut prepared_swap = ctx.accounts.prepared_swap.load_mut()?;
+    prepared_swap.validate_for_commit(
+        ctx.accounts.token_authority.key(),
+        whirlpool.key(),
+        whirlpool.state_sequence(),
+        swap_tick_sequence.arrays.len() as u8,
+        amount,
+        sqrt_price_limit,
+        amount_specified_is_input,
+        a_to_b,
+        clock.slot,
+    )?;
 
     // apply pending tick updates...
     let tick_spacing = whirlpool.tick_spacing;

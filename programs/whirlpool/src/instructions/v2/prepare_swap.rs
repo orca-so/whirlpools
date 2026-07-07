@@ -115,16 +115,14 @@ fn try_prepare_swap<'info>(
 ) -> Result<PrepareSwapV2ReturnData> {
     let clock = Clock::get()?;
 
-    prepared_swap.set_precondition(
-        ctx.accounts.token_authority.key(),
-        ctx.accounts.whirlpool.key(),
-        ctx.accounts.whirlpool.state_sequence(),
-        amount,
-        sqrt_price_limit,
-        amount_specified_is_input,
-        a_to_b,
-        clock.slot,
-    );
+    let precondition_authority = ctx.accounts.token_authority.key();
+    let precondition_whirlpool = ctx.accounts.whirlpool.key();
+    let precondition_whirlpool_state_sequence = ctx.accounts.whirlpool.state_sequence();
+    let precondition_amount = amount;
+    let precondition_sqrt_price_limit = sqrt_price_limit;
+    let precondition_amount_specified_is_input = amount_specified_is_input;
+    let precondition_a_to_b = a_to_b;
+    let precondition_slot = clock.slot;
 
     let whirlpool = &ctx.accounts.whirlpool;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
@@ -203,6 +201,19 @@ fn try_prepare_swap<'info>(
         next_sqrt_price: swap_update.next_sqrt_price,
         next_tick_index: swap_update.next_tick_index,
     };
+
+    let precondition_swap_tick_sequence_len = swap_tick_sequence.arrays.len() as u8;
+    prepared_swap.set_precondition(
+        precondition_authority,
+        precondition_whirlpool,
+        precondition_whirlpool_state_sequence,
+        precondition_swap_tick_sequence_len,
+        precondition_amount,
+        precondition_sqrt_price_limit,
+        precondition_amount_specified_is_input,
+        precondition_a_to_b,
+        precondition_slot,
+    );
 
     prepared_swap.set_pending_post_swap_update(&swap_update);
     prepared_swap.set_state(PreparedSwapState::Prepared);

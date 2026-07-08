@@ -15,6 +15,7 @@ import {
   getAccountSize,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
+  NO_ORACLE_DATA,
 } from "../../../src";
 import {
   TICK_ARRAY_SIZE,
@@ -33,7 +34,7 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   warpClock,
   initializeLiteSVMEnvironment,
-  setComputeUnitLimit,
+  setLiteSVMComputeUnitLimit,
 } from "../../utils/litesvm";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import {
@@ -90,7 +91,7 @@ describe("prepare/commit swap tests", () => {
 
     // unlimit compute unit limit for the test.
     // We need to test 88*3 pending tick updates for the prepare/commit swap test, which exceeds the default compute unit limit of 1.4M.
-    setComputeUnitLimit(BigInt(MAX_COMPUTE_UNIT_FOR_TEST));
+    setLiteSVMComputeUnitLimit(BigInt(MAX_COMPUTE_UNIT_FOR_TEST));
 
     provider = env.provider;
     program = env.program;
@@ -1727,6 +1728,298 @@ describe("prepare/commit swap tests", () => {
       },
       { timeout: 120 * 1000 /* 120s */ },
     );
+
+    describe("attack scenario", () => {
+      it("Should be rejected: prepare -> swap -> commit", async () => {
+        const tickSpacing = 64;
+        const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+          await initTestPoolWithTokens(
+            testCtx.whirlpoolCtx,
+            tickSpacing,
+            PriceMath.tickIndexToSqrtPriceX64(0),
+            U64_MAX,
+          );
+        const fullRange = TickUtil.getFullRangeTickIndex(tickSpacing);
+
+        const pool = await testCtx.whirlpoolClient.getPool(
+          whirlpoolPda.publicKey,
+        );
+        await (await pool.initTickArrayForTicks(fullRange))?.buildAndExecute();
+
+        const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+          liquidity: new BN(10000000),
+          slippageTolerance: Percentage.fromFraction(0, 1000),
+          sqrtPrice: pool.getData().sqrtPrice,
+          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          tickLowerIndex: fullRange[0],
+          tickUpperIndex: fullRange[1],
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        });
+        const priceDeviation = Percentage.fromFraction(1, 10_000);
+        const { lowerBound, upperBound } =
+          PriceMath.getSlippageBoundForSqrtPrice(
+            pool.getData().sqrtPrice,
+            priceDeviation,
+          );
+        const mintAndTx = await pool.openPosition(fullRange[0], fullRange[1], {
+          ...depositQuote,
+          minSqrtPrice: lowerBound[0],
+          maxSqrtPrice: upperBound[0],
+        });
+        await mintAndTx.tx.buildAndExecute();
+
+        const oraclePda = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpoolPda.publicKey,
+        );
+
+        // quote
+        const aToB = true;
+        const amountSpecifiedIsInput = true;
+        const tokenAmount = new BN(100000);
+        const poolData = await pool.refreshData();
+        const swapQuote = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput,
+            aToB,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              amountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            tickArrays: await SwapUtils.getTickArrays(
+              poolData.tickCurrentIndex,
+              poolData.tickSpacing,
+              aToB,
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount,
+            whirlpoolData: poolData,
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            oracleData: NO_ORACLE_DATA,
+          },
+          Percentage.fromFraction(0, 100),
+        );
+        const params: CommitSwapV2Params & SwapV2Params = {
+          ...swapQuote,
+          preparedSwap,
+          whirlpool: whirlpoolPda.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: pool.getData().tokenVaultA,
+          tokenVaultB: pool.getData().tokenVaultB,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+          tokenMintA: pool.getData().tokenMintA,
+          tokenMintB: pool.getData().tokenMintB,
+          tokenProgramA: TOKEN_PROGRAM_ID,
+          tokenProgramB: TOKEN_PROGRAM_ID,
+          oracle: oraclePda.publicKey,
+        };
+        assert.equal(swapQuote.estimatedEndTickIndex, -199);
+
+        // prepare
+        await toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.prepareSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+        ).buildAndExecute();
+
+        const preparedSwapAccountInfo =
+          await testCtx.whirlpoolCtx.connection.getAccountInfo(
+            params.preparedSwap,
+          );
+        assert.ok(preparedSwapAccountInfo);
+        const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+        assert.ok(preparedSwapData);
+        assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+        assert.ok(
+          preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+            swapQuote.estimatedEndSqrtPrice,
+          ),
+        );
+
+        // swapV2
+        await toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params),
+        ).buildAndExecute();
+
+        const poolDataAfterSwap = await pool.refreshData();
+        assert.ok(
+          poolDataAfterSwap.tickCurrentIndex ===
+            swapQuote.estimatedEndTickIndex,
+        );
+        assert.ok(
+          poolDataAfterSwap.sqrtPrice.eq(swapQuote.estimatedEndSqrtPrice),
+        );
+
+        // commit
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.commitSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+          ).buildAndExecute(),
+          // swap should increment state sequence
+          /0x17b9/, // PreparedSwapPreconditionMismatch
+        );
+      });
+
+      it("Should be rejected: increase liquidity -> prepare -> decrease liquidity -> commit", async () => {
+        const tickSpacing = 64;
+        const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+          await initTestPoolWithTokens(
+            testCtx.whirlpoolCtx,
+            tickSpacing,
+            PriceMath.tickIndexToSqrtPriceX64(0),
+            U64_MAX,
+          );
+        const fullRange = TickUtil.getFullRangeTickIndex(tickSpacing);
+
+        const pool = await testCtx.whirlpoolClient.getPool(
+          whirlpoolPda.publicKey,
+        );
+        await (await pool.initTickArrayForTicks(fullRange))?.buildAndExecute();
+
+        const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+          liquidity: new BN(10000000),
+          slippageTolerance: Percentage.fromFraction(0, 1000),
+          sqrtPrice: pool.getData().sqrtPrice,
+          tickCurrentIndex: pool.getData().tickCurrentIndex,
+          tickLowerIndex: fullRange[0],
+          tickUpperIndex: fullRange[1],
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        });
+        const priceDeviation = Percentage.fromFraction(1, 10_000);
+        const { lowerBound, upperBound } =
+          PriceMath.getSlippageBoundForSqrtPrice(
+            pool.getData().sqrtPrice,
+            priceDeviation,
+          );
+        const mintAndTx = await pool.openPosition(fullRange[0], fullRange[1], {
+          ...depositQuote,
+          minSqrtPrice: lowerBound[0],
+          maxSqrtPrice: upperBound[0],
+        });
+        await mintAndTx.tx.buildAndExecute();
+
+        const oraclePda = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpoolPda.publicKey,
+        );
+
+        // increase liquidity
+        const anotherMintAndTx = await pool.openPosition(
+          fullRange[0],
+          fullRange[1],
+          {
+            ...depositQuote,
+            minSqrtPrice: lowerBound[0],
+            maxSqrtPrice: upperBound[0],
+          },
+        );
+        await anotherMintAndTx.tx.buildAndExecute();
+
+        const poolData = await pool.refreshData();
+        // x2 liquidity
+        assert.ok(poolData.liquidity.eq(depositQuote.liquidityAmount.muln(2)));
+
+        // quote
+        const aToB = true;
+        const amountSpecifiedIsInput = true;
+        const tokenAmount = new BN(100000);
+        const swapQuote = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput,
+            aToB,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              amountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            tickArrays: await SwapUtils.getTickArrays(
+              poolData.tickCurrentIndex,
+              poolData.tickSpacing,
+              aToB,
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount,
+            whirlpoolData: poolData,
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            oracleData: NO_ORACLE_DATA,
+          },
+          Percentage.fromFraction(0, 100),
+        );
+        const params: CommitSwapV2Params & SwapV2Params = {
+          ...swapQuote,
+          preparedSwap,
+          whirlpool: whirlpoolPda.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: pool.getData().tokenVaultA,
+          tokenVaultB: pool.getData().tokenVaultB,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+          tokenMintA: pool.getData().tokenMintA,
+          tokenMintB: pool.getData().tokenMintB,
+          tokenProgramA: TOKEN_PROGRAM_ID,
+          tokenProgramB: TOKEN_PROGRAM_ID,
+          oracle: oraclePda.publicKey,
+        };
+        assert.equal(swapQuote.estimatedEndTickIndex, -100);
+
+        // prepare
+        await toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.prepareSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+        ).buildAndExecute();
+
+        const preparedSwapAccountInfo =
+          await testCtx.whirlpoolCtx.connection.getAccountInfo(
+            params.preparedSwap,
+          );
+        assert.ok(preparedSwapAccountInfo);
+        const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+        assert.ok(preparedSwapData);
+        assert.ok(preparedSwapData.state === PREPARED_SWAP_STATE_PREPARED);
+        assert.ok(
+          preparedSwapData.pendingUpdates.pendingPostSwapUpdate.nextSqrtPrice.eq(
+            swapQuote.estimatedEndSqrtPrice,
+          ),
+        );
+
+        // decrease liquidity
+        const anotherPositionAddress = PDAUtil.getPosition(
+          testCtx.whirlpoolCtx.program.programId,
+          anotherMintAndTx.positionMint,
+        ).publicKey;
+        const closeTxs = await pool.closePosition(
+          anotherPositionAddress,
+          Percentage.fromFraction(0, 100),
+        );
+        assert.equal(closeTxs.length, 1);
+        await closeTxs[0].buildAndExecute();
+
+        // x2 liquidity -> x1 liquidity
+        const poolDataAfterDecreaseLiquidity = await pool.refreshData();
+        assert.ok(
+          poolDataAfterDecreaseLiquidity.liquidity.eq(
+            depositQuote.liquidityAmount,
+          ),
+        );
+
+        // commit
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.commitSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+          ).buildAndExecute(),
+          // decrease liquidity should increment state sequence
+          /0x17b9/, // PreparedSwapPreconditionMismatch
+        );
+      });
+    });
   });
 
   function newTransactionBuilder() {

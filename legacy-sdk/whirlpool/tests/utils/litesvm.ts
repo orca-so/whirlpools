@@ -1206,7 +1206,7 @@ export function warpClock(seconds: number): void {
  *
  * @param limit - New compute unit limit (as bigint)
  */
-export function setComputeUnitLimit(limit: bigint): void {
+export function setLiteSVMComputeUnitLimit(limit: bigint): void {
   const litesvm = getLiteSVM();
   const budget = new ComputeBudget();
   budget.computeUnitLimit = limit;

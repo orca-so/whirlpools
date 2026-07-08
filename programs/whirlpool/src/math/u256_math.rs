@@ -573,12 +573,8 @@ fn div_loop(
             k = t >> U64_RESOLUTION;
         }
 
-        let new_carry = dividend
-            .get_word_u128(index + num_divisor_words)
-            .wrapping_add(k)
-            .lo();
         if use_carry {
-            *dividend_carry_space = new_carry
+            *dividend_carry_space = (*dividend_carry_space as u128).wrapping_add(k).lo();
         } else {
             dividend.update_word(
                 index + num_divisor_words,
@@ -1078,9 +1074,12 @@ mod test_div {
             items: [1, 0, 0, 1],
         };
         let result = dividend.div(divisor, true);
-        let result2 = (U256::from(1u128 << 64) << 128).div_mod((U256::from(1u128 << 64) << 128) + 1);
+        let result2 =
+            (U256::from(1u128 << 64) << 128).div_mod((U256::from(1u128 << 64) << 128) + 1);
         assert!(format!("{}", result.0) == format!("{}", result2.0));
         assert!(format!("{}", result.1) == format!("{}", result2.1));
+
+        assert_eq!(result.0.items, [0, 0, 0, 0]);
     }
 
     #[test]
@@ -1090,14 +1089,15 @@ mod test_div {
             items: [0, 0, 0, 1u64 << 63],
         };
         // divisor = 2^191 + 1
-        // This makes the top division window estimate qhat = 1, but the low word forces a borrow during subtraction. 
+        // This makes the top division window estimate qhat = 1, but the low word forces a borrow during subtraction.
         // That triggers the add-back correction while use_carry == true.
         let divisor = U256Muldiv {
             items: [1, 0, 1u64 << 63, 0],
         };
 
         let result = dividend.div(divisor, true);
-        let result2 = (U256::from(1u128 << 127) << 128).div_mod((U256::from(1u128 << 63) << 128) + 1);
+        let result2 =
+            (U256::from(1u128 << 127) << 128).div_mod((U256::from(1u128 << 63) << 128) + 1);
 
         // floor(2^255 / (2^191 + 1)) = 2^64 - 1
         assert!(format!("{}", result.0) == format!("{}", result2.0));

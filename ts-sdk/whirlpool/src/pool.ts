@@ -23,7 +23,7 @@ import type {
 import { SPLASH_POOL_TICK_SPACING } from "./config";
 import { orderMints } from "./token";
 import { sqrtPriceToPrice } from "@orca-so/whirlpools-core";
-import { fetchAllMint } from "@solana-program/token";
+import { fetchAllMint } from "@solana-program/token-2022";
 
 /**
  * Type representing a pool that is not yet initialized.

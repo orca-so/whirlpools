@@ -32,9 +32,9 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+} from '@solana/kit';
+import { WHIRLPOOL_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const RESET_POSITION_RANGE_DISCRIMINATOR = new Uint8Array([
   164, 123, 180, 141, 194, 100, 160, 175,
@@ -42,7 +42,7 @@ export const RESET_POSITION_RANGE_DISCRIMINATOR = new Uint8Array([
 
 export function getResetPositionRangeDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    RESET_POSITION_RANGE_DISCRIMINATOR,
+    RESET_POSITION_RANGE_DISCRIMINATOR
   );
 }
 
@@ -55,7 +55,7 @@ export type ResetPositionRangeInstruction<
   TAccountPositionTokenAccount extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | AccountMeta<string> = "11111111111111111111111111111111",
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -99,22 +99,19 @@ export type ResetPositionRangeInstructionDataArgs = {
 export function getResetPositionRangeInstructionDataEncoder(): FixedSizeEncoder<ResetPositionRangeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["newTickLowerIndex", getI32Encoder()],
-      ["newTickUpperIndex", getI32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['newTickLowerIndex', getI32Encoder()],
+      ['newTickUpperIndex', getI32Encoder()],
     ]),
-    (value) => ({
-      ...value,
-      discriminator: RESET_POSITION_RANGE_DISCRIMINATOR,
-    }),
+    (value) => ({ ...value, discriminator: RESET_POSITION_RANGE_DISCRIMINATOR })
   );
 }
 
 export function getResetPositionRangeInstructionDataDecoder(): FixedSizeDecoder<ResetPositionRangeInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["newTickLowerIndex", getI32Decoder()],
-    ["newTickUpperIndex", getI32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['newTickLowerIndex', getI32Decoder()],
+    ['newTickUpperIndex', getI32Decoder()],
   ]);
 }
 
@@ -124,7 +121,7 @@ export function getResetPositionRangeInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getResetPositionRangeInstructionDataEncoder(),
-    getResetPositionRangeInstructionDataDecoder(),
+    getResetPositionRangeInstructionDataDecoder()
   );
 }
 
@@ -142,8 +139,8 @@ export type ResetPositionRangeInput<
   position: Address<TAccountPosition>;
   positionTokenAccount: Address<TAccountPositionTokenAccount>;
   systemProgram?: Address<TAccountSystemProgram>;
-  newTickLowerIndex: ResetPositionRangeInstructionDataArgs["newTickLowerIndex"];
-  newTickUpperIndex: ResetPositionRangeInstructionDataArgs["newTickUpperIndex"];
+  newTickLowerIndex: ResetPositionRangeInstructionDataArgs['newTickLowerIndex'];
+  newTickUpperIndex: ResetPositionRangeInstructionDataArgs['newTickUpperIndex'];
 };
 
 export function getResetPositionRangeInstruction<
@@ -163,7 +160,7 @@ export function getResetPositionRangeInstruction<
     TAccountPositionTokenAccount,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): ResetPositionRangeInstruction<
   TProgramAddress,
   TAccountFunder,
@@ -202,10 +199,10 @@ export function getResetPositionRangeInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.funder),
@@ -216,7 +213,7 @@ export function getResetPositionRangeInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getResetPositionRangeInstructionDataEncoder().encode(
-      args as ResetPositionRangeInstructionDataArgs,
+      args as ResetPositionRangeInstructionDataArgs
     ),
     programAddress,
   } as ResetPositionRangeInstruction<
@@ -252,11 +249,11 @@ export function parseResetPositionRangeInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedResetPositionRangeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
-    throw new Error("Not enough accounts");
+    throw new Error('Not enough accounts');
   }
   let accountIndex = 0;
   const getNextAccount = () => {
@@ -275,7 +272,7 @@ export function parseResetPositionRangeInstruction<
       systemProgram: getNextAccount(),
     },
     data: getResetPositionRangeInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

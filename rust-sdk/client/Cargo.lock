@@ -2257,7 +2257,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "ethnum",
  "libm",

@@ -1945,7 +1945,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "ethnum",
  "libm",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_docs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "orca_whirlpools",
  "orca_whirlpools_client",

@@ -16,7 +16,7 @@ jobs:
         if: ${{ github.ref != 'refs/heads/main' }}
         run: exit 1
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
       - name: Setup SSH

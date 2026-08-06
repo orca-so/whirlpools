@@ -31,18 +31,54 @@ export type WhirlpoolContextOpts = {
 };
 
 /**
+ * Which Associated Token Account program instruction to use when creating a missing ATA.
+ * @category Core
+ */
+export type AtaCreationMethod = "create" | "createIdempotent";
+
+/**
  * Default settings used when resolving token accounts.
  * @category Core
  */
 export type AccountResolverOptions = {
   createWrappedSolAccountMethod: WrappedSolAccountCreateMethod;
   allowPDAOwnerAddress: boolean;
+  /**
+   * How to create ATAs that don't exist yet.
+   *
+   * Whether an ATA exists is decided from a pre-flight fetch, so `create` fails with
+   * `IllegalOwner` ("Provided owner is not allowed") if anything creates that ATA between
+   * the fetch and execution — another transaction in the same Jito bundle, a batched
+   * multisig transaction, or a concurrent send. `createIdempotent` tolerates that while
+   * still validating address derivation, the existing account's owner, and its mint.
+   *
+   * Optional, and defaults to `create` so existing behavior is unchanged. Set
+   * `createIdempotent` when composing these instructions with anything that may create
+   * the same ATA first.
+   */
+  createAtaMethod?: AtaCreationMethod;
 };
 
 const DEFAULT_ACCOUNT_RESOLVER_OPTS: AccountResolverOptions = {
   createWrappedSolAccountMethod: "keypair",
   allowPDAOwnerAddress: false,
+  createAtaMethod: "create",
 };
+
+/**
+ * Whether `opts` asks for `CreateIdempotent` when creating missing ATAs.
+ *
+ * Shaped as the `modeIdempotent` boolean that `resolveOrCreateATA(s)` takes. Anything but
+ * an explicit `createIdempotent` means `create` — including `undefined`, which is what an
+ * `AccountResolverOptions` built before this field existed carries.
+ *
+ * @category Core
+ */
+export function shouldCreateAtaIdempotent(
+  opts: AccountResolverOptions,
+): boolean {
+  return opts.createAtaMethod === "createIdempotent";
+}
 
 /**
  * Context for storing environment classes and objects for usage throughout the SDK
@@ -140,8 +176,12 @@ export class WhirlpoolContext {
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
     this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);
-    this.accountResolverOpts =
-      opts.accountResolverOptions ?? DEFAULT_ACCOUNT_RESOLVER_OPTS;
+    // Merged rather than replaced so options added to AccountResolverOptions over time keep
+    // their default for callers that built the object before the option existed.
+    this.accountResolverOpts = {
+      ...DEFAULT_ACCOUNT_RESOLVER_OPTS,
+      ...opts.accountResolverOptions,
+    };
   }
 
   // TODO: Add another factory method to build from on-chain IDL

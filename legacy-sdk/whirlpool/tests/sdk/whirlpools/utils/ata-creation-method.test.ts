@@ -5,23 +5,13 @@ import {
 } from "@solana/spl-token";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import * as assert from "assert";
-import type { AtaCreationMethod, WhirlpoolContext } from "../../../../src";
-import { WhirlpoolContext } from "../../../../src";
+import { AtaCreationMethod, WhirlpoolContext, WhirlpoolContextOpts } from "../../../../src";
 import { resolveAtaForMints } from "../../../../src/utils/whirlpool-ata-utils";
 import { createAssociatedTokenAccount, createMint } from "../../../utils";
 import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
 
-/**
- * `AccountResolverOptions.createAtaMethod` selects which Associated Token Account program
- * instruction the SDK emits for ATAs that don't exist yet. `create` fails with
- * `IllegalOwner` if something else creates the ATA between the SDK's pre-flight fetch and
- * execution — a preceding transaction in the same Jito bundle, for instance — while
- * `createIdempotent` tolerates it.
- *
- * The default is `create`, which these tests pin: changing it would silently alter the
- * instructions every existing caller produces.
- */
 describe("ata creation method", () => {
+  // source: https://github.com/solana-program/associated-token-account/blob/5ef2d950ccdebb35a73c77e8008910cf15a87a5f/interface/src/instruction.rs#L19-L61
   const CREATE_DISCRIMINATOR: number[] = [];
   const CREATE_IDEMPOTENT_DISCRIMINATOR = [1];
 
@@ -40,26 +30,26 @@ describe("ata creation method", () => {
   });
 
   function ctxWithAtaCreationMethod(
-    createAtaMethod: AtaCreationMethod,
+    createAtaMethod?: AtaCreationMethod,
   ): WhirlpoolContext {
+    let opts: WhirlpoolContextOpts = {
+      accountResolverOptions: {
+        createWrappedSolAccountMethod: "keypair",
+        allowPDAOwnerAddress: false,
+      },
+    };
+
+    if (createAtaMethod) {
+      opts.accountResolverOptions!.createAtaMethod = createAtaMethod;
+    }
+
     return WhirlpoolContext.fromWorkspace(
       provider,
       program,
       undefined,
       undefined,
-      {
-        accountResolverOptions: {
-          createWrappedSolAccountMethod: "keypair",
-          allowPDAOwnerAddress: false,
-          createAtaMethod,
-        },
-      },
+      opts
     );
-  }
-
-  /** A mint the wallet holds no ATA for, so resolution has to emit a create instruction. */
-  async function mintWithoutAta(): Promise<PublicKey> {
-    return createMint(provider);
   }
 
   async function resolveCreateIx(ctx: WhirlpoolContext, mint: PublicKey) {
@@ -83,54 +73,36 @@ describe("ata creation method", () => {
   }
 
   it("emits Create by default", async () => {
-    const ix = await resolveCreateIx(defaultCtx, await mintWithoutAta());
+    const ix = await resolveCreateIx(defaultCtx, await createMint(provider));
     assert.deepEqual([...ix.data], CREATE_DISCRIMINATOR);
   });
 
   it("emits Create when explicitly configured", async () => {
     const ctx = ctxWithAtaCreationMethod("create");
-    const ix = await resolveCreateIx(ctx, await mintWithoutAta());
+    const ix = await resolveCreateIx(ctx, await createMint(provider));
     assert.deepEqual([...ix.data], CREATE_DISCRIMINATOR);
   });
 
   it("emits CreateIdempotent when configured", async () => {
     const ctx = ctxWithAtaCreationMethod("createIdempotent");
-    const ix = await resolveCreateIx(ctx, await mintWithoutAta());
+    const ix = await resolveCreateIx(ctx, await createMint(provider));
     assert.deepEqual([...ix.data], CREATE_IDEMPOTENT_DISCRIMINATOR);
   });
 
   it("keeps Create for an AccountResolverOptions built without the option", async () => {
-    // Callers that predate `createAtaMethod` pass an object without it. The context merges
-    // it over the defaults, so the field is absent from their literal but still resolves
-    // to `create`.
-    const ctx = WhirlpoolContext.fromWorkspace(
-      provider,
-      program,
-      undefined,
-      undefined,
-      {
-        accountResolverOptions: {
-          createWrappedSolAccountMethod: "keypair",
-          allowPDAOwnerAddress: false,
-        },
-      },
-    );
+    const ctx = ctxWithAtaCreationMethod();
     assert.equal(ctx.accountResolverOpts.createAtaMethod, "create");
-    const ix = await resolveCreateIx(ctx, await mintWithoutAta());
+    const ix = await resolveCreateIx(ctx, await createMint(provider));
     assert.deepEqual([...ix.data], CREATE_DISCRIMINATOR);
   });
 
   describe("when the ATA is created between resolution and execution", () => {
-    /**
-     * Resolve a create instruction and send it, optionally creating the ATA out of band
-     * first — the race a preceding transaction in the same bundle makes the SDK lose.
-     */
     async function resolveThenSend(
       createAtaMethod: AtaCreationMethod,
       frontRun: boolean,
     ) {
       const ctx = ctxWithAtaCreationMethod(createAtaMethod);
-      const mint = await mintWithoutAta();
+      const mint = await createMint(provider);
       const ix = await resolveCreateIx(ctx, mint);
 
       if (frontRun) {
@@ -149,21 +121,18 @@ describe("ata creation method", () => {
       });
     }
 
-    // Control: the same Create instruction lands when nothing front-runs it. Without this,
-    // the rejection below could pass for a malformed instruction rather than the race.
+    // the Create instruction lands when nothing front-runs it
     it("Create succeeds when nothing front-runs it", async () => {
       await resolveThenSend("create", false);
     });
 
     it("Create fails once the ATA exists", async () => {
-      // The failure is the point; the error is not portable. Mainnet's ATA program reports
-      // IllegalOwner ("Provided owner is not allowed") because it short-circuits before the
-      // system CPI, while the build bundled with LiteSVM reports NotEnoughAccountKeys for
-      // the same cause. Asserting either would pin the test to one program version.
+    // the Create instruction fails when another transaction creates the ATA
       await assert.rejects(() => resolveThenSend("create", true));
     });
 
     it("CreateIdempotent succeeds once the ATA exists", async () => {
+      // the CreateIdempotent instruction lands even when another transaction creates the ATA
       await resolveThenSend("createIdempotent", true);
     });
   });

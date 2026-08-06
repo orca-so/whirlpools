@@ -30,10 +30,6 @@ export type WhirlpoolContextOpts = {
   accountResolverOptions?: AccountResolverOptions;
 };
 
-/**
- * Which Associated Token Account program instruction to use when creating a missing ATA.
- * @category Core
- */
 export type AtaCreationMethod = "create" | "createIdempotent";
 
 /**
@@ -44,17 +40,10 @@ export type AccountResolverOptions = {
   createWrappedSolAccountMethod: WrappedSolAccountCreateMethod;
   allowPDAOwnerAddress: boolean;
   /**
-   * How to create ATAs that don't exist yet.
+   * The method to use when creating ATAs that don't exist.
    *
-   * Whether an ATA exists is decided from a pre-flight fetch, so `create` fails with
-   * `IllegalOwner` ("Provided owner is not allowed") if anything creates that ATA between
-   * the fetch and execution — another transaction in the same Jito bundle, a batched
-   * multisig transaction, or a concurrent send. `createIdempotent` tolerates that while
-   * still validating address derivation, the existing account's owner, and its mint.
-   *
-   * Optional, and defaults to `create` so existing behavior is unchanged. Set
-   * `createIdempotent` when composing these instructions with anything that may create
-   * the same ATA first.
+   * The historical default was the non-idempotent `create` method, so changing that
+   * introduces a breaking change for consumers.
    */
   createAtaMethod?: AtaCreationMethod;
 };
@@ -66,13 +55,10 @@ const DEFAULT_ACCOUNT_RESOLVER_OPTS: AccountResolverOptions = {
 };
 
 /**
- * Whether `opts` asks for `CreateIdempotent` when creating missing ATAs.
+ * Whether `opts` asks for `CreateIdempotent` when creating ATAs.
  *
- * Shaped as the `modeIdempotent` boolean that `resolveOrCreateATA(s)` takes. Anything but
- * an explicit `createIdempotent` means `create` — including `undefined`, which is what an
- * `AccountResolverOptions` built before this field existed carries.
- *
- * @category Core
+ * Only an explicit `createIdempotent` value gets idempotent behavior,
+ * anything else (including undefined) defaults to `create`
  */
 export function shouldCreateAtaIdempotent(
   opts: AccountResolverOptions,
@@ -176,8 +162,6 @@ export class WhirlpoolContext {
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
     this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);
-    // Merged rather than replaced so options added to AccountResolverOptions over time keep
-    // their default for callers that built the object before the option existed.
     this.accountResolverOpts = {
       ...DEFAULT_ACCOUNT_RESOLVER_OPTS,
       ...opts.accountResolverOptions,

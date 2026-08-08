@@ -52,6 +52,9 @@ export type {
   SetTokenBadgeAuthorityParams,
   InitializeTokenBadgeParams,
   DeleteTokenBadgeParams,
+  InitializePreparedSwapParams,
+  PrepareSwapV2Params,
+  CommitSwapV2Params,
 } from "../../instructions/v2";
 export type {
   CollectAllParams,

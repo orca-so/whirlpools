@@ -10,6 +10,7 @@ import type {
   SwapParams,
   TickArrayData,
   WhirlpoolContext,
+  WhirlpoolData,
 } from "../../../src";
 import {
   MAX_SQRT_PRICE,
@@ -41,6 +42,7 @@ import {
 } from "../../utils/init-utils";
 import type { PublicKey } from "@solana/web3.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("swap", () => {
   let provider: anchor.AnchorProvider;
@@ -1371,6 +1373,79 @@ describe("swap", () => {
     assert.ok(eventVerified);
 
     ctx.program.removeEventListener(listener);
+  });
+
+  it("increment state sequence", async () => {
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+    const aToB = false;
+    await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      22528, // to 33792
+      3,
+      TickSpacing.Standard,
+      aToB,
+    );
+
+    const fundParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: new anchor.BN(10_000_000),
+        tickLowerIndex: 29440,
+        tickUpperIndex: 33536,
+      },
+    ];
+
+    await fundPositions(
+      ctx,
+      poolInitInfo,
+      tokenAccountA,
+      tokenAccountB,
+      fundParams,
+    );
+
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
+
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
+    const whirlpoolData = whirlpool.getData();
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new BN(100000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const preStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData,
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      }),
+    ).buildAndExecute();
+
+    const postStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData,
+    );
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   /* using sparse-swap, we can handle uninitialized tick-array. so this test is no longer needed.

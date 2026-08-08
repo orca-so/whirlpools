@@ -154,6 +154,14 @@ export const WHIRLPOOL_ERROR__POSITION_WITH_TOKEN_EXTENSIONS_REQUIRED = 0x17b3; 
 export const WHIRLPOOL_ERROR__ADAPTIVE_FEE_CONSTANTS_UNCHANGED = 0x17b4; // 6068
 /** PriceSlippageOutOfBounds: Price outside slippage bounds */
 export const WHIRLPOOL_ERROR__PRICE_SLIPPAGE_OUT_OF_BOUNDS = 0x17b5; // 6069
+/** PreparedSwapNonceMaxExceeded: PreparedSwap nonce exceeds the maximum allowed value */
+export const WHIRLPOOL_ERROR__PREPARED_SWAP_NONCE_MAX_EXCEEDED = 0x17b6; // 6070
+/** PreparedSwapVersionMismatch: PreparedSwap account version does not match the expected version */
+export const WHIRLPOOL_ERROR__PREPARED_SWAP_VERSION_MISMATCH = 0x17b7; // 6071
+/** PreparedSwapNotPrepared: PreparedSwap is not in Prepared state */
+export const WHIRLPOOL_ERROR__PREPARED_SWAP_NOT_PREPARED = 0x17b8; // 6072
+/** PreparedSwapPreconditionMismatch: PreparedSwap precondition does not match current state */
+export const WHIRLPOOL_ERROR__PREPARED_SWAP_PRECONDITION_MISMATCH = 0x17b9; // 6073
 
 export type WhirlpoolError =
   | typeof WHIRLPOOL_ERROR__ADAPTIVE_FEE_CONSTANTS_UNCHANGED
@@ -205,6 +213,10 @@ export type WhirlpoolError =
   | typeof WHIRLPOOL_ERROR__POSITION_BUNDLE_NOT_DELETABLE
   | typeof WHIRLPOOL_ERROR__POSITION_NOT_LOCKABLE
   | typeof WHIRLPOOL_ERROR__POSITION_WITH_TOKEN_EXTENSIONS_REQUIRED
+  | typeof WHIRLPOOL_ERROR__PREPARED_SWAP_NONCE_MAX_EXCEEDED
+  | typeof WHIRLPOOL_ERROR__PREPARED_SWAP_NOT_PREPARED
+  | typeof WHIRLPOOL_ERROR__PREPARED_SWAP_PRECONDITION_MISMATCH
+  | typeof WHIRLPOOL_ERROR__PREPARED_SWAP_VERSION_MISMATCH
   | typeof WHIRLPOOL_ERROR__PRICE_SLIPPAGE_OUT_OF_BOUNDS
   | typeof WHIRLPOOL_ERROR__PROTOCOL_FEE_RATE_MAX_EXCEEDED
   | typeof WHIRLPOOL_ERROR__REMAINING_ACCOUNTS_DUPLICATED_ACCOUNTS_TYPE
@@ -279,6 +291,10 @@ if (process.env.NODE_ENV !== "production") {
     [WHIRLPOOL_ERROR__POSITION_BUNDLE_NOT_DELETABLE]: `Unable to delete PositionBundle with open positions`,
     [WHIRLPOOL_ERROR__POSITION_NOT_LOCKABLE]: `Position is not lockable`,
     [WHIRLPOOL_ERROR__POSITION_WITH_TOKEN_EXTENSIONS_REQUIRED]: `This whirlpool only supports open_position_with_token_extensions instruction`,
+    [WHIRLPOOL_ERROR__PREPARED_SWAP_NONCE_MAX_EXCEEDED]: `PreparedSwap nonce exceeds the maximum allowed value`,
+    [WHIRLPOOL_ERROR__PREPARED_SWAP_NOT_PREPARED]: `PreparedSwap is not in Prepared state`,
+    [WHIRLPOOL_ERROR__PREPARED_SWAP_PRECONDITION_MISMATCH]: `PreparedSwap precondition does not match current state`,
+    [WHIRLPOOL_ERROR__PREPARED_SWAP_VERSION_MISMATCH]: `PreparedSwap account version does not match the expected version`,
     [WHIRLPOOL_ERROR__PRICE_SLIPPAGE_OUT_OF_BOUNDS]: `Price outside slippage bounds`,
     [WHIRLPOOL_ERROR__PROTOCOL_FEE_RATE_MAX_EXCEEDED]: `Exceeded max protocol fee rate`,
     [WHIRLPOOL_ERROR__REMAINING_ACCOUNTS_DUPLICATED_ACCOUNTS_TYPE]: `Same accounts type is provided more than once`,

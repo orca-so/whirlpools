@@ -25,6 +25,7 @@ import {
   createMintV2,
   createTokenAccountV2,
 } from "../../../utils/v2/token-2022";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("collect_protocol_fees_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -201,6 +202,13 @@ describe("collect_protocol_fees_v2", () => {
             provider.wallet.publicKey,
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           await toTx(
             ctx,
             WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
@@ -221,12 +229,22 @@ describe("collect_protocol_fees_v2", () => {
             .addSigner(collectProtocolFeesAuthorityKeypair)
             .buildAndExecute();
 
+          const postStateSequence = getWhirlpoolStateSequence(
+            (await fetcher.getPool(
+              whirlpoolPda.publicKey,
+              IGNORE_CACHE,
+            )) as WhirlpoolData,
+          );
+
           const balanceDestA = await getTokenBalance(provider, destA);
           const balanceDestB = await getTokenBalance(provider, destB);
           assert.equal(balanceDestA, "150");
           assert.equal(balanceDestB, "150");
           assert.ok(poolBefore?.protocolFeeOwedA.eq(ZERO_BN));
           assert.ok(poolBefore?.protocolFeeOwedB.eq(ZERO_BN));
+
+          // state sequence must be incremented
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("fails to collect fees without the authority's signature", async () => {

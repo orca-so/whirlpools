@@ -26,6 +26,25 @@ if [ -n "$local_deps" ]; then
   done
 fi
 
+# In CI we authenticate with npm trusted publishing (OIDC). Every way that can fail is reported
+# by the registry as "404 Not Found" on PUT rather than as an auth error, so check the
+# preconditions up front and name the actual cause.
+# https://github.com/npm/cli/issues/9088
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+  npm_version=$(npm --version)
+  if [ "$(semver "$npm_version")" -lt "$(semver 11.5.1)" ]; then
+    echo "npm $npm_version cannot use trusted publishing; need >= 11.5.1" >&2
+    exit 1
+  fi
+
+  # The runner injects this only when the job has `id-token: write`, and it is the same signal
+  # npm looks for to decide an OIDC context exists.
+  if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+    echo "No GitHub OIDC token available; the job needs 'permissions: id-token: write'" >&2
+    exit 1
+  fi
+fi
+
 # Publish to npm
 echo "Publishing version $local_version to npm"
 npm publish --access public

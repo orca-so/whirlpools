@@ -27,9 +27,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
+      - name: Show npm version
+        run: npm --version
       - name: Setup Rust
         run: |
           rustup toolchain install 1.86.0 --profile minimal

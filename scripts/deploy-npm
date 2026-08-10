@@ -26,6 +26,42 @@ if [ -n "$local_deps" ]; then
   done
 fi
 
-# Publish to npm
-echo "Publishing version $local_version to npm"
-npm publish --access public
+# In CI we authenticate with npm trusted publishing (OIDC), which fails in ways the
+# registry reports as "404 Not Found" on PUT rather than as an auth error, for every
+# cause. Check the preconditions up front so a misconfigured release says why.
+# https://github.com/npm/cli/issues/9088
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+  npm_version=$(npm --version)
+  if [ "$(semver "$npm_version")" -lt "$(semver 11.5.1)" ]; then
+    echo "npm $npm_version cannot use trusted publishing; need >= 11.5.1" >&2
+    exit 1
+  fi
+
+  if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+    echo "No GitHub OIDC token available; the job needs 'permissions: id-token: write'" >&2
+    exit 1
+  fi
+
+  # Only setup-node's .npmrc matters here: it writes an `_authToken` placeholder whenever
+  # `registry-url` is set, which suppresses the OIDC exchange. A token in the user's own
+  # ~/.npmrc is a legitimate way to publish, so don't inspect it.
+  if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && grep -qs '_authToken' "$NPM_CONFIG_USERCONFIG"; then
+    echo "setup-node wrote an _authToken entry to $NPM_CONFIG_USERCONFIG, which makes npm" >&2
+    echo "skip the OIDC exchange. Drop the 'registry-url' input from the Setup Node step." >&2
+    exit 1
+  fi
+fi
+
+# TEST BRANCH: `--dry-run`, so nothing reaches the registry and there is nothing to clean up.
+# This needs no npm-side configuration, unlike `npm stage publish`, which would be refused
+# unless `npm stage publish` is in the trusted publisher's allowed actions -- something we
+# cannot see or set without npm settings access, and which would fail for a reason unrelated
+# to whether a real publish works.
+#
+# What --dry-run PROVES: npm is >= 11.5.1, no `_authToken` line is suppressing the OIDC
+# exchange, an OIDC context is detected, and the tarball builds with the expected file list.
+# What it CANNOT prove: that a trusted publisher is configured for this package. dry-run
+# reports the auth context but never validates it against the registry.
+# https://github.com/npm/cli/issues/8525
+echo "Dry-run publish of version $local_version"
+npm publish --access public --dry-run --loglevel verbose

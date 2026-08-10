@@ -8,12 +8,15 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - name: Main Only
         if: ${{ github.ref != 'refs/heads/main' }}
         run: exit 1
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
       - name: Setup SSH
@@ -22,12 +25,11 @@ jobs:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
           user: changests[bot]
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'yarn'
           registry-url: 'https://registry.npmjs.org'
-          always-auth: true
       - name: Setup Rust
         run: |
           rustup toolchain install 1.86.0 --profile minimal
@@ -88,13 +90,13 @@ jobs:
         uses: ./.github/actions/sync
       - name: Git Commit
         run: git add . && git commit -m "Publish Packages"
+      - name: Authenticate to crates.io
+        id: crates-auth
+        uses: rust-lang/crates-io-auth-action@v1
       - name: Publish Packages
-        # Use the same -Rp/--from combo we rely on for the build so only release-set packages
-        # and their dependencies deploy, while still excluding the root monorepo script.
         run: yarn workspaces foreach -Rp --topological-dev --from $PACKAGES --exclude @orca-so/whirlpools-monorepo run deploy
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       - name: Tag Release
         run: yarn changeset tag

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-core
 
+## 3.1.1
+
+### Patch Changes
+
+- [#1327](https://github.com/orca-so/whirlpools/pull/1327) [`bab9a1f`](https://github.com/orca-so/whirlpools/commit/bab9a1f3e4a4021ca91d0d503132daf64e427486) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Rebuild WASM bindings to pick up the `positionRatio` (U256 overflow) fix from whirlpools-rust-core.
+
 ## 3.1.0
 
 ### Minor Changes

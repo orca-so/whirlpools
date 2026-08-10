@@ -3,9 +3,11 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
+import { Transaction } from "@solana/web3.js";
 import * as assert from "assert";
-import { AtaCreationMethod, WhirlpoolContext, WhirlpoolContextOpts } from "../../../../src";
+import type { AtaCreationMethod, WhirlpoolContextOpts } from "../../../../src";
+import { WhirlpoolContext } from "../../../../src";
 import { resolveAtaForMints } from "../../../../src/utils/whirlpool-ata-utils";
 import { createAssociatedTokenAccount, createMint } from "../../../utils";
 import { initializeLiteSVMEnvironment } from "../../../utils/litesvm";
@@ -48,7 +50,7 @@ describe("ata creation method", () => {
       program,
       undefined,
       undefined,
-      opts
+      opts,
     );
   }
 
@@ -127,7 +129,7 @@ describe("ata creation method", () => {
     });
 
     it("Create fails once the ATA exists", async () => {
-    // the Create instruction fails when another transaction creates the ATA
+      // the Create instruction fails when another transaction creates the ATA
       await assert.rejects(() => resolveThenSend("create", true));
     });
 

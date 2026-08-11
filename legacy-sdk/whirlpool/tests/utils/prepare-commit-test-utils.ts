@@ -27,13 +27,8 @@ import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { getProviderWalletKeypair } from "./utils";
 import { useMaxCU } from "./init-utils";
-import type {
-  TransferFee} from "@solana/spl-token";
-import {
-  getEpochFee,
-  getMint,
-  getTransferFeeConfig
-} from "@solana/spl-token";
+import type { TransferFee } from "@solana/spl-token";
+import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 import { TEST_TOKEN_2022_PROGRAM_ID } from "./test-consts";
 
 type HasHiddenPubkey = {

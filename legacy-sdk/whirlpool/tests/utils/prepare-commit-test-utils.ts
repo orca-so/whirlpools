@@ -27,6 +27,8 @@ import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { getProviderWalletKeypair } from "./utils";
 import { useMaxCU } from "./init-utils";
+import { getEpochFee, getMint, getTransferFeeConfig, TransferFee } from "@solana/spl-token";
+import { TEST_TOKEN_2022_PROGRAM_ID } from "./test-consts";
 
 type HasHiddenPubkey = {
   _pubkey: PublicKey;
@@ -135,6 +137,17 @@ export type InternalPreparedSwapData = {
     authority: PublicKey;
     whirlpool: PublicKey;
     whirlpoolStateSequence: number;
+    swapTickSequenceLen: number;
+    transferFeeA: {
+      transferFeeEnabled: boolean;
+      maximumFee: BN;
+      transferFeeBasisPoints: number;
+    },
+    transferFeeB: {
+      transferFeeEnabled: boolean;
+      maximumFee: BN;
+      transferFeeBasisPoints: number;
+    };
     amount: BN;
     sqrtPriceLimit: BN;
     amountSpecifiedIsInput: boolean;
@@ -226,6 +239,58 @@ export async function simulateTransaction(
   );
 }
 
+export async function getEpochTransferFee(
+  provider: anchor.AnchorProvider,
+  mint: PublicKey,
+): Promise<TransferFee | null> {
+    const mintAccountInfo = await provider.connection.getAccountInfo(mint);
+    assert.ok(mintAccountInfo !== null);
+
+    if (!mintAccountInfo.owner.equals(TEST_TOKEN_2022_PROGRAM_ID)) {
+      return null;
+    }
+
+    const mintData = await getMint(
+      provider.connection,
+      mint,
+      "confirmed",
+      mintAccountInfo.owner,
+    );
+    const config = getTransferFeeConfig(mintData);
+    if (config === null) {
+      return null;
+    }
+    
+    const epochInfo = await provider.connection.getEpochInfo();
+    const transferFee = getEpochFee(config, BigInt(epochInfo.epoch));
+    return transferFee;    
+}
+
+export function verifyPreconditionTransferFee(
+  preparedSwapData: InternalPreparedSwapData,
+  transferFeeA: TransferFee | null,
+  transferFeeB: TransferFee | null,
+) {
+  if (transferFeeA === null) {
+    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeEnabled === false);
+    assert.ok(preparedSwapData.precondition.transferFeeA.maximumFee.eq(new BN(0)));
+    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeBasisPoints === 0);
+  } else {
+    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeEnabled === true);
+    assert.ok(preparedSwapData.precondition.transferFeeA.maximumFee.eq(new BN(transferFeeA.maximumFee.toString())));
+    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeBasisPoints === transferFeeA.transferFeeBasisPoints);
+  }
+  if (transferFeeB === null) {
+    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeEnabled === false);
+    assert.ok(preparedSwapData.precondition.transferFeeB.maximumFee.eq(new BN(0)));
+    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeBasisPoints === 0);
+  } else {
+    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeEnabled === true);
+    assert.ok(preparedSwapData.precondition.transferFeeB.maximumFee.eq(new BN(transferFeeB.maximumFee.toString())));
+    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeBasisPoints === transferFeeB.transferFeeBasisPoints);
+  }
+}
+
 export async function verifyPrepareAndCommitSwapV2Equivalence(
   ctx: WhirlpoolContext,
   params: CommitSwapV2Params & SwapV2Params,
@@ -240,6 +305,9 @@ export async function verifyPrepareAndCommitSwapV2Equivalence(
   const pool = await ctx.fetcher.getPool(params.whirlpool);
   assert.ok(pool);
   const stateSequence = getWhirlpoolStateSequence(pool);
+
+  const transferFeeA = await getEpochTransferFee(ctx.provider, pool.tokenMintA);
+  const transferFeeB = await getEpochTransferFee(ctx.provider, pool.tokenMintB);
 
   const swapIx = WhirlpoolIx.swapV2Ix(ctx.program, params);
   const prepareIx = WhirlpoolIx.prepareSwapV2Ix(ctx.program, params);
@@ -296,6 +364,7 @@ export async function verifyPrepareAndCommitSwapV2Equivalence(
   assert.ok(
     preparedSwapData.precondition.whirlpoolStateSequence === stateSequence,
   );
+  verifyPreconditionTransferFee(preparedSwapData, transferFeeA, transferFeeB);
   assert.ok(preparedSwapData.precondition.amount.eq(params.amount));
   assert.ok(
     preparedSwapData.precondition.sqrtPriceLimit.eq(params.sqrtPriceLimit),

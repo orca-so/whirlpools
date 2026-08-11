@@ -56,6 +56,7 @@ import { TransactionBuilder } from "@orca-so/common-sdk/dist/web3/transactions/t
 import { ParsableWhirlpool } from "../../../dist/network/public/parsing";
 import {
   assertPostWritableAccountMatch,
+  getEpochTransferFee,
   getWhirlpoolStateSequence,
   parsePreparedSwap,
   parsePrepareSwapV2ReturnData,
@@ -63,6 +64,7 @@ import {
   PREPARED_SWAP_STATE_COMMITTED,
   PREPARED_SWAP_STATE_PREPARED,
   simulateTransaction,
+  verifyPreconditionTransferFee,
   verifyPrepareAndCommitSwapV2Equivalence,
 } from "../../utils/prepare-commit-test-utils";
 
@@ -156,6 +158,8 @@ describe("prepare/commit swap tests", () => {
       );
 
       const stateSequence = getWhirlpoolStateSequence(pool.getData());
+      const transferFeeA = await getEpochTransferFee(provider, poolInfo.mintA);
+      const transferFeeB = await getEpochTransferFee(provider, poolInfo.mintB);
 
       const swapQuote = swapQuoteWithParams(
         {
@@ -279,6 +283,7 @@ describe("prepare/commit swap tests", () => {
       assert.ok(
         preparedSwapData.precondition.whirlpoolStateSequence === stateSequence,
       );
+      verifyPreconditionTransferFee(preparedSwapData, transferFeeA, transferFeeB);
       assert.ok(preparedSwapData.precondition.amount.eq(tradeTokenAmount));
       assert.ok(
         preparedSwapData.precondition.sqrtPriceLimit.eq(tradeSqrtPriceLimit),

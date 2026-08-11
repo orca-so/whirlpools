@@ -25,6 +25,7 @@ export * from "./positionOpened";
 export * from "./positionRewardInfo";
 export * from "./preparedSwapPendingUpdates";
 export * from "./preparedSwapPrecondition";
+export * from "./preparedSwapPreconditionTransferFee";
 export * from "./prepareSwapV2ReturnData";
 export * from "./remainingAccountsInfo";
 export * from "./remainingAccountsSlice";

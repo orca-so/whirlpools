@@ -20,7 +20,7 @@ pub state: u8,
 pub precondition: PreparedSwapPrecondition,
 pub pending_updates: PreparedSwapPendingUpdates,
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-pub reserved: [u8; 179],
+pub reserved: [u8; 157],
 }
 
 

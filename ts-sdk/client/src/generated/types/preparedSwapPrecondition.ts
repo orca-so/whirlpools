@@ -27,6 +27,12 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
 } from "@solana/kit";
+import {
+  getPreparedSwapPreconditionTransferFeeDecoder,
+  getPreparedSwapPreconditionTransferFeeEncoder,
+  type PreparedSwapPreconditionTransferFee,
+  type PreparedSwapPreconditionTransferFeeArgs,
+} from ".";
 
 export type PreparedSwapPrecondition = {
   slot: bigint;
@@ -34,6 +40,8 @@ export type PreparedSwapPrecondition = {
   whirlpool: Address;
   whirlpoolStateSequence: number;
   swapTickSequenceLen: number;
+  transferFeeA: PreparedSwapPreconditionTransferFee;
+  transferFeeB: PreparedSwapPreconditionTransferFee;
   amount: bigint;
   sqrtPriceLimit: bigint;
   amountSpecifiedIsInput: boolean;
@@ -46,6 +54,8 @@ export type PreparedSwapPreconditionArgs = {
   whirlpool: Address;
   whirlpoolStateSequence: number;
   swapTickSequenceLen: number;
+  transferFeeA: PreparedSwapPreconditionTransferFeeArgs;
+  transferFeeB: PreparedSwapPreconditionTransferFeeArgs;
   amount: number | bigint;
   sqrtPriceLimit: number | bigint;
   amountSpecifiedIsInput: boolean;
@@ -59,6 +69,8 @@ export function getPreparedSwapPreconditionEncoder(): FixedSizeEncoder<PreparedS
     ["whirlpool", getAddressEncoder()],
     ["whirlpoolStateSequence", getU32Encoder()],
     ["swapTickSequenceLen", getU8Encoder()],
+    ["transferFeeA", getPreparedSwapPreconditionTransferFeeEncoder()],
+    ["transferFeeB", getPreparedSwapPreconditionTransferFeeEncoder()],
     ["amount", getU64Encoder()],
     ["sqrtPriceLimit", getU128Encoder()],
     ["amountSpecifiedIsInput", getBooleanEncoder()],
@@ -73,6 +85,8 @@ export function getPreparedSwapPreconditionDecoder(): FixedSizeDecoder<PreparedS
     ["whirlpool", getAddressDecoder()],
     ["whirlpoolStateSequence", getU32Decoder()],
     ["swapTickSequenceLen", getU8Decoder()],
+    ["transferFeeA", getPreparedSwapPreconditionTransferFeeDecoder()],
+    ["transferFeeB", getPreparedSwapPreconditionTransferFeeDecoder()],
     ["amount", getU64Decoder()],
     ["sqrtPriceLimit", getU128Decoder()],
     ["amountSpecifiedIsInput", getBooleanDecoder()],

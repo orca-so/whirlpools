@@ -24,6 +24,7 @@
   pub(crate) mod r#position_reward_info;
   pub(crate) mod r#prepared_swap_pending_updates;
   pub(crate) mod r#prepared_swap_precondition;
+  pub(crate) mod r#prepared_swap_precondition_transfer_fee;
   pub(crate) mod r#prepare_swap_v2_return_data;
   pub(crate) mod r#remaining_accounts_info;
   pub(crate) mod r#remaining_accounts_slice;
@@ -52,6 +53,7 @@
   pub use self::r#position_reward_info::*;
   pub use self::r#prepared_swap_pending_updates::*;
   pub use self::r#prepared_swap_precondition::*;
+  pub use self::r#prepared_swap_precondition_transfer_fee::*;
   pub use self::r#prepare_swap_v2_return_data::*;
   pub use self::r#remaining_accounts_info::*;
   pub use self::r#remaining_accounts_slice::*;

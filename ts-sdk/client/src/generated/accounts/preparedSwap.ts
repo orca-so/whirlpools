@@ -82,7 +82,7 @@ export function getPreparedSwapEncoder(): FixedSizeEncoder<PreparedSwapArgs> {
       ["state", getU8Encoder()],
       ["precondition", getPreparedSwapPreconditionEncoder()],
       ["pendingUpdates", getPreparedSwapPendingUpdatesEncoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 179)],
+      ["reserved", fixEncoderSize(getBytesEncoder(), 157)],
     ]),
     (value) => ({ ...value, discriminator: PREPARED_SWAP_DISCRIMINATOR }),
   );
@@ -95,7 +95,7 @@ export function getPreparedSwapDecoder(): FixedSizeDecoder<PreparedSwap> {
     ["state", getU8Decoder()],
     ["precondition", getPreparedSwapPreconditionDecoder()],
     ["pendingUpdates", getPreparedSwapPendingUpdatesDecoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 179)],
+    ["reserved", fixDecoderSize(getBytesDecoder(), 157)],
   ]);
 }
 

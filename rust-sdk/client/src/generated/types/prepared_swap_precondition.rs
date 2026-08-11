@@ -6,6 +6,7 @@
 //!
 
 use solana_pubkey::Pubkey;
+use crate::generated::types::PreparedSwapPreconditionTransferFee;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
@@ -19,6 +20,8 @@ pub authority: Pubkey,
 pub whirlpool: Pubkey,
 pub whirlpool_state_sequence: u32,
 pub swap_tick_sequence_len: u8,
+pub transfer_fee_a: PreparedSwapPreconditionTransferFee,
+pub transfer_fee_b: PreparedSwapPreconditionTransferFee,
 pub amount: u64,
 pub sqrt_price_limit: u128,
 pub amount_specified_is_input: bool,

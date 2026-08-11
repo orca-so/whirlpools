@@ -4585,9 +4585,9 @@ __metadata:
     "@orca-so/tx-sender": "npm:^3.0.0"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    "@solana-program/memo": "npm:^0.10.0"
-    "@solana-program/system": "npm:^0.10.0"
-    "@solana-program/token": "npm:^0.9.0"
+    "@solana-program/memo": "npm:^0.12.0"
+    "@solana-program/system": "npm:^0.13.0"
+    "@solana-program/token": "npm:^0.15.0"
     "@solana-program/token-2022": "npm:^0.6.1"
     "@solana/kit": "npm:^5.0.0"
     "@solana/sysvars": "npm:^5.0.0"
@@ -4941,12 +4941,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/memo@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "@solana-program/memo@npm:0.10.0"
+"@solana-program/memo@npm:^0.12.0":
+  version: 0.12.0
+  resolution: "@solana-program/memo@npm:0.12.0"
   peerDependencies:
-    "@solana/kit": ^5.0
-  checksum: 10c0/4fb1f259d6bf3e2fe16893ea1ef9790b9c2d323f75f3a0d102a6a8ef16c7b47fe9ac0dd9203cc2711f6378d676c713844c6d24afd2874fbbfd744c71f66c0519
+    "@solana/kit": ^7.0.0
+  checksum: 10c0/732be9755de9ed732b340dc255cde52cb27cc69252be2b7ab55c5d0dd7a34611da639fea9b920247b766fc96909012526de25093fbd8ffde9054619b3c4ba784
   languageName: node
   linkType: hard
 
@@ -4956,6 +4956,15 @@ __metadata:
   peerDependencies:
     "@solana/kit": ^5.0
   checksum: 10c0/4cc3164d49fe7b10e9c0c89493f738e2d4294e2eae40fafee56b01dfb50b939c88f82eb06d5393333743b0edee961b03e947afcc20e6965252576900266ec52e
+  languageName: node
+  linkType: hard
+
+"@solana-program/system@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "@solana-program/system@npm:0.13.0"
+  peerDependencies:
+    "@solana/kit": ^7.0.0
+  checksum: 10c0/10ccdde6bb7f42f63094c4a81cadcce7e9fa05afc2ebf62e4e1dcbd51e55d6a701cd0820448b6e1bec5dc6205b8d3a7d0209624c8fc35ae6e18e99d29294a9c9
   languageName: node
   linkType: hard
 
@@ -4969,12 +4978,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/token@npm:^0.9.0":
-  version: 0.9.0
-  resolution: "@solana-program/token@npm:0.9.0"
+"@solana-program/token@npm:^0.15.0":
+  version: 0.15.0
+  resolution: "@solana-program/token@npm:0.15.0"
+  dependencies:
+    "@solana-program/system": "npm:^0.13.0"
   peerDependencies:
-    "@solana/kit": ^5.0
-  checksum: 10c0/f23b591e0ad27aa05e940429de73ebc0b9cbb65542e5aae775ac616577307d341d3335e36e24a38ba7612bcc584e50bd7cec360ca4904f42219f2708a9d453aa
+    "@solana/kit": ^7.0.0
+  checksum: 10c0/45879f4bc06446ad5bcc8d4d6e58172640beeebb1743c491fb6c0ad11af23dc1d634476d1105cfa41c9a26a645bd17a26ca7b65eabf4185d06e944d68d84574a
   languageName: node
   linkType: hard
 

@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
+use crate::util::get_epoch_transfer_fee;
 use crate::{
     constants::transfer_memo,
     events::*,
@@ -112,6 +113,8 @@ pub fn handler<'info>(
         whirlpool.key(),
         whirlpool.state_sequence(),
         swap_tick_sequence.arrays.len() as u8,
+        get_epoch_transfer_fee(&ctx.accounts.token_mint_a)?,
+        get_epoch_transfer_fee(&ctx.accounts.token_mint_b)?,
         amount,
         sqrt_price_limit,
         amount_specified_is_input,

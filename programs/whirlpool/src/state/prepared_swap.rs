@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::TransferFee;
 
 use crate::{
     errors::ErrorCode,
@@ -87,6 +88,36 @@ impl PendingTickUpdate {
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Debug, PartialEq, Eq)]
+pub struct PreparedSwapPreconditionTransferFee {
+    pub transfer_fee_enabled: bool,
+    pub maximum_fee: u64,
+    pub transfer_fee_basis_points: u16,
+}
+
+impl PreparedSwapPreconditionTransferFee {
+    pub const LEN: usize = 1 + 8 + 2; // 11
+}
+
+impl From<Option<TransferFee>> for PreparedSwapPreconditionTransferFee {
+    fn from(transfer_fee: Option<TransferFee>) -> Self {
+        match transfer_fee {
+            Some(fee) => Self {
+                transfer_fee_enabled: true,
+                maximum_fee: u64::from(fee.maximum_fee),
+                transfer_fee_basis_points: u16::from(fee.transfer_fee_basis_points),
+            },
+            None => Self {
+                transfer_fee_enabled: false,
+                maximum_fee: 0,
+                transfer_fee_basis_points: 0,
+            },
+        }
+    }
+}
+
+#[zero_copy(unsafe)]
+#[repr(C, packed)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PreparedSwapPrecondition {
     pub slot: u64,
 
@@ -96,6 +127,9 @@ pub struct PreparedSwapPrecondition {
     pub whirlpool_state_sequence: u32,
     pub swap_tick_sequence_len: u8,
 
+    pub transfer_fee_a: PreparedSwapPreconditionTransferFee,
+    pub transfer_fee_b: PreparedSwapPreconditionTransferFee,
+
     pub amount: u64,
     pub sqrt_price_limit: u128,
     pub amount_specified_is_input: bool,
@@ -103,7 +137,8 @@ pub struct PreparedSwapPrecondition {
 }
 
 impl PreparedSwapPrecondition {
-    pub const LEN: usize = 8 + 32 + 32 + 4 + 1 + 8 + 16 + 1 + 1; // 103
+    pub const LEN: usize =
+        8 + 32 + 32 + 4 + 1 + PreparedSwapPreconditionTransferFee::LEN * 2 + 8 + 16 + 1 + 1; // 125
 }
 
 #[zero_copy(unsafe)]
@@ -128,12 +163,11 @@ pub enum PreparedSwapState {
 }
 pub type PreparedSwapStateU8 = u8;
 
-const PREPARED_SWAP_RESERVED_BYTES: usize = 179; // total 10KB
+const PREPARED_SWAP_RESERVED_BYTES: usize = 157; // total 10KB
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
 #[derive(Debug)]
-
 pub struct PreparedSwap {
     // PreparedSwap account layout version
     // Guard against stale PreparedSwap accounts being used after a program upgrade that modifies the PreparedSwap layout or size.
@@ -179,6 +213,8 @@ impl PreparedSwap {
         whirlpool: Pubkey,
         whirlpool_state_sequence: u32,
         swap_tick_sequence_len: u8,
+        transfer_fee_a: Option<TransferFee>,
+        transfer_fee_b: Option<TransferFee>,
         amount: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
@@ -191,6 +227,8 @@ impl PreparedSwap {
             whirlpool,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a: transfer_fee_a.into(),
+            transfer_fee_b: transfer_fee_b.into(),
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -240,6 +278,8 @@ impl PreparedSwap {
         whirlpool: Pubkey,
         whirlpool_state_sequence: u32,
         swap_tick_sequence_len: u8,
+        transfer_fee_a: Option<TransferFee>,
+        transfer_fee_b: Option<TransferFee>,
         amount: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
@@ -264,6 +304,8 @@ impl PreparedSwap {
                 whirlpool,
                 whirlpool_state_sequence,
                 swap_tick_sequence_len,
+                transfer_fee_a: transfer_fee_a.into(),
+                transfer_fee_b: transfer_fee_b.into(),
                 amount,
                 sqrt_price_limit,
                 amount_specified_is_input,
@@ -281,6 +323,35 @@ impl PreparedSwap {
 mod prepared_swap_functions_tests {
     use super::*;
     use crate::state::{AdaptiveFeeInfo, WhirlpoolRewardInfo};
+
+    #[test]
+    fn test_from_option_transfer_fee_some() {
+        let epoch = 0x1122334455667788u64;
+        let maximum_fee = 0x99aabbccddeeff00u64;
+        let transfer_fee_basis_points = 0xffeeu16;
+        let transfer_fee = Some(TransferFee {
+            epoch: epoch.into(),
+            maximum_fee: maximum_fee.into(),
+            transfer_fee_basis_points: transfer_fee_basis_points.into(),
+        });
+
+        let precondition_transfer_fee: PreparedSwapPreconditionTransferFee = transfer_fee.into();
+
+        assert!(precondition_transfer_fee.transfer_fee_enabled);
+        assert!(precondition_transfer_fee.maximum_fee == maximum_fee);
+        assert!(precondition_transfer_fee.transfer_fee_basis_points == transfer_fee_basis_points);
+    }
+
+    #[test]
+    fn test_from_option_transfer_fee_none() {
+        let transfer_fee: Option<TransferFee> = None;
+
+        let precondition_transfer_fee: PreparedSwapPreconditionTransferFee = transfer_fee.into();
+
+        assert!(!precondition_transfer_fee.transfer_fee_enabled);
+        assert!(precondition_transfer_fee.maximum_fee == 0);
+        assert!(precondition_transfer_fee.transfer_fee_basis_points == 0);
+    }
 
     #[test]
     fn test_initialize() {
@@ -338,6 +409,13 @@ mod prepared_swap_functions_tests {
         let whirlpool_state_sequence = 0x88776655u32;
         let swap_tick_sequence_len = 0x88;
 
+        let transfer_fee_a = Some(TransferFee {
+            epoch: 0x1122334455667788u64.into(),
+            maximum_fee: 0x99aabbccddeeff00u64.into(),
+            transfer_fee_basis_points: 0xffeeu16.into(),
+        });
+        let transfer_fee_b = None;
+
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
         let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
@@ -350,6 +428,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -365,6 +445,8 @@ mod prepared_swap_functions_tests {
                     whirlpool: whirlpool_address,
                     whirlpool_state_sequence,
                     swap_tick_sequence_len,
+                    transfer_fee_a: transfer_fee_a.into(),
+                    transfer_fee_b: transfer_fee_b.into(),
                     amount,
                     sqrt_price_limit,
                     amount_specified_is_input,
@@ -582,6 +664,17 @@ mod prepared_swap_functions_tests {
         let whirlpool_state_sequence = 0x88776655u32;
         let swap_tick_sequence_len = 0x99u8;
 
+        let transfer_fee_a = Some(TransferFee {
+            epoch: 0x1122334455667788u64.into(),
+            maximum_fee: 0x99aabbccddeeff00u64.into(),
+            transfer_fee_basis_points: 0xffeeu16.into(),
+        });
+        let transfer_fee_b = Some(TransferFee {
+            epoch: 0x9988776655443322u64.into(),
+            maximum_fee: 0x0011223344556677u64.into(),
+            transfer_fee_basis_points: 0xaabbu16.into(),
+        });
+
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
         let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
@@ -594,6 +687,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -607,6 +702,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -626,6 +723,17 @@ mod prepared_swap_functions_tests {
         let whirlpool_state_sequence = 0x88776655u32;
         let swap_tick_sequence_len = 0x99u8;
 
+        let transfer_fee_a = Some(TransferFee {
+            epoch: 0x1122334455667788u64.into(),
+            maximum_fee: 0x99aabbccddeeff00u64.into(),
+            transfer_fee_basis_points: 0xffeeu16.into(),
+        });
+        let transfer_fee_b = Some(TransferFee {
+            epoch: 0x9988776655443322u64.into(),
+            maximum_fee: 0x0011223344556677u64.into(),
+            transfer_fee_basis_points: 0xaabbu16.into(),
+        });
+
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
         let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
@@ -638,6 +746,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -654,6 +764,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -676,6 +788,17 @@ mod prepared_swap_functions_tests {
         let whirlpool_state_sequence = 0x88776655u32;
         let swap_tick_sequence_len = 0x99u8;
 
+        let transfer_fee_a = Some(TransferFee {
+            epoch: 0x1122334455667788u64.into(),
+            maximum_fee: 0x99aabbccddeeff00u64.into(),
+            transfer_fee_basis_points: 0xffeeu16.into(),
+        });
+        let transfer_fee_b = Some(TransferFee {
+            epoch: 0x9988776655443322u64.into(),
+            maximum_fee: 0x0011223344556677u64.into(),
+            transfer_fee_basis_points: 0xaabbu16.into(),
+        });
+
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
         let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
@@ -688,6 +811,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -704,6 +829,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -726,6 +853,23 @@ mod prepared_swap_functions_tests {
         let whirlpool_state_sequence = 0x88776655u32;
         let swap_tick_sequence_len = 0x99u8;
 
+        let epoch_a = 0x1122334455667788u64;
+        let maximum_fee_a = 0x99aabbccddeeff00u64;
+        let transfer_fee_basis_points_a = 0xffeeu16;
+        let transfer_fee_a = Some(TransferFee {
+            epoch: epoch_a.into(),
+            maximum_fee: maximum_fee_a.into(),
+            transfer_fee_basis_points: transfer_fee_basis_points_a.into(),
+        });
+        let epoch_b = 0x9988776655443322u64;
+        let maximum_fee_b = 0x0011223344556677u64;
+        let transfer_fee_basis_points_b = 0xaabbu16;
+        let transfer_fee_b = Some(TransferFee {
+            epoch: epoch_b.into(),
+            maximum_fee: maximum_fee_b.into(),
+            transfer_fee_basis_points: transfer_fee_basis_points_b.into(),
+        });
+
         let authority = Pubkey::new_unique();
         let amount = 0x1122334455667788u64;
         let sqrt_price_limit = 0xffeeddccbbaa99887766554433221100u128;
@@ -738,6 +882,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -752,6 +898,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -766,6 +914,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -783,6 +933,8 @@ mod prepared_swap_functions_tests {
             Pubkey::new_unique(), // mismatch
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -800,6 +952,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             0x11223344u32, // mismatch
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -817,6 +971,144 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len.checked_add(1).unwrap(), // mismatch
+            transfer_fee_a,
+            transfer_fee_b,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // transfer_fee_a mismatch (None)
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len,
+            None, // mismatch
+            transfer_fee_b,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // transfer_fee_a mismatch (maximum_fee)
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len,
+            Some(TransferFee {
+                epoch: epoch_a.into(),
+                maximum_fee: maximum_fee_a.checked_add(1).unwrap().into(), // mismatch
+                transfer_fee_basis_points: transfer_fee_basis_points_a.into(),
+            }),
+            transfer_fee_b,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // transfer_fee_a mismatch (transfer_fee_basis_points)
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len,
+            Some(TransferFee {
+                epoch: epoch_a.into(),
+                maximum_fee: maximum_fee_a.into(),
+                transfer_fee_basis_points: transfer_fee_basis_points_a
+                    .checked_add(1)
+                    .unwrap()
+                    .into(), // mismatch
+            }),
+            transfer_fee_b,
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // transfer_fee_b mismatch (None)
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len,
+            transfer_fee_b,
+            None, // mismatch
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // transfer_fee_b mismatch (maximum_fee)
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len,
+            transfer_fee_a,
+            Some(TransferFee {
+                epoch: epoch_b.into(),
+                maximum_fee: maximum_fee_b.checked_add(1).unwrap().into(), // mismatch
+                transfer_fee_basis_points: transfer_fee_basis_points_b.into(),
+            }),
+            amount,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            slot,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ErrorCode::PreparedSwapPreconditionMismatch.into()
+        );
+
+        // transfer_fee_b mismatch (transfer_fee_basis_points)
+        let result = prepared_swap.validate_for_commit(
+            authority,
+            whirlpool_address,
+            whirlpool_state_sequence,
+            swap_tick_sequence_len,
+            transfer_fee_a,
+            Some(TransferFee {
+                epoch: epoch_b.into(),
+                maximum_fee: maximum_fee_b.into(),
+                transfer_fee_basis_points: transfer_fee_basis_points_b
+                    .checked_add(1)
+                    .unwrap()
+                    .into(), // mismatch
+            }),
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -834,6 +1126,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount.checked_add(1).unwrap(), // mismatch
             sqrt_price_limit,
             amount_specified_is_input,
@@ -851,6 +1145,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit.checked_add(1).unwrap(), // mismatch
             amount_specified_is_input,
@@ -868,6 +1164,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             !amount_specified_is_input, // mismatch
@@ -885,6 +1183,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -902,6 +1202,8 @@ mod prepared_swap_functions_tests {
             whirlpool_address,
             whirlpool_state_sequence,
             swap_tick_sequence_len,
+            transfer_fee_a,
+            transfer_fee_b,
             amount,
             sqrt_price_limit,
             amount_specified_is_input,
@@ -942,7 +1244,8 @@ mod data_layout_tests {
     fn test_len_constant() {
         assert_eq!(PendingPostSwapUpdate::LEN, 177);
         assert_eq!(PendingTickUpdate::LEN, 37);
-        assert_eq!(PreparedSwapPrecondition::LEN, 103);
+        assert_eq!(PreparedSwapPreconditionTransferFee::LEN, 11);
+        assert_eq!(PreparedSwapPrecondition::LEN, 125);
         assert_eq!(PreparedSwapPendingUpdates::LEN, 9947);
         assert_eq!(PreparedSwap::LEN, 1024 * 10); // 10KB
     }
@@ -977,6 +1280,12 @@ mod data_layout_tests {
         let precondition_whirlpool = Pubkey::new_unique();
         let precondition_whirlpool_state_sequence = 0x44556677u32;
         let precondition_swap_tick_sequence_len = 0x66u8;
+        let precondition_transfer_fee_a_transfer_fee_enabled = true;
+        let precondition_transfer_fee_a_maximum_fee = 0x1122334455667788u64;
+        let precondition_transfer_fee_a_transfer_fee_basis_points = 0x99aau16;
+        let precondition_transfer_fee_b_transfer_fee_enabled = true;
+        let precondition_transfer_fee_b_maximum_fee = 0x2233445566778899u64;
+        let precondition_transfer_fee_b_transfer_fee_basis_points = 0xaabbu16;
         let precondition_amount = 0x8899aabbccddeeffu64;
         let precondition_sqrt_price_limit = 0x112233445566778899aabbccddeeff00u128;
         let precondition_amount_specified_is_input = true;
@@ -1032,6 +1341,22 @@ mod data_layout_tests {
         offset += 4;
         precondition_data[offset] = precondition_swap_tick_sequence_len;
         offset += 1;
+        precondition_data[offset] = precondition_transfer_fee_a_transfer_fee_enabled as u8;
+        offset += 1;
+        precondition_data[offset..offset + 8]
+            .copy_from_slice(&precondition_transfer_fee_a_maximum_fee.to_le_bytes());
+        offset += 8;
+        precondition_data[offset..offset + 2]
+            .copy_from_slice(&precondition_transfer_fee_a_transfer_fee_basis_points.to_le_bytes());
+        offset += 2;
+        precondition_data[offset] = precondition_transfer_fee_b_transfer_fee_enabled as u8;
+        offset += 1;
+        precondition_data[offset..offset + 8]
+            .copy_from_slice(&precondition_transfer_fee_b_maximum_fee.to_le_bytes());
+        offset += 8;
+        precondition_data[offset..offset + 2]
+            .copy_from_slice(&precondition_transfer_fee_b_transfer_fee_basis_points.to_le_bytes());
+        offset += 2;
         precondition_data[offset..offset + 8].copy_from_slice(&precondition_amount.to_le_bytes());
         offset += 8;
         precondition_data[offset..offset + 16]
@@ -1157,6 +1482,50 @@ mod data_layout_tests {
             read_swap_tick_sequence_len,
             precondition_swap_tick_sequence_len
         );
+
+        let read_transfer_fee_a_transfer_fee_enabled = prepared_swap
+            .precondition
+            .transfer_fee_a
+            .transfer_fee_enabled;
+        assert_eq!(
+            read_transfer_fee_a_transfer_fee_enabled,
+            precondition_transfer_fee_a_transfer_fee_enabled
+        );
+        let read_transfer_fee_a_maximum_fee = prepared_swap.precondition.transfer_fee_a.maximum_fee;
+        assert_eq!(
+            read_transfer_fee_a_maximum_fee,
+            precondition_transfer_fee_a_maximum_fee
+        );
+        let read_transfer_fee_a_transfer_fee_basis_points = prepared_swap
+            .precondition
+            .transfer_fee_a
+            .transfer_fee_basis_points;
+        assert_eq!(
+            read_transfer_fee_a_transfer_fee_basis_points,
+            precondition_transfer_fee_a_transfer_fee_basis_points
+        );
+        let read_transfer_fee_b_transfer_fee_enabled = prepared_swap
+            .precondition
+            .transfer_fee_b
+            .transfer_fee_enabled;
+        assert_eq!(
+            read_transfer_fee_b_transfer_fee_enabled,
+            precondition_transfer_fee_b_transfer_fee_enabled
+        );
+        let read_transfer_fee_b_maximum_fee = prepared_swap.precondition.transfer_fee_b.maximum_fee;
+        assert_eq!(
+            read_transfer_fee_b_maximum_fee,
+            precondition_transfer_fee_b_maximum_fee
+        );
+        let read_transfer_fee_b_transfer_fee_basis_points = prepared_swap
+            .precondition
+            .transfer_fee_b
+            .transfer_fee_basis_points;
+        assert_eq!(
+            read_transfer_fee_b_transfer_fee_basis_points,
+            precondition_transfer_fee_b_transfer_fee_basis_points
+        );
+
         let read_amount = prepared_swap.precondition.amount;
         assert_eq!(read_amount, precondition_amount);
         let read_sqrt_price_limit = prepared_swap.precondition.sqrt_price_limit;

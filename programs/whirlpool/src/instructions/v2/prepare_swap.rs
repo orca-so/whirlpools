@@ -1,5 +1,5 @@
 use crate::instructions::swap_with_transfer_fee_extension;
-use crate::util::calculate_transfer_fee_excluded_amount;
+use crate::util::{calculate_transfer_fee_excluded_amount, get_epoch_transfer_fee};
 use crate::{
     errors::ErrorCode,
     state::*,
@@ -118,6 +118,8 @@ fn try_prepare_swap<'info>(
     let precondition_authority = ctx.accounts.token_authority.key();
     let precondition_whirlpool = ctx.accounts.whirlpool.key();
     let precondition_whirlpool_state_sequence = ctx.accounts.whirlpool.state_sequence();
+    let precondition_transfer_fee_a = get_epoch_transfer_fee(&ctx.accounts.token_mint_a)?;
+    let precondition_transfer_fee_b = get_epoch_transfer_fee(&ctx.accounts.token_mint_b)?;
     let precondition_amount = amount;
     let precondition_sqrt_price_limit = sqrt_price_limit;
     let precondition_amount_specified_is_input = amount_specified_is_input;
@@ -208,6 +210,8 @@ fn try_prepare_swap<'info>(
         precondition_whirlpool,
         precondition_whirlpool_state_sequence,
         precondition_swap_tick_sequence_len,
+        precondition_transfer_fee_a,
+        precondition_transfer_fee_b,
         precondition_amount,
         precondition_sqrt_price_limit,
         precondition_amount_specified_is_input,

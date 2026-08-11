@@ -283,7 +283,11 @@ describe("prepare/commit swap tests", () => {
       assert.ok(
         preparedSwapData.precondition.whirlpoolStateSequence === stateSequence,
       );
-      verifyPreconditionTransferFee(preparedSwapData, transferFeeA, transferFeeB);
+      verifyPreconditionTransferFee(
+        preparedSwapData,
+        transferFeeA,
+        transferFeeB,
+      );
       assert.ok(preparedSwapData.precondition.amount.eq(tradeTokenAmount));
       assert.ok(
         preparedSwapData.precondition.sqrtPriceLimit.eq(tradeSqrtPriceLimit),

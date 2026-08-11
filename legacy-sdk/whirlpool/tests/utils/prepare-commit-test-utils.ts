@@ -27,7 +27,13 @@ import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { getProviderWalletKeypair } from "./utils";
 import { useMaxCU } from "./init-utils";
-import { getEpochFee, getMint, getTransferFeeConfig, TransferFee } from "@solana/spl-token";
+import type {
+  TransferFee} from "@solana/spl-token";
+import {
+  getEpochFee,
+  getMint,
+  getTransferFeeConfig
+} from "@solana/spl-token";
 import { TEST_TOKEN_2022_PROGRAM_ID } from "./test-consts";
 
 type HasHiddenPubkey = {
@@ -142,7 +148,7 @@ export type InternalPreparedSwapData = {
       transferFeeEnabled: boolean;
       maximumFee: BN;
       transferFeeBasisPoints: number;
-    },
+    };
     transferFeeB: {
       transferFeeEnabled: boolean;
       maximumFee: BN;
@@ -243,27 +249,27 @@ export async function getEpochTransferFee(
   provider: anchor.AnchorProvider,
   mint: PublicKey,
 ): Promise<TransferFee | null> {
-    const mintAccountInfo = await provider.connection.getAccountInfo(mint);
-    assert.ok(mintAccountInfo !== null);
+  const mintAccountInfo = await provider.connection.getAccountInfo(mint);
+  assert.ok(mintAccountInfo !== null);
 
-    if (!mintAccountInfo.owner.equals(TEST_TOKEN_2022_PROGRAM_ID)) {
-      return null;
-    }
+  if (!mintAccountInfo.owner.equals(TEST_TOKEN_2022_PROGRAM_ID)) {
+    return null;
+  }
 
-    const mintData = await getMint(
-      provider.connection,
-      mint,
-      "confirmed",
-      mintAccountInfo.owner,
-    );
-    const config = getTransferFeeConfig(mintData);
-    if (config === null) {
-      return null;
-    }
-    
-    const epochInfo = await provider.connection.getEpochInfo();
-    const transferFee = getEpochFee(config, BigInt(epochInfo.epoch));
-    return transferFee;    
+  const mintData = await getMint(
+    provider.connection,
+    mint,
+    "confirmed",
+    mintAccountInfo.owner,
+  );
+  const config = getTransferFeeConfig(mintData);
+  if (config === null) {
+    return null;
+  }
+
+  const epochInfo = await provider.connection.getEpochInfo();
+  const transferFee = getEpochFee(config, BigInt(epochInfo.epoch));
+  return transferFee;
 }
 
 export function verifyPreconditionTransferFee(
@@ -272,22 +278,52 @@ export function verifyPreconditionTransferFee(
   transferFeeB: TransferFee | null,
 ) {
   if (transferFeeA === null) {
-    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeEnabled === false);
-    assert.ok(preparedSwapData.precondition.transferFeeA.maximumFee.eq(new BN(0)));
-    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeBasisPoints === 0);
+    assert.ok(
+      preparedSwapData.precondition.transferFeeA.transferFeeEnabled === false,
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeA.maximumFee.eq(new BN(0)),
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeA.transferFeeBasisPoints === 0,
+    );
   } else {
-    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeEnabled === true);
-    assert.ok(preparedSwapData.precondition.transferFeeA.maximumFee.eq(new BN(transferFeeA.maximumFee.toString())));
-    assert.ok(preparedSwapData.precondition.transferFeeA.transferFeeBasisPoints === transferFeeA.transferFeeBasisPoints);
+    assert.ok(
+      preparedSwapData.precondition.transferFeeA.transferFeeEnabled === true,
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeA.maximumFee.eq(
+        new BN(transferFeeA.maximumFee.toString()),
+      ),
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeA.transferFeeBasisPoints ===
+        transferFeeA.transferFeeBasisPoints,
+    );
   }
   if (transferFeeB === null) {
-    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeEnabled === false);
-    assert.ok(preparedSwapData.precondition.transferFeeB.maximumFee.eq(new BN(0)));
-    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeBasisPoints === 0);
+    assert.ok(
+      preparedSwapData.precondition.transferFeeB.transferFeeEnabled === false,
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeB.maximumFee.eq(new BN(0)),
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeB.transferFeeBasisPoints === 0,
+    );
   } else {
-    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeEnabled === true);
-    assert.ok(preparedSwapData.precondition.transferFeeB.maximumFee.eq(new BN(transferFeeB.maximumFee.toString())));
-    assert.ok(preparedSwapData.precondition.transferFeeB.transferFeeBasisPoints === transferFeeB.transferFeeBasisPoints);
+    assert.ok(
+      preparedSwapData.precondition.transferFeeB.transferFeeEnabled === true,
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeB.maximumFee.eq(
+        new BN(transferFeeB.maximumFee.toString()),
+      ),
+    );
+    assert.ok(
+      preparedSwapData.precondition.transferFeeB.transferFeeBasisPoints ===
+        transferFeeB.transferFeeBasisPoints,
+    );
   }
 }
 

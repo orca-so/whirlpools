@@ -1186,6 +1186,7 @@ export const generateDefaultConfigExtensionParams = (
 
 export function isTokenBadgeRequired(tokenTrait: TokenTrait): boolean {
   if (tokenTrait.hasFreezeAuthority) return true;
+  if (tokenTrait.hasMintCloseAuthorityExtension) return true;
   if (tokenTrait.hasPermanentDelegate) return true;
   if (tokenTrait.hasTransferHookExtension) return true;
   if (tokenTrait.hasPausableExtension) return true;

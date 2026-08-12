@@ -17,6 +17,7 @@ import {
   MIN_TICK_INDEX,
   NO_ORACLE_DATA,
 } from "../../../src";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 import {
   TICK_ARRAY_SIZE,
   PDAUtil,
@@ -35,17 +36,13 @@ import {
   warpClock,
   initializeLiteSVMEnvironment,
   setLiteSVMComputeUnitLimit,
+  getLiteSVM,
 } from "../../utils/litesvm";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
-import {
-  createAndMintToAssociatedTokenAccount,
-  createMint,
-  MAX_U64,
-  mintToDestination,
-  ZERO_BN,
-} from "../../utils";
+import { createMint, MAX_U64, mintToDestination, ZERO_BN } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import {
   buildTestPoolV2Params,
   buildTestPoolWithAdaptiveFeeParams,
@@ -67,6 +64,10 @@ import {
   verifyPreconditionTransferFee,
   verifyPrepareAndCommitSwapV2Equivalence,
 } from "../../utils/prepare-commit-test-utils";
+import {
+  createAndMintToAssociatedTokenAccountV2,
+  createMintV2,
+} from "../../utils/v2/token-2022";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -2028,6 +2029,614 @@ describe("prepare/commit swap tests", () => {
           /0x17b9/, // PreparedSwapPreconditionMismatch
         );
       });
+
+      // TransferFee can only be changed at epoch boundaries.
+      //
+      // However, if a mint is closed using MintCloseAuthority and then reinitialized,
+      // its configuration may appear to change in the middle of a slot.
+      // That said, closing a mint using MintCloseAuthority requires its supply to be zero,
+      // which makes this extremely difficult to pull off in practice. For example,
+      // an attacker would need to use PermanentDelegate to seize tokens from every holder.
+      //
+      // A TokenBadge is also required, and a trusted issuer would generally never do something like this.
+      // Even in the unlikely event that it did happen, the prepare/commit mechanism would still work correctly.
+      describe("TransferFeeConfig + MintCloseAuthority reinitialization", () => {
+        async function tryMintReinitializationAttack(
+          shouldBeRejected: boolean,
+          tokenTraitA: TokenTrait,
+          reinitializedTokenTraitA: TokenTrait | null,
+          tokenTraitB: TokenTrait,
+          reinitializedTokenTraitB: TokenTrait | null,
+        ) {
+          const poolInfo = await buildSwapTestPool(
+            false,
+            undefined,
+            true,
+            false,
+            tokenTraitA,
+            tokenTraitB,
+          );
+
+          const pool = await testCtx.whirlpoolClient.getPool(
+            poolInfo.whirlpool,
+            IGNORE_CACHE,
+          );
+
+          const tradeAmountSpecifiedIsInput = true;
+          const tradeAToB = true;
+          const tradeTokenAmount = new BN(100_000);
+          const tradeSqrtPriceLimit =
+            SwapUtils.getDefaultSqrtPriceLimit(tradeAToB);
+
+          const swapQuote = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+              aToB: tradeAToB,
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+                tradeAmountSpecifiedIsInput,
+              ),
+              sqrtPriceLimit: tradeSqrtPriceLimit,
+              tickArrays: await SwapUtils.getTickArrays(
+                pool.getData().tickCurrentIndex,
+                pool.getData().tickSpacing,
+                tradeAToB,
+                testCtx.whirlpoolCtx.program.programId,
+                pool.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenAmount: tradeTokenAmount,
+              whirlpoolData: pool.getData(),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContextForPool(
+                  testCtx.whirlpoolCtx.fetcher,
+                  pool.getData().tokenMintA,
+                  pool.getData().tokenMintB,
+                  IGNORE_CACHE,
+                ),
+              oracleData: await SwapUtils.getOracle(
+                testCtx.whirlpoolCtx.program.programId,
+                pool.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
+            },
+            Percentage.fromFraction(0, 100),
+          );
+
+          console.debug("swapQuote", {
+            estimatedAmountIn: swapQuote.estimatedAmountIn.toString(),
+            estimatedAmountOut: swapQuote.estimatedAmountOut.toString(),
+            deductingFromEstimatedAmountIn:
+              swapQuote.transferFee.deductingFromEstimatedAmountIn.toString(),
+            deductedFromEstimatedAmountOut:
+              swapQuote.transferFee.deductedFromEstimatedAmountOut.toString(),
+          });
+
+          const params: CommitSwapV2Params & SwapV2Params = {
+            ...swapQuote,
+            preparedSwap,
+            whirlpool: poolInfo.whirlpool,
+            tokenOwnerAccountA: poolInfo.tokenAccountA,
+            tokenOwnerAccountB: poolInfo.tokenAccountB,
+            tokenVaultA: pool.getData().tokenVaultA,
+            tokenVaultB: pool.getData().tokenVaultB,
+            tokenAuthority: testCtx.provider.wallet.publicKey,
+            tokenMintA: poolInfo.mintA,
+            tokenMintB: poolInfo.mintB,
+            tokenProgramA: poolInfo.tokenProgramA,
+            tokenProgramB: poolInfo.tokenProgramB,
+            oracle: poolInfo.oracle,
+          };
+
+          const swapIx = WhirlpoolIx.swapV2Ix(
+            testCtx.whirlpoolCtx.program,
+            params,
+          );
+          const prepareIx = WhirlpoolIx.prepareSwapV2Ix(
+            testCtx.whirlpoolCtx.program,
+            params,
+          );
+          const commitIx = WhirlpoolIx.commitSwapV2Ix(
+            testCtx.whirlpoolCtx.program,
+            params,
+          );
+
+          const swapV2TransactionBuilder = newTransactionBuilder();
+          swapV2TransactionBuilder.addInstructions([swapIx]);
+
+          const prepareSwapTransactionBuilder = newTransactionBuilder();
+          prepareSwapTransactionBuilder.addInstructions([prepareIx]);
+
+          const commitSwapTransactionBuilder = newTransactionBuilder();
+          commitSwapTransactionBuilder.addInstructions([commitIx]);
+
+          const swapV2SimResult = await simulateTransaction(
+            testCtx.provider,
+            swapV2TransactionBuilder,
+          );
+          assert.ok(swapV2SimResult.isSuccessful());
+
+          await prepareSwapTransactionBuilder.buildAndExecute();
+
+          const preparedSwapAccountInfo =
+            await testCtx.provider.connection.getAccountInfo(
+              params.preparedSwap,
+            );
+          const preparedSwapData = parsePreparedSwap(preparedSwapAccountInfo);
+          assert.ok(preparedSwapData);
+
+          if (tokenTraitA.hasTransferFeeExtension) {
+            assert.ok(
+              preparedSwapData.precondition.transferFeeA.transferFeeEnabled,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeA
+                .transferFeeBasisPoints === tokenTraitA.transferFeeInitialBps,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeA.maximumFee.eq(
+                new BN(tokenTraitA.transferFeeInitialMax!.toString()),
+              ),
+            );
+          } else {
+            assert.ok(
+              !preparedSwapData.precondition.transferFeeA.transferFeeEnabled,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeA
+                .transferFeeBasisPoints === 0,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeA.maximumFee.isZero(),
+            );
+          }
+          if (tokenTraitB.hasTransferFeeExtension) {
+            assert.ok(
+              preparedSwapData.precondition.transferFeeB.transferFeeEnabled,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeB
+                .transferFeeBasisPoints === tokenTraitB.transferFeeInitialBps,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeB.maximumFee.eq(
+                new BN(tokenTraitB.transferFeeInitialMax!.toString()),
+              ),
+            );
+          } else {
+            assert.ok(
+              !preparedSwapData.precondition.transferFeeB.transferFeeEnabled,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeB
+                .transferFeeBasisPoints === 0,
+            );
+            assert.ok(
+              preparedSwapData.precondition.transferFeeB.maximumFee.isZero(),
+            );
+          }
+
+          if (reinitializedTokenTraitA) {
+            const reinitializedTokenDataPubkey = await createMintV2(
+              testCtx.provider,
+              reinitializedTokenTraitA,
+            );
+            const reinitializedTokenDataAccountInfo =
+              await testCtx.provider.connection.getAccountInfo(
+                reinitializedTokenDataPubkey,
+                "confirmed",
+              );
+            assert.ok(reinitializedTokenDataAccountInfo);
+            const svm = getLiteSVM();
+            svm.setAccount(
+              params.tokenMintA,
+              reinitializedTokenDataAccountInfo,
+            );
+          }
+          if (reinitializedTokenTraitB) {
+            const reinitializedTokenDataPubkey = await createMintV2(
+              testCtx.provider,
+              reinitializedTokenTraitB,
+            );
+            const reinitializedTokenDataAccountInfo =
+              await testCtx.provider.connection.getAccountInfo(
+                reinitializedTokenDataPubkey,
+                "confirmed",
+              );
+            assert.ok(reinitializedTokenDataAccountInfo);
+            const svm = getLiteSVM();
+            svm.setAccount(
+              params.tokenMintB,
+              reinitializedTokenDataAccountInfo,
+            );
+          }
+
+          if (shouldBeRejected) {
+            await assert.rejects(
+              commitSwapTransactionBuilder.buildAndExecute(),
+              /0x17b9/, // PreparedSwapPreconditionMismatch
+            );
+          } else {
+            await commitSwapTransactionBuilder.buildAndExecute();
+          }
+        }
+
+        it("Should be rejected: mintA: no transfer fee -> with transfer fee", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+          );
+        });
+
+        it("Should be rejected: mintA: no transfer fee -> with transfer fee (but zero)", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 0, // 0%
+              transferFeeInitialMax: 0n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+          );
+        });
+
+        it("Should be rejected: mintA: with transfer fee -> no transfer fee", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+          );
+        });
+
+        it("Should be rejected: mintA: bps change", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 600, // 6%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+          );
+        });
+
+        it("Should be rejected: mintA: max change", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 500_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+          );
+        });
+
+        it("success: mintA: reinitialized but same config", async () => {
+          await tryMintReinitializationAttack(
+            false, // success
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+          );
+        });
+
+        // reject: mintB: no transfer fee -> with transfer fee
+        // reject: mintB: no transfer fee -> with transfer fee (but zero)
+        // reject: mintB: with transfer fee -> no transfer fee
+        // reject: mintB: bps change
+        // reject: mintB: max change
+        // success: mintB: reinitialized but same param
+
+        it("Should be rejected: mintB: no transfer fee -> with transfer fee", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+          );
+        });
+
+        it("Should be rejected: mintB: no transfer fee -> with transfer fee (but zero)", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 0, // 0%
+              transferFeeInitialMax: 0n,
+            },
+          );
+        });
+
+        it("Should be rejected: mintB: with transfer fee -> no transfer fee", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+          );
+        });
+
+        it("Should be rejected: mintB: bps change", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 600, // 6%
+              transferFeeInitialMax: 1_000_000n,
+            },
+          );
+        });
+
+        it("Should be rejected: mintB: max change", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 500_000n,
+            },
+          );
+        });
+
+        it("success: mintB: reinitialized but same config", async () => {
+          await tryMintReinitializationAttack(
+            false, // success
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: false,
+            },
+            null, // no change
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+          );
+        });
+
+        it("Should be rejected: mintA: bps change & mintB: bps change", async () => {
+          await tryMintReinitializationAttack(
+            true,
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 300, // 3%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 200, // 2%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 400, // 4%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+          );
+        });
+
+        it("success: mintA: reinitialized but same config & mintB: reinitialized but same config", async () => {
+          await tryMintReinitializationAttack(
+            false, // success
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 300, // 3%
+              transferFeeInitialMax: 500_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 300, // 3%
+              transferFeeInitialMax: 500_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+            {
+              isToken2022: true,
+              hasMintCloseAuthorityExtension: true,
+              hasTransferFeeExtension: true,
+              transferFeeInitialBps: 500, // 5%
+              transferFeeInitialMax: 1_000_000n,
+            },
+          );
+        });
+      });
     });
   });
 
@@ -2055,6 +2664,8 @@ describe("prepare/commit swap tests", () => {
     initialSqrtPrice: BN = PriceMath.tickIndexToSqrtPriceX64(64 * 44 + 32),
     fullRangeLiquidity: boolean = true,
     concentratedLiquidity: boolean = true,
+    tokenTraitA: TokenTrait = { isToken2022: false },
+    tokenTraitB: TokenTrait = { isToken2022: false },
   ): Promise<SwapTestPoolInfo> {
     // initialized pool layout
     // [ TAfull      ]...[ TAn3      ][ TAn2      ][ TAn1      ][ TA0    p  ][ TAp1      ][ TAp2      ][ TAp3      ]...[ TAfull      ]
@@ -2072,13 +2683,16 @@ describe("prepare/commit swap tests", () => {
     let tokenMintAAddress: PublicKey;
     let tokenMintBAddress: PublicKey;
     let rewardAuthorityKeypair: Keypair;
+    let tokenProgramAAddress: PublicKey;
+    let tokenProgramBAddress: PublicKey;
+
     if (withAdaptiveFee) {
       const feeTierIndex = 1024 + tickSpacing;
       const { poolInitInfo, configKeypairs } =
         await buildTestPoolWithAdaptiveFeeParams(
           testCtx.whirlpoolCtx,
-          { isToken2022: false },
-          { isToken2022: false },
+          tokenTraitA,
+          tokenTraitB,
           feeTierIndex,
           tickSpacing,
           baseFeeRate,
@@ -2111,11 +2725,13 @@ describe("prepare/commit swap tests", () => {
       tokenMintBAddress = poolInitInfo.tokenMintB;
       rewardAuthorityKeypair =
         configKeypairs.rewardEmissionsSuperAuthorityKeypair;
+      tokenProgramAAddress = poolInitInfo.tokenProgramA;
+      tokenProgramBAddress = poolInitInfo.tokenProgramB;
     } else {
       const { poolInitInfo, configKeypairs } = await buildTestPoolV2Params(
         testCtx.whirlpoolCtx,
-        { isToken2022: false },
-        { isToken2022: false },
+        tokenTraitA,
+        tokenTraitB,
         tickSpacing,
         baseFeeRate,
         initialSqrtPrice,
@@ -2134,6 +2750,8 @@ describe("prepare/commit swap tests", () => {
       tokenMintBAddress = poolInitInfo.tokenMintB;
       rewardAuthorityKeypair =
         configKeypairs.rewardEmissionsSuperAuthorityKeypair;
+      tokenProgramAAddress = poolInitInfo.tokenProgramA;
+      tokenProgramBAddress = poolInitInfo.tokenProgramB;
     }
 
     // init TickArrays
@@ -2169,13 +2787,15 @@ describe("prepare/commit swap tests", () => {
       Math.floor(poolData.tickCurrentIndex / tickSpacing) * tickSpacing;
 
     // provide liquidity
-    const tokenAccountA = await createAndMintToAssociatedTokenAccount(
+    const tokenAccountA = await createAndMintToAssociatedTokenAccountV2(
       testCtx.provider,
+      tokenTraitA,
       tokenMintAAddress,
       U64_MAX,
     );
-    const tokenAccountB = await createAndMintToAssociatedTokenAccount(
+    const tokenAccountB = await createAndMintToAssociatedTokenAccountV2(
       testCtx.provider,
+      tokenTraitB,
       tokenMintBAddress,
       U64_MAX,
     );
@@ -2279,8 +2899,8 @@ describe("prepare/commit swap tests", () => {
       oracle: oraclePda.publicKey,
       mintA: tokenMintAAddress,
       mintB: tokenMintBAddress,
-      tokenProgramA: TOKEN_PROGRAM_ID,
-      tokenProgramB: TOKEN_PROGRAM_ID,
+      tokenProgramA: tokenProgramAAddress,
+      tokenProgramB: tokenProgramBAddress,
       tokenAccountA,
       tokenAccountB,
       rewardAuthorityKeypair,

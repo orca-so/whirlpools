@@ -3,7 +3,9 @@ use solana_program::{program::invoke, system_instruction};
 
 use crate::errors::ErrorCode;
 use crate::state::{DynamicTick, Position, PositionUpdate, Tick, TickUpdate};
-const TICK_INITIALIZATION_SIZE: usize =
+use crate::util::{get_position_minimum_rent_amount, get_tick_rent_amount};
+
+pub const TICK_INITIALIZATION_SIZE: usize =
     DynamicTick::INITIALIZED_LEN - DynamicTick::UNINITIALIZED_LEN;
 
 #[derive(Default, Debug, PartialEq)]
@@ -57,44 +59,6 @@ pub struct TickArrayUpdate {
     pub size_update: TickArraySizeUpdate,
 }
 
-pub fn get_tick_rent_amount() -> Result<u64> {
-    let rent = Rent::get()?;
-    match (
-        TICK_INITIALIZATION_SIZE,
-        rent.lamports_per_byte_year,
-        rent.exemption_threshold.to_bits(),
-    ) {
-        // floating point number operation is high cost, so we hardcode a precalculated value here
-        // see also: https://github.com/anza-xyz/solana-sdk/blob/5390fa973897e969c5adea858079c7de1fa67d07/rent/src/lib.rs#L55-L59
-        //           https://github.com/anza-xyz/agave/pull/7373  (SIMD-0194)
-        //           https://github.com/anza-xyz/agave/pull/10126 (SIMD-0437 Rent reduction)
-        //           https://github.com/anza-xyz/agave/pull/10127 (SIMD-0438 Rent reduction fallback)
-        //
-        // New params (after SIMD-0194 and Rent reduction (Agave 4.2))
-        // - 6960u64 = 1_000_000_000 / 100 * 365 / (1024 * 1024) * 2
-        // - 0x3f_f0_00_00_00_00_00_00u64 = 1.0f64 in u64 bits representation
-        //
-        // Why we use ..=6960u64 here:
-        // To ensure that accounts remain rent-exempt even if the rent reduction fallback to 6960 occurs, any value below 6960 is treated as 6960.
-        // This also keeps the amount of lamports transferred between Position and DynamicTickArray accounts constant,
-        // even if the fallback never occurs.
-        // If the amount is not kept constant, it may become possible to withdraw more/less lamports from a DynamicTickArray
-        // than were transferred to it during increase liquidity, or the Position account may not have enough lamports to cover the required transfer.
-        (112, ..=6960u64, 0x3f_f0_00_00_00_00_00_00u64) |
-        // Old params (before SIMD-0194)
-        // - 3480u64 = 1_000_000_000 / 100 * 365 / (1024 * 1024)
-        // - 0x40_00_00_00_00_00_00_00u64 = 2.0f64 in u64 bits representation
-        (112, 3480u64, 0x40_00_00_00_00_00_00_00u64) => Ok(779520u64),
-        _ => {
-            unreachable!(
-                "unexpected Rent configuration on the Solana network: lamports_per_byte_year={}, exemption_threshold_bits={:#018x}",
-                rent.lamports_per_byte_year,
-                rent.exemption_threshold.to_bits(),
-            );
-        }
-    }
-}
-
 pub fn calculate_modify_tick_array(
     position: &Position,
     position_update: &PositionUpdate,
@@ -146,12 +110,21 @@ pub fn calculate_modify_tick_array(
 //
 // If the TAs are not variable size, the rent for the ticks will just remain in
 // the position account, and will be refunded when the position is closed.
-pub fn collect_rent_for_ticks_in_position<'info>(
+//
+// Ensure the Position account has a sufficient amount of lamports to prevent issues caused by changes in rent.
+pub fn collect_rent_for_ticks_in_position_and_reduction_fallback_margin<'info>(
     funder: &Signer<'info>,
     position: &Account<'info, Position>,
     system_program: &Program<'info, System>,
 ) -> Result<()> {
-    let rent_amount = get_tick_rent_amount()? * 2;
+    let rent_with_reduction_fallback_margin = get_position_minimum_rent_amount()?;
+    let reduction_fallback_margin =
+        rent_with_reduction_fallback_margin.saturating_sub(position.get_lamports());
+
+    let rent_for_ticks = get_tick_rent_amount()? * 2;
+    let rent_amount = rent_for_ticks
+        .checked_add(reduction_fallback_margin)
+        .ok_or(ErrorCode::RentCalculationError)?;
 
     let position_account = position.to_account_info();
     let instruction = system_instruction::transfer(funder.key, position_account.key, rent_amount);

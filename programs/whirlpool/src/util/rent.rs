@@ -38,21 +38,25 @@ fn assert_expected_rent_config() -> Result<()> {
 }
 
 pub fn get_tick_rent_amount() -> Result<u64> {
+    #[cfg(target_os = "solana")]
     assert_expected_rent_config()?;
     Ok(779_520)
 }
 
 pub fn get_dynamic_tick_array_minimum_rent_amount() -> Result<u64> {
+    #[cfg(target_os = "solana")]
     assert_expected_rent_config()?;
     Ok(1_920_960)
 }
 
 pub fn get_position_minimum_rent_amount() -> Result<u64> {
+    #[cfg(target_os = "solana")]
     assert_expected_rent_config()?;
     Ok(2_394_240)
 }
 
 pub fn get_native_mint_token_account_minimum_rent_amount() -> Result<u64> {
+    #[cfg(target_os = "solana")]
     assert_expected_rent_config()?;
     Ok(2_039_280)
 }
@@ -77,6 +81,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn assert_dynamic_tick_array_min_len() {
         // get_dynamic_tick_array_minimum_rent_amount depends on this assumption.
         assert_eq!(
@@ -89,6 +94,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn assert_position_len() {
         // get_position_minimum_rent_amount depends on this assumption.
         assert_eq!(crate::state::position::Position::LEN, 216);
@@ -98,6 +104,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn assert_token_account_len() {
         use solana_program::program_pack::Pack;
         // get_native_mint_token_account_minimum_rent_amount depends on this assumptions.

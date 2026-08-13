@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::{self, AssociatedToken};
+use anchor_spl::token::spl_token;
 use anchor_spl::token_2022::spl_token_2022::extension::{
     BaseStateWithExtensions, StateWithExtensions,
 };
@@ -8,7 +9,7 @@ use anchor_spl::token_2022::spl_token_2022::{
 };
 use anchor_spl::token_2022::{get_account_data_size, GetAccountDataSize, Token2022};
 use anchor_spl::token_2022_extensions::spl_token_metadata_interface;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::token_interface::{Mint, TokenAccount};
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::system_instruction::transfer;
 
@@ -16,7 +17,7 @@ use crate::constants::{
     WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL, WP_2022_METADATA_URI_BASE,
 };
 use crate::state::*;
-use crate::util::safe_create_account;
+use crate::util::{get_native_mint_token_account_minimum_rent_amount, safe_create_account};
 
 pub fn initialize_position_mint_2022<'info>(
     position_mint: &Signer<'info>,
@@ -462,21 +463,21 @@ pub fn close_empty_token_account_2022<'info>(
 pub fn initialize_vault_token_account<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     vault_token_account: &Signer<'info>,
-    vault_mint: &InterfaceAccount<'info, Mint>,
+    vault_mint_account_info: &AccountInfo<'info>,
     funder: &Signer<'info>,
-    token_program: &Interface<'info, TokenInterface>,
+    token_program_account_info: &AccountInfo<'info>,
     system_program: &Program<'info, System>,
 ) -> Result<()> {
-    let is_token_2022 = token_program.key() == spl_token_2022::ID;
+    let is_token_2022 = token_program_account_info.key() == spl_token_2022::ID;
 
     // The size required for extensions that are mandatory on the TokenAccount side — based on the TokenExtensions enabled on the Mint —
     // is automatically accounted for. For non-mandatory extensions, however, they must be explicitly added,
     // so we specify ImmutableOwner explicitly.
     let space = get_account_data_size(
         CpiContext::new(
-            token_program.to_account_info(),
+            token_program_account_info.clone(),
             GetAccountDataSize {
-                mint: vault_mint.to_account_info(),
+                mint: vault_mint_account_info.clone(),
             },
         ),
         // Needless to say, the program will never attempt to change the owner of the vault.
@@ -490,14 +491,20 @@ pub fn initialize_vault_token_account<'info>(
         },
     )?;
 
-    let lamports = Rent::get()?.minimum_balance(space as usize);
+    let lamports = if spl_token::native_mint::check_id(&vault_mint_account_info.key()) {
+        // Enforce the pre-Rent Reduction lamport level to prevent the lamports available as the WSOL balance from decreasing
+        // if rent increases due to the Rent Reduction Fallback.
+        get_native_mint_token_account_minimum_rent_amount()?
+    } else {
+        Rent::get()?.minimum_balance(space as usize)
+    };
 
     // create account
     safe_create_account(
         system_program.to_account_info(),
         funder.to_account_info(),
         vault_token_account.to_account_info(),
-        &token_program.key(),
+        token_program_account_info.key,
         lamports,
         space,
         &[],
@@ -507,11 +514,11 @@ pub fn initialize_vault_token_account<'info>(
         // initialize ImmutableOwner extension
         invoke(
             &spl_token_2022::instruction::initialize_immutable_owner(
-                token_program.key,
+                token_program_account_info.key,
                 vault_token_account.key,
             )?,
             &[
-                token_program.to_account_info(),
+                token_program_account_info.clone(),
                 vault_token_account.to_account_info(),
             ],
         )?;
@@ -520,15 +527,15 @@ pub fn initialize_vault_token_account<'info>(
     // initialize token account
     invoke(
         &spl_token_2022::instruction::initialize_account3(
-            token_program.key,
+            token_program_account_info.key,
             vault_token_account.key,
-            &vault_mint.key(),
+            vault_mint_account_info.key,
             &whirlpool.key(),
         )?,
         &[
-            token_program.to_account_info(),
+            token_program_account_info.clone(),
             vault_token_account.to_account_info(),
-            vault_mint.to_account_info(),
+            vault_mint_account_info.clone(),
             whirlpool.to_account_info(),
         ],
     )?;

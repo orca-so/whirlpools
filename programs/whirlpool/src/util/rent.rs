@@ -52,6 +52,11 @@ pub fn get_position_minimum_rent_amount() -> Result<u64> {
     Ok(2_394_240)
 }
 
+pub fn get_native_mint_token_account_minimum_rent_amount() -> Result<u64> {
+    assert_expected_rent_config()?;
+    Ok(2_039_280)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -90,6 +95,16 @@ mod tests {
         assert_eq!(
             get_position_minimum_rent_amount().unwrap(),
             (ACCOUNT_STORAGE_OVERHEAD + 216) * FIXED_LAMPORTS_PER_BYTE
+        );
+    }
+
+    fn assert_token_account_len() {
+        use solana_program::program_pack::Pack;
+        // get_native_mint_token_account_minimum_rent_amount depends on this assumptions.
+        assert_eq!(anchor_spl::token::spl_token::state::Account::LEN, 165);
+        assert_eq!(
+            get_native_mint_token_account_minimum_rent_amount().unwrap(),
+            (ACCOUNT_STORAGE_OVERHEAD + 165) * FIXED_LAMPORTS_PER_BYTE
         );
     }
 }

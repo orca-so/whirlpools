@@ -1421,6 +1421,10 @@ export async function resetAndInitializeLiteSVMEnvironment(
   return await initializeLiteSVMEnvironment(programId);
 }
 
+export function requestAirdropLiteSVM(pubkey: PublicKey, airdropLamports: bigint) {
+  getLiteSVM().airdrop(toAddress(pubkey), lamports(airdropLamports));
+}
+
 // After calling sendTransaction, performing a remainder operation results in NaN.
 // When taking the remainder of an integer greater than or equal to 2^31, NaN occurs once - but it does not occur afterward.
 //

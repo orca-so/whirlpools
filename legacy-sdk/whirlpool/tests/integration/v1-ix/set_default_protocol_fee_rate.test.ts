@@ -133,7 +133,7 @@ describe("set_default_protocol_fee_rate", () => {
           whirlpoolsConfig: whirlpoolsConfigKey,
           feeAuthority: feeAuthorityKeypair.publicKey,
           defaultProtocolFeeRate: newDefaultProtocolFeeRate,
-        })
+        }),
       ).buildAndExecute(),
       REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );

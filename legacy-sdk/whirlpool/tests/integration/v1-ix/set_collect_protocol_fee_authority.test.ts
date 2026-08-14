@@ -4,7 +4,10 @@ import type { WhirlpoolsConfigData, WhirlpoolContext } from "../../../src";
 import { toTx, WhirlpoolIx } from "../../../src";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
-import { getLocalnetAdminKeypair0, REGEX_FOR_MISSING_SIGNATURE_ERROR } from "../../utils";
+import {
+  getLocalnetAdminKeypair0,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
+} from "../../utils";
 
 describe("set_collect_protocol_fee_authority", () => {
   let provider: anchor.AnchorProvider;

@@ -26,7 +26,6 @@ import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   resetLiteSVM,
-  getLiteSVM,
   initializeLiteSVMEnvironment,
   requestAirdropLiteSVM,
 } from "../../utils/litesvm";

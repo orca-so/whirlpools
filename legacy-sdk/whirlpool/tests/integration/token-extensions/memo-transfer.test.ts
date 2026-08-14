@@ -1554,7 +1554,6 @@ async function countMemoLog(
   signature: string,
   logMessage: string,
 ): Promise<number> {
-  const logLen = logMessage.length;
   // old format(1 line) : Program log: Memo (len N): "MSG"
   // new format(2 lines): Program log: Memo (len N)
   //                      Program log: MSG

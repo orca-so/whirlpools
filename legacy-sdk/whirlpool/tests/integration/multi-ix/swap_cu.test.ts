@@ -16,7 +16,6 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { initTestPoolWithTokens, useMaxCU } from "../../utils/init-utils";
 import {
   resetLiteSVM,
-  getLiteSVM,
   initializeLiteSVMEnvironment,
   requestAirdropLiteSVM,
 } from "../../utils/litesvm";

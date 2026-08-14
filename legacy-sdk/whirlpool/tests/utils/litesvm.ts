@@ -3,7 +3,8 @@
  */
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
-import { PublicKey, Keypair, Transaction, VersionedTransaction } from "@solana/web3.js";
+import type { VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import { LiteSVM, Clock, FeatureSet } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
@@ -19,7 +20,13 @@ import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 import whirlpoolIdl from "../../src/artifacts/whirlpool.json";
 import { WhirlpoolContext } from "../../src";
 import { TEST_TOKEN_2022_PROGRAM_ID } from "../utils";
-import { Address, EncodedAccount, lamports, address, MaybeEncodedAccount, TransactionMessageBytes, SignaturesMap, Transaction as KitTransaction, getTransactionDecoder } from "@solana/kit";
+import type {
+  Address,
+  EncodedAccount,
+  MaybeEncodedAccount,
+  Transaction as KitTransaction,
+} from "@solana/kit";
+import { lamports, address, getTransactionDecoder } from "@solana/kit";
 
 let _litesvm: LiteSVM | null = null;
 
@@ -58,13 +65,15 @@ function ensureNativeMintAccounts(litesvm: LiteSVM) {
       data.writeUInt8(9, 44);
       // isInitialized at offset 45 (bool)
       data.writeUInt8(1, 45);
-      litesvm.setAccount(toEncodedAccount(mint, {
-        lamports: 1_000_000, // non-zero rent to look realistic
-        data: new Uint8Array(data),
-        owner,
-        executable: false,
-        rentEpoch: 0,
-      }));
+      litesvm.setAccount(
+        toEncodedAccount(mint, {
+          lamports: 1_000_000, // non-zero rent to look realistic
+          data: new Uint8Array(data),
+          owner,
+          executable: false,
+          rentEpoch: 0,
+        }),
+      );
     }
   };
   ensure(NATIVE_MINT, TOKEN_PROGRAM_ID);
@@ -431,7 +440,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
   return {
     getAccountInfo: async (pubkey: PublicKey) => {
       const litesvm = getLiteSVM();
-      const account = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(pubkey)));
+      const account = fromMaybeEncodedAccount(
+        litesvm.getAccount(toAddress(pubkey)),
+      );
       if (!account) {
         // Synthesize native mint accounts if missing so tests can read owner
         if (pubkey.equals(NATIVE_MINT)) {
@@ -465,7 +476,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     getMultipleAccountsInfo: async (pubkeys: PublicKey[]) => {
       const litesvm = getLiteSVM();
       return pubkeys.map((pk) => {
-        const account = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(pk)));
+        const account = fromMaybeEncodedAccount(
+          litesvm.getAccount(toAddress(pk)),
+        );
         if (!account) {
           if (pk.equals(NATIVE_MINT)) {
             return {
@@ -756,7 +769,10 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     requestAirdrop: async (pubkey: PublicKey, airdropLamports: number) => {
       const litesvm = getLiteSVM();
       try {
-        const result = litesvm.airdrop(toAddress(pubkey), lamports(BigInt(airdropLamports)));
+        const result = litesvm.airdrop(
+          toAddress(pubkey),
+          lamports(BigInt(airdropLamports)),
+        );
         // LiteSVM airdrop returns null on success or an error object on failure
         // If result is null or undefined, it's a success
         if (!result) {
@@ -783,7 +799,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     },
     getTokenSupply: async (mint: PublicKey) => {
       const litesvm = getLiteSVM();
-      const mintAccount = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(mint)));
+      const mintAccount = fromMaybeEncodedAccount(
+        litesvm.getAccount(toAddress(mint)),
+      );
       if (!mintAccount || mintAccount.data.length < 45) {
         throw new Error("Invalid mint account");
       }
@@ -834,7 +852,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     getTokenAccountBalance: async (pubkey: PublicKey) => {
       const litesvm = getLiteSVM();
       // Get the token account data
-      const account = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(pubkey)));
+      const account = fromMaybeEncodedAccount(
+        litesvm.getAccount(toAddress(pubkey)),
+      );
       if (!account || account.data.length < 72) {
         throw new Error("Invalid token account");
       }
@@ -844,7 +864,9 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       const amount = data.readBigUInt64LE(64);
       // Get the mint to determine decimals
       const mintPubkey = new PublicKey(data.slice(0, 32));
-      const mintAccount = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(mintPubkey)));
+      const mintAccount = fromMaybeEncodedAccount(
+        litesvm.getAccount(toAddress(mintPubkey)),
+      );
       let decimals = 0;
       if (mintAccount && mintAccount.data.length >= 45) {
         const mintData = Buffer.from(mintAccount.data);
@@ -1122,7 +1144,10 @@ export async function createFundedKeypair(
 ): Promise<Keypair> {
   const litesvm = getLiteSVM();
   const keypair = Keypair.generate();
-  litesvm.airdrop(toAddress(keypair.publicKey), lamports(BigInt(airdropLamports)));
+  litesvm.airdrop(
+    toAddress(keypair.publicKey),
+    lamports(BigInt(airdropLamports)),
+  );
   return keypair;
 }
 
@@ -1152,13 +1177,15 @@ export function loadPreloadAccount(relativePath: string): void {
     typeof rentEpochRaw === "number" && rentEpochRaw > Number.MAX_SAFE_INTEGER
       ? 0
       : Number(rentEpochRaw);
-  litesvm.setAccount(toEncodedAccount(pubkey, {
-    lamports: lamportsNumber,
-    data: new Uint8Array(data),
-    owner: new PublicKey(account.owner),
-    executable: account.executable,
-    rentEpoch: rentEpochNumber,
-  }));
+  litesvm.setAccount(
+    toEncodedAccount(pubkey, {
+      lamports: lamportsNumber,
+      data: new Uint8Array(data),
+      owner: new PublicKey(account.owner),
+      executable: account.executable,
+      rentEpoch: rentEpochNumber,
+    }),
+  );
   console.info(`✅ Loaded preload account: ${pubkey.toBase58()}`);
 }
 
@@ -1397,13 +1424,15 @@ export async function initializeNativeMintIdempotent(provider: AnchorProvider) {
   const rentExemptLamports =
     await provider.connection.getMinimumBalanceForRentExemption(82);
   const litesvm = getLiteSVM();
-  litesvm.setAccount(toEncodedAccount(NATIVE_MINT, {
-    lamports: Number(rentExemptLamports),
-    data: new Uint8Array(mintData),
-    owner: TEST_TOKEN_PROGRAM_ID,
-    executable: false,
-    rentEpoch: 0,
-  }));
+  litesvm.setAccount(
+    toEncodedAccount(NATIVE_MINT, {
+      lamports: Number(rentExemptLamports),
+      data: new Uint8Array(mintData),
+      owner: TEST_TOKEN_PROGRAM_ID,
+      executable: false,
+      rentEpoch: 0,
+    }),
+  );
 }
 
 export async function initializeLiteSVMEnvironment(programId?: PublicKey) {
@@ -1438,7 +1467,10 @@ export async function resetAndInitializeLiteSVMEnvironment(
   return await initializeLiteSVMEnvironment(programId);
 }
 
-export function requestAirdropLiteSVM(pubkey: PublicKey, airdropLamports: bigint) {
+export function requestAirdropLiteSVM(
+  pubkey: PublicKey,
+  airdropLamports: bigint,
+) {
   getLiteSVM().airdrop(toAddress(pubkey), lamports(airdropLamports));
 }
 
@@ -1460,29 +1492,32 @@ function toAddress(pubkey: PublicKey): Address {
   return address(pubkey.toBase58());
 }
 
-function toEncodedAccount(pubkey: PublicKey, accountInfo: {
-    lamports: number,
-    data: Uint8Array,
-    owner: PublicKey,
-    executable: boolean,
-    rentEpoch: number,
-  }): EncodedAccount {
-    return {
-      address: toAddress(pubkey),
-      executable: accountInfo.executable,
-      programAddress: toAddress(accountInfo.owner),
-      lamports: lamports(BigInt(accountInfo.lamports)),
-      space: BigInt(accountInfo.data.length),
-      data: accountInfo.data,
-    };
+function toEncodedAccount(
+  pubkey: PublicKey,
+  accountInfo: {
+    lamports: number;
+    data: Uint8Array;
+    owner: PublicKey;
+    executable: boolean;
+    rentEpoch: number;
+  },
+): EncodedAccount {
+  return {
+    address: toAddress(pubkey),
+    executable: accountInfo.executable,
+    programAddress: toAddress(accountInfo.owner),
+    lamports: lamports(BigInt(accountInfo.lamports)),
+    space: BigInt(accountInfo.data.length),
+    data: accountInfo.data,
+  };
 }
 
 function fromMaybeEncodedAccount(account: MaybeEncodedAccount): {
-    lamports: bigint,
-    data: Uint8Array,
-    owner: PublicKey,
-    executable: boolean,
-    rentEpoch: number,
+  lamports: bigint;
+  data: Uint8Array;
+  owner: PublicKey;
+  executable: boolean;
+  rentEpoch: number;
 } | null {
   if (!account.exists) {
     return null;
@@ -1494,7 +1529,7 @@ function fromMaybeEncodedAccount(account: MaybeEncodedAccount): {
     executable: account.executable,
     owner: new PublicKey(account.programAddress.toString()),
     rentEpoch: 0,
-  };  
+  };
 }
 
 function toKitTransaction(

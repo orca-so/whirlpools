@@ -127,12 +127,14 @@ describe("set_default_protocol_fee_rate", () => {
 
     const newDefaultProtocolFeeRate = 1000;
     await assert.rejects(
-      program.rpc.setDefaultProtocolFeeRate(newDefaultProtocolFeeRate, {
-        accounts: {
+      toTx(
+        ctx,
+        WhirlpoolIx.setDefaultProtocolFeeRateIx(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKey,
           feeAuthority: feeAuthorityKeypair.publicKey,
-        },
-      }),
+          defaultProtocolFeeRate: newDefaultProtocolFeeRate,
+        })
+      ).buildAndExecute(),
       REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });

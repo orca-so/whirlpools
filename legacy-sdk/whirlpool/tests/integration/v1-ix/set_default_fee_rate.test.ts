@@ -214,13 +214,15 @@ describe("set_default_fee_rate", () => {
 
     const newDefaultFeeRate = 1000;
     await assert.rejects(
-      program.rpc.setDefaultFeeRate(newDefaultFeeRate, {
-        accounts: {
+      toTx(
+        ctx,
+        WhirlpoolIx.setDefaultFeeRateIx(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKey,
-          feeTier: feeTierPda.publicKey,
+          tickSpacing: TickSpacing.Standard,
           feeAuthority: feeAuthorityKeypair.publicKey,
-        },
-      }),
+          defaultFeeRate: newDefaultFeeRate,
+        }),
+      ).buildAndExecute(),
       REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });

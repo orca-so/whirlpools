@@ -63,14 +63,15 @@ describe("set_reward_emissions_super_authority", () => {
       .buildAndExecute();
 
     await assert.rejects(
-      ctx.program.rpc.setRewardEmissionsSuperAuthority({
-        accounts: {
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx.program, {
           whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
           rewardEmissionsSuperAuthority:
             rewardEmissionsSuperAuthorityKeypair.publicKey,
           newRewardEmissionsSuperAuthority: provider.wallet.publicKey,
-        },
-      }),
+        }),
+      ).buildAndExecute(),
       REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });

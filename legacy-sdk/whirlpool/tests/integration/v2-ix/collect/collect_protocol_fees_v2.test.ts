@@ -18,6 +18,7 @@ import {
   TickSpacing,
   ZERO_BN,
   initializeLiteSVMEnvironment,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
 } from "../../../utils";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
@@ -276,7 +277,7 @@ describe("collect_protocol_fees_v2", () => {
                 tokenOwnerAccountB: tokenAccountB,
               }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i,
+            REGEX_FOR_MISSING_SIGNATURE_ERROR,
           );
         });
 

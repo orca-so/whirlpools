@@ -6,7 +6,7 @@ import type {
   WhirlpoolContext,
 } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
-import { getLocalnetAdminKeypair0, TickSpacing } from "../../utils";
+import { getLocalnetAdminKeypair0, REGEX_FOR_MISSING_SIGNATURE_ERROR, TickSpacing } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 import {
@@ -221,7 +221,7 @@ describe("set_default_fee_rate", () => {
           feeAuthority: feeAuthorityKeypair.publicKey,
         },
       }),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

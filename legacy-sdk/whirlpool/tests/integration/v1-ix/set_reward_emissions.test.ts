@@ -6,6 +6,7 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   createAndMintToTokenAccount,
   mintToDestination,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
@@ -226,7 +227,7 @@ describe("set_reward_emissions", () => {
           emissionsPerSecondX64,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 });

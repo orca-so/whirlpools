@@ -6,7 +6,7 @@ import type {
   WhirlpoolContext,
 } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
-import { TickSpacing } from "../../utils";
+import { REGEX_FOR_MISSING_SIGNATURE_ERROR, TickSpacing } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 import { createInOrderMints } from "../../utils/test-builders";
@@ -133,7 +133,7 @@ describe("set_default_protocol_fee_rate", () => {
           feeAuthority: feeAuthorityKeypair.publicKey,
         },
       }),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

@@ -18,6 +18,7 @@ import {
   resetLiteSVM,
   getLiteSVM,
   initializeLiteSVMEnvironment,
+  requestAirdropLiteSVM,
 } from "../../utils/litesvm";
 import type { ByTokenAmountsParams } from "../../../src/instructions";
 
@@ -186,7 +187,7 @@ describe("Swap CUs", () => {
   describe("Fixed TA", () => {
     beforeEach(async () => {
       await resetLiteSVM();
-      getLiteSVM().airdrop(provider.wallet.publicKey, BigInt(100e9));
+      requestAirdropLiteSVM(provider.wallet.publicKey, BigInt(100e9));
     });
 
     it("No ticks initialized", async () => {
@@ -205,7 +206,7 @@ describe("Swap CUs", () => {
   describe("Dynamic TA", () => {
     beforeEach(async () => {
       await resetLiteSVM();
-      getLiteSVM().airdrop(provider.wallet.publicKey, BigInt(100e9));
+      requestAirdropLiteSVM(provider.wallet.publicKey, BigInt(100e9));
     });
 
     it("No ticks initialized", async () => {

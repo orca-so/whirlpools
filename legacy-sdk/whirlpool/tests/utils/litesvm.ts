@@ -3,8 +3,7 @@
  */
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
-import type { VersionedTransaction } from "@solana/web3.js";
-import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
+import { PublicKey, Keypair, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { LiteSVM, Clock, FeatureSet } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
@@ -19,6 +18,7 @@ import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 import whirlpoolIdl from "../../src/artifacts/whirlpool.json";
 import { WhirlpoolContext } from "../../src";
 import { TEST_TOKEN_2022_PROGRAM_ID } from "../utils";
+import { Address, EncodedAccount, lamports, address, MaybeEncodedAccount, TransactionMessageBytes, SignaturesMap, Transaction as KitTransaction, getTransactionDecoder } from "@solana/kit";
 
 let _litesvm: LiteSVM | null = null;
 
@@ -49,7 +49,7 @@ let _transactionHistory: Map<string, TransactionRecord> = new Map();
 function ensureNativeMintAccounts(litesvm: LiteSVM) {
   // Minimal mint layout: set owner and 82-byte data buffer
   const ensure = (mint: PublicKey, owner: PublicKey) => {
-    const acc = litesvm.getAccount(mint);
+    const acc = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(mint)));
     if (!acc) {
       const data = Buffer.alloc(82, 0);
       // supply at offset 36 (u64) -> 0
@@ -57,13 +57,13 @@ function ensureNativeMintAccounts(litesvm: LiteSVM) {
       data.writeUInt8(9, 44);
       // isInitialized at offset 45 (bool)
       data.writeUInt8(1, 45);
-      litesvm.setAccount(mint, {
+      litesvm.setAccount(toEncodedAccount(mint, {
         lamports: 1_000_000, // non-zero rent to look realistic
         data: new Uint8Array(data),
         owner,
         executable: false,
         rentEpoch: 0,
-      });
+      }));
     }
   };
   ensure(NATIVE_MINT, TOKEN_PROGRAM_ID);
@@ -169,7 +169,7 @@ function loadProgramFromPath(
   onError?: (message: string) => void,
 ): void {
   if (fs.existsSync(programPath)) {
-    _litesvm!.addProgramFromFile(programId, programPath);
+    _litesvm!.addProgramFromFile(toAddress(programId), programPath);
     onSuccess?.();
   } else {
     onError?.(`Program not found at ${programPath}`);
@@ -401,7 +401,7 @@ export async function createLiteSVMProvider(): Promise<anchor.AnchorProvider> {
   // Create wallet
   const wallet = Keypair.generate();
   // Fund the wallet using airdrop (500 SOL for tests that need large transfers)
-  litesvm.airdrop(wallet.publicKey, BigInt(500e9));
+  litesvm.airdrop(toAddress(wallet.publicKey), lamports(BigInt(500e9)));
   // Create connection wrapper
   const connection = createLiteSVMConnection(litesvm);
   // Create provider
@@ -422,7 +422,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
   return {
     getAccountInfo: async (pubkey: PublicKey) => {
       const litesvm = getLiteSVM();
-      const account = litesvm.getAccount(pubkey);
+      const account = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(pubkey)));
       if (!account) {
         // Synthesize native mint accounts if missing so tests can read owner
         if (pubkey.equals(NATIVE_MINT)) {
@@ -456,7 +456,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     getMultipleAccountsInfo: async (pubkeys: PublicKey[]) => {
       const litesvm = getLiteSVM();
       return pubkeys.map((pk) => {
-        const account = litesvm.getAccount(pk);
+        const account = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(pk)));
         if (!account) {
           if (pk.equals(NATIVE_MINT)) {
             return {
@@ -502,7 +502,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       // Send the raw transaction bytes directly to avoid type conflicts
       // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
       // but at runtime they're compatible
-      const result = vm.sendTransaction(tx);
+      const result = vm.sendTransaction(toKitTransaction(tx));
       patchEnvironmentAfterSendTransaction();
       // Check if transaction failed
       if ("err" in result) {
@@ -560,7 +560,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
           tx.sign(...signers);
         }
       }
-      const result = vm.sendTransaction(tx);
+      const result = vm.sendTransaction(toKitTransaction(tx));
       patchEnvironmentAfterSendTransaction();
       // Check if transaction failed
       if ("err" in result) {
@@ -660,7 +660,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         // LiteSVM handles serialization internally, just pass the transaction
         // TypeScript sees incompatibility between workspace and litesvm's bundled @solana/web3.js
         // but at runtime they're compatible
-        const result = vm.sendTransaction(tx);
+        const result = vm.sendTransaction(toKitTransaction(tx));
         patchEnvironmentAfterSendTransaction();
         // Check if transaction failed
         if ("err" in result) {
@@ -736,7 +736,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     },
     getBalance: async (pubkey: PublicKey) => {
       const litesvm = getLiteSVM();
-      const balance = litesvm.getBalance(pubkey);
+      const balance = litesvm.getBalance(toAddress(pubkey));
       return balance ? Number(balance) : 0;
     },
     getMinimumBalanceForRentExemption: async (dataLength: number) => {
@@ -744,10 +744,10 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
         getLiteSVM().minimumBalanceForRentExemption(BigInt(dataLength)),
       );
     },
-    requestAirdrop: async (pubkey: PublicKey, lamports: number) => {
+    requestAirdrop: async (pubkey: PublicKey, airdropLamports: number) => {
       const litesvm = getLiteSVM();
       try {
-        const result = litesvm.airdrop(pubkey, BigInt(lamports));
+        const result = litesvm.airdrop(toAddress(pubkey), lamports(BigInt(airdropLamports)));
         // LiteSVM airdrop returns null on success or an error object on failure
         // If result is null or undefined, it's a success
         if (!result) {
@@ -774,7 +774,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     },
     getTokenSupply: async (mint: PublicKey) => {
       const litesvm = getLiteSVM();
-      const mintAccount = litesvm.getAccount(mint);
+      const mintAccount = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(mint)));
       if (!mintAccount || mintAccount.data.length < 45) {
         throw new Error("Invalid mint account");
       }
@@ -825,7 +825,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
     getTokenAccountBalance: async (pubkey: PublicKey) => {
       const litesvm = getLiteSVM();
       // Get the token account data
-      const account = litesvm.getAccount(pubkey);
+      const account = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(pubkey)));
       if (!account || account.data.length < 72) {
         throw new Error("Invalid token account");
       }
@@ -835,7 +835,7 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       const amount = data.readBigUInt64LE(64);
       // Get the mint to determine decimals
       const mintPubkey = new PublicKey(data.slice(0, 32));
-      const mintAccount = litesvm.getAccount(mintPubkey);
+      const mintAccount = fromMaybeEncodedAccount(litesvm.getAccount(toAddress(mintPubkey)));
       let decimals = 0;
       if (mintAccount && mintAccount.data.length >= 45) {
         const mintData = Buffer.from(mintAccount.data);
@@ -1101,11 +1101,11 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
  * Create funded keypair for testing
  */
 export async function createFundedKeypair(
-  lamports: number = 100e9,
+  airdropLamports: number = 100e9,
 ): Promise<Keypair> {
   const litesvm = getLiteSVM();
   const keypair = Keypair.generate();
-  litesvm.airdrop(keypair.publicKey, BigInt(lamports));
+  litesvm.airdrop(toAddress(keypair.publicKey), lamports(BigInt(airdropLamports)));
   return keypair;
 }
 
@@ -1135,13 +1135,13 @@ export function loadPreloadAccount(relativePath: string): void {
     typeof rentEpochRaw === "number" && rentEpochRaw > Number.MAX_SAFE_INTEGER
       ? 0
       : Number(rentEpochRaw);
-  litesvm.setAccount(pubkey, {
+  litesvm.setAccount(toEncodedAccount(pubkey, {
     lamports: lamportsNumber,
     data: new Uint8Array(data),
     owner: new PublicKey(account.owner),
     executable: account.executable,
     rentEpoch: rentEpochNumber,
-  });
+  }));
   console.info(`✅ Loaded preload account: ${pubkey.toBase58()}`);
 }
 
@@ -1380,13 +1380,13 @@ export async function initializeNativeMintIdempotent(provider: AnchorProvider) {
   const rentExemptLamports =
     await provider.connection.getMinimumBalanceForRentExemption(82);
   const litesvm = getLiteSVM();
-  litesvm.setAccount(NATIVE_MINT, {
+  litesvm.setAccount(toEncodedAccount(NATIVE_MINT, {
     lamports: Number(rentExemptLamports),
     data: new Uint8Array(mintData),
     owner: TEST_TOKEN_PROGRAM_ID,
     executable: false,
     rentEpoch: 0,
-  });
+  }));
 }
 
 export async function initializeLiteSVMEnvironment(programId?: PublicKey) {
@@ -1433,4 +1433,52 @@ export async function resetAndInitializeLiteSVMEnvironment(
 // This behavior is observed when Number or BN calls toString(), since toString() internally uses the remainder operator - resulting in NaN appearing in the string output.
 function patchEnvironmentAfterSendTransaction() {
   void (Number.MAX_SAFE_INTEGER % 10000000);
+}
+
+function toAddress(pubkey: PublicKey): Address {
+  return address(pubkey.toBase58());
+}
+
+function toEncodedAccount(pubkey: PublicKey, accountInfo: {
+    lamports: number,
+    data: Uint8Array,
+    owner: PublicKey,
+    executable: boolean,
+    rentEpoch: number,
+  }): EncodedAccount {
+    return {
+      address: toAddress(pubkey),
+      executable: accountInfo.executable,
+      programAddress: toAddress(accountInfo.owner),
+      lamports: lamports(BigInt(accountInfo.lamports)),
+      space: BigInt(accountInfo.data.length),
+      data: accountInfo.data,
+    };
+}
+
+function fromMaybeEncodedAccount(account: MaybeEncodedAccount): {
+    lamports: bigint,
+    data: Uint8Array,
+    owner: PublicKey,
+    executable: boolean,
+    rentEpoch: number,
+} | null {
+  if (!account.exists) {
+    return null;
+  }
+
+  return {
+    data: account.data,
+    lamports: account.lamports,
+    executable: account.executable,
+    owner: new PublicKey(account.programAddress.toString()),
+    rentEpoch: 0,
+  };  
+}
+
+function toKitTransaction(
+  tx: Transaction | VersionedTransaction,
+): KitTransaction {
+  const decoder = getTransactionDecoder();
+  return decoder.decode(tx.serialize());
 }

@@ -8,6 +8,7 @@ import { LiteSVM, Clock, FeatureSet } from "litesvm";
 import bs58 from "bs58";
 import * as fs from "fs";
 import * as path from "path";
+import * as assert from "assert";
 import {
   NATIVE_MINT,
   NATIVE_MINT_2022,
@@ -100,11 +101,19 @@ function convertPayloadToBase64(payload: string): string | null {
 
 function normalizeLogsForAnchor(logs: string[]): string[] {
   const PROGRAM_DATA_PREFIX = "Program data:";
+  const MEMO_FIRST_LINE_PREFIX = "Program log: Memo (len";
+  let memoBodyLine = false;
   return logs.map((line) => {
     if (typeof line !== "string") return line as unknown as string;
     const trimmed = line.trim();
     // Preserve memo lines as-is
-    if (trimmed.startsWith("Program log: Memo (len")) {
+    // new Memo program generates 2 lines, the first line prints the length only.
+    // The second line contains the memo string.
+    if (trimmed.startsWith(MEMO_FIRST_LINE_PREFIX)) {
+      memoBodyLine = true;
+      return line;
+    } else if (memoBodyLine) {
+      memoBodyLine = false;
       return line;
     }
     // Helper: emit canonical Program data form understood by Anchor
@@ -1016,14 +1025,22 @@ function createLiteSVMConnection(litesvm: LiteSVM) {
       const MEMO_PROGRAM_ADDRESS = new PublicKey(
         "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
       );
+      let memoBodyLine = false;
       for (const log of logs) {
-        const memoMatch = log.match(/Program log: Memo \(len \d+\): "(.+)"/);
-        if (memoMatch) {
+        if (memoBodyLine) {
+          const memoBodyLineMatch = log.match(/Program log: (.+)/);
+          assert.ok(memoBodyLineMatch);
           instructions.push({
             programId: MEMO_PROGRAM_ADDRESS,
-            parsed: memoMatch[1],
+            parsed: memoBodyLineMatch[1],
           });
+
+          memoBodyLine = false;
+          continue;
         }
+
+        const memoLengthLineMatch = log.match(/Program log: Memo \(len \d+\)/); //log.match(/Program log: Memo \(len \d+\): "(.+)"/);
+        memoBodyLine = !!memoLengthLineMatch;
       }
       // If we found any memo instructions, add them as inner instructions
       if (instructions.length > 0) {

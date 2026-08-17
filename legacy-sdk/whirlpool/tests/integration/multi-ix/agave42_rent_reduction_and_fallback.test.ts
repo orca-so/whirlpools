@@ -18,11 +18,7 @@ import {
   toTx,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import {
-  createMint,
-  createTokenAccount,
-  ZERO_BN,
-} from "../../utils";
+import { createMint, createTokenAccount, ZERO_BN } from "../../utils";
 import {
   getLiteSVM,
   initializeLiteSVMEnvironment,

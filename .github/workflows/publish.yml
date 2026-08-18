@@ -81,8 +81,16 @@ jobs:
           # Every Cargo.lock, not just the release set: crates outside it pin the
           # released crates by path. `--workspace` re-resolves local packages only.
           for lock in $(git ls-files '*Cargo.lock'); do
+            dir="$(dirname "$lock")"
+            # Guard against an orphaned lockfile whose crate was deleted: without
+            # an adjacent manifest, cargo walks up and re-resolves some unrelated
+            # parent workspace instead, leaving this lockfile untouched.
+            if [ ! -f "$dir/Cargo.toml" ]; then
+              echo "Skipping $lock (no adjacent Cargo.toml)"
+              continue
+            fi
             echo "Refreshing $lock"
-            (cd "$(dirname "$lock")" && cargo update --workspace --quiet)
+            (cd "$dir" && cargo update --workspace --quiet)
           done
       - name: Build Solana program in Docker
         run: docker compose --profile build run --rm build-solana-program

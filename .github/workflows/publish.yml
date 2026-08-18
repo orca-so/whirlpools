@@ -67,6 +67,32 @@ jobs:
 
           echo "Brace list for release set: $PACKAGES"
           echo "PACKAGES=$PACKAGES" >> "$GITHUB_ENV"
+      - name: Determine New Versions
+        run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Cargo Version Numbers
+        uses: ./.github/actions/sync
+      - name: Update Lockfiles
+        run: |
+          set -euo pipefail
+          # Lockfiles still pin the pre-bump versions; refresh them here so the
+          # "Publish Packages" commit includes them and clones stay clean.
+          yarn install --no-immutable --mode=update-lockfile
+          # Every Cargo.lock, not just the release set: crates outside it pin the
+          # released crates by path. `--workspace` re-resolves local packages only.
+          for lock in $(git ls-files '*Cargo.lock'); do
+            dir="$(dirname "$lock")"
+            # Guard against an orphaned lockfile whose crate was deleted: without
+            # an adjacent manifest, cargo walks up and re-resolves some unrelated
+            # parent workspace instead, leaving this lockfile untouched.
+            if [ ! -f "$dir/Cargo.toml" ]; then
+              echo "Skipping $lock (no adjacent Cargo.toml)"
+              continue
+            fi
+            echo "Refreshing $lock"
+            (cd "$dir" && cargo update --workspace --quiet)
+          done
       - name: Build Solana program in Docker
         run: docker compose --profile build run --rm build-solana-program
       - name: Build release set and dependencies
@@ -83,12 +109,6 @@ jobs:
           yarn workspace @orca-so/whirlpools-lint run format
           # Format auto-generated rust client in rust-sdk/client
           yarn workspace @orca-so/whirlpools-rust-client run format
-      - name: Determine New Versions
-        run: yarn changeset version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Update Cargo Version Numbers
-        uses: ./.github/actions/sync
       - name: Git Commit
         run: git add . && git commit -m "Publish Packages"
       - name: Authenticate to crates.io

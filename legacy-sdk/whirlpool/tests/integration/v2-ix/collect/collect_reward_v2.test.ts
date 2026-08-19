@@ -28,6 +28,7 @@ import {
   ZERO_BN,
   warpClock,
   initializeLiteSVMEnvironment,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
 } from "../../../utils";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 import type { TokenTrait } from "../../../utils/v2/init-utils-v2";
@@ -980,7 +981,7 @@ describe("collect_reward_v2", () => {
                 rewardIndex: 0,
               }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i,
+            REGEX_FOR_MISSING_SIGNATURE_ERROR,
           );
         });
 

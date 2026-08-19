@@ -46,7 +46,7 @@ pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()>
     initialize_vault_token_account(
         whirlpool,
         &ctx.accounts.reward_vault,
-        &ctx.accounts.reward_mint,
+        &ctx.accounts.reward_mint.to_account_info(),
         &ctx.accounts.funder,
         &ctx.accounts.reward_token_program,
         &ctx.accounts.system_program,

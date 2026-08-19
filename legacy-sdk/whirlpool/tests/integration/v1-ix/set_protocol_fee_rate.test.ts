@@ -3,7 +3,11 @@ import * as assert from "assert";
 import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
 import { toTx, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { getLocalnetAdminKeypair0, TickSpacing } from "../../utils";
+import {
+  getLocalnetAdminKeypair0,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
+  TickSpacing,
+} from "../../utils";
 import {
   initializeLiteSVMEnvironment,
   pollForCondition,
@@ -117,7 +121,7 @@ describe("set_protocol_fee_rate", () => {
           protocolFeeRate: newProtocolFeeRate,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

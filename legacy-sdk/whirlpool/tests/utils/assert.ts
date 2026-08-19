@@ -191,3 +191,6 @@ export function assertTick(
   assert.ok(tick.liquidityNet.eq(liquidityNet));
   assert.ok(tick.liquidityGross.eq(liquidityGross));
 }
+
+export const REGEX_FOR_MISSING_SIGNATURE_ERROR: RegExp =
+  /Transaction is missing signatures/;

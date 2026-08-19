@@ -6,7 +6,11 @@ import type {
   WhirlpoolContext,
 } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolIx } from "../../../src";
-import { getLocalnetAdminKeypair0, TickSpacing } from "../../utils";
+import {
+  getLocalnetAdminKeypair0,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
+  TickSpacing,
+} from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 import {
@@ -206,22 +210,19 @@ describe("set_default_fee_rate", () => {
     const whirlpoolsConfigKey =
       configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
-    const feeTierPda = PDAUtil.getFeeTier(
-      ctx.program.programId,
-      configInitInfo.whirlpoolsConfigKeypair.publicKey,
-      TickSpacing.Standard,
-    );
 
     const newDefaultFeeRate = 1000;
     await assert.rejects(
-      program.rpc.setDefaultFeeRate(newDefaultFeeRate, {
-        accounts: {
+      toTx(
+        ctx,
+        WhirlpoolIx.setDefaultFeeRateIx(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKey,
-          feeTier: feeTierPda.publicKey,
+          tickSpacing: TickSpacing.Standard,
           feeAuthority: feeAuthorityKeypair.publicKey,
-        },
-      }),
-      /.*signature verification fail.*/i,
+          defaultFeeRate: newDefaultFeeRate,
+        }),
+      ).buildAndExecute(),
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

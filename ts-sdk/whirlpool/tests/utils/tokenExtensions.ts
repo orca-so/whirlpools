@@ -9,8 +9,10 @@ import {
   getInitializeTransferFeeConfigInstruction,
   getSetTransferFeeInstruction,
   getInitializeScaledUiAmountMintInstruction,
+  getInitializeTransferHookInstruction,
 } from "@solana-program/token-2022";
 import type { Address, Instruction } from "@solana/kit";
+import { address } from "@solana/kit";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import { DEFAULT_ADDRESS } from "../../src/config";
@@ -93,6 +95,15 @@ export async function setupMintTE(
           }),
         );
         break;
+      case "TransferHook":
+        instructions.push(
+          getInitializeTransferHookInstruction({
+            mint: keypair.address,
+            authority: signer.address,
+            programId: extension.programId,
+          }),
+        );
+        break;
     }
   }
 
@@ -146,6 +157,26 @@ export async function setupMintTEFee(
           maximumFee: 1e9,
           transferFeeBasisPoints: 150,
         },
+      },
+    ],
+  });
+}
+
+/** Transfer-hook counter program used in legacy SDK LiteSVM tests. */
+export const TEST_TRANSFER_HOOK_PROGRAM_ADDRESS = address(
+  "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS",
+);
+
+export async function setupMintTETransferHook(
+  config: { decimals?: number; hookProgramId?: Address } = {},
+): Promise<Address> {
+  return setupMintTE({
+    ...config,
+    extensions: [
+      {
+        __kind: "TransferHook",
+        authority: signer.address,
+        programId: config.hookProgramId ?? TEST_TRANSFER_HOOK_PROGRAM_ADDRESS,
       },
     ],
   });

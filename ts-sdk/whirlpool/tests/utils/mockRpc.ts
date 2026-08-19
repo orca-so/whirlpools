@@ -168,6 +168,21 @@ export async function getTestContext(): Promise<LiteSVM> {
   return _testContext;
 }
 
+export async function setRawAccount(
+  accountAddress: Address,
+  account: { lamports: number; data: Uint8Array; owner: Address },
+) {
+  const testContext = await getTestContext();
+  testContext.setAccount(toPublicKey(accountAddress), {
+    lamports: account.lamports,
+    data: account.data,
+    owner: toPublicKey(account.owner),
+    executable: false,
+    rentEpoch: 0,
+  });
+  accountsCache.delete(accountAddress);
+}
+
 export async function deleteAccount(address: Address) {
   const testContext = await getTestContext();
   testContext.setAccount(toPublicKey(address), {

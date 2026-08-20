@@ -59,6 +59,7 @@ import { createMintV2 } from "../../../utils/v2/token-2022";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import type { PublicKey } from "@solana/web3.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../../dist/types/public/constants";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("swap_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -3164,6 +3165,109 @@ describe("swap_v2", () => {
       assert.ok(polled.eventVerified);
 
       ctx.program.removeEventListener(listener);
+    });
+
+    it("increment state sequence", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard,
+        );
+      const aToB = false;
+      await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528, // to 33792
+        3,
+        TickSpacing.Standard,
+        aToB,
+      );
+
+      const fundParams: FundedPositionV2Params[] = [
+        {
+          liquidityAmount: new anchor.BN(10_000_000),
+          tickLowerIndex: 29440,
+          tickUpperIndex: 33536,
+        },
+      ];
+
+      await fundPositionsV2(
+        ctx,
+        poolInitInfo,
+        tokenAccountA,
+        tokenAccountB,
+        fundParams,
+      );
+
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
+
+      const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
+
+      const quote = swapQuoteWithParams(
+        {
+          amountSpecifiedIsInput: true,
+          aToB: false,
+          tokenAmount: new BN(100000),
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
+          whirlpoolData,
+          tickArrays: await SwapUtils.getTickArrays(
+            whirlpoolData.tickCurrentIndex,
+            whirlpoolData.tickSpacing,
+            false,
+            ctx.program.programId,
+            whirlpoolKey,
+            fetcher,
+            IGNORE_CACHE,
+          ),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolData,
+              IGNORE_CACHE,
+            ),
+          oracleData: NO_ORACLE_DATA,
+        },
+        Percentage.fromFraction(1, 100),
+      );
+
+      const preStateSequence = getWhirlpoolStateSequence(
+        (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData,
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.swapV2Ix(ctx.program, {
+          ...quote,
+          whirlpool: whirlpoolPda.publicKey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          oracle: oraclePda.publicKey,
+        }),
+      ).buildAndExecute();
+
+      const postStateSequence = getWhirlpoolStateSequence(
+        (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData,
+      );
+
+      // state sequence must be incremented
+      assert.equal(postStateSequence, preStateSequence + 1);
     });
   });
 

@@ -16,6 +16,7 @@ const PDA_BUNDLED_POSITION_SEED = "bundled_position";
 const PDA_CONFIG_EXTENSION_SEED = "config_extension";
 const PDA_TOKEN_BADGE_SEED = "token_badge";
 const PDA_LOCK_CONFIG_SEED = "lock_config";
+const PDA_PREPARED_SWAP_SEED = "prepared_swap";
 
 /**
  * @category Whirlpool Utils
@@ -286,6 +287,22 @@ export class PDAUtil {
   public static getLockConfig(programId: PublicKey, positionKey: PublicKey) {
     return AddressUtil.findProgramAddress(
       [Buffer.from(PDA_LOCK_CONFIG_SEED), positionKey.toBuffer()],
+      programId,
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param programId
+   * @param nonce
+   * @returns
+   */
+  public static getPreparedSwap(programId: PublicKey, nonce: number) {
+    return AddressUtil.findProgramAddress(
+      [
+        Buffer.from(PDA_PREPARED_SWAP_SEED),
+        new BN(nonce).toArrayLike(Buffer, "le", 2),
+      ],
       programId,
     );
   }

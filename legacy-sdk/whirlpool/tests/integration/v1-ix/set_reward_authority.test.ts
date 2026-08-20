@@ -2,10 +2,11 @@ import * as anchor from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
-import { PoolUtil, toTx, WhirlpoolIx } from "../../../src";
+import { IGNORE_CACHE, PoolUtil, toTx, WhirlpoolIx } from "../../../src";
 import { TickSpacing } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("set_reward_authority", () => {
   let provider: anchor.AnchorProvider;
@@ -23,6 +24,13 @@ describe("set_reward_authority", () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(
       ctx,
       TickSpacing.Standard,
+    );
+
+    const preStateSequence = getWhirlpoolStateSequence(
+      (await fetcher.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData,
     );
 
     const newKeypair = anchor.web3.Keypair.generate();
@@ -48,8 +56,14 @@ describe("set_reward_authority", () => {
 
     const pool = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
+      IGNORE_CACHE,
     )) as WhirlpoolData;
     assert.ok(PoolUtil.getRewardAuthority(pool).equals(newKeypair.publicKey));
+
+    const postStateSequence = getWhirlpoolStateSequence(pool);
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when provided reward_authority does not match whirlpool reward authority", async () => {

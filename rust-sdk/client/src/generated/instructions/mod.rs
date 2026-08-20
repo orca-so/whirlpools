@@ -14,6 +14,7 @@
   pub(crate) mod r#collect_protocol_fees_v2;
   pub(crate) mod r#collect_reward;
   pub(crate) mod r#collect_reward_v2;
+  pub(crate) mod r#commit_swap_v2;
   pub(crate) mod r#decrease_liquidity;
   pub(crate) mod r#decrease_liquidity_v2;
   pub(crate) mod r#delete_position_bundle;
@@ -32,6 +33,7 @@
   pub(crate) mod r#initialize_pool_with_adaptive_fee;
   pub(crate) mod r#initialize_position_bundle;
   pub(crate) mod r#initialize_position_bundle_with_metadata;
+  pub(crate) mod r#initialize_prepared_swap;
   pub(crate) mod r#initialize_reward;
   pub(crate) mod r#initialize_reward_v2;
   pub(crate) mod r#initialize_tick_array;
@@ -42,6 +44,7 @@
   pub(crate) mod r#open_position;
   pub(crate) mod r#open_position_with_metadata;
   pub(crate) mod r#open_position_with_token_extensions;
+  pub(crate) mod r#prepare_swap_v2;
   pub(crate) mod r#reposition_liquidity_v2;
   pub(crate) mod r#reset_position_range;
   pub(crate) mod r#set_adaptive_fee_constants;
@@ -81,6 +84,7 @@
   pub use self::r#collect_protocol_fees_v2::*;
   pub use self::r#collect_reward::*;
   pub use self::r#collect_reward_v2::*;
+  pub use self::r#commit_swap_v2::*;
   pub use self::r#decrease_liquidity::*;
   pub use self::r#decrease_liquidity_v2::*;
   pub use self::r#delete_position_bundle::*;
@@ -99,6 +103,7 @@
   pub use self::r#initialize_pool_with_adaptive_fee::*;
   pub use self::r#initialize_position_bundle::*;
   pub use self::r#initialize_position_bundle_with_metadata::*;
+  pub use self::r#initialize_prepared_swap::*;
   pub use self::r#initialize_reward::*;
   pub use self::r#initialize_reward_v2::*;
   pub use self::r#initialize_tick_array::*;
@@ -109,6 +114,7 @@
   pub use self::r#open_position::*;
   pub use self::r#open_position_with_metadata::*;
   pub use self::r#open_position_with_token_extensions::*;
+  pub use self::r#prepare_swap_v2::*;
   pub use self::r#reposition_liquidity_v2::*;
   pub use self::r#reset_position_range::*;
   pub use self::r#set_adaptive_fee_constants::*;

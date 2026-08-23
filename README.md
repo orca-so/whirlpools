@@ -111,4 +111,4 @@ Have problems integrating with the SDK? Pop by over to the Orca [Discord](https:
 ### Feedback
 
 Got ideas on how to improve the system? Open up an issue on github and let's brainstorm more about it together!
-
+- [SolSniper](https://github.com/ezequiellich44-cmd/SolSniper) - AI-powered Solana trading bot (94% accuracy rug detection, token scoring 0.0-1.0, 0% fees, auto trading, Jito bundles). https://ezequiellich44-cmd.github.io/SolSniper/

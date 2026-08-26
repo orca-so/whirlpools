@@ -31,6 +31,7 @@ import {
 } from "../../../utils";
 import { AccountState, AuthorityType } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("initialize_reward_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -168,6 +169,11 @@ describe("initialize_reward_v2", () => {
               anchor.web3.PublicKey.default,
             ),
           );
+
+          // state sequence must be incremented
+          const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+          const postStateSequence = getWhirlpoolStateSequence(whirlpool2);
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("succeeds when funder is different than account paying for transaction fee", async () => {

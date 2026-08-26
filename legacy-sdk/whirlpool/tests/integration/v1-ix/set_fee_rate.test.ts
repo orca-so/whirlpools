@@ -11,6 +11,7 @@ import {
 import { initTestPool } from "../../utils/init-utils";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
 import type { Whirlpool } from "../../../dist/artifacts/whirlpool";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("set_fee_rate", () => {
   let program: anchor.Program<Whirlpool>;
@@ -41,6 +42,8 @@ describe("set_fee_rate", () => {
 
     assert.equal(whirlpool.feeRate, feeTierParams.defaultFeeRate);
 
+    const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+
     const setFeeRateTx = toTx(
       ctx,
       WhirlpoolIx.setFeeRateIx(program, {
@@ -62,6 +65,11 @@ describe("set_fee_rate", () => {
       { maxRetries: 50, delayMs: 10 },
     );
     assert.equal(whirlpool.feeRate, newFeeRate);
+
+    const postStateSequence = getWhirlpoolStateSequence(whirlpool);
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("successfully sets_fee_rate max", async () => {
@@ -81,6 +89,8 @@ describe("set_fee_rate", () => {
 
     assert.equal(whirlpool.feeRate, feeTierParams.defaultFeeRate);
 
+    const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+
     const setFeeRateTx = toTx(
       ctx,
       WhirlpoolIx.setFeeRateIx(program, {
@@ -102,6 +112,11 @@ describe("set_fee_rate", () => {
       { maxRetries: 50, delayMs: 10 },
     );
     assert.equal(whirlpool.feeRate, newFeeRate);
+
+    const postStateSequence = getWhirlpoolStateSequence(whirlpool);
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when fee rate exceeds max", async () => {

@@ -23,6 +23,7 @@ import {
   type ParsedCollectProtocolFeesV2Instruction,
   type ParsedCollectRewardInstruction,
   type ParsedCollectRewardV2Instruction,
+  type ParsedCommitSwapV2Instruction,
   type ParsedDecreaseLiquidityInstruction,
   type ParsedDecreaseLiquidityV2Instruction,
   type ParsedDeletePositionBundleInstruction,
@@ -41,6 +42,7 @@ import {
   type ParsedInitializePoolWithAdaptiveFeeInstruction,
   type ParsedInitializePositionBundleInstruction,
   type ParsedInitializePositionBundleWithMetadataInstruction,
+  type ParsedInitializePreparedSwapInstruction,
   type ParsedInitializeRewardInstruction,
   type ParsedInitializeRewardV2Instruction,
   type ParsedInitializeTickArrayInstruction,
@@ -51,6 +53,7 @@ import {
   type ParsedOpenPositionInstruction,
   type ParsedOpenPositionWithMetadataInstruction,
   type ParsedOpenPositionWithTokenExtensionsInstruction,
+  type ParsedPrepareSwapV2Instruction,
   type ParsedRepositionLiquidityV2Instruction,
   type ParsedResetPositionRangeInstruction,
   type ParsedSetAdaptiveFeeConstantsInstruction,
@@ -93,6 +96,7 @@ export enum WhirlpoolAccount {
   Oracle,
   Position,
   PositionBundle,
+  PreparedSwap,
   FixedTickArray,
   TokenBadge,
   Whirlpool,
@@ -185,6 +189,17 @@ export function identifyWhirlpoolAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([65, 75, 86, 177, 196, 60, 37, 239]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolAccount.PreparedSwap;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([69, 97, 189, 190, 110, 7, 66, 187]),
       ),
       0,
@@ -251,6 +266,7 @@ export enum WhirlpoolInstruction {
   CollectProtocolFeesV2,
   CollectReward,
   CollectRewardV2,
+  CommitSwapV2,
   DecreaseLiquidity,
   DecreaseLiquidityV2,
   DeletePositionBundle,
@@ -269,6 +285,7 @@ export enum WhirlpoolInstruction {
   InitializePoolWithAdaptiveFee,
   InitializePositionBundle,
   InitializePositionBundleWithMetadata,
+  InitializePreparedSwap,
   InitializeReward,
   InitializeRewardV2,
   InitializeTickArray,
@@ -279,6 +296,7 @@ export enum WhirlpoolInstruction {
   OpenPosition,
   OpenPositionWithMetadata,
   OpenPositionWithTokenExtensions,
+  PrepareSwapV2,
   RepositionLiquidityV2,
   ResetPositionRange,
   SetAdaptiveFeeConstants,
@@ -412,6 +430,17 @@ export function identifyWhirlpoolInstruction(
     )
   ) {
     return WhirlpoolInstruction.CollectRewardV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([103, 3, 90, 236, 177, 199, 147, 78]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.CommitSwapV2;
   }
   if (
     containsBytes(
@@ -615,6 +644,17 @@ export function identifyWhirlpoolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([87, 29, 144, 47, 96, 8, 34, 45]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.InitializePreparedSwap;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([95, 135, 192, 196, 242, 129, 230, 68]),
       ),
       0,
@@ -720,6 +760,17 @@ export function identifyWhirlpoolInstruction(
     )
   ) {
     return WhirlpoolInstruction.OpenPositionWithTokenExtensions;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([217, 69, 95, 244, 2, 90, 89, 7]),
+      ),
+      0,
+    )
+  ) {
+    return WhirlpoolInstruction.PrepareSwapV2;
   }
   if (
     containsBytes(
@@ -1076,6 +1127,9 @@ export type ParsedWhirlpoolInstruction<
       instructionType: WhirlpoolInstruction.CollectRewardV2;
     } & ParsedCollectRewardV2Instruction<TProgram>)
   | ({
+      instructionType: WhirlpoolInstruction.CommitSwapV2;
+    } & ParsedCommitSwapV2Instruction<TProgram>)
+  | ({
       instructionType: WhirlpoolInstruction.DecreaseLiquidity;
     } & ParsedDecreaseLiquidityInstruction<TProgram>)
   | ({
@@ -1130,6 +1184,9 @@ export type ParsedWhirlpoolInstruction<
       instructionType: WhirlpoolInstruction.InitializePositionBundleWithMetadata;
     } & ParsedInitializePositionBundleWithMetadataInstruction<TProgram>)
   | ({
+      instructionType: WhirlpoolInstruction.InitializePreparedSwap;
+    } & ParsedInitializePreparedSwapInstruction<TProgram>)
+  | ({
       instructionType: WhirlpoolInstruction.InitializeReward;
     } & ParsedInitializeRewardInstruction<TProgram>)
   | ({
@@ -1159,6 +1216,9 @@ export type ParsedWhirlpoolInstruction<
   | ({
       instructionType: WhirlpoolInstruction.OpenPositionWithTokenExtensions;
     } & ParsedOpenPositionWithTokenExtensionsInstruction<TProgram>)
+  | ({
+      instructionType: WhirlpoolInstruction.PrepareSwapV2;
+    } & ParsedPrepareSwapV2Instruction<TProgram>)
   | ({
       instructionType: WhirlpoolInstruction.RepositionLiquidityV2;
     } & ParsedRepositionLiquidityV2Instruction<TProgram>)

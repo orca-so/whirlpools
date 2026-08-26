@@ -13,6 +13,7 @@ import { initTestPoolWithAdaptiveFee } from "../../utils/v2/init-utils-v2";
 import { MathUtil } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("set_fee_rate_by_delegated_fee_authority", () => {
   let program: anchor.Program;
@@ -92,6 +93,11 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
     );
     assert.ok(postWhirlpoolData);
     assert.equal(postWhirlpoolData.feeRate, newFeeRate);
+
+    // state sequence must be incremented
+    const preStateSequence = getWhirlpoolStateSequence(preWhirlpoolData);
+    const postStateSequence = getWhirlpoolStateSequence(postWhirlpoolData);
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("successfully sets_fee_rate_by_delegated_fee_authority max", async () => {
@@ -152,6 +158,11 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
     );
     assert.ok(postWhirlpoolData);
     assert.equal(postWhirlpoolData.feeRate, newFeeRate);
+
+    // state sequence must be incremented
+    const preStateSequence = getWhirlpoolStateSequence(preWhirlpoolData);
+    const postStateSequence = getWhirlpoolStateSequence(postWhirlpoolData);
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when fee rate exceeds max", async () => {

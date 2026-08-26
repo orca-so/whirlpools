@@ -17,9 +17,9 @@ import {
   transformEncoder,
   type AccountMeta,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
@@ -28,6 +28,12 @@ import {
 } from "@solana/kit";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../programs";
 import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+import {
+  getPrepareSwapV2ReturnDataDecoder,
+  getPrepareSwapV2ReturnDataEncoder,
+  type PrepareSwapV2ReturnData,
+  type PrepareSwapV2ReturnDataArgs,
+} from "../types";
 
 export const IDL_INCLUDE_DISCRIMINATOR = new Uint8Array([
   223, 253, 121, 121, 60, 193, 129, 31,
@@ -58,24 +64,33 @@ export type IdlIncludeInstruction<
     ]
   >;
 
-export type IdlIncludeInstructionData = { discriminator: ReadonlyUint8Array };
+export type IdlIncludeInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  prepareSwapV2ReturnData: PrepareSwapV2ReturnData;
+};
 
-export type IdlIncludeInstructionDataArgs = {};
+export type IdlIncludeInstructionDataArgs = {
+  prepareSwapV2ReturnData: PrepareSwapV2ReturnDataArgs;
+};
 
-export function getIdlIncludeInstructionDataEncoder(): FixedSizeEncoder<IdlIncludeInstructionDataArgs> {
+export function getIdlIncludeInstructionDataEncoder(): Encoder<IdlIncludeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["prepareSwapV2ReturnData", getPrepareSwapV2ReturnDataEncoder()],
+    ]),
     (value) => ({ ...value, discriminator: IDL_INCLUDE_DISCRIMINATOR }),
   );
 }
 
-export function getIdlIncludeInstructionDataDecoder(): FixedSizeDecoder<IdlIncludeInstructionData> {
+export function getIdlIncludeInstructionDataDecoder(): Decoder<IdlIncludeInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["prepareSwapV2ReturnData", getPrepareSwapV2ReturnDataDecoder()],
   ]);
 }
 
-export function getIdlIncludeInstructionDataCodec(): FixedSizeCodec<
+export function getIdlIncludeInstructionDataCodec(): Codec<
   IdlIncludeInstructionDataArgs,
   IdlIncludeInstructionData
 > {
@@ -91,6 +106,7 @@ export type IdlIncludeInput<
 > = {
   tickArray: Address<TAccountTickArray>;
   systemProgram?: Address<TAccountSystemProgram>;
+  prepareSwapV2ReturnData: IdlIncludeInstructionDataArgs["prepareSwapV2ReturnData"];
 };
 
 export function getIdlIncludeInstruction<
@@ -118,6 +134,9 @@ export function getIdlIncludeInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -130,7 +149,9 @@ export function getIdlIncludeInstruction<
       getAccountMeta(accounts.tickArray),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getIdlIncludeInstructionDataEncoder().encode({}),
+    data: getIdlIncludeInstructionDataEncoder().encode(
+      args as IdlIncludeInstructionDataArgs,
+    ),
     programAddress,
   } as IdlIncludeInstruction<
     TProgramAddress,

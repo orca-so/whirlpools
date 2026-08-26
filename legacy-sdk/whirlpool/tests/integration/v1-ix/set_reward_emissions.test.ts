@@ -14,6 +14,7 @@ import {
   pollForCondition,
 } from "../../utils/litesvm";
 import { initializeReward, initTestPool } from "../../utils/init-utils";
+import { getWhirlpoolStateSequence } from "../../utils/prepare-commit-test-utils";
 
 describe("set_reward_emissions", () => {
   let provider: anchor.AnchorProvider;
@@ -76,6 +77,8 @@ describe("set_reward_emissions", () => {
       whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(emissionsPerSecondX64),
     );
 
+    const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+
     // Successfuly set emissions back to zero
     await toTx(
       ctx,
@@ -100,6 +103,11 @@ describe("set_reward_emissions", () => {
       { maxRetries: 50, delayMs: 10 },
     );
     assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
+
+    const postStateSequence = getWhirlpoolStateSequence(whirlpool);
+
+    // state sequence must be incremented
+    assert.equal(postStateSequence, preStateSequence + 1);
   });
 
   it("fails when token vault does not contain at least 1 day of emission runway", async () => {

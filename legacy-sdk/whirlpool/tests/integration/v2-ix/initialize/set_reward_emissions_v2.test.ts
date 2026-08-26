@@ -18,6 +18,7 @@ import {
   mintToDestinationV2,
 } from "../../../utils/v2/token-2022";
 import { pollForCondition } from "../../../utils/litesvm";
+import { getWhirlpoolStateSequence } from "../../../utils/prepare-commit-test-utils";
 
 describe("set_reward_emissions_v2", () => {
   let provider: anchor.AnchorProvider;
@@ -129,6 +130,8 @@ describe("set_reward_emissions_v2", () => {
             ),
           );
 
+          const preStateSequence = getWhirlpoolStateSequence(whirlpool);
+
           // Successfuly set emissions back to zero
           await toTx(
             ctx,
@@ -161,6 +164,11 @@ describe("set_reward_emissions_v2", () => {
             )) as WhirlpoolData;
           })();
           assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
+
+          const postStateSequence = getWhirlpoolStateSequence(whirlpool);
+
+          // state sequence must be incremented
+          assert.equal(postStateSequence, preStateSequence + 1);
         });
 
         it("fails when token vault does not contain at least 1 day of emission runway", async () => {

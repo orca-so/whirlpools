@@ -178,6 +178,18 @@ pub enum ErrorCode {
 
     #[msg("Price outside slippage bounds")]
     PriceSlippageOutOfBounds, // 0x17b5 (6069)
+
+    #[msg("PreparedSwap nonce exceeds the maximum allowed value")]
+    PreparedSwapNonceMaxExceeded, // 0x17b6 (6070)
+
+    #[msg("PreparedSwap account version does not match the expected version")]
+    PreparedSwapVersionMismatch, // 0x17b7 (6071)
+
+    #[msg("PreparedSwap is not in Prepared state")]
+    PreparedSwapNotPrepared, // 0x17b8 (6072)
+
+    #[msg("PreparedSwap precondition does not match current state")]
+    PreparedSwapPreconditionMismatch, // 0x17b9 (6073)
 }
 
 impl From<TryFromIntError> for ErrorCode {

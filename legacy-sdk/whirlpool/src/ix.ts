@@ -931,4 +931,68 @@ export class WhirlpoolIx {
   ) {
     return ix.setTokenBadgeAttributeIx(program, params);
   }
+
+  // V2 instructions (prepare/commit)
+
+  /**
+   * Initializes a PreparedSwap account.
+   *
+   * #### Special Errors
+   *  `PreparedSwapNonceMaxExceeded` - if the provided nonce exceeds MAX_PREPARED_SWAP_NONCE.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - InitializePreparedSwapParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static initializePreparedSwapIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializePreparedSwapParams,
+  ) {
+    return ix.initializePreparedSwapIx(program, params);
+  }
+
+  /**
+   * Prepare a swap on a Whirlpool
+   *
+   * #### Special Errors
+   * Most swap-related errors are returned as PrepareSwapV2ReturnData::QuoteError
+   * rather than causing the transaction to fail.
+   *
+   * ### Parameters
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - {@link PrepareSwapV2Params}
+   * @returns - Instruction to perform the action.
+   */
+  public static prepareSwapV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.PrepareSwapV2Params,
+  ) {
+    return ix.prepareSwapV2Ix(program, params);
+  }
+
+  /**
+   * Execute a prepared swap on a Whirlpool
+   *
+   * #### Special Errors
+   * All swap-related errors from swap_v2 may be returned.
+   *
+   * Additional errors:
+   * - `PreparedSwapVersionMismatch` - if the PreparedSwap account layout version does not match the expected version.
+   * - `PreparedSwapNotPrepared` - if the PreparedSwap account is not in the Prepared state.
+   * - `PreparedSwapPreconditionMismatch` - if the PreparedSwap precondition does not match the current Whirlpool state or instruction parameters.
+   *
+   * ### Parameters
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - {@link CommitSwapV2Params}
+   * @returns - Instruction to perform the action.
+   */
+  public static commitSwapV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.CommitSwapV2Params,
+  ) {
+    return ix.commitSwapV2Ix(program, params);
+  }
 }

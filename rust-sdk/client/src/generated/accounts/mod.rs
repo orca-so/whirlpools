@@ -13,6 +13,7 @@
   pub(crate) mod r#oracle;
   pub(crate) mod r#position;
   pub(crate) mod r#position_bundle;
+  pub(crate) mod r#prepared_swap;
   pub(crate) mod r#token_badge;
   pub(crate) mod r#whirlpool;
   pub(crate) mod r#whirlpools_config;
@@ -26,6 +27,7 @@
   pub use self::r#oracle::*;
   pub use self::r#position::*;
   pub use self::r#position_bundle::*;
+  pub use self::r#prepared_swap::*;
   pub use self::r#token_badge::*;
   pub use self::r#whirlpool::*;
   pub use self::r#whirlpools_config::*;

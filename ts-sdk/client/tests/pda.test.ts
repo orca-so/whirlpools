@@ -10,6 +10,7 @@ import {
   getBundledPositionAddress,
   getPositionBundleAddress,
 } from "../src/pda/positionBundle";
+import { getPreparedSwapAddress } from "../src/pda/preparedSwap";
 import { getTickArrayAddress } from "../src/pda/tickArray";
 import { getTokenBadgeAddress } from "../src/pda/tokenBadge";
 import { getWhirlpoolAddress } from "../src/pda/whirlpool";
@@ -36,6 +37,7 @@ const testCases = [
     tokenBadgeExpected: "HX5iftnCxhtu11ys3ZuWbvUqo7cyPYaVNZBrLL67Hrbm",
     whirlpoolExpected: "JDQ9GDphXV5ENDrAQtRFvT98m3JwsVJJk8BYHoX8uTAg",
     extensionExpected: "777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH",
+    preparedSwapExpected: "5nBgXtA9LneVzwF6ctH3bMP3iefmMGLETaVbctY7ZkHw",
   },
   {
     name: "immutable whirlpool",
@@ -57,6 +59,7 @@ const testCases = [
     tokenBadgeExpected: "2JRo82M5t7AymysW2acamjFfAg4qaY7beeSegmsDCAv8",
     whirlpoolExpected: "DcMZ4NEbLkh7aAfy7Q4vPcAWVik6tSwfUf3FHDoRBvTG",
     extensionExpected: "4Bsw8VVuegLmKQh2reevMBr2xw5R76WaJRKCvvxgcQrN",
+    preparedSwapExpected: "685GoxVJ8qwAWKLThvnYp3TKtsj1Q2CWTn1Nm8224UbQ",
   },
 ];
 
@@ -147,6 +150,14 @@ testCases.forEach((tc) => {
         tc.whirlpoolDeployment,
       );
       assert.strictEqual(extension, tc.extensionExpected);
+    });
+
+    it("PreparedSwap", async () => {
+      const [preparedSwap] = await getPreparedSwapAddress(
+        0,
+        tc.whirlpoolDeployment,
+      );
+      assert.strictEqual(preparedSwap, tc.preparedSwapExpected);
     });
   });
 });

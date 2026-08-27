@@ -260,7 +260,7 @@ impl anchor_lang::IdlBuild for TickArray {}
 
 #[cfg(feature = "anchor-idl-build")]
 impl anchor_lang::Discriminator for TickArray {
-    const DISCRIMINATOR: [u8; 8] = [0; 8];
+    const DISCRIMINATOR: &[u8] = &[0; 8];
 }
 
 // For backwards compatibility with

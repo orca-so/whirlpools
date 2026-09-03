@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { WhirlpoolData, WhirlpoolContext } from "../../../src";
 import { PoolUtil, toTx, WhirlpoolIx } from "../../../src";
-import { TickSpacing } from "../../utils";
+import { REGEX_FOR_MISSING_SIGNATURE_ERROR, TickSpacing } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { initTestPool } from "../../utils/init-utils";
 
@@ -114,7 +114,7 @@ describe("set_reward_authority_by_super_authority", () => {
           rewardIndex: 0,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

@@ -31,9 +31,9 @@ import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   resetLiteSVM,
-  getLiteSVM,
   pollForCondition,
   initializeLiteSVMEnvironment,
+  requestAirdropLiteSVM,
 } from "../../utils/litesvm";
 import {
   buildTestAquariums,
@@ -776,7 +776,7 @@ describe("sparse swap tests", () => {
     describe("failures", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       async function buildTestEnvironment() {
@@ -1206,7 +1206,7 @@ describe("sparse swap tests", () => {
     describe("swap, b to a: 2816 --> 2816 + (64 * 88) * 2", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       const aToB = false;
@@ -1382,7 +1382,7 @@ describe("sparse swap tests", () => {
     describe("swap, a to b: 2816 - (64 * 88) * 2 <-- 2816", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       const aToB = true;
@@ -1556,7 +1556,7 @@ describe("sparse swap tests", () => {
     describe("twoHopSwap, b to a: 2816 --> 2816 + (64 * 88) * 2", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       const aToB = false;
@@ -1903,7 +1903,7 @@ describe("sparse swap tests", () => {
     describe("twoHopSwap, a to b: 2816 + (64 * 88) * 2 <-- 2816", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       const aToB = true;
@@ -2252,7 +2252,7 @@ describe("sparse swap tests", () => {
     describe("swapV2", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       async function buildTestEnvironment() {
@@ -2620,7 +2620,7 @@ describe("sparse swap tests", () => {
     describe("twoHopSwapV2", () => {
       beforeEach(async () => {
         await resetLiteSVM();
-        getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+        requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
       });
 
       it("using 3 supplemental tick arrays", async () => {

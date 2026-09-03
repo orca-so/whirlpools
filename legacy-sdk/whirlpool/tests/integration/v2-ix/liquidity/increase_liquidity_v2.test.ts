@@ -34,6 +34,7 @@ import {
   transferToken,
   warpClock,
   initializeLiteSVMEnvironment,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
 } from "../../../utils";
 import { TICK_INIT_SIZE, TICK_RENT_AMOUNT } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
@@ -1778,7 +1779,7 @@ describe("increase_liquidity_v2", () => {
                 tickArrayUpper: positionInitInfo.tickArrayUpper,
               }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i,
+            REGEX_FOR_MISSING_SIGNATURE_ERROR,
           );
         });
 

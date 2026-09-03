@@ -1554,8 +1554,10 @@ async function countMemoLog(
   signature: string,
   logMessage: string,
 ): Promise<number> {
-  const logLen = logMessage.length;
-  const logFormat = `Program log: Memo (len ${logLen}): "${logMessage}"`;
+  // old format(1 line) : Program log: Memo (len N): "MSG"
+  // new format(2 lines): Program log: Memo (len N)
+  //                      Program log: MSG
+  const logFormat = `Program log: ${logMessage}`;
 
   const tx = await provider.connection.getParsedTransaction(signature, {
     maxSupportedTransactionVersion: 0,

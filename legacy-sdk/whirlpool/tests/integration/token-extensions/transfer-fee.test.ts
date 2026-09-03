@@ -13051,13 +13051,12 @@ describe("TokenExtension/TransferFee", () => {
             .publicKey,
         }),
       ).buildAndExecute();
-
       const parsedTx = await provider.connection.getParsedTransaction(sig, {
         maxSupportedTransactionVersion: 0,
       });
 
       assert.ok(parsedTx?.meta?.innerInstructions);
-      assert.ok(parsedTx!.meta!.innerInstructions.length === 1); // twoHopSwap only (top-level ix)
+      assert.ok(parsedTx!.meta!.innerInstructions.length === 1); // swapV2 only (top-level ix)
       const memoLogs = parsedTx!.meta!.innerInstructions[0].instructions.filter(
         (ix) => ix.programId.equals(MEMO_PROGRAM_ADDRESS),
       );

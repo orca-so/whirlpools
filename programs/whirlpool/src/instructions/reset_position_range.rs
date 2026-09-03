@@ -3,9 +3,10 @@ use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 use solana_program::program::invoke;
 use solana_program::system_instruction;
 
-use crate::manager::tick_array_manager::get_tick_rent_amount;
 use crate::state::*;
-use crate::util::verify_position_authority_interface;
+use crate::util::{
+    get_position_minimum_rent_amount, get_tick_rent_amount, verify_position_authority_interface,
+};
 
 #[derive(Accounts)]
 pub struct ResetPositionRange<'info> {
@@ -58,11 +59,9 @@ fn ensure_position_has_enough_rent_for_ticks<'info>(
     position: &Account<'info, Position>,
     system_program: &Program<'info, System>,
 ) -> Result<()> {
-    let rent = Rent::get()?;
-
-    let position_rent_required = rent.minimum_balance(Position::LEN);
+    let position_rent_with_reduction_fallback_margin = get_position_minimum_rent_amount()?;
     let tick_required_rent = get_tick_rent_amount()? * 2;
-    let all_required_rent = position_rent_required
+    let all_required_rent = position_rent_with_reduction_fallback_margin
         .checked_add(tick_required_rent)
         .ok_or(crate::errors::ErrorCode::RentCalculationError)?;
 

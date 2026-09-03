@@ -4,6 +4,7 @@ import type { WhirlpoolData, WhirlpoolContext } from "../../../../src";
 import { toTx, WhirlpoolIx } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import {
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   TickSpacing,
   ZERO_BN,
   initializeLiteSVMEnvironment,
@@ -321,7 +322,7 @@ describe("set_reward_emissions_v2", () => {
                 emissionsPerSecondX64,
               }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i,
+            REGEX_FOR_MISSING_SIGNATURE_ERROR,
           );
         });
       });

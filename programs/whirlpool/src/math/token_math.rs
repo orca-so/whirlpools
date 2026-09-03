@@ -67,7 +67,7 @@ impl AmountDeltaU64 {
 // Common denominator to simplify
 // Δt_a = ((sqrt_price_lower - sqrt_price_upper) / (sqrt_price_upper * sqrt_price_lower)) * liquidity
 
-// Δt_a = (liquidity * (sqrt_price_lower - sqrt_price_upper)) / (sqrt_price_upper * sqrt_price_lower)
+// Δt_a = (liquidity * (sqrt_price_upper - sqrt_price_lower)) / (sqrt_price_upper * sqrt_price_lower)
 pub fn get_amount_delta_a(
     sqrt_price_0: u128,
     sqrt_price_1: u128,

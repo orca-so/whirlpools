@@ -4153,7 +4153,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/curves@npm:^1.4.2":
+"@noble/curves@npm:^1.4.2, @noble/curves@npm:^1.9.7":
   version: 1.9.7
   resolution: "@noble/curves@npm:1.9.7"
   dependencies:
@@ -4585,10 +4585,10 @@ __metadata:
     "@orca-so/tx-sender": "npm:^3.0.0"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    "@solana-program/memo": "npm:^0.10.0"
-    "@solana-program/system": "npm:^0.10.0"
-    "@solana-program/token": "npm:^0.9.0"
-    "@solana-program/token-2022": "npm:^0.6.1"
+    "@solana-program/memo": "npm:^0.13.0"
+    "@solana-program/system": "npm:^0.14.0"
+    "@solana-program/token": "npm:^0.16.0"
+    "@solana-program/token-2022": "npm:^0.16.0"
     "@solana/kit": "npm:^5.0.0"
     "@solana/sysvars": "npm:^5.0.0"
     litesvm: "npm:^0.4.0"
@@ -4941,12 +4941,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/memo@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "@solana-program/memo@npm:0.10.0"
+"@solana-program/memo@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "@solana-program/memo@npm:0.13.0"
   peerDependencies:
-    "@solana/kit": ^5.0
-  checksum: 10c0/4fb1f259d6bf3e2fe16893ea1ef9790b9c2d323f75f3a0d102a6a8ef16c7b47fe9ac0dd9203cc2711f6378d676c713844c6d24afd2874fbbfd744c71f66c0519
+    "@solana/kit": ^8.0.0
+  checksum: 10c0/f4b83c5c1b92b71a82529b693597b389d8553910fe4fd86fb21ba8cf1423207ab8395e3fbe510d82d0077b5bbca9cffcc788a45dd29010d00f86c0e689344713
+  languageName: node
+  linkType: hard
+
+"@solana-program/record@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@solana-program/record@npm:0.4.0"
+  dependencies:
+    "@solana-program/system": "npm:^0.14.0"
+  peerDependencies:
+    "@solana/kit": ^8.0.0
+  checksum: 10c0/42482ca68836b45e5bef4f9a465fb2abcc2f97c1244b3a1777a9c342a9addc647e677438c83df5464c2e584670f986be6c6f31e53ee31686a39aa1c0c14bd2b6
   languageName: node
   linkType: hard
 
@@ -4968,13 +4979,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/token-2022@npm:^0.6.1":
-  version: 0.6.1
-  resolution: "@solana-program/token-2022@npm:0.6.1"
+"@solana-program/system@npm:^0.14.0":
+  version: 0.14.0
+  resolution: "@solana-program/system@npm:0.14.0"
   peerDependencies:
-    "@solana/kit": ^5.0
-    "@solana/sysvars": ^5.0
-  checksum: 10c0/bc9af5b18df2e87c256c05dd4f575cb94767ad770753b4c6979aca81c864ba034eb9d591be9933f93e16d5b7dd6f28da4055348a6ffa93a4ab72d4bf6fe14092
+    "@solana/kit": ^8.0.0
+  checksum: 10c0/b30c39aa2d821e95bf1fb915e4822393206da0db4a900163e00ff48875a24e0ceb8424056a823d6ad323c33b24a348e1cb3b37a042122fc0846375f087230420
+  languageName: node
+  linkType: hard
+
+"@solana-program/token-2022@npm:^0.16.0":
+  version: 0.16.0
+  resolution: "@solana-program/token-2022@npm:0.16.0"
+  dependencies:
+    "@noble/curves": "npm:^1.9.7"
+    "@solana-program/record": "npm:^0.4.0"
+    "@solana-program/system": "npm:^0.14.0"
+    "@solana-program/zk-elgamal-proof": "npm:^0.4.0"
+  peerDependencies:
+    "@solana/kit": ^8.0.0
+    "@solana/sysvars": ^8.0.0
+    "@solana/zk-sdk": ^0.5.1
+  peerDependenciesMeta:
+    "@solana/zk-sdk":
+      optional: true
+  checksum: 10c0/6f25e1cdd7de4c64606d46772fac5a3185ff8676ce9e9f5c728dfb4ef1b9b67d65ad70d170c781e03ec1c5c92ca9108ed49fe0512ead90438f11215bf2ff2358
   languageName: node
   linkType: hard
 
@@ -4989,12 +5018,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/token@npm:^0.9.0":
-  version: 0.9.0
-  resolution: "@solana-program/token@npm:0.9.0"
+"@solana-program/token@npm:^0.16.0":
+  version: 0.16.0
+  resolution: "@solana-program/token@npm:0.16.0"
+  dependencies:
+    "@solana-program/system": "npm:^0.14.0"
   peerDependencies:
-    "@solana/kit": ^5.0
-  checksum: 10c0/f23b591e0ad27aa05e940429de73ebc0b9cbb65542e5aae775ac616577307d341d3335e36e24a38ba7612bcc584e50bd7cec360ca4904f42219f2708a9d453aa
+    "@solana/kit": ^8.0.0
+  checksum: 10c0/979ebe0f29d46d1c59c18d8aa93786521b3c732add143c99ce0f9c020a78f1c9dd25ca6e15839f2ea6f7bf5862115204eebd9a59cc94ed6f67070334ecd741eb
+  languageName: node
+  linkType: hard
+
+"@solana-program/zk-elgamal-proof@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@solana-program/zk-elgamal-proof@npm:0.4.0"
+  dependencies:
+    "@solana-program/system": "npm:^0.14.0"
+  peerDependencies:
+    "@solana/kit": ^8.0.0
+  checksum: 10c0/8f1fba75ce892989a614fe570cb0acf7a7f77e6e4fbee629ce84f592c7c8eb0f9b3454e2b3804de4978afa0a8ef48afd95c0d1b74f6826ef06172a5d6f99a495
   languageName: node
   linkType: hard
 

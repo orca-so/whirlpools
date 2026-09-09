@@ -566,9 +566,90 @@ mod next_init_tick_tests {
     use super::*;
 
     impl DynamicTickArrayLoader {
-        fn set_start_tick_index(&mut self, start_tick_index: i32) {
+        fn set_start_tick_index_for_test(&mut self, start_tick_index: i32) {
             self.0[Self::START_TICK_INDEX_OFFSET..Self::START_TICK_INDEX_OFFSET + 4]
                 .copy_from_slice(&start_tick_index.to_le_bytes());
+        }
+
+        fn set_tick_for_test(
+            &mut self,
+            tick_index: i32,
+            tick_spacing: u16,
+            update: &TickUpdate,
+        ) -> Result<()> {
+            if !self.check_in_array_bounds(tick_index, tick_spacing)
+                || !Tick::check_is_usable_tick(tick_index, tick_spacing)
+            {
+                return Err(ErrorCode::TickNotFound.into());
+            }
+            let tick_offset = self.tick_offset(tick_index, tick_spacing)?;
+            let byte_offset = self.byte_offset(tick_offset)?;
+            let data = self.tick_data();
+            let mut tick_data = &data[byte_offset..byte_offset + DynamicTick::INITIALIZED_LEN];
+            let tick: Tick = DynamicTick::deserialize(&mut tick_data)?.into();
+
+            // If the tick needs to be initialized, we need to right-shift everything after byte_offset by DynamicTickData::LEN
+            if !tick.initialized && update.initialized {
+                let current_len = self.ticks_len();
+                let extended_len = current_len + crate::state::DynamicTickData::LEN;
+
+                let data_mut = self.tick_data_mut();
+                let ticks_slice = &mut data_mut[0..extended_len];
+
+                let copy_src_offset = byte_offset + 1;
+                let copy_dest_offset = copy_src_offset + crate::state::DynamicTickData::LEN;
+                ticks_slice.copy_within(copy_src_offset..current_len, copy_dest_offset);
+
+                // sync bitmap
+                self.update_tick_bitmap(tick_offset, true);
+            }
+
+            // If the tick needs to be uninitialized, we need to left-shift everything after byte_offset by DynamicTickData::LEN
+            if tick.initialized && !update.initialized {
+                let current_len = self.ticks_len();
+
+                let data_mut = self.tick_data_mut();
+                let ticks_slice = &mut data_mut[0..current_len];
+
+                let copy_dest_offset = byte_offset + 1;
+                let copy_src_offset = copy_dest_offset + crate::state::DynamicTickData::LEN;
+                ticks_slice.copy_within(copy_src_offset..current_len, copy_dest_offset);
+
+                // sync bitmap
+                self.update_tick_bitmap(tick_offset, false);
+            }
+
+            // Update the tick data at byte_offset
+            let tick_data_len = if update.initialized {
+                DynamicTick::INITIALIZED_LEN
+            } else {
+                DynamicTick::UNINITIALIZED_LEN
+            };
+
+            let data_mut = self.tick_data_mut();
+            let mut tick_data = &mut data_mut[byte_offset..byte_offset + tick_data_len];
+            DynamicTick::from(update).serialize(&mut tick_data)?;
+
+            Ok(())
+        }
+
+        fn ticks_len(&self) -> usize {
+            let initialized_ticks = self.tick_bitmap().count_ones() as usize;
+            let uninitialized_ticks = TICK_ARRAY_SIZE_USIZE - initialized_ticks;
+
+            initialized_ticks * DynamicTick::INITIALIZED_LEN
+                + uninitialized_ticks * DynamicTick::UNINITIALIZED_LEN
+        }
+
+        fn update_tick_bitmap(&mut self, tick_offset: isize, initialized: bool) {
+            let mut tick_bitmap = self.tick_bitmap();
+            if initialized {
+                tick_bitmap |= 1 << tick_offset;
+            } else {
+                tick_bitmap &= !(1 << tick_offset);
+            }
+            self.0[Self::TICK_BITMAP_OFFSET..Self::TICK_BITMAP_OFFSET + 16]
+                .copy_from_slice(&tick_bitmap.to_le_bytes());
         }
     }
 
@@ -584,7 +665,9 @@ mod next_init_tick_tests {
         let mut array = DynamicTickArrayLoader::default();
         let tick_spacing = 8;
 
-        array.update_tick(8, tick_spacing, &tick_update()).unwrap();
+        array
+            .set_tick_for_test(8, tick_spacing, &tick_update())
+            .unwrap();
 
         let result = array
             .get_next_init_tick_index(64, tick_spacing, true)
@@ -595,11 +678,11 @@ mod next_init_tick_tests {
     #[test]
     fn a_to_b_negative_tick() {
         let mut array = DynamicTickArrayLoader::default();
-        array.set_start_tick_index(-704);
+        array.set_start_tick_index_for_test(-704);
         let tick_spacing = 8;
 
         array
-            .update_tick(-64, tick_spacing, &tick_update())
+            .set_tick_for_test(-64, tick_spacing, &tick_update())
             .unwrap();
 
         let result = array
@@ -625,7 +708,9 @@ mod next_init_tick_tests {
         let mut array = DynamicTickArrayLoader::default();
         let tick_spacing = 8;
 
-        array.update_tick(64, tick_spacing, &tick_update()).unwrap();
+        array
+            .set_tick_for_test(64, tick_spacing, &tick_update())
+            .unwrap();
 
         let result = array
             .get_next_init_tick_index(8, tick_spacing, false)
@@ -636,11 +721,13 @@ mod next_init_tick_tests {
     #[test]
     fn b_to_a_negative_tick() {
         let mut array = DynamicTickArrayLoader::default();
-        array.set_start_tick_index(-704);
+        array.set_start_tick_index_for_test(-704);
         let tick_index = -64;
         let tick_spacing = 8;
 
-        array.update_tick(-8, tick_spacing, &tick_update()).unwrap();
+        array
+            .set_tick_for_test(-8, tick_spacing, &tick_update())
+            .unwrap();
 
         let result = array
             .get_next_init_tick_index(tick_index, tick_spacing, false)

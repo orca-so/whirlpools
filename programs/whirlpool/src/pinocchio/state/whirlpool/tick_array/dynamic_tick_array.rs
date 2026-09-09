@@ -144,13 +144,14 @@ impl MemoryMappedDynamicTickArray {
 
 #[cfg(test)]
 mod array_update_tests {
+    use super::*;
     use crate::pinocchio::state::whirlpool::TICK_ARRAY_SIZE;
     use crate::state::DynamicTick;
-    use super::*;
 
     impl MemoryMappedDynamicTickArray {
         fn set_initialized_tick(&mut self, byte_offset: usize, update: TickUpdate) {
-            let tick_bytes = &mut self.ticks[byte_offset..byte_offset + DynamicTick::INITIALIZED_LEN];
+            let tick_bytes =
+                &mut self.ticks[byte_offset..byte_offset + DynamicTick::INITIALIZED_LEN];
             let tick_ptr = tick_bytes.as_mut_ptr() as *mut MemoryMappedTick;
             let tick = unsafe { &mut *tick_ptr };
             tick.update(&update);
@@ -226,7 +227,7 @@ mod array_update_tests {
 
     fn memory_mapped_tick_eq_tick_update(
         tick: &MemoryMappedTick,
-        tick_update: &TickUpdate
+        tick_update: &TickUpdate,
     ) -> bool {
         tick.initialized() == tick_update.initialized
             && tick.liquidity_net() == tick_update.liquidity_net
@@ -242,7 +243,10 @@ mod array_update_tests {
         let mut array = tick_array();
 
         let before = array.get_tick(update_index, 1).unwrap();
-        assert!(memory_mapped_tick_eq_tick_update(before, &initialized_tick()));
+        assert!(memory_mapped_tick_eq_tick_update(
+            before,
+            &initialized_tick()
+        ));
         assert!(array.is_tick_bitmap_on(update_index, 1));
 
         let new_tick = TickUpdate {
@@ -268,7 +272,10 @@ mod array_update_tests {
                 assert!(memory_mapped_tick_eq_tick_update(tick, &initialized_tick()));
                 assert!(array.is_tick_bitmap_on(i, 1));
             } else {
-                assert!(memory_mapped_tick_eq_tick_update(tick, &uninitialized_tick()));
+                assert!(memory_mapped_tick_eq_tick_update(
+                    tick,
+                    &uninitialized_tick()
+                ));
                 assert!(array.is_tick_bitmap_off(i, 1));
             }
         }
@@ -280,7 +287,10 @@ mod array_update_tests {
         let tick_index = 7;
 
         let before = array.get_tick(tick_index, 1).unwrap();
-        assert!(memory_mapped_tick_eq_tick_update(before, &uninitialized_tick()));
+        assert!(memory_mapped_tick_eq_tick_update(
+            before,
+            &uninitialized_tick()
+        ));
         assert!(array.is_tick_bitmap_off(tick_index, 1));
 
         array
@@ -296,7 +306,10 @@ mod array_update_tests {
                 assert!(memory_mapped_tick_eq_tick_update(tick, &initialized_tick()));
                 assert!(array.is_tick_bitmap_on(i, 1));
             } else {
-                assert!(memory_mapped_tick_eq_tick_update(tick, &uninitialized_tick()));
+                assert!(memory_mapped_tick_eq_tick_update(
+                    tick,
+                    &uninitialized_tick()
+                ));
                 assert!(array.is_tick_bitmap_off(i, 1));
             }
         }
@@ -308,7 +321,10 @@ mod array_update_tests {
         let tick_index = 8;
 
         let before = array.get_tick(tick_index, 1).unwrap();
-        assert!(memory_mapped_tick_eq_tick_update(before, &initialized_tick()));
+        assert!(memory_mapped_tick_eq_tick_update(
+            before,
+            &initialized_tick()
+        ));
         assert!(array.is_tick_bitmap_on(tick_index, 1));
 
         array
@@ -324,7 +340,10 @@ mod array_update_tests {
                 assert!(memory_mapped_tick_eq_tick_update(tick, &initialized_tick()));
                 assert!(array.is_tick_bitmap_on(i, 1));
             } else {
-                assert!(memory_mapped_tick_eq_tick_update(tick, &uninitialized_tick()));
+                assert!(memory_mapped_tick_eq_tick_update(
+                    tick,
+                    &uninitialized_tick()
+                ));
                 assert!(array.is_tick_bitmap_off(i, 1));
             }
         }
@@ -403,36 +422,33 @@ mod array_update_tests {
             buf[12..44].copy_from_slice(&whirlpool.to_bytes());
 
             // cast
-            let array = unsafe {
-                &mut *(buf.as_mut_ptr() as *mut MemoryMappedDynamicTickArray)
-            };
+            let array = unsafe { &mut *(buf.as_mut_ptr() as *mut MemoryMappedDynamicTickArray) };
 
-            // all ticks are not initialized            
+            // all ticks are not initialized
             assert!(array.whirlpool() == &whirlpool.to_bytes());
             assert!(array.start_tick_index() == start_tick_index);
             assert!(array.tick_bitmap() == ALL_UNINITIALIZED_BITMAP);
             for offset in 0..TICK_ARRAY_SIZE_USIZE {
-                assert!(
-                    !array
-                        .get_tick(
-                            offset_to_tick_index(offset, start_tick_index, tick_spacing),
-                            tick_spacing
-                        )
-                        .unwrap()
-                        .initialized()
-                );
+                assert!(!array
+                    .get_tick(
+                        offset_to_tick_index(offset, start_tick_index, tick_spacing),
+                        tick_spacing
+                    )
+                    .unwrap()
+                    .initialized());
             }
 
             // initialize all ticks
             let mut initialized = 0;
             let mut bitmap = ALL_UNINITIALIZED_BITMAP;
-            let mut account_len = STATIC_FIELD_LEN + DynamicTick::UNINITIALIZED_LEN * TICK_ARRAY_SIZE_USIZE;
+            let mut account_len =
+                STATIC_FIELD_LEN + DynamicTick::UNINITIALIZED_LEN * TICK_ARRAY_SIZE_USIZE;
             for i in 0..TICK_ARRAY_SIZE_USIZE {
                 let offset = initialize_order[i];
                 let tick_index = offset_to_tick_index(offset, start_tick_index, tick_spacing);
 
                 account_len += crate::state::DynamicTickData::LEN;
-                
+
                 // dirty write to non-allocated buf range
                 buf[account_len..].fill(rand_u8_for_initialize);
 
@@ -442,7 +458,9 @@ mod array_update_tests {
                     .unwrap();
 
                 // check that the dirty write is not overwritten
-                assert!(buf[account_len..].iter().all(|&b| b == rand_u8_for_initialize));
+                assert!(buf[account_len..]
+                    .iter()
+                    .all(|&b| b == rand_u8_for_initialize));
 
                 initialized += 1;
                 let uninitialized = TICK_ARRAY_SIZE_USIZE - initialized;
@@ -465,7 +483,10 @@ mod array_update_tests {
                     let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
                     let tick = array.get_tick(tick_index, tick_spacing).unwrap();
                     assert!(tick.initialized());
-                    assert!(memory_mapped_tick_eq_tick_update(&tick, &initialized_tick(*offset)));
+                    assert!(memory_mapped_tick_eq_tick_update(
+                        tick,
+                        &initialized_tick(*offset)
+                    ));
                 }
 
                 // dirty write to non-allocated buf range
@@ -478,7 +499,10 @@ mod array_update_tests {
                     let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
                     let tick = array.get_tick(tick_index, tick_spacing).unwrap();
                     assert!(!tick.initialized());
-                    assert!(memory_mapped_tick_eq_tick_update(&tick, &uninitialized_tick()));
+                    assert!(memory_mapped_tick_eq_tick_update(
+                        tick,
+                        &uninitialized_tick()
+                    ));
                 }
             }
 
@@ -487,21 +511,20 @@ mod array_update_tests {
             assert!(array.start_tick_index() == start_tick_index);
             assert!(array.tick_bitmap() == ALL_INITIALIZED_BITMAP);
             for offset in 0..TICK_ARRAY_SIZE_USIZE {
-                assert!(
-                    array
-                        .get_tick(
-                            offset_to_tick_index(offset, start_tick_index, tick_spacing),
-                            tick_spacing
-                        )
-                        .unwrap()
-                        .initialized()
-                );
+                assert!(array
+                    .get_tick(
+                        offset_to_tick_index(offset, start_tick_index, tick_spacing),
+                        tick_spacing
+                    )
+                    .unwrap()
+                    .initialized());
             }
 
             // uninitialize all ticks
             let mut uninitialized = 0;
             let mut bitmap = ALL_INITIALIZED_BITMAP;
-            let mut account_len = STATIC_FIELD_LEN + DynamicTick::INITIALIZED_LEN * TICK_ARRAY_SIZE_USIZE;
+            let mut account_len =
+                STATIC_FIELD_LEN + DynamicTick::INITIALIZED_LEN * TICK_ARRAY_SIZE_USIZE;
             for i in 0..TICK_ARRAY_SIZE_USIZE {
                 let offset = uninitialize_order[i];
                 let tick_index = offset_to_tick_index(offset, start_tick_index, tick_spacing);
@@ -515,7 +538,9 @@ mod array_update_tests {
                     .unwrap();
 
                 // check that the dirty write is not overwritten
-                assert!(buf[account_len..].iter().all(|&b| b == rand_u8_for_uninitialize));
+                assert!(buf[account_len..]
+                    .iter()
+                    .all(|&b| b == rand_u8_for_uninitialize));
 
                 account_len -= crate::state::DynamicTickData::LEN;
 
@@ -540,7 +565,10 @@ mod array_update_tests {
                     let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
                     let tick = array.get_tick(tick_index, tick_spacing).unwrap();
                     assert!(!tick.initialized());
-                    assert!(memory_mapped_tick_eq_tick_update(&tick, &uninitialized_tick()));
+                    assert!(memory_mapped_tick_eq_tick_update(
+                        tick,
+                        &uninitialized_tick()
+                    ));
                 }
 
                 // clear not-allocated buf range
@@ -553,7 +581,10 @@ mod array_update_tests {
                     let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
                     let tick = array.get_tick(tick_index, tick_spacing).unwrap();
                     assert!(tick.initialized());
-                    assert!(memory_mapped_tick_eq_tick_update(&tick, &initialized_tick(*offset)));
+                    assert!(memory_mapped_tick_eq_tick_update(
+                        tick,
+                        &initialized_tick(*offset)
+                    ));
                 }
             }
 
@@ -562,15 +593,13 @@ mod array_update_tests {
             assert!(array.start_tick_index() == start_tick_index);
             assert!(array.tick_bitmap() == ALL_UNINITIALIZED_BITMAP);
             for offset in 0..TICK_ARRAY_SIZE_USIZE {
-                assert!(
-                    !array
-                        .get_tick(
-                            offset_to_tick_index(offset, start_tick_index, tick_spacing),
-                            tick_spacing
-                        )
-                        .unwrap()
-                        .initialized()
-                );
+                assert!(!array
+                    .get_tick(
+                        offset_to_tick_index(offset, start_tick_index, tick_spacing),
+                        tick_spacing
+                    )
+                    .unwrap()
+                    .initialized());
             }
         }
 

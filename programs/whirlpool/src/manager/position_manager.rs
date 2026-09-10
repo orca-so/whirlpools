@@ -1,7 +1,7 @@
 use crate::{
     errors::ErrorCode,
-    math::{add_liquidity_delta, checked_mul_shift_right},
-    state::{Position, PositionUpdate, NUM_REWARDS},
+    math::{Q64_RESOLUTION, add_liquidity_delta, checked_mul_shift_right},
+    state::{NUM_REWARDS, Position, PositionUpdate},
 };
 
 pub fn next_position_modify_liquidity_update(
@@ -13,17 +13,33 @@ pub fn next_position_modify_liquidity_update(
 ) -> Result<PositionUpdate, ErrorCode> {
     let mut update = PositionUpdate::default();
 
+    // increase/decrease liquidity instruction requires that liquidity_delta != 0
+    let checkpoint_update_mode = if liquidity_delta == 0 {
+        // update fees and rewards context
+        CheckpointUpdateMode::Partial
+    } else {
+        // increase/decrease liquidity context
+        CheckpointUpdateMode::Full
+    };
+
     // Calculate fee deltas.
     // If fee deltas overflow, default to a zero value. This means the position loses
     // all fees earned since the last time the position was modified or fees collected.
-    let growth_delta_a = fee_growth_inside_a.wrapping_sub(position.fee_growth_checkpoint_a);
-    let fee_delta_a = checked_mul_shift_right(position.liquidity, growth_delta_a).unwrap_or(0);
+    let (fee_delta_a, next_checkpoint_a) = next_owed_delta_and_checkpoint(
+        fee_growth_inside_a,
+        position.fee_growth_checkpoint_a,
+        position.liquidity,
+        checkpoint_update_mode,
+    );
+    let (fee_delta_b, next_checkpoint_b) = next_owed_delta_and_checkpoint(
+        fee_growth_inside_b,
+        position.fee_growth_checkpoint_b,
+        position.liquidity,
+        checkpoint_update_mode,
+    );
 
-    let growth_delta_b = fee_growth_inside_b.wrapping_sub(position.fee_growth_checkpoint_b);
-    let fee_delta_b = checked_mul_shift_right(position.liquidity, growth_delta_b).unwrap_or(0);
-
-    update.fee_growth_checkpoint_a = fee_growth_inside_a;
-    update.fee_growth_checkpoint_b = fee_growth_inside_b;
+    update.fee_growth_checkpoint_a = next_checkpoint_a;
+    update.fee_growth_checkpoint_b = next_checkpoint_b;
 
     // Overflows allowed. Must collect fees owed before overflow.
     update.fee_owed_a = position.fee_owed_a.wrapping_add(fee_delta_a);
@@ -36,12 +52,14 @@ pub fn next_position_modify_liquidity_update(
         // Calculate reward delta.
         // If reward delta overflows, default to a zero value. This means the position loses all
         // rewards earned since the last time the position was modified or rewards were collected.
-        let reward_growth_delta =
-            reward_growth_inside.wrapping_sub(curr_reward_info.growth_inside_checkpoint);
-        let amount_owed_delta =
-            checked_mul_shift_right(position.liquidity, reward_growth_delta).unwrap_or(0);
+        let (amount_owed_delta, next_checkpoint) = next_owed_delta_and_checkpoint(
+            reward_growth_inside,
+            curr_reward_info.growth_inside_checkpoint,
+            position.liquidity,
+            checkpoint_update_mode,
+        );
 
-        update.growth_inside_checkpoint = reward_growth_inside;
+        update.growth_inside_checkpoint = next_checkpoint;
 
         // Overflows allowed. Must collect rewards owed before overflow.
         update.amount_owed = curr_reward_info.amount_owed.wrapping_add(amount_owed_delta);
@@ -50,6 +68,42 @@ pub fn next_position_modify_liquidity_update(
     update.liquidity = add_liquidity_delta(position.liquidity, liquidity_delta)?;
 
     Ok(update)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckpointUpdateMode {
+    // Advances the checkpoint only for growth converted into owed amount.
+    Partial,
+    // Advances the checkpoint fully to growth_inside.
+    // Required before changing the position liquidity.
+    Full,
+}
+
+pub fn next_owed_delta_and_checkpoint(
+    growth_inside: u128,
+    current_checkpoint: u128,
+    position_liquidity: u128,
+    checkpoint_update_mode: CheckpointUpdateMode,
+) -> (u64, u128) {
+    let growth_delta = growth_inside.wrapping_sub(current_checkpoint);
+    let Ok(owed_delta) = checked_mul_shift_right(position_liquidity, growth_delta) else {
+        
+        return (0, growth_inside);
+    };
+
+    if checkpoint_update_mode == CheckpointUpdateMode::Full {
+        return (owed_delta, growth_inside);
+    }
+
+    if owed_delta == 0 {
+        return (0, current_checkpoint);
+    }
+
+    // Note: owed_delta > 0 ensures that position_liquidity > 0
+    let converted_growth_delta = ((owed_delta as u128) << Q64_RESOLUTION).div_ceil(position_liquidity);
+    let next_checkpoint = current_checkpoint.wrapping_add(converted_growth_delta);
+
+    (owed_delta, next_checkpoint)
 }
 
 #[cfg(test)]

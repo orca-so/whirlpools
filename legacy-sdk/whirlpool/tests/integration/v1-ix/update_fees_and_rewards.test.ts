@@ -668,7 +668,7 @@ describe("update_fees_and_rewards", () => {
       );
     });
 
-    describe("Full checkpoint for liquidity operations", () => {
+    describe("checkpoint behaviors", () => {
       async function setup() {
         const vaultStartBalance = 1_000_000;
         const tickLowerIndex = 29440;
@@ -775,184 +775,6 @@ describe("update_fees_and_rewards", () => {
         return fixture;
       }
 
-      async function runTest(
-        ix:
-          | "increaseLiquidity"
-          | "increaseLiquidityV2"
-          | "decreaseLiquidity"
-          | "decreaseLiquidityV2"
-          | "increaseLiquidityByTokenAmountsV2",
-      ) {
-        const fixture = await setup();
-        const {
-          poolInitInfo: {
-            whirlpoolPda,
-            tokenVaultAKeypair,
-            tokenVaultBKeypair,
-            tokenMintA,
-            tokenMintB,
-          },
-          tokenAccountA,
-          tokenAccountB,
-          positions,
-        } = fixture.getInfos();
-
-        const position = positions[0];
-
-        switch (ix) {
-          case "increaseLiquidity":
-            await toTx(
-              ctx,
-              WhirlpoolIx.increaseLiquidityIx(ctx.program, {
-                whirlpool: whirlpoolPda.publicKey,
-                position: position.publicKey,
-                tickArrayLower: position.tickArrayLower,
-                tickArrayUpper: position.tickArrayUpper,
-                liquidityAmount: new BN(100),
-                positionAuthority: ctx.wallet.publicKey,
-                positionTokenAccount: position.tokenAccount,
-                tokenMaxA: MAX_U64,
-                tokenMaxB: MAX_U64,
-                tokenOwnerAccountA: tokenAccountA,
-                tokenOwnerAccountB: tokenAccountB,
-                tokenVaultA: tokenVaultAKeypair.publicKey,
-                tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
-            ).buildAndExecute();
-            break;
-          case "increaseLiquidityV2":
-            await toTx(
-              ctx,
-              WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
-                whirlpool: whirlpoolPda.publicKey,
-                position: position.publicKey,
-                tickArrayLower: position.tickArrayLower,
-                tickArrayUpper: position.tickArrayUpper,
-                liquidityAmount: new BN(100),
-                positionAuthority: ctx.wallet.publicKey,
-                positionTokenAccount: position.tokenAccount,
-                tokenMaxA: MAX_U64,
-                tokenMaxB: MAX_U64,
-                tokenOwnerAccountA: tokenAccountA,
-                tokenOwnerAccountB: tokenAccountB,
-                tokenVaultA: tokenVaultAKeypair.publicKey,
-                tokenVaultB: tokenVaultBKeypair.publicKey,
-                tokenMintA,
-                tokenMintB,
-                tokenProgramA: TOKEN_PROGRAM_ID,
-                tokenProgramB: TOKEN_PROGRAM_ID,
-              }),
-            ).buildAndExecute();
-            break;
-          case "decreaseLiquidity":
-            await toTx(
-              ctx,
-              WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-                whirlpool: whirlpoolPda.publicKey,
-                position: position.publicKey,
-                tickArrayLower: position.tickArrayLower,
-                tickArrayUpper: position.tickArrayUpper,
-                liquidityAmount: new BN(100),
-                positionAuthority: ctx.wallet.publicKey,
-                positionTokenAccount: position.tokenAccount,
-                tokenMinA: new BN(0),
-                tokenMinB: new BN(0),
-                tokenOwnerAccountA: tokenAccountA,
-                tokenOwnerAccountB: tokenAccountB,
-                tokenVaultA: tokenVaultAKeypair.publicKey,
-                tokenVaultB: tokenVaultBKeypair.publicKey,
-              }),
-            ).buildAndExecute();
-            break;
-          case "decreaseLiquidityV2":
-            await toTx(
-              ctx,
-              WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
-                whirlpool: whirlpoolPda.publicKey,
-                position: position.publicKey,
-                tickArrayLower: position.tickArrayLower,
-                tickArrayUpper: position.tickArrayUpper,
-                liquidityAmount: new BN(100),
-                positionAuthority: ctx.wallet.publicKey,
-                positionTokenAccount: position.tokenAccount,
-                tokenMinA: new BN(0),
-                tokenMinB: new BN(0),
-                tokenOwnerAccountA: tokenAccountA,
-                tokenOwnerAccountB: tokenAccountB,
-                tokenVaultA: tokenVaultAKeypair.publicKey,
-                tokenVaultB: tokenVaultBKeypair.publicKey,
-                tokenMintA,
-                tokenMintB,
-                tokenProgramA: TOKEN_PROGRAM_ID,
-                tokenProgramB: TOKEN_PROGRAM_ID,
-              }),
-            ).buildAndExecute();
-            break;
-          case "increaseLiquidityByTokenAmountsV2":
-            await toTx(
-              ctx,
-              WhirlpoolIx.increaseLiquidityByTokenAmountsV2Ix(ctx.program, {
-                whirlpool: whirlpoolPda.publicKey,
-                position: position.publicKey,
-                tickArrayLower: position.tickArrayLower,
-                tickArrayUpper: position.tickArrayUpper,
-                minSqrtPrice: MIN_SQRT_PRICE_BN,
-                maxSqrtPrice: MAX_SQRT_PRICE_BN,
-                tokenMaxA: new BN(1000),
-                tokenMaxB: new BN(1000),
-                positionAuthority: ctx.wallet.publicKey,
-                positionTokenAccount: position.tokenAccount,
-                tokenOwnerAccountA: tokenAccountA,
-                tokenOwnerAccountB: tokenAccountB,
-                tokenVaultA: tokenVaultAKeypair.publicKey,
-                tokenVaultB: tokenVaultBKeypair.publicKey,
-                tokenMintA,
-                tokenMintB,
-                tokenProgramA: TOKEN_PROGRAM_ID,
-                tokenProgramB: TOKEN_PROGRAM_ID,
-              }),
-            ).buildAndExecute();
-            break;
-        }
-
-        const inside = await calculateGrowthInside(
-          fetcher,
-          whirlpoolPda.publicKey,
-          position.tickArrayLower,
-          position.publicKey,
-        );
-
-        const positionData = (await fetcher.getPosition(
-          position.publicKey,
-          IGNORE_CACHE,
-        )) as PositionData;
-
-        assert.ok(positionData.feeOwedA.eq(new BN(4))); // 21% of 20u64 = 4.2 => 4u64
-        assert.ok(positionData.feeOwedB.eq(new BN(6))); // 21% of 30u64 = 6.3 => 6u64
-        assert.ok(positionData.rewardInfos[0].amountOwed.eq(new BN(1))); // 21% of 1u64 x 5 = 1.05u64 => 1u64
-        assert.ok(positionData.rewardInfos[1].amountOwed.eq(new BN(2))); // 21% of 2u64 x 5 = 2.10u64 => 2u64
-        assert.ok(positionData.rewardInfos[2].amountOwed.eq(new BN(3))); // 21% of 3u64 x 5 = 3.15u64 => 3u64
-
-        // Full checkpoint
-        assert.ok(positionData.feeGrowthCheckpointA.eq(inside.insideA));
-        assert.ok(positionData.feeGrowthCheckpointB.eq(inside.insideB));
-        assert.ok(
-          positionData.rewardInfos[0].growthInsideCheckpoint.eq(
-            inside.insideR[0],
-          ),
-        );
-        assert.ok(
-          positionData.rewardInfos[1].growthInsideCheckpoint.eq(
-            inside.insideR[1],
-          ),
-        );
-        assert.ok(
-          positionData.rewardInfos[2].growthInsideCheckpoint.eq(
-            inside.insideR[2],
-          ),
-        );
-      }
-
       it("verify setup", async () => {
         const fixture = await setup();
         const {
@@ -1010,20 +832,319 @@ describe("update_fees_and_rewards", () => {
         );
       });
 
-      it("increase liquidity v1", async () => {
-        await runTest("increaseLiquidity");
+      it("multiple update calls", async () => {
+        const fixture = await setup();
+        const {
+          poolInitInfo: { whirlpoolPda },
+          positions,
+        } = fixture.getInfos();
+
+        const position = positions[0];
+
+        await toTx(
+          ctx,
+          WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            position: position.publicKey,
+            tickArrayLower: position.tickArrayLower,
+            tickArrayUpper: position.tickArrayUpper,
+          }),
+        ).buildAndExecute();
+
+        const inside = await calculateGrowthInside(
+          fetcher,
+          whirlpoolPda.publicKey,
+          position.tickArrayLower,
+          position.publicKey,
+        );
+
+        const positionData = (await fetcher.getPosition(
+          position.publicKey,
+          IGNORE_CACHE,
+        )) as PositionData;
+
+        assert.ok(positionData.feeOwedA.eq(new BN(4))); // 21% of 20u64 = 4.2 => 4u64
+        assert.ok(positionData.feeOwedB.eq(new BN(6))); // 21% of 30u64 = 6.3 => 6u64
+        assert.ok(positionData.rewardInfos[0].amountOwed.eq(new BN(1))); // 21% of 1u64 x 5 = 1.05u64 => 1u64
+        assert.ok(positionData.rewardInfos[1].amountOwed.eq(new BN(2))); // 21% of 2u64 x 5 = 2.10u64 => 2u64
+        assert.ok(positionData.rewardInfos[2].amountOwed.eq(new BN(3))); // 21% of 3u64 x 5 = 3.15u64 => 3u64
+
+        // Verify that there are fractional amounts
+        assert.ok(positionData.feeGrowthCheckpointA.lt(inside.insideA));
+        assert.ok(positionData.feeGrowthCheckpointB.lt(inside.insideB));
+        assert.ok(
+          positionData.rewardInfos[0].growthInsideCheckpoint.lt(
+            inside.insideR[0],
+          ),
+        );
+        assert.ok(
+          positionData.rewardInfos[1].growthInsideCheckpoint.lt(
+            inside.insideR[1],
+          ),
+        );
+        assert.ok(
+          positionData.rewardInfos[2].growthInsideCheckpoint.lt(
+            inside.insideR[2],
+          ),
+        );
+
+        // multiple update calls
+        for (let i = 0; i < 5; i++) {
+          await toTx(
+            ctx,
+            WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              position: position.publicKey,
+              tickArrayLower: position.tickArrayLower,
+              tickArrayUpper: position.tickArrayUpper,
+            }),
+          ).buildAndExecute();
+
+          const updatedPositionData = (await fetcher.getPosition(
+            position.publicKey,
+            IGNORE_CACHE,
+          )) as PositionData;
+
+          // updatedPositionData == positionData
+          assert.ok(updatedPositionData.feeOwedA.eq(positionData.feeOwedA));
+          assert.ok(updatedPositionData.feeOwedB.eq(positionData.feeOwedB));
+          assert.ok(
+            updatedPositionData.rewardInfos[0].amountOwed.eq(
+              positionData.rewardInfos[0].amountOwed,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.rewardInfos[1].amountOwed.eq(
+              positionData.rewardInfos[1].amountOwed,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.rewardInfos[2].amountOwed.eq(
+              positionData.rewardInfos[2].amountOwed,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.feeGrowthCheckpointA.eq(
+              positionData.feeGrowthCheckpointA,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.feeGrowthCheckpointB.eq(
+              positionData.feeGrowthCheckpointB,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.rewardInfos[0].growthInsideCheckpoint.eq(
+              positionData.rewardInfos[0].growthInsideCheckpoint,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.rewardInfos[1].growthInsideCheckpoint.eq(
+              positionData.rewardInfos[1].growthInsideCheckpoint,
+            ),
+          );
+          assert.ok(
+            updatedPositionData.rewardInfos[2].growthInsideCheckpoint.eq(
+              positionData.rewardInfos[2].growthInsideCheckpoint,
+            ),
+          );
+        }
       });
-      it("increase liquidity v2", async () => {
-        await runTest("increaseLiquidityV2");
-      });
-      it("decrease liquidity v1", async () => {
-        await runTest("decreaseLiquidity");
-      });
-      it("decrease liquidity v2", async () => {
-        await runTest("decreaseLiquidityV2");
-      });
-      it("increase liquidity by token amounts v2", async () => {
-        await runTest("increaseLiquidityByTokenAmountsV2");
+
+      describe("Full checkpoint for liquidity operations", () => {
+        async function runTest(
+          ix:
+            | "increaseLiquidity"
+            | "increaseLiquidityV2"
+            | "decreaseLiquidity"
+            | "decreaseLiquidityV2"
+            | "increaseLiquidityByTokenAmountsV2",
+        ) {
+          const fixture = await setup();
+          const {
+            poolInitInfo: {
+              whirlpoolPda,
+              tokenVaultAKeypair,
+              tokenVaultBKeypair,
+              tokenMintA,
+              tokenMintB,
+            },
+            tokenAccountA,
+            tokenAccountB,
+            positions,
+          } = fixture.getInfos();
+
+          const position = positions[0];
+
+          switch (ix) {
+            case "increaseLiquidity":
+              await toTx(
+                ctx,
+                WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+                  whirlpool: whirlpoolPda.publicKey,
+                  position: position.publicKey,
+                  tickArrayLower: position.tickArrayLower,
+                  tickArrayUpper: position.tickArrayUpper,
+                  liquidityAmount: new BN(100),
+                  positionAuthority: ctx.wallet.publicKey,
+                  positionTokenAccount: position.tokenAccount,
+                  tokenMaxA: MAX_U64,
+                  tokenMaxB: MAX_U64,
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultA: tokenVaultAKeypair.publicKey,
+                  tokenVaultB: tokenVaultBKeypair.publicKey,
+                }),
+              ).buildAndExecute();
+              break;
+            case "increaseLiquidityV2":
+              await toTx(
+                ctx,
+                WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+                  whirlpool: whirlpoolPda.publicKey,
+                  position: position.publicKey,
+                  tickArrayLower: position.tickArrayLower,
+                  tickArrayUpper: position.tickArrayUpper,
+                  liquidityAmount: new BN(100),
+                  positionAuthority: ctx.wallet.publicKey,
+                  positionTokenAccount: position.tokenAccount,
+                  tokenMaxA: MAX_U64,
+                  tokenMaxB: MAX_U64,
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultA: tokenVaultAKeypair.publicKey,
+                  tokenVaultB: tokenVaultBKeypair.publicKey,
+                  tokenMintA,
+                  tokenMintB,
+                  tokenProgramA: TOKEN_PROGRAM_ID,
+                  tokenProgramB: TOKEN_PROGRAM_ID,
+                }),
+              ).buildAndExecute();
+              break;
+            case "decreaseLiquidity":
+              await toTx(
+                ctx,
+                WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+                  whirlpool: whirlpoolPda.publicKey,
+                  position: position.publicKey,
+                  tickArrayLower: position.tickArrayLower,
+                  tickArrayUpper: position.tickArrayUpper,
+                  liquidityAmount: new BN(100),
+                  positionAuthority: ctx.wallet.publicKey,
+                  positionTokenAccount: position.tokenAccount,
+                  tokenMinA: new BN(0),
+                  tokenMinB: new BN(0),
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultA: tokenVaultAKeypair.publicKey,
+                  tokenVaultB: tokenVaultBKeypair.publicKey,
+                }),
+              ).buildAndExecute();
+              break;
+            case "decreaseLiquidityV2":
+              await toTx(
+                ctx,
+                WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
+                  whirlpool: whirlpoolPda.publicKey,
+                  position: position.publicKey,
+                  tickArrayLower: position.tickArrayLower,
+                  tickArrayUpper: position.tickArrayUpper,
+                  liquidityAmount: new BN(100),
+                  positionAuthority: ctx.wallet.publicKey,
+                  positionTokenAccount: position.tokenAccount,
+                  tokenMinA: new BN(0),
+                  tokenMinB: new BN(0),
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultA: tokenVaultAKeypair.publicKey,
+                  tokenVaultB: tokenVaultBKeypair.publicKey,
+                  tokenMintA,
+                  tokenMintB,
+                  tokenProgramA: TOKEN_PROGRAM_ID,
+                  tokenProgramB: TOKEN_PROGRAM_ID,
+                }),
+              ).buildAndExecute();
+              break;
+            case "increaseLiquidityByTokenAmountsV2":
+              await toTx(
+                ctx,
+                WhirlpoolIx.increaseLiquidityByTokenAmountsV2Ix(ctx.program, {
+                  whirlpool: whirlpoolPda.publicKey,
+                  position: position.publicKey,
+                  tickArrayLower: position.tickArrayLower,
+                  tickArrayUpper: position.tickArrayUpper,
+                  minSqrtPrice: MIN_SQRT_PRICE_BN,
+                  maxSqrtPrice: MAX_SQRT_PRICE_BN,
+                  tokenMaxA: new BN(1000),
+                  tokenMaxB: new BN(1000),
+                  positionAuthority: ctx.wallet.publicKey,
+                  positionTokenAccount: position.tokenAccount,
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultA: tokenVaultAKeypair.publicKey,
+                  tokenVaultB: tokenVaultBKeypair.publicKey,
+                  tokenMintA,
+                  tokenMintB,
+                  tokenProgramA: TOKEN_PROGRAM_ID,
+                  tokenProgramB: TOKEN_PROGRAM_ID,
+                }),
+              ).buildAndExecute();
+              break;
+          }
+
+          const inside = await calculateGrowthInside(
+            fetcher,
+            whirlpoolPda.publicKey,
+            position.tickArrayLower,
+            position.publicKey,
+          );
+
+          const positionData = (await fetcher.getPosition(
+            position.publicKey,
+            IGNORE_CACHE,
+          )) as PositionData;
+
+          assert.ok(positionData.feeOwedA.eq(new BN(4))); // 21% of 20u64 = 4.2 => 4u64
+          assert.ok(positionData.feeOwedB.eq(new BN(6))); // 21% of 30u64 = 6.3 => 6u64
+          assert.ok(positionData.rewardInfos[0].amountOwed.eq(new BN(1))); // 21% of 1u64 x 5 = 1.05u64 => 1u64
+          assert.ok(positionData.rewardInfos[1].amountOwed.eq(new BN(2))); // 21% of 2u64 x 5 = 2.10u64 => 2u64
+          assert.ok(positionData.rewardInfos[2].amountOwed.eq(new BN(3))); // 21% of 3u64 x 5 = 3.15u64 => 3u64
+
+          // Full checkpoint
+          assert.ok(positionData.feeGrowthCheckpointA.eq(inside.insideA));
+          assert.ok(positionData.feeGrowthCheckpointB.eq(inside.insideB));
+          assert.ok(
+            positionData.rewardInfos[0].growthInsideCheckpoint.eq(
+              inside.insideR[0],
+            ),
+          );
+          assert.ok(
+            positionData.rewardInfos[1].growthInsideCheckpoint.eq(
+              inside.insideR[1],
+            ),
+          );
+          assert.ok(
+            positionData.rewardInfos[2].growthInsideCheckpoint.eq(
+              inside.insideR[2],
+            ),
+          );
+        }
+
+        it("increase liquidity v1", async () => {
+          await runTest("increaseLiquidity");
+        });
+        it("increase liquidity v2", async () => {
+          await runTest("increaseLiquidityV2");
+        });
+        it("decrease liquidity v1", async () => {
+          await runTest("decreaseLiquidity");
+        });
+        it("decrease liquidity v2", async () => {
+          await runTest("decreaseLiquidityV2");
+        });
+        it("increase liquidity by token amounts v2", async () => {
+          await runTest("increaseLiquidityByTokenAmountsV2");
+        });
       });
     });
   });

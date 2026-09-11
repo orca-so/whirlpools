@@ -3,14 +3,27 @@ import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { PositionData, TickArrayData, WhirlpoolAccountFetcher, WhirlpoolAccountFetcherInterface, WhirlpoolContext, WhirlpoolData } from "../../../src";
-import { MAX_SQRT_PRICE, MAX_SQRT_PRICE_BN, MIN_SQRT_PRICE, MIN_SQRT_PRICE_BN, PDAUtil, TickArrayUtil, toTx, WhirlpoolIx } from "../../../src";
+import type {
+  PositionData,
+  TickArrayData,
+  WhirlpoolAccountFetcherInterface,
+  WhirlpoolContext,
+  WhirlpoolData,
+} from "../../../src";
+import {
+  MAX_SQRT_PRICE_BN,
+  MIN_SQRT_PRICE_BN,
+  PDAUtil,
+  TickArrayUtil,
+  toTx,
+  WhirlpoolIx,
+} from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { MAX_U64, TickSpacing, ZERO_BN, warpClock } from "../../utils";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import { it } from "vitest";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
@@ -312,11 +325,7 @@ describe("update_fees_and_rewards", () => {
         ],
       });
       const {
-        poolInitInfo: {
-          whirlpoolPda,
-          tokenVaultAKeypair,
-          tokenVaultBKeypair,
-        },
+        poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
         tokenAccountA,
         tokenAccountB,
         positions,
@@ -411,7 +420,12 @@ describe("update_fees_and_rewards", () => {
       assert.ok(positionAfterSingleExec.feeOwedB.eq(new BN(0)));
 
       let preState = positionAfterSingleExec;
-      let preInside = await calculateGrowthInside(fetcher, whirlpoolPda.publicKey, tickArrayPda.publicKey, positionPubkey);
+      let preInside = await calculateGrowthInside(
+        fetcher,
+        whirlpoolPda.publicKey,
+        tickArrayPda.publicKey,
+        positionPubkey,
+      );
       for (let i = 1; i < 20; i++) {
         await accrueFeesAndUpdate();
 
@@ -420,36 +434,59 @@ describe("update_fees_and_rewards", () => {
           IGNORE_CACHE,
         )) as PositionData;
 
-        const currInside = await calculateGrowthInside(fetcher, whirlpoolPda.publicKey, tickArrayPda.publicKey, positionPubkey);
+        const currInside = await calculateGrowthInside(
+          fetcher,
+          whirlpoolPda.publicKey,
+          tickArrayPda.publicKey,
+          positionPubkey,
+        );
 
         if (currState.feeOwedA.eq(preState.feeOwedA)) {
           // inside fee growth is increased, but the checkpoint remains the same
           assert.ok(currInside.insideA.gt(preInside.insideA));
-          assert.ok(currState.feeGrowthCheckpointA.eq(preState.feeGrowthCheckpointA));
+          assert.ok(
+            currState.feeGrowthCheckpointA.eq(preState.feeGrowthCheckpointA),
+          );
         } else {
           const X64 = new BN(2).pow(new BN(64));
           const owedDelta = currState.feeOwedA.sub(preState.feeOwedA);
           const positionLiquidity = currState.liquidity;
-          const convertedGrowth = owedDelta.mul(X64).add(positionLiquidity.subn(1)).div(positionLiquidity); // div ceil
-          const checkpointDelta = currState.feeGrowthCheckpointA.sub(preState.feeGrowthCheckpointA);
+          const convertedGrowth = owedDelta
+            .mul(X64)
+            .add(positionLiquidity.subn(1))
+            .div(positionLiquidity); // div ceil
+          const checkpointDelta = currState.feeGrowthCheckpointA.sub(
+            preState.feeGrowthCheckpointA,
+          );
           assert.ok(convertedGrowth.eq(checkpointDelta));
 
-          const growthDelta = currInside.insideA.sub(preState.feeGrowthCheckpointA);
+          const growthDelta = currInside.insideA.sub(
+            preState.feeGrowthCheckpointA,
+          );
           assert.ok(convertedGrowth.lte(growthDelta));
         }
         if (currState.feeOwedB.eq(preState.feeOwedB)) {
           // inside fee growth is increased, but the checkpoint remains the same
           assert.ok(currInside.insideB.gt(preInside.insideB));
-          assert.ok(currState.feeGrowthCheckpointB.eq(preState.feeGrowthCheckpointB));
+          assert.ok(
+            currState.feeGrowthCheckpointB.eq(preState.feeGrowthCheckpointB),
+          );
         } else {
           const X64 = new BN(2).pow(new BN(64));
           const owedDelta = currState.feeOwedB.sub(preState.feeOwedB);
           const positionLiquidity = currState.liquidity;
-          const convertedGrowth = owedDelta.mul(X64).add(positionLiquidity.subn(1)).div(positionLiquidity); // div ceil
-          const checkpointDelta = currState.feeGrowthCheckpointB.sub(preState.feeGrowthCheckpointB);
+          const convertedGrowth = owedDelta
+            .mul(X64)
+            .add(positionLiquidity.subn(1))
+            .div(positionLiquidity); // div ceil
+          const checkpointDelta = currState.feeGrowthCheckpointB.sub(
+            preState.feeGrowthCheckpointB,
+          );
           assert.ok(convertedGrowth.eq(checkpointDelta));
 
-          const growthDelta = currInside.insideB.sub(preState.feeGrowthCheckpointB);
+          const growthDelta = currInside.insideB.sub(
+            preState.feeGrowthCheckpointB,
+          );
           assert.ok(convertedGrowth.lte(growthDelta));
         }
 
@@ -505,9 +542,8 @@ describe("update_fees_and_rewards", () => {
       const {
         poolInitInfo: { whirlpoolPda },
         positions,
-        rewards,
       } = fixture.getInfos();
-  
+
       const positionPubkey = positions[0].publicKey;
 
       const tickArrayPda = PDAUtil.getTickArray(
@@ -519,7 +555,7 @@ describe("update_fees_and_rewards", () => {
       // accrue rewards
       async function accrueRewardsAndUpdate() {
         warpClock(1);
-  
+
         await toTx(
           ctx,
           WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
@@ -540,12 +576,23 @@ describe("update_fees_and_rewards", () => {
 
       // rewards are 1u64/2u64/3u64 and the share of position is 21%.
       // So the rewards for this position are virtually 0.21u64 / 0.42u64 / 0.63u64.
-      assert.ok(positionAfterSingleExec.rewardInfos[0].amountOwed.eq(new BN(0)));
-      assert.ok(positionAfterSingleExec.rewardInfos[1].amountOwed.eq(new BN(0)));
-      assert.ok(positionAfterSingleExec.rewardInfos[2].amountOwed.eq(new BN(0)));
+      assert.ok(
+        positionAfterSingleExec.rewardInfos[0].amountOwed.eq(new BN(0)),
+      );
+      assert.ok(
+        positionAfterSingleExec.rewardInfos[1].amountOwed.eq(new BN(0)),
+      );
+      assert.ok(
+        positionAfterSingleExec.rewardInfos[2].amountOwed.eq(new BN(0)),
+      );
 
       let preState = positionAfterSingleExec;
-      let preInside = await calculateGrowthInside(fetcher, whirlpoolPda.publicKey, tickArrayPda.publicKey, positionPubkey);
+      let preInside = await calculateGrowthInside(
+        fetcher,
+        whirlpoolPda.publicKey,
+        tickArrayPda.publicKey,
+        positionPubkey,
+      );
       for (let i = 1; i < 20; i++) {
         await accrueRewardsAndUpdate();
 
@@ -554,22 +601,46 @@ describe("update_fees_and_rewards", () => {
           IGNORE_CACHE,
         )) as PositionData;
 
-        const currInside = await calculateGrowthInside(fetcher, whirlpoolPda.publicKey, tickArrayPda.publicKey, positionPubkey);
+        const currInside = await calculateGrowthInside(
+          fetcher,
+          whirlpoolPda.publicKey,
+          tickArrayPda.publicKey,
+          positionPubkey,
+        );
 
         for (let ri = 0; ri < 3; ri++) {
-          if (currState.rewardInfos[ri].amountOwed.eq(preState.rewardInfos[ri].amountOwed)) {
+          if (
+            currState.rewardInfos[ri].amountOwed.eq(
+              preState.rewardInfos[ri].amountOwed,
+            )
+          ) {
             // inside reward growth is increased, but the checkpoint remains the same
             assert.ok(currInside.insideR[ri].gt(preInside.insideR[ri]));
-            assert.ok(currState.rewardInfos[ri].growthInsideCheckpoint.eq(preState.rewardInfos[ri].growthInsideCheckpoint));
+            assert.ok(
+              currState.rewardInfos[ri].growthInsideCheckpoint.eq(
+                preState.rewardInfos[ri].growthInsideCheckpoint,
+              ),
+            );
           } else {
             const X64 = new BN(2).pow(new BN(64));
-            const owedDelta = currState.rewardInfos[ri].amountOwed.sub(preState.rewardInfos[ri].amountOwed);
+            const owedDelta = currState.rewardInfos[ri].amountOwed.sub(
+              preState.rewardInfos[ri].amountOwed,
+            );
             const positionLiquidity = currState.liquidity;
-            const convertedGrowth = owedDelta.mul(X64).add(positionLiquidity.subn(1)).div(positionLiquidity); // div ceil
-            const checkpointDelta = currState.rewardInfos[ri].growthInsideCheckpoint.sub(preState.rewardInfos[ri].growthInsideCheckpoint);
+            const convertedGrowth = owedDelta
+              .mul(X64)
+              .add(positionLiquidity.subn(1))
+              .div(positionLiquidity); // div ceil
+            const checkpointDelta = currState.rewardInfos[
+              ri
+            ].growthInsideCheckpoint.sub(
+              preState.rewardInfos[ri].growthInsideCheckpoint,
+            );
             assert.ok(convertedGrowth.eq(checkpointDelta));
 
-            const growthDelta = currInside.insideR[ri].sub(preState.rewardInfos[ri].growthInsideCheckpoint);
+            const growthDelta = currInside.insideR[ri].sub(
+              preState.rewardInfos[ri].growthInsideCheckpoint,
+            );
             assert.ok(convertedGrowth.lte(growthDelta));
           }
         }
@@ -586,9 +657,15 @@ describe("update_fees_and_rewards", () => {
       // 0.21u64 x 20 = 4.2u64
       // 0.42u64 x 20 = 8.4u64
       // 0.63u64 x 20 = 12.6u64
-      assert.ok(positionAfterRepeatExec.rewardInfos[0].amountOwed.eq(new BN(4)));
-      assert.ok(positionAfterRepeatExec.rewardInfos[1].amountOwed.eq(new BN(8)));
-      assert.ok(positionAfterRepeatExec.rewardInfos[2].amountOwed.eq(new BN(12)));
+      assert.ok(
+        positionAfterRepeatExec.rewardInfos[0].amountOwed.eq(new BN(4)),
+      );
+      assert.ok(
+        positionAfterRepeatExec.rewardInfos[1].amountOwed.eq(new BN(8)),
+      );
+      assert.ok(
+        positionAfterRepeatExec.rewardInfos[2].amountOwed.eq(new BN(12)),
+      );
     });
 
     describe("Full checkpoint for liquidity operations", () => {
@@ -694,11 +771,18 @@ describe("update_fees_and_rewards", () => {
 
         // accrue rewards
         warpClock(5);
-          
+
         return fixture;
       }
 
-      async function runTest(ix: "increaseLiquidity" | "increaseLiquidityV2" | "decreaseLiquidity" | "decreaseLiquidityV2" | "increaseLiquidityByTokenAmountsV2") {
+      async function runTest(
+        ix:
+          | "increaseLiquidity"
+          | "increaseLiquidityV2"
+          | "decreaseLiquidity"
+          | "decreaseLiquidityV2"
+          | "increaseLiquidityByTokenAmountsV2",
+      ) {
         const fixture = await setup();
         const {
           poolInitInfo: {
@@ -831,7 +915,12 @@ describe("update_fees_and_rewards", () => {
             break;
         }
 
-        const inside = await calculateGrowthInside(fetcher, whirlpoolPda.publicKey, position.tickArrayLower, position.publicKey);
+        const inside = await calculateGrowthInside(
+          fetcher,
+          whirlpoolPda.publicKey,
+          position.tickArrayLower,
+          position.publicKey,
+        );
 
         const positionData = (await fetcher.getPosition(
           position.publicKey,
@@ -847,17 +936,27 @@ describe("update_fees_and_rewards", () => {
         // Full checkpoint
         assert.ok(positionData.feeGrowthCheckpointA.eq(inside.insideA));
         assert.ok(positionData.feeGrowthCheckpointB.eq(inside.insideB));
-        assert.ok(positionData.rewardInfos[0].growthInsideCheckpoint.eq(inside.insideR[0]));
-        assert.ok(positionData.rewardInfos[1].growthInsideCheckpoint.eq(inside.insideR[1]));
-        assert.ok(positionData.rewardInfos[2].growthInsideCheckpoint.eq(inside.insideR[2]));
+        assert.ok(
+          positionData.rewardInfos[0].growthInsideCheckpoint.eq(
+            inside.insideR[0],
+          ),
+        );
+        assert.ok(
+          positionData.rewardInfos[1].growthInsideCheckpoint.eq(
+            inside.insideR[1],
+          ),
+        );
+        assert.ok(
+          positionData.rewardInfos[2].growthInsideCheckpoint.eq(
+            inside.insideR[2],
+          ),
+        );
       }
 
       it("verify setup", async () => {
         const fixture = await setup();
         const {
-          poolInitInfo: {
-            whirlpoolPda,
-          },
+          poolInitInfo: { whirlpoolPda },
           positions,
         } = fixture.getInfos();
 
@@ -873,7 +972,12 @@ describe("update_fees_and_rewards", () => {
           }),
         ).buildAndExecute();
 
-        const inside = await calculateGrowthInside(fetcher, whirlpoolPda.publicKey, position.tickArrayLower, position.publicKey);
+        const inside = await calculateGrowthInside(
+          fetcher,
+          whirlpoolPda.publicKey,
+          position.tickArrayLower,
+          position.publicKey,
+        );
 
         const positionData = (await fetcher.getPosition(
           position.publicKey,
@@ -889,9 +993,21 @@ describe("update_fees_and_rewards", () => {
         // Verify that there are fractional amounts
         assert.ok(positionData.feeGrowthCheckpointA.lt(inside.insideA));
         assert.ok(positionData.feeGrowthCheckpointB.lt(inside.insideB));
-        assert.ok(positionData.rewardInfos[0].growthInsideCheckpoint.lt(inside.insideR[0]));
-        assert.ok(positionData.rewardInfos[1].growthInsideCheckpoint.lt(inside.insideR[1]));
-        assert.ok(positionData.rewardInfos[2].growthInsideCheckpoint.lt(inside.insideR[2]));
+        assert.ok(
+          positionData.rewardInfos[0].growthInsideCheckpoint.lt(
+            inside.insideR[0],
+          ),
+        );
+        assert.ok(
+          positionData.rewardInfos[1].growthInsideCheckpoint.lt(
+            inside.insideR[1],
+          ),
+        );
+        assert.ok(
+          positionData.rewardInfos[2].growthInsideCheckpoint.lt(
+            inside.insideR[2],
+          ),
+        );
       });
 
       it("increase liquidity v1", async () => {
@@ -919,72 +1035,71 @@ export async function calculateGrowthInside(
   tickArrayPubkey: PublicKey,
   positionPubkey: PublicKey,
 ) {
-    const whirlpoolData = (await fetcher.getPool(
-      whirlpoolPubkey,
-      IGNORE_CACHE,
-    )) as WhirlpoolData;
-    const tickArrayData = (await fetcher.getTickArray(
-      tickArrayPubkey,
-      IGNORE_CACHE,
-    )) as TickArrayData;
-    const positionData = (await fetcher.getPosition(
-        positionPubkey,
-        IGNORE_CACHE,
-    )) as PositionData;
+  const whirlpoolData = (await fetcher.getPool(
+    whirlpoolPubkey,
+    IGNORE_CACHE,
+  )) as WhirlpoolData;
+  const tickArrayData = (await fetcher.getTickArray(
+    tickArrayPubkey,
+    IGNORE_CACHE,
+  )) as TickArrayData;
+  const positionData = (await fetcher.getPosition(
+    positionPubkey,
+    IGNORE_CACHE,
+  )) as PositionData;
 
-    const lowerTick = TickArrayUtil.getTickFromArray(
-      tickArrayData,
-      positionData.tickLowerIndex,
-      whirlpoolData.tickSpacing,
-    );
-    const upperTick = TickArrayUtil.getTickFromArray(
-      tickArrayData,
-      positionData.tickUpperIndex,
-      whirlpoolData.tickSpacing,
-    );
+  const lowerTick = TickArrayUtil.getTickFromArray(
+    tickArrayData,
+    positionData.tickLowerIndex,
+    whirlpoolData.tickSpacing,
+  );
+  const upperTick = TickArrayUtil.getTickFromArray(
+    tickArrayData,
+    positionData.tickUpperIndex,
+    whirlpoolData.tickSpacing,
+  );
 
-    // position status must be In-range
-    assert.ok(whirlpoolData.tickCurrentIndex >= positionData.tickLowerIndex && whirlpoolData.tickCurrentIndex < positionData.tickUpperIndex);
-    function wrappingSub(a: BN, b: BN): BN {
-      const X128 = new BN(2).pow(new BN(128));
-      return a.sub(b).add(X128).mod(X128);
-    }
-    function inside(
-      lowerOutside: BN,
-      upperOutside: BN,
-      global: BN,
-    ): BN {
-      return wrappingSub(wrappingSub(global, lowerOutside), upperOutside);
-    }
+  // position status must be In-range
+  assert.ok(
+    whirlpoolData.tickCurrentIndex >= positionData.tickLowerIndex &&
+      whirlpoolData.tickCurrentIndex < positionData.tickUpperIndex,
+  );
+  function wrappingSub(a: BN, b: BN): BN {
+    const X128 = new BN(2).pow(new BN(128));
+    return a.sub(b).add(X128).mod(X128);
+  }
+  function inside(lowerOutside: BN, upperOutside: BN, global: BN): BN {
+    return wrappingSub(wrappingSub(global, lowerOutside), upperOutside);
+  }
 
-    const insideA = inside(
-      lowerTick.feeGrowthOutsideA,
-      upperTick.feeGrowthOutsideA,
-      whirlpoolData.feeGrowthGlobalA,
-    );
-    const insideB = inside(
-      lowerTick.feeGrowthOutsideB,
-      upperTick.feeGrowthOutsideB,
-      whirlpoolData.feeGrowthGlobalB,
-    );
-    const insideR0 = inside(
-      lowerTick.rewardGrowthsOutside[0],
-      upperTick.rewardGrowthsOutside[0],
-      whirlpoolData.rewardInfos[0].growthGlobalX64,
-    );
-    const insideR1 = inside(
-      lowerTick.rewardGrowthsOutside[1],
-      upperTick.rewardGrowthsOutside[1],
-      whirlpoolData.rewardInfos[1].growthGlobalX64,
-    );
-    const insideR2 = inside(
-      lowerTick.rewardGrowthsOutside[2],
-      upperTick.rewardGrowthsOutside[2],
-      whirlpoolData.rewardInfos[2].growthGlobalX64,
-    );
-    return {
-      insideA,
-      insideB,
-      insideR: [insideR0, insideR1, insideR2],
-    };
+  const insideA = inside(
+    lowerTick.feeGrowthOutsideA,
+    upperTick.feeGrowthOutsideA,
+    whirlpoolData.feeGrowthGlobalA,
+  );
+  const insideB = inside(
+    lowerTick.feeGrowthOutsideB,
+    upperTick.feeGrowthOutsideB,
+    whirlpoolData.feeGrowthGlobalB,
+  );
+  const insideR0 = inside(
+    lowerTick.rewardGrowthsOutside[0],
+    upperTick.rewardGrowthsOutside[0],
+    whirlpoolData.rewardInfos[0].growthGlobalX64,
+  );
+  const insideR1 = inside(
+    lowerTick.rewardGrowthsOutside[1],
+    upperTick.rewardGrowthsOutside[1],
+    whirlpoolData.rewardInfos[1].growthGlobalX64,
+  );
+  const insideR2 = inside(
+    lowerTick.rewardGrowthsOutside[2],
+    upperTick.rewardGrowthsOutside[2],
+    whirlpoolData.rewardInfos[2].growthGlobalX64,
+  );
+  return {
+    insideA,
+    insideB,
+    insideR: [insideR0, insideR1, insideR2],
+  };
 }

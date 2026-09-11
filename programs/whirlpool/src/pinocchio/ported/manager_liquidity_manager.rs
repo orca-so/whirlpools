@@ -1,17 +1,20 @@
-use crate::pinocchio::{
-    errors::WhirlpoolErrorCode,
-    state::whirlpool::{
-        tick_array::{TickUpdate, NUM_REWARDS},
-        MemoryMappedPosition, MemoryMappedTick, MemoryMappedWhirlpool,
-        MemoryMappedWhirlpoolRewardInfo, TickArray,
+use crate::{
+    manager::position_manager::{next_owed_delta_and_checkpoint, CheckpointUpdateMode},
+    pinocchio::{
+        errors::WhirlpoolErrorCode,
+        state::whirlpool::{
+            tick_array::{TickUpdate, NUM_REWARDS},
+            MemoryMappedPosition, MemoryMappedTick, MemoryMappedWhirlpool,
+            MemoryMappedWhirlpoolRewardInfo, TickArray,
+        },
+        Result,
     },
-    Result,
 };
 use crate::{
     manager::tick_array_manager::{TickArrayRentTransfer, TickArraySizeUpdate, TickArrayUpdate},
     math::{
-        add_liquidity_delta, checked_mul_div, checked_mul_shift_right, get_amount_delta_a,
-        get_amount_delta_b, sqrt_price_from_tick_index,
+        add_liquidity_delta, checked_mul_div, get_amount_delta_a, get_amount_delta_b,
+        sqrt_price_from_tick_index,
     },
     state::PositionUpdate,
 };
@@ -260,17 +263,31 @@ fn pino_next_position_modify_liquidity_update(
 ) -> Result<PositionUpdate> {
     let mut update = PositionUpdate::default();
 
+    // increase/decrease liquidity instruction requires that liquidity_delta != 0
+    let checkpoint_update_mode = if liquidity_delta == 0 {
+        // update fees and rewards context
+        CheckpointUpdateMode::Partial
+    } else {
+        // increase/decrease liquidity context
+        CheckpointUpdateMode::Full
+    };
+
     // Calculate fee deltas.
-    // If fee deltas overflow, default to a zero value. This means the position loses
-    // all fees earned since the last time the position was modified or fees collected.
-    let growth_delta_a = fee_growth_inside_a.wrapping_sub(position.fee_growth_checkpoint_a());
-    let fee_delta_a = checked_mul_shift_right(position.liquidity(), growth_delta_a).unwrap_or(0);
+    let (fee_delta_a, next_checkpoint_a) = next_owed_delta_and_checkpoint(
+        fee_growth_inside_a,
+        position.fee_growth_checkpoint_a(),
+        position.liquidity(),
+        checkpoint_update_mode,
+    );
+    let (fee_delta_b, next_checkpoint_b) = next_owed_delta_and_checkpoint(
+        fee_growth_inside_b,
+        position.fee_growth_checkpoint_b(),
+        position.liquidity(),
+        checkpoint_update_mode,
+    );
 
-    let growth_delta_b = fee_growth_inside_b.wrapping_sub(position.fee_growth_checkpoint_b());
-    let fee_delta_b = checked_mul_shift_right(position.liquidity(), growth_delta_b).unwrap_or(0);
-
-    update.fee_growth_checkpoint_a = fee_growth_inside_a;
-    update.fee_growth_checkpoint_b = fee_growth_inside_b;
+    update.fee_growth_checkpoint_a = next_checkpoint_a;
+    update.fee_growth_checkpoint_b = next_checkpoint_b;
 
     // Overflows allowed. Must collect fees owed before overflow.
     update.fee_owed_a = position.fee_owed_a().wrapping_add(fee_delta_a);
@@ -282,14 +299,14 @@ fn pino_next_position_modify_liquidity_update(
         let curr_reward_info = &position_reward_infos[i];
 
         // Calculate reward delta.
-        // If reward delta overflows, default to a zero value. This means the position loses all
-        // rewards earned since the last time the position was modified or rewards were collected.
-        let reward_growth_delta =
-            reward_growth_inside.wrapping_sub(curr_reward_info.growth_inside_checkpoint());
-        let amount_owed_delta =
-            checked_mul_shift_right(position.liquidity(), reward_growth_delta).unwrap_or(0);
+        let (amount_owed_delta, next_checkpoint) = next_owed_delta_and_checkpoint(
+            reward_growth_inside,
+            curr_reward_info.growth_inside_checkpoint(),
+            position.liquidity(),
+            checkpoint_update_mode,
+        );
 
-        update.growth_inside_checkpoint = reward_growth_inside;
+        update.growth_inside_checkpoint = next_checkpoint;
 
         // Overflows allowed. Must collect rewards owed before overflow.
         update.amount_owed = curr_reward_info

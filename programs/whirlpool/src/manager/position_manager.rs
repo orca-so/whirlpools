@@ -1,7 +1,7 @@
 use crate::{
     errors::ErrorCode,
-    math::{Q64_RESOLUTION, add_liquidity_delta, checked_mul_shift_right},
-    state::{NUM_REWARDS, Position, PositionUpdate},
+    math::{add_liquidity_delta, checked_mul_shift_right, Q64_RESOLUTION},
+    state::{Position, PositionUpdate, NUM_REWARDS},
 };
 
 pub fn next_position_modify_liquidity_update(
@@ -23,8 +23,6 @@ pub fn next_position_modify_liquidity_update(
     };
 
     // Calculate fee deltas.
-    // If fee deltas overflow, default to a zero value. This means the position loses
-    // all fees earned since the last time the position was modified or fees collected.
     let (fee_delta_a, next_checkpoint_a) = next_owed_delta_and_checkpoint(
         fee_growth_inside_a,
         position.fee_growth_checkpoint_a,
@@ -50,8 +48,6 @@ pub fn next_position_modify_liquidity_update(
         let curr_reward_info = position.reward_infos[i];
 
         // Calculate reward delta.
-        // If reward delta overflows, default to a zero value. This means the position loses all
-        // rewards earned since the last time the position was modified or rewards were collected.
         let (amount_owed_delta, next_checkpoint) = next_owed_delta_and_checkpoint(
             reward_growth_inside,
             curr_reward_info.growth_inside_checkpoint,
@@ -87,7 +83,9 @@ pub fn next_owed_delta_and_checkpoint(
 ) -> (u64, u128) {
     let growth_delta = growth_inside.wrapping_sub(current_checkpoint);
     let Ok(owed_delta) = checked_mul_shift_right(position_liquidity, growth_delta) else {
-        
+        // If the fee/reward delta overflows, default the owed delta to zero.
+        // This means the position loses all fees/rewards earned since the last time
+        // the position was modified or fees/rewards were collected.
         return (0, growth_inside);
     };
 
@@ -100,7 +98,8 @@ pub fn next_owed_delta_and_checkpoint(
     }
 
     // Note: owed_delta > 0 ensures that position_liquidity > 0
-    let converted_growth_delta = ((owed_delta as u128) << Q64_RESOLUTION).div_ceil(position_liquidity);
+    let converted_growth_delta =
+        ((owed_delta as u128) << Q64_RESOLUTION).div_ceil(position_liquidity);
     let next_checkpoint = current_checkpoint.wrapping_add(converted_growth_delta);
 
     (owed_delta, next_checkpoint)
@@ -371,5 +370,690 @@ mod position_manager_unit_tests {
                 },
             ]
         )
+    }
+}
+
+#[cfg(test)]
+mod next_owed_delta_and_checkpoint_tests {
+    use super::*;
+
+    fn x64(value: u128) -> u128 {
+        value << Q64_RESOLUTION
+    }
+
+    struct TestNextOwedDeltaAndCheckpointParams {
+        update_mode: CheckpointUpdateMode,
+        growth_inside: u128,
+        current_checkpoint: u128,
+        position_liquidity: u128,
+        expected_owed: u64,
+        expected_next_checkpoint: u128,
+    }
+
+    impl TestNextOwedDeltaAndCheckpointParams {
+        fn run(&self) {
+            let (owed, next_checkpoint) = next_owed_delta_and_checkpoint(
+                self.growth_inside,
+                self.current_checkpoint,
+                self.position_liquidity,
+                self.update_mode,
+            );
+            assert_eq!(owed, self.expected_owed);
+            assert_eq!(next_checkpoint, self.expected_next_checkpoint);
+        }
+    }
+
+    mod full_mode {
+        use super::*;
+
+        // growth_inside = checkpoint
+        #[test]
+        fn no_growth() {
+            let growth_inside = 1000;
+            let current_checkpoint = growth_inside;
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity: 1000,
+                expected_owed: 0,
+                expected_next_checkpoint: current_checkpoint,
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 0.x
+        #[test]
+        fn inside_gt_checkpoint_owed_0x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(9) / 10; // ~0.9
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 1.0 (exact)
+        #[test]
+        fn inside_gt_checkpoint_owed_1_exact() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(1); // 1.0
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 1.x (< 1.5)
+        #[test]
+        fn inside_gt_checkpoint_owed_1x_low() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(12) / 10; // 1.2
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 1.x (> 1.5)
+        #[test]
+        fn inside_gt_checkpoint_owed_1x_high() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(18) / 10; // 1.8
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 2.x
+        #[test]
+        fn inside_gt_checkpoint_owed_2x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(25) / 10; // 2.5
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 2,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 382949173.928
+        #[test]
+        fn inside_gt_checkpoint_owed_382949173x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 382949173,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside < checkpoint (wrapping): owed = 0.x
+        #[test]
+        fn inside_lt_checkpoint_owed_0x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = u128::MAX;
+            let owed_x64 = x64(9) / 10; // ~0.9
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside < checkpoint (wrapping): owed = 1.x (< 1.5)
+        #[test]
+        fn inside_lt_checkpoint_owed_1x_low() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = u128::MAX;
+            let owed_x64 = x64(12) / 10; // 1.2
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        // growth_inside < checkpoint (wrapping): owed = 382949173.928
+        #[test]
+        fn inside_lt_checkpoint_owed_382949173x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = u128::MAX;
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 382949173,
+                expected_next_checkpoint: growth_inside, // Full
+            }
+            .run();
+        }
+
+        #[test]
+        fn zero_position_liquidity() {
+            let position_liquidity = 0;
+            let growth_inside = x64(3);
+            let current_checkpoint = x64(1);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: growth_inside,
+            }
+            .run();
+        }
+
+        #[test]
+        fn growth_delta_x_position_liquidity_overflow() {
+            let position_liquidity = 1u128 << 65;
+            let growth_inside = 1u128 << 68;
+            let current_checkpoint = x64(1);
+
+            // should overflow
+            let growth_delta = growth_inside.checked_sub(current_checkpoint).unwrap();
+            assert!(growth_delta.checked_mul(position_liquidity).is_none());
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Full,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: growth_inside,
+            }
+            .run();
+        }
+
+        // Repeated Full updates must drop sub-unit growth.
+        #[test]
+        fn repeated_full_updates_accumulate_fractional_growth() {
+            let position_liquidity = 1 << 10;
+            let mut current_checkpoint = x64(1);
+            let mut growth_inside = current_checkpoint;
+
+            // Each update adds approximately 0.2001 owed units.
+            // A single update therefore cannot produce an owed amount.
+            let owed_x64_per_update = x64(2001) / 10000; // ~0.2001
+            let growth_delta_per_update = owed_x64_per_update / position_liquidity;
+
+            for _ in 0..10 {
+                growth_inside = growth_inside.wrapping_add(growth_delta_per_update);
+
+                let (owed, next_checkpoint) = next_owed_delta_and_checkpoint(
+                    growth_inside,
+                    current_checkpoint,
+                    position_liquidity,
+                    CheckpointUpdateMode::Full,
+                );
+
+                assert_eq!(owed, 0);
+                assert!(next_checkpoint > current_checkpoint); // fractional growth is dropped
+
+                current_checkpoint = next_checkpoint;
+            }
+        }
+    }
+
+    mod partial_mode {
+        use super::*;
+
+        // growth_inside = checkpoint
+        #[test]
+        fn no_growth() {
+            let growth_inside = 1000;
+            let current_checkpoint = growth_inside;
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity: 1000,
+                expected_owed: 0,
+                expected_next_checkpoint: current_checkpoint,
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 0.x
+        #[test]
+        fn inside_gt_checkpoint_owed_0x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(9) / 10; // ~0.9
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: current_checkpoint, // no change
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 1.0 (exact)
+        #[test]
+        fn inside_gt_checkpoint_owed_1_exact() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(1); // 1.0
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: growth_inside, // consumed all growth
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 1.x (< 1.5)
+        #[test]
+        fn inside_gt_checkpoint_owed_1x_low() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(12) / 10; // 1.2
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: current_checkpoint
+                    .wrapping_add(x64(1).div_ceil(position_liquidity)), // Partial
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 1.x (> 1.5)
+        #[test]
+        fn inside_gt_checkpoint_owed_1x_high() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(18) / 10; // 1.8
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: current_checkpoint
+                    .wrapping_add(x64(1).div_ceil(position_liquidity)), // Partial
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 2.x
+        #[test]
+        fn inside_gt_checkpoint_owed_2x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(25) / 10; // 2.5
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 2,
+                expected_next_checkpoint: current_checkpoint
+                    .wrapping_add(x64(2).div_ceil(position_liquidity)), // Partial
+            }
+            .run();
+        }
+
+        // growth_inside > checkpoint: owed = 382949173.928
+        #[test]
+        fn inside_gt_checkpoint_owed_382949173x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 382949173,
+                expected_next_checkpoint: current_checkpoint
+                    .wrapping_add(x64(382949173).div_ceil(position_liquidity)), // Partial
+            }
+            .run();
+        }
+
+        // growth_inside < checkpoint (wrapping): owed = 0.x
+        #[test]
+        fn inside_lt_checkpoint_owed_0x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = u128::MAX;
+            let owed_x64 = x64(9) / 10; // ~0.9
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: current_checkpoint, // no change
+            }
+            .run();
+        }
+
+        // growth_inside < checkpoint (wrapping): owed = 1.x (< 1.5)
+        #[test]
+        fn inside_lt_checkpoint_owed_1x_low() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = u128::MAX;
+            let owed_x64 = x64(12) / 10; // 1.2
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 1,
+                expected_next_checkpoint: current_checkpoint
+                    .wrapping_add(x64(1).div_ceil(position_liquidity)), // Partial
+            }
+            .run();
+        }
+
+        // growth_inside < checkpoint (wrapping): owed = 382949173.928
+        #[test]
+        fn inside_lt_checkpoint_owed_382949173x() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = u128::MAX;
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 382949173,
+                expected_next_checkpoint: current_checkpoint
+                    .wrapping_add(x64(382949173).div_ceil(position_liquidity)), // Partial
+            }
+            .run();
+        }
+
+        #[test]
+        fn zero_position_liquidity() {
+            let position_liquidity = 0;
+            let growth_inside = x64(3);
+            let current_checkpoint = x64(1);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: current_checkpoint, // no change
+            }
+            .run();
+        }
+
+        #[test]
+        fn growth_delta_x_position_liquidity_overflow() {
+            let position_liquidity = 1u128 << 65;
+            let growth_inside = 1u128 << 68;
+            let current_checkpoint = x64(1);
+
+            // should overflow
+            let growth_delta = growth_inside.checked_sub(current_checkpoint).unwrap();
+            assert!(growth_delta.checked_mul(position_liquidity).is_none());
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: growth_inside, // when overflow occurs, same to full checkpoint
+            }
+            .run();
+        }
+
+        // div_ceil must be used for converted_growth_delta
+        #[test]
+        fn test_converted_growth_delta_div_ceil() {
+            let position_liquidity = 1000;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            let div_ceil = x64(382949173).div_ceil(position_liquidity);
+            let div_floor = x64(382949173) / position_liquidity;
+            assert!(div_ceil > div_floor);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 382949173,
+                expected_next_checkpoint: current_checkpoint.wrapping_add(div_ceil), // Partial
+            }
+            .run();
+        }
+
+        // converted_growth_delta is exactly divisible by position_liquidity.
+        // div_ceil and normal division must produce the same result.
+        #[test]
+        fn test_converted_growth_delta_div_ceil_exact() {
+            let position_liquidity = 1 << 10;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(2); // exactly 2.0
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            let div_ceil = x64(2).div_ceil(position_liquidity);
+            let div_floor = x64(2) / position_liquidity;
+            assert_eq!(div_ceil, div_floor);
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 2,
+                expected_next_checkpoint: current_checkpoint.wrapping_add(div_ceil),
+            }
+            .run();
+        }
+
+        // Same growth must not be paid twice.
+        // div_ceil ensures that all growth corresponding to the already-paid owed amount
+        // is consumed by the first update.
+        #[test]
+        fn same_growth_cannot_be_paid_twice() {
+            let position_liquidity = 1000;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            let (owed, next_checkpoint) = next_owed_delta_and_checkpoint(
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                CheckpointUpdateMode::Partial,
+            );
+
+            assert_eq!(owed, 382949173);
+            assert_eq!(
+                next_checkpoint,
+                current_checkpoint.wrapping_add(x64(382949173).div_ceil(position_liquidity))
+            );
+
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint: next_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: next_checkpoint, // no additional growth
+            }
+            .run();
+        }
+
+        // After a Partial update, the remaining growth must not be sufficient to
+        // produce another unit of owed amount.
+        #[test]
+        fn remaining_growth_cannot_produce_additional_owed() {
+            let position_liquidity = 1000;
+            let current_checkpoint = x64(1);
+            let owed_x64 = x64(382949173928) / 1000; // 382949173.928
+            let growth_inside = current_checkpoint.wrapping_add(owed_x64 / position_liquidity);
+
+            let (owed, next_checkpoint) = next_owed_delta_and_checkpoint(
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                CheckpointUpdateMode::Partial,
+            );
+
+            assert_eq!(owed, 382949173);
+
+            let remaining_growth = growth_inside.wrapping_sub(next_checkpoint);
+            let remaining_owed =
+                checked_mul_shift_right(position_liquidity, remaining_growth).unwrap();
+
+            assert_eq!(remaining_owed, 0);
+        }
+
+        // Repeated Partial updates must preserve sub-unit growth until it accumulates
+        // enough to produce an owed amount.
+        #[test]
+        fn repeated_partial_updates_accumulate_fractional_growth() {
+            let position_liquidity = 1 << 10;
+            let mut current_checkpoint = x64(1);
+            let mut growth_inside = current_checkpoint;
+
+            // Each update adds approximately 0.2001 owed units.
+            // A single update therefore cannot produce an owed amount.
+            let owed_x64_per_update = x64(2001) / 10000; // ~0.2001
+            let growth_delta_per_update = owed_x64_per_update / position_liquidity;
+
+            for _ in 0..4 {
+                growth_inside = growth_inside.wrapping_add(growth_delta_per_update);
+
+                let (owed, next_checkpoint) = next_owed_delta_and_checkpoint(
+                    growth_inside,
+                    current_checkpoint,
+                    position_liquidity,
+                    CheckpointUpdateMode::Partial,
+                );
+
+                assert_eq!(owed, 0);
+                assert_eq!(next_checkpoint, current_checkpoint); // fractional growth is preserved
+            }
+
+            // After enough updates, the accumulated growth should produce an owed amount.
+            growth_inside = growth_inside.wrapping_add(growth_delta_per_update);
+
+            let (owed, next_checkpoint) = next_owed_delta_and_checkpoint(
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                CheckpointUpdateMode::Partial,
+            );
+
+            assert_eq!(owed, 1);
+
+            current_checkpoint = next_checkpoint;
+
+            // Without additional growth, calling again must not pay the same amount twice.
+            TestNextOwedDeltaAndCheckpointParams {
+                update_mode: CheckpointUpdateMode::Partial,
+                growth_inside,
+                current_checkpoint,
+                position_liquidity,
+                expected_owed: 0,
+                expected_next_checkpoint: current_checkpoint,
+            }
+            .run();
+        }
     }
 }

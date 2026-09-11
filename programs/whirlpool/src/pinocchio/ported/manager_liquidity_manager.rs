@@ -1,13 +1,20 @@
-use crate::{manager::position_manager::{CheckpointUpdateMode, next_owed_delta_and_checkpoint}, pinocchio::{
-    Result, errors::WhirlpoolErrorCode, state::whirlpool::{
-        MemoryMappedPosition, MemoryMappedTick, MemoryMappedWhirlpool, MemoryMappedWhirlpoolRewardInfo, TickArray, tick_array::{NUM_REWARDS, TickUpdate}
-    }
-}};
+use crate::{
+    manager::position_manager::{next_owed_delta_and_checkpoint, CheckpointUpdateMode},
+    pinocchio::{
+        errors::WhirlpoolErrorCode,
+        state::whirlpool::{
+            tick_array::{TickUpdate, NUM_REWARDS},
+            MemoryMappedPosition, MemoryMappedTick, MemoryMappedWhirlpool,
+            MemoryMappedWhirlpoolRewardInfo, TickArray,
+        },
+        Result,
+    },
+};
 use crate::{
     manager::tick_array_manager::{TickArrayRentTransfer, TickArraySizeUpdate, TickArrayUpdate},
     math::{
-        add_liquidity_delta, checked_mul_div, checked_mul_shift_right, get_amount_delta_a,
-        get_amount_delta_b, sqrt_price_from_tick_index,
+        add_liquidity_delta, checked_mul_div, get_amount_delta_a, get_amount_delta_b,
+        sqrt_price_from_tick_index,
     },
     state::PositionUpdate,
 };
@@ -266,8 +273,6 @@ fn pino_next_position_modify_liquidity_update(
     };
 
     // Calculate fee deltas.
-    // If fee deltas overflow, default to a zero value. This means the position loses
-    // all fees earned since the last time the position was modified or fees collected.
     let (fee_delta_a, next_checkpoint_a) = next_owed_delta_and_checkpoint(
         fee_growth_inside_a,
         position.fee_growth_checkpoint_a(),
@@ -294,8 +299,6 @@ fn pino_next_position_modify_liquidity_update(
         let curr_reward_info = &position_reward_infos[i];
 
         // Calculate reward delta.
-        // If reward delta overflows, default to a zero value. This means the position loses all
-        // rewards earned since the last time the position was modified or rewards were collected.
         let (amount_owed_delta, next_checkpoint) = next_owed_delta_and_checkpoint(
             reward_growth_inside,
             curr_reward_info.growth_inside_checkpoint(),

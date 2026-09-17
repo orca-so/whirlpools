@@ -297,13 +297,31 @@ async function onReviewRequested(pr) {
     console.log(`Created review task for @${login} on PR #${pr.number}`);
 }
 
+// The latest verdict from each reviewer. GitHub keeps blocking a merge while any
+// reviewer's most recent review is CHANGES_REQUESTED, so a second reviewer's
+// approval must not clear the first reviewer's block. The incoming review is
+// applied last: it is the newest, and the list endpoint may not have it yet.
+async function latestVerdictByReviewer(prNumber, incoming) {
+    const reviews = await github(`/repos/${repoFull}/pulls/${prNumber}/reviews?per_page=100`);
+    const verdicts = new Map();
+    for (const review of [...reviews, incoming]) {
+        const state = review.state.toLowerCase();
+        // A comment-only review carries no verdict, and a dismissed one has had its
+        // verdict revoked; neither blocks nor approves.
+        if (state === "commented" || state === "pending" || state === "dismissed") continue;
+        verdicts.set(review.user.login, state);
+    }
+    return [...verdicts.values()];
+}
+
 async function onReviewSubmitted(pr, review) {
     const state = review.state.toLowerCase();
     if (state === "commented") return;
 
     const task = await requireTask(pr);
     if (task) {
-        const newStatus = state === "changes_requested" ? "Changes requested" : "Ready to merge";
+        const verdicts = await latestVerdictByReviewer(pr.number, review);
+        const newStatus = verdicts.includes("changes_requested") ? "Changes requested" : "Ready to merge";
         await setStatus(task.id, newStatus);
         console.log(`${plainTitle(task)} -> ${newStatus}`);
     }
@@ -347,6 +365,18 @@ async function onPrMerged(pr) {
     }
 }
 
+// A PR closed without merging leaves review tasks pointing at work that will
+// never land, so cancel them. The main task is deliberately left alone: a PR
+// closed to split, supersede or rebase the work is still in progress, and only
+// a human knows which of those happened.
+async function onPrClosedUnmerged(pr) {
+    const open = await findReviewTasks(pr.html_url, { openOnly: true });
+    for (const rt of open) {
+        await setStatus(rt.id, "Cancelled");
+    }
+    console.log(`PR #${pr.number} closed unmerged -> cancelled ${open.length} review task(s)`);
+}
+
 // ---------- Entry ----------
 
 async function main() {
@@ -356,7 +386,7 @@ async function main() {
     if (eventName === "pull_request") {
         if (["opened", "ready_for_review"].includes(event.action)) return onPrOpened(pr);
         if (event.action === "review_requested") return onReviewRequested(pr);
-        if (event.action === "closed" && pr.merged) return onPrMerged(pr);
+        if (event.action === "closed") return pr.merged ? onPrMerged(pr) : onPrClosedUnmerged(pr);
     }
     if (eventName === "pull_request_review" && event.action === "submitted") {
         return onReviewSubmitted(pr, event.review);

@@ -28,6 +28,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The base branch's copy of the script, never the PR's. This job holds
+          # NOTION_TOKEN, and a same-repo PR gets real secrets, so checking out
+          # the PR ref would let a PR edit the script and read the token. It also
+          # means a change to the sync takes effect on merge rather than from
+          # inside the PR making it.
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
 
       - name: Sync to Notion
         run: node .github/scripts/notion-sync.mjs

@@ -1,0 +1,37 @@
+# .github/workflows/notion-sync.yml
+# Syncs PR lifecycle events to the Notion Tasks database (EPD-<id> in PR title).
+
+name: Notion Tasks Sync
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, review_requested, closed]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: write # for posting the "task not linked" comment
+
+# Serialize runs per PR so simultaneous reviewer requests don't race
+# on the Blockers relation read-modify-write.
+concurrency:
+  group: notion-sync-${{ github.event.pull_request.number }}
+
+jobs:
+  sync:
+    # Only PRs carrying an EPD task id touch Notion, so untracked PRs never get
+    # the "not linked to a Notion task" comment. Actions expressions have no
+    # regex, but string matching here is case-insensitive, which mirrors the
+    # /EPD-(\d+)/i the script uses.
+    if: contains(github.event.pull_request.title, 'EPD-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Sync to Notion
+        run: node .github/scripts/notion-sync.mjs
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TASKS_SYNC_TOKEN }}
+          NOTION_DATA_SOURCE_ID: 3c7228f9-f088-8056-8a60-000bfbc1de92
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

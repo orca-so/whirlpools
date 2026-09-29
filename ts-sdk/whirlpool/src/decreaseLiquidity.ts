@@ -3,6 +3,7 @@ import type {
   WhirlpoolDeployment,
 } from "@orca-so/whirlpools-client";
 import {
+  AccountsType,
   DEFAULT_WHIRLPOOL_DEPLOYMENT,
   fetchAllTickArray,
   fetchPosition,
@@ -58,8 +59,12 @@ import {
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 import { executeWithCallback } from "./actionHelpers";
+import {
+  appendExtraAccounts,
+  buildRemainingAccounts,
+} from "./remainingAccounts";
+import { getExtraAccountMetasForTransferHook } from "./transferHook";
 // TODO: allow specify number as well as bigint
-// TODO: transfer hook
 
 /**
  * Represents the parameters for decreasing liquidity.
@@ -260,32 +265,59 @@ export async function decreaseLiquidityInstructions(
 
   instructions.push(...createInstructions);
 
-  instructions.push(
-    getDecreaseLiquidityV2Instruction(
-      {
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: position.address,
-        positionTokenAccount,
-        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-        tokenVaultA: whirlpool.data.tokenVaultA,
-        tokenVaultB: whirlpool.data.tokenVaultB,
-        tokenMintA: whirlpool.data.tokenMintA,
-        tokenMintB: whirlpool.data.tokenMintB,
-        tokenProgramA: mintA.programAddress,
-        tokenProgramB: mintB.programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        tickArrayLower,
-        tickArrayUpper,
-        liquidityAmount: quote.liquidityDelta,
-        tokenMinA: quote.tokenMinA,
-        tokenMinB: quote.tokenMinB,
-        remainingAccountsInfo: null,
-      },
-      { programAddress: whirlpoolDeployment.programId },
+  const [transferHookAccountsA, transferHookAccountsB] = await Promise.all([
+    getExtraAccountMetasForTransferHook(
+      rpc,
+      mintA,
+      whirlpool.data.tokenVaultA,
+      tokenAccountAddresses[whirlpool.data.tokenMintA],
+      whirlpool.address,
     ),
+    getExtraAccountMetasForTransferHook(
+      rpc,
+      mintB,
+      whirlpool.data.tokenVaultB,
+      tokenAccountAddresses[whirlpool.data.tokenMintB],
+      whirlpool.address,
+    ),
+  ]);
+  const decreaseRemaining = buildRemainingAccounts([
+    {
+      accountsType: AccountsType.TransferHookA,
+      accounts: transferHookAccountsA,
+    },
+    {
+      accountsType: AccountsType.TransferHookB,
+      accounts: transferHookAccountsB,
+    },
+  ]);
+
+  const decreaseInstruction = getDecreaseLiquidityV2Instruction(
+    {
+      whirlpool: whirlpool.address,
+      positionAuthority: authority,
+      position: position.address,
+      positionTokenAccount,
+      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+      tokenVaultA: whirlpool.data.tokenVaultA,
+      tokenVaultB: whirlpool.data.tokenVaultB,
+      tokenMintA: whirlpool.data.tokenMintA,
+      tokenMintB: whirlpool.data.tokenMintB,
+      tokenProgramA: mintA.programAddress,
+      tokenProgramB: mintB.programAddress,
+      memoProgram: MEMO_PROGRAM_ADDRESS,
+      tickArrayLower,
+      tickArrayUpper,
+      liquidityAmount: quote.liquidityDelta,
+      tokenMinA: quote.tokenMinA,
+      tokenMinB: quote.tokenMinB,
+      remainingAccountsInfo: decreaseRemaining.remainingAccountsInfo,
+    },
+    { programAddress: whirlpoolDeployment.programId },
   );
+  appendExtraAccounts(decreaseInstruction, decreaseRemaining.extraAccounts);
+  instructions.push(decreaseInstruction);
 
   instructions.push(...cleanupInstructions);
 
@@ -503,57 +535,89 @@ export async function closePositionInstructions(
   const instructions: Instruction[] = [];
   instructions.push(...createInstructions);
 
-  if (quote.liquidityDelta > 0n) {
-    instructions.push(
-      getDecreaseLiquidityV2Instruction(
-        {
-          whirlpool: whirlpool.address,
-          positionAuthority: authority,
-          position: positionAddress[0],
-          positionTokenAccount,
-          tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-          tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-          tokenVaultA: whirlpool.data.tokenVaultA,
-          tokenVaultB: whirlpool.data.tokenVaultB,
-          tickArrayLower: lowerTickArrayAddress,
-          tickArrayUpper: upperTickArrayAddress,
-          liquidityAmount: quote.liquidityDelta,
-          tokenMinA: quote.tokenMinA,
-          tokenMinB: quote.tokenMinB,
-          tokenMintA: whirlpool.data.tokenMintA,
-          tokenMintB: whirlpool.data.tokenMintB,
-          tokenProgramA: mintA.programAddress,
-          tokenProgramB: mintB.programAddress,
-          memoProgram: MEMO_PROGRAM_ADDRESS,
-          remainingAccountsInfo: null,
-        },
-        { programAddress: whirlpoolDeployment.programId },
+  const needsPoolTransfers =
+    quote.liquidityDelta > 0n ||
+    feesQuote.feeOwedA > 0n ||
+    feesQuote.feeOwedB > 0n;
+
+  let closePoolRemaining = buildRemainingAccounts([]);
+  if (needsPoolTransfers) {
+    const [closeHookA, closeHookB] = await Promise.all([
+      getExtraAccountMetasForTransferHook(
+        rpc,
+        mintA,
+        whirlpool.data.tokenVaultA,
+        tokenAccountAddresses[whirlpool.data.tokenMintA],
+        whirlpool.address,
       ),
+      getExtraAccountMetasForTransferHook(
+        rpc,
+        mintB,
+        whirlpool.data.tokenVaultB,
+        tokenAccountAddresses[whirlpool.data.tokenMintB],
+        whirlpool.address,
+      ),
+    ]);
+    closePoolRemaining = buildRemainingAccounts([
+      { accountsType: AccountsType.TransferHookA, accounts: closeHookA },
+      { accountsType: AccountsType.TransferHookB, accounts: closeHookB },
+    ]);
+  }
+
+  if (quote.liquidityDelta > 0n) {
+    const decreaseInstruction = getDecreaseLiquidityV2Instruction(
+      {
+        whirlpool: whirlpool.address,
+        positionAuthority: authority,
+        position: positionAddress[0],
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+        tokenVaultA: whirlpool.data.tokenVaultA,
+        tokenVaultB: whirlpool.data.tokenVaultB,
+        tickArrayLower: lowerTickArrayAddress,
+        tickArrayUpper: upperTickArrayAddress,
+        liquidityAmount: quote.liquidityDelta,
+        tokenMinA: quote.tokenMinA,
+        tokenMinB: quote.tokenMinB,
+        tokenMintA: whirlpool.data.tokenMintA,
+        tokenMintB: whirlpool.data.tokenMintB,
+        tokenProgramA: mintA.programAddress,
+        tokenProgramB: mintB.programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: closePoolRemaining.remainingAccountsInfo,
+      },
+      { programAddress: whirlpoolDeployment.programId },
     );
+    appendExtraAccounts(decreaseInstruction, closePoolRemaining.extraAccounts);
+    instructions.push(decreaseInstruction);
   }
 
   if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
-    instructions.push(
-      getCollectFeesV2Instruction(
-        {
-          whirlpool: whirlpool.address,
-          positionAuthority: authority,
-          position: positionAddress[0],
-          positionTokenAccount,
-          tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-          tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-          tokenVaultA: whirlpool.data.tokenVaultA,
-          tokenVaultB: whirlpool.data.tokenVaultB,
-          tokenMintA: whirlpool.data.tokenMintA,
-          tokenMintB: whirlpool.data.tokenMintB,
-          tokenProgramA: mintA.programAddress,
-          tokenProgramB: mintB.programAddress,
-          memoProgram: MEMO_PROGRAM_ADDRESS,
-          remainingAccountsInfo: null,
-        },
-        { programAddress: whirlpoolDeployment.programId },
-      ),
+    const collectFeesInstruction = getCollectFeesV2Instruction(
+      {
+        whirlpool: whirlpool.address,
+        positionAuthority: authority,
+        position: positionAddress[0],
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+        tokenVaultA: whirlpool.data.tokenVaultA,
+        tokenVaultB: whirlpool.data.tokenVaultB,
+        tokenMintA: whirlpool.data.tokenMintA,
+        tokenMintB: whirlpool.data.tokenMintB,
+        tokenProgramA: mintA.programAddress,
+        tokenProgramB: mintB.programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: closePoolRemaining.remainingAccountsInfo,
+      },
+      { programAddress: whirlpoolDeployment.programId },
     );
+    appendExtraAccounts(
+      collectFeesInstruction,
+      closePoolRemaining.extraAccounts,
+    );
+    instructions.push(collectFeesInstruction);
   }
 
   for (let i = 0; i < rewardsQuote.rewards.length; i++) {
@@ -562,24 +626,40 @@ export async function closePositionInstructions(
     }
     const rewardMint = rewardMints[i];
     assert(rewardMint.exists, `Reward mint ${i} not found`);
-    instructions.push(
-      getCollectRewardV2Instruction(
-        {
-          whirlpool: whirlpool.address,
-          positionAuthority: authority,
-          position: positionAddress[0],
-          positionTokenAccount,
-          rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
-          rewardVault: whirlpool.data.rewardInfos[i].vault,
-          rewardIndex: i,
-          rewardMint: rewardMint.address,
-          rewardTokenProgram: rewardMint.programAddress,
-          memoProgram: MEMO_PROGRAM_ADDRESS,
-          remainingAccountsInfo: null,
-        },
-        { programAddress: whirlpoolDeployment.programId },
-      ),
+    const rewardHook = await getExtraAccountMetasForTransferHook(
+      rpc,
+      rewardMint,
+      whirlpool.data.rewardInfos[i].vault,
+      tokenAccountAddresses[rewardMint.address],
+      whirlpool.address,
     );
+    const rewardRemaining = buildRemainingAccounts([
+      {
+        accountsType: AccountsType.TransferHookReward,
+        accounts: rewardHook,
+      },
+    ]);
+    const collectRewardInstruction = getCollectRewardV2Instruction(
+      {
+        whirlpool: whirlpool.address,
+        positionAuthority: authority,
+        position: positionAddress[0],
+        positionTokenAccount,
+        rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
+        rewardVault: whirlpool.data.rewardInfos[i].vault,
+        rewardIndex: i,
+        rewardMint: rewardMint.address,
+        rewardTokenProgram: rewardMint.programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: rewardRemaining.remainingAccountsInfo,
+      },
+      { programAddress: whirlpoolDeployment.programId },
+    );
+    appendExtraAccounts(
+      collectRewardInstruction,
+      rewardRemaining.extraAccounts,
+    );
+    instructions.push(collectRewardInstruction);
   }
 
   switch (positionMint.programAddress) {

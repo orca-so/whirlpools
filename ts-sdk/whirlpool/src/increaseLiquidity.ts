@@ -3,6 +3,7 @@ import type {
   WhirlpoolDeployment,
 } from "@orca-so/whirlpools-client";
 import {
+  AccountsType,
   DEFAULT_WHIRLPOOL_DEPLOYMENT,
   fetchAllMaybeTickArray,
   fetchPosition,
@@ -56,9 +57,13 @@ import assert from "assert";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
 import { executeWithCallback } from "./actionHelpers";
 import { getSqrtPriceSlippageBounds } from "@orca-so/whirlpools-core";
+import {
+  appendExtraAccounts,
+  buildRemainingAccounts,
+} from "./remainingAccounts";
+import { getExtraAccountMetasForTransferHook } from "./transferHook";
 
 // TODO: allow specify number as well as bigint
-// TODO: transfer hook
 
 /** RPC client for increase-liquidity operations. Requires: GetAccountInfoApi, GetMultipleAccountsApi, GetMinimumBalanceForRentExemptionApi */
 type IncreaseLiquidityRpc = Rpc<
@@ -125,6 +130,33 @@ async function getIncreaseLiquidityInstructions(
     [tokenMintB]: tokenMaxB,
   });
 
+  const [transferHookAccountsA, transferHookAccountsB] = await Promise.all([
+    getExtraAccountMetasForTransferHook(
+      rpc,
+      mintA,
+      tokenAccountAddresses[tokenMintA],
+      tokenVaults.tokenVaultA,
+      authority.address,
+    ),
+    getExtraAccountMetasForTransferHook(
+      rpc,
+      mintB,
+      tokenAccountAddresses[tokenMintB],
+      tokenVaults.tokenVaultB,
+      authority.address,
+    ),
+  ]);
+  const { remainingAccountsInfo, extraAccounts } = buildRemainingAccounts([
+    {
+      accountsType: AccountsType.TransferHookA,
+      accounts: transferHookAccountsA,
+    },
+    {
+      accountsType: AccountsType.TransferHookB,
+      accounts: transferHookAccountsB,
+    },
+  ]);
+
   const commonInstructionParams = {
     whirlpool: whirlpoolAddress,
     positionAuthority: authority,
@@ -135,7 +167,7 @@ async function getIncreaseLiquidityInstructions(
     tokenProgramA: mintA.programAddress,
     tokenProgramB: mintB.programAddress,
     memoProgram: MEMO_PROGRAM_ADDRESS,
-    remainingAccountsInfo: null,
+    remainingAccountsInfo,
     ...tokenVaults,
     ...rest,
   };
@@ -158,6 +190,8 @@ async function getIncreaseLiquidityInstructions(
       },
       { programAddress },
     );
+
+  appendExtraAccounts(increaseLiquidityInstruction, extraAccounts);
 
   return {
     createTokenAccountInstructions,

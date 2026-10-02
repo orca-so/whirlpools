@@ -26,8 +26,8 @@ import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   resetLiteSVM,
-  getLiteSVM,
   initializeLiteSVMEnvironment,
+  requestAirdropLiteSVM,
 } from "../../utils/litesvm";
 import { initTestPoolWithTokens } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
@@ -65,7 +65,7 @@ describe("splash pool tests", () => {
   describe("trades on splash pool", () => {
     beforeEach(async () => {
       await resetLiteSVM();
-      getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
     });
 
     type TestVariation = {
@@ -499,7 +499,7 @@ describe("splash pool tests", () => {
   describe("ExactOut overflow (required input token is over u64 max)", () => {
     beforeEach(async () => {
       await resetLiteSVM();
-      getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
     });
 
     // Since trade mode is ExactOut, the outputt amount must be within u64 max, but the input token may over u64 max.
@@ -761,7 +761,7 @@ describe("splash pool tests", () => {
   describe("Sandwitch attack scenario", () => {
     beforeEach(async () => {
       await resetLiteSVM();
-      getLiteSVM().airdrop(testCtx.provider.wallet.publicKey, BigInt(100e9));
+      requestAirdropLiteSVM(testCtx.provider.wallet.publicKey, BigInt(100e9));
     });
 
     it("ExactOut Sandwitch attack senario", async () => {

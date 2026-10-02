@@ -1,5 +1,17 @@
 # @orca-so/whirlpools-sdk
 
+## 0.22.0
+
+### Minor Changes
+
+- [#1348](https://github.com/orca-so/whirlpools/pull/1348) [`bcd1b70`](https://github.com/orca-so/whirlpools/commit/bcd1b70fb38a7ba8df3cf31cbd416c88c86baa78) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Add `createAtaMethod` to `AccountResolverOptions`, choosing between the ATA program's `Create` and `CreateIdempotent` for ATAs that don't exist yet. Existence is decided from a pre-flight fetch, so `Create` fails with `IllegalOwner` ("Provided owner is not allowed") when something else creates the ATA first — a preceding transaction in the same Jito bundle, for instance. Defaults to `create`, so existing behavior is unchanged; set `createIdempotent` when composing these instructions with anything that may create the same ATA. Honored by `openPosition`, `increaseLiquidity`, `decreaseLiquidity`, and `resolveAtaForMints`; `closePosition`, `collectRewards`, `collectAllForPositionsTxns`, and `swapAsync` already used `CreateIdempotent`. `AccountResolverOptions` is now merged over the defaults rather than replacing them.
+
+## 0.21.0
+
+### Minor Changes
+
+- [#1316](https://github.com/orca-so/whirlpools/pull/1316) [`8e65a27`](https://github.com/orca-so/whirlpools/commit/8e65a27c3d9c1fc7ea1fe9146d2517e92b1feb53) Thanks [@crnorthc](https://github.com/crnorthc)! - Add immutable whirlpool support. Adds the `ORCA_WHIRLPOOL_PROGRAM_ID_IMMUTABLE` and `ORCA_WHIRLPOOLS_CONFIG_IMMUTABLE` constants and an optional `programId` argument on `WhirlpoolContext.from`/`WhirlpoolContext.withProvider` (builds from the bundled IDL rebound to the given program). Pass `ORCA_WHIRLPOOL_PROGRAM_ID_IMMUTABLE` to target the immutable (non-upgradable) Whirlpool deployment.
+
 ## 0.20.0
 
 ### Minor Changes

@@ -4,7 +4,10 @@ import type { WhirlpoolsConfigData, WhirlpoolContext } from "../../../src";
 import { toTx, WhirlpoolIx } from "../../../src";
 import { initializeLiteSVMEnvironment } from "../../utils/litesvm";
 import { generateDefaultConfigParams } from "../../utils/test-builders";
-import { getLocalnetAdminKeypair0 } from "../../utils";
+import {
+  getLocalnetAdminKeypair0,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
+} from "../../utils";
 
 describe("set_reward_emissions_super_authority", () => {
   let provider: anchor.AnchorProvider;
@@ -63,15 +66,16 @@ describe("set_reward_emissions_super_authority", () => {
       .buildAndExecute();
 
     await assert.rejects(
-      ctx.program.rpc.setRewardEmissionsSuperAuthority({
-        accounts: {
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx.program, {
           whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
           rewardEmissionsSuperAuthority:
             rewardEmissionsSuperAuthorityKeypair.publicKey,
           newRewardEmissionsSuperAuthority: provider.wallet.publicKey,
-        },
-      }),
-      /.*signature verification fail.*/i,
+        }),
+      ).buildAndExecute(),
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

@@ -98,15 +98,12 @@ pub fn position_ratio(
             let upper_sqrt_price: u128 =
                 tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-            let l: U256 = <U256>::from(1u16) << 128;
-            let p = <U256>::from(current_sqrt_price) * <U256>::from(current_sqrt_price);
+            let upper_minus_current = upper_sqrt_price - current_sqrt_price;
+            let deposit_a: U256 =
+                ((<U256>::from(current_sqrt_price) * <U256>::from(upper_minus_current)) << 64)
+                    / upper_sqrt_price;
 
-            let deposit_a_1: U256 = (l << 64) / current_sqrt_price;
-            let deposit_a_2: U256 = (l << 64) / upper_sqrt_price;
-            let deposit_a: U256 = ((deposit_a_1 - deposit_a_2) * p) >> 128;
-
-            let deposit_b_1 = current_sqrt_price - lower_sqrt_price;
-            let deposit_b = (l * deposit_b_1) >> 64;
+            let deposit_b: U256 = <U256>::from(current_sqrt_price - lower_sqrt_price) << 64;
 
             let total_deposit = deposit_a + deposit_b;
 
@@ -192,5 +189,9 @@ mod test {
         let ratio_5 = position_ratio(7267764841821948241, -21136, -17240);
         assert_eq!(ratio_5.ratio_a, 3630);
         assert_eq!(ratio_5.ratio_b, 6370);
+
+        let ratio_6 = position_ratio(228505006966548509531, 46976, 53696);
+        assert_eq!(ratio_6.ratio_a, 5000);
+        assert_eq!(ratio_6.ratio_b, 5000);
     }
 }

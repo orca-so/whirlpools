@@ -1,23 +1,18 @@
-use crate::manager::tick_array_manager::get_tick_rent_amount;
 use crate::pinocchio::{cpi::system_transfer::SystemTransfer, errors::WhirlpoolErrorCode, Result};
-use crate::state::Position;
-use pinocchio::{
-    account_info::AccountInfo,
-    sysvars::{rent::Rent, Sysvar},
-};
+use crate::util::{get_position_minimum_rent_amount, get_tick_rent_amount};
+use pinocchio::account_info::AccountInfo;
 
 pub fn pino_ensure_position_has_enough_rent_for_ticks(
     funder_info: &AccountInfo,
     position_info: &AccountInfo,
     system_program_info: &AccountInfo,
 ) -> Result<()> {
-    let rent = Rent::get()?;
-    let position_rent_required = rent.minimum_balance(Position::LEN);
+    let position_rent_with_fallback_margin = get_position_minimum_rent_amount()?;
     let tick_rent_amount = get_tick_rent_amount()?;
     let tick_required_rent = tick_rent_amount
         .checked_mul(2)
         .ok_or(WhirlpoolErrorCode::RentCalculationError)?;
-    let all_required_rent = position_rent_required
+    let all_required_rent = position_rent_with_fallback_margin
         .checked_add(tick_required_rent)
         .ok_or(WhirlpoolErrorCode::RentCalculationError)?;
 

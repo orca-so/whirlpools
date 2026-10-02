@@ -1,5 +1,13 @@
 # @orca-so/whirlpools-docs
 
+## 1.0.1
+
+### Patch Changes
+
+- [#1315](https://github.com/orca-so/whirlpools/pull/1315) [`b2fabd3`](https://github.com/orca-so/whirlpools/commit/b2fabd377c7f06f62fd546e49a0320b638e4d4fd) Thanks [@crnorthc](https://github.com/crnorthc)! - Restructure the docs site to a reference-only landing page that links to the TypeScript (Kit and Legacy) and Rust SDK API references, with the prose guides now hosted in Mintlify. The site is served from the default GitHub Pages domain (orca-so.github.io/whirlpools) instead of dev.orca.so.
+
+- [#1318](https://github.com/orca-so/whirlpools/pull/1318) [`2fb6efd`](https://github.com/orca-so/whirlpools/commit/2fb6efda1f052c511d6d9fd3f8a768f47f88492f) Thanks [@crnorthc](https://github.com/crnorthc)! - Fix the docs deploy step failing in CI. The version probe in `scripts/deploy-docs` aborted under `set -eo pipefail` when grep found no match, and the `<meta itemprop="version">` tag was no longer reaching the served HTML. The tag is now emitted via `<Head>` and the probe tolerates a missing match.
+
 ## 1.0.0
 
 ### Major Changes

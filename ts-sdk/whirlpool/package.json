@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "Orca's high-level typescript sdk to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",

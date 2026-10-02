@@ -13,6 +13,7 @@ import { WhirlpoolIx, toTx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../../src/quotes/public/decrease-liquidity-quote";
 import {
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   TickSpacing,
   ZERO_BN,
   approveToken,
@@ -1474,7 +1475,7 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

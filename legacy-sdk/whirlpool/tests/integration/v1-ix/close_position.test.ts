@@ -7,6 +7,7 @@ import {
   approveToken,
   createAndMintToTokenAccount,
   createTokenAccount,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   setAuthority,
   TickSpacing,
   transferToken,
@@ -236,7 +237,7 @@ describe("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 
@@ -280,7 +281,7 @@ describe("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

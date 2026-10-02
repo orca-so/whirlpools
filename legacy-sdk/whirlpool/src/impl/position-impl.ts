@@ -14,6 +14,7 @@ import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import type { WhirlpoolContext } from "../context";
+import { shouldCreateAtaIdempotent } from "../context";
 import type {
   ByTokenAmountsParams,
   DecreaseLiquidityInput,
@@ -168,7 +169,7 @@ export class PositionImpl implements Position {
         ],
         () => this.ctx.fetcher.getAccountRentExempt(),
         ataPayerKey,
-        undefined, // use default
+        shouldCreateAtaIdempotent(this.ctx.accountResolverOpts),
         this.ctx.accountResolverOpts.allowPDAOwnerAddress,
         this.ctx.accountResolverOpts.createWrappedSolAccountMethod,
       );
@@ -298,7 +299,7 @@ export class PositionImpl implements Position {
         ],
         () => this.ctx.fetcher.getAccountRentExempt(),
         ataPayerKey,
-        undefined, // use default
+        shouldCreateAtaIdempotent(this.ctx.accountResolverOpts),
         this.ctx.accountResolverOpts.allowPDAOwnerAddress,
         this.ctx.accountResolverOpts.createWrappedSolAccountMethod,
       );

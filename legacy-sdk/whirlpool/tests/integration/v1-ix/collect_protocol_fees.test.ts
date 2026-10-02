@@ -10,6 +10,7 @@ import {
   createTokenAccount,
   getTokenBalance,
   initializeLiteSVMEnvironment,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   TickSpacing,
   ZERO_BN,
 } from "../../utils";
@@ -208,7 +209,7 @@ describe("collect_protocol_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

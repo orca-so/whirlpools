@@ -1,5 +1,11 @@
 # @orca-so/common-sdk
 
+## 0.7.1
+
+### Patch Changes
+
+- [#1322](https://github.com/orca-so/whirlpools/pull/1322) [`e1949ba`](https://github.com/orca-so/whirlpools/commit/e1949ba4dd2c2cb25c789042dbc2a08ed9aaf1cf) Thanks [@jshiohaha](https://github.com/jshiohaha)! - Remove minimum CU margin when estimating compute units
+
 ## 0.7.0
 
 ### Minor Changes

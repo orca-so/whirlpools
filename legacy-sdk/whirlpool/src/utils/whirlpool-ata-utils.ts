@@ -8,6 +8,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import type { WhirlpoolContext } from "..";
 import { PoolUtil } from "..";
+import { shouldCreateAtaIdempotent } from "../context";
 import type { WhirlpoolData } from "../types/public";
 import { convertListToMap } from "./txn-utils";
 
@@ -134,7 +135,7 @@ export async function resolveAtaForMints(
     }),
     async () => accountExemption,
     payerKey,
-    undefined, // use default
+    shouldCreateAtaIdempotent(ctx.accountResolverOpts),
     ctx.accountResolverOpts.allowPDAOwnerAddress,
     ctx.accountResolverOpts.createWrappedSolAccountMethod,
   );

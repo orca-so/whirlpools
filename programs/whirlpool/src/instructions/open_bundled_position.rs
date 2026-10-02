@@ -4,7 +4,7 @@ use anchor_spl::token::TokenAccount;
 use crate::{
     errors::ErrorCode,
     events::*,
-    manager::tick_array_manager::collect_rent_for_ticks_in_position,
+    manager::tick_array_manager::collect_rent_for_ticks_in_position_and_reduction_fallback_margin,
     state::*,
     util::{resolve_one_sided_position_ticks, verify_position_bundle_authority},
 };
@@ -64,7 +64,7 @@ pub fn handler(
         &ctx.accounts.position_bundle_authority,
     )?;
 
-    collect_rent_for_ticks_in_position(
+    collect_rent_for_ticks_in_position_and_reduction_fallback_margin(
         &ctx.accounts.funder,
         position,
         &ctx.accounts.system_program,

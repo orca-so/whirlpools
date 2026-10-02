@@ -1,4 +1,4 @@
-use crate::manager::tick_array_manager::collect_rent_for_ticks_in_position;
+use crate::manager::tick_array_manager::collect_rent_for_ticks_in_position_and_reduction_fallback_margin;
 use crate::state::*;
 use crate::util::build_position_token_metadata;
 use anchor_lang::prelude::*;
@@ -69,7 +69,7 @@ pub fn handler(
         &[ctx.bumps.position],
     ];
 
-    collect_rent_for_ticks_in_position(
+    collect_rent_for_ticks_in_position_and_reduction_fallback_margin(
         &ctx.accounts.funder,
         position,
         &ctx.accounts.system_program,

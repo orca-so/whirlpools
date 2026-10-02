@@ -18,6 +18,7 @@ import {
   createMint,
   createTokenAccount,
   getTokenBalance,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   TickSpacing,
   transferToken,
   ZERO_BN,
@@ -733,7 +734,7 @@ describe("collect_reward", () => {
           rewardIndex: 0,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

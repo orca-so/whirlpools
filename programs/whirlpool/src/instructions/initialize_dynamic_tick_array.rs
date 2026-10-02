@@ -1,6 +1,10 @@
 use anchor_lang::{prelude::*, system_program};
 
-use crate::{state::*, util::safe_create_account, ID};
+use crate::{
+    state::*,
+    util::{get_dynamic_tick_array_minimum_rent_amount, safe_create_account},
+    ID,
+};
 
 #[derive(Accounts)]
 #[instruction(start_tick_index: i32)]
@@ -29,13 +33,13 @@ pub fn handler(
     idempotent: bool,
 ) -> Result<()> {
     if ctx.accounts.tick_array.owner == &system_program::ID {
-        let rent_exempt = Rent::get()?.minimum_balance(DynamicTickArray::MIN_LEN);
+        let rent_with_reduction_fallback_margin = get_dynamic_tick_array_minimum_rent_amount()?;
         safe_create_account(
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.funder.to_account_info(),
             ctx.accounts.tick_array.to_account_info(),
             &ID,
-            rent_exempt,
+            rent_with_reduction_fallback_margin,
             DynamicTickArray::MIN_LEN as u64,
             &[&[
                 b"tick_array",

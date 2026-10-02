@@ -1,6 +1,6 @@
-use crate::{events::*, state::*};
+use crate::{events::*, state::*, util::initialize_vault_token_account};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount};
+use anchor_spl::token::{self, Mint, Token};
 
 #[derive(Accounts)]
 // now we don't use bumps, but we must list args in the same order to use tick_spacing arg.
@@ -27,17 +27,13 @@ pub struct InitializePool<'info> {
       space = Whirlpool::LEN)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
 
-    #[account(init,
-      payer = funder,
-      token::mint = token_mint_a,
-      token::authority = whirlpool)]
-    pub token_vault_a: Box<Account<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_a: Signer<'info>,
 
-    #[account(init,
-      payer = funder,
-      token::mint = token_mint_b,
-      token::authority = whirlpool)]
-    pub token_vault_b: Box<Account<'info, TokenAccount>>,
+    /// CHECK: initialized in the handler
+    #[account(mut)]
+    pub token_vault_b: Signer<'info>,
 
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
     pub fee_tier: Account<'info, FeeTier>,
@@ -66,6 +62,23 @@ pub fn handler(
 
     // ignore the bump passed and use one Anchor derived
     let bump = ctx.bumps.whirlpool;
+
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_mint_a.to_account_info(),
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program,
+        &ctx.accounts.system_program,
+    )?;
+    initialize_vault_token_account(
+        whirlpool,
+        &ctx.accounts.token_vault_b,
+        &ctx.accounts.token_mint_b.to_account_info(),
+        &ctx.accounts.funder,
+        &ctx.accounts.token_program,
+        &ctx.accounts.system_program,
+    )?;
 
     whirlpool.initialize(
         whirlpools_config,

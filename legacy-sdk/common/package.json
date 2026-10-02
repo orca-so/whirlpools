@@ -2,7 +2,10 @@
   "name": "@orca-so/common-sdk",
   "version": "0.7.1",
   "description": "Common Typescript components across Orca",
-  "repository": "https://github.com/orca-so/orca-sdks",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
   "author": "Orca Foundation",
   "license": "SEE LICENSE IN LICENSE",
   "main": "dist/index.js",

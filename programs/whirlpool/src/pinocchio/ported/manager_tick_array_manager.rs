@@ -1,7 +1,8 @@
 use crate::manager::tick_array_manager::{
-    get_tick_rent_amount, TickArrayRentTransfer, TickArraySizeUpdate, TickArrayUpdate,
+    TickArrayRentTransfer, TickArraySizeUpdate, TickArrayUpdate,
 };
 use crate::pinocchio::{errors::WhirlpoolErrorCode, Result};
+use crate::util::get_tick_rent_amount;
 use pinocchio::account_info::AccountInfo;
 
 pub fn pino_update_tick_array_accounts(

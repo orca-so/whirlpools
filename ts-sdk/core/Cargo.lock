@@ -75,7 +75,7 @@ checksum = "945462a4b81e43c4e3ba96bd7b49d834c6f61198356aa858733bc4acf3cbe62e"
 
 [[package]]
 name = "orca_whirlpools_core"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "ethnum",
  "js-sys",
@@ -90,7 +90,7 @@ dependencies = [
 
 [[package]]
 name = "orca_whirlpools_core_js_bindings"
-version = "3.1.0"
+version = "3.1.1"
 dependencies = [
  "orca_whirlpools_core",
 ]

@@ -18,6 +18,7 @@ import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import type { WhirlpoolContext } from "../context";
+import { shouldCreateAtaIdempotent } from "../context";
 import type {
   ByTokenAmountsParams,
   DevFeeSwapInput,
@@ -431,7 +432,7 @@ export class WhirlpoolImpl implements Whirlpool {
       ],
       () => this.ctx.fetcher.getAccountRentExempt(),
       funder,
-      undefined, // use default
+      shouldCreateAtaIdempotent(this.ctx.accountResolverOpts),
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
       this.ctx.accountResolverOpts.createWrappedSolAccountMethod,
     );

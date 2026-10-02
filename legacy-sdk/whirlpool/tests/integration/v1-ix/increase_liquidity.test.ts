@@ -14,6 +14,7 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { PoolUtil, toTokenAmount } from "../../../src/utils/public/pool-utils";
 import {
   MAX_U64,
+  REGEX_FOR_MISSING_SIGNATURE_ERROR,
   TickSpacing,
   ZERO_BN,
   approveToken,
@@ -1570,7 +1571,7 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i,
+      REGEX_FOR_MISSING_SIGNATURE_ERROR,
     );
   });
 

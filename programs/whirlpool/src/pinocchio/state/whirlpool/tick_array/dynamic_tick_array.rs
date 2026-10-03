@@ -124,3 +124,22 @@ impl MemoryMappedDynamicTickArray {
         self.tick_bitmap = tick_bitmap.to_le_bytes();
     }
 }
+
+// `load_tick_array` casts raw account data to this struct without checking its length.
+// A dynamic tick array account may be as small as `DynamicTickArray::MIN_LEN`, so the cast
+// relies on the `MAX_PERMITTED_DATA_INCREASE` bytes of realloc padding the runtime maps after
+// account data. These assertions keep that invariant checked at compile time.
+const _: () = {
+    assert!(
+        core::mem::size_of::<MemoryMappedDynamicTickArray>()
+            == crate::state::DynamicTickArray::MAX_LEN
+    );
+    assert!(core::mem::align_of::<MemoryMappedDynamicTickArray>() == 1);
+    assert!(DYNAMIC_TICK_INITIALIZED_LEN == crate::state::DynamicTick::INITIALIZED_LEN);
+    assert!(DYNAMIC_TICK_UNINITIALIZED_LEN == crate::state::DynamicTick::UNINITIALIZED_LEN);
+    assert!(
+        crate::state::DynamicTickArray::MAX_LEN
+            <= crate::state::DynamicTickArray::MIN_LEN
+                + solana_program::entrypoint::MAX_PERMITTED_DATA_INCREASE
+    );
+};

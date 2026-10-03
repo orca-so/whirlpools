@@ -173,3 +173,8 @@ impl MemoryMappedWhirlpool {
         self.reward_last_updated_timestamp = last_updated_timestamp.to_le_bytes();
     }
 }
+
+const _: () = {
+    assert!(core::mem::size_of::<MemoryMappedWhirlpool>() == crate::state::Whirlpool::LEN);
+    assert!(core::mem::align_of::<MemoryMappedWhirlpool>() == 1);
+};

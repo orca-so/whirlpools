@@ -68,3 +68,9 @@ pub static STATIC_ZEROED_MEMORY_MAPPED_TICK: MemoryMappedTick = MemoryMappedTick
     fee_growth_outside_b: [0; 16],
     reward_growths_outside: [[0; 16]; NUM_REWARDS],
 };
+
+const _: () = {
+    assert!(core::mem::size_of::<MemoryMappedTick>() == crate::state::Tick::LEN);
+    assert!(core::mem::size_of::<MemoryMappedTick>() == crate::state::DynamicTick::INITIALIZED_LEN);
+    assert!(core::mem::align_of::<MemoryMappedTick>() == 1);
+};

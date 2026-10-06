@@ -38,7 +38,6 @@ export * from "./initializeRewardV2";
 export * from "./initializeTickArray";
 export * from "./initializeTokenBadge";
 export * from "./lockPosition";
-export * from "./migrateRepurposeRewardAuthoritySpace";
 export * from "./openBundledPosition";
 export * from "./openPosition";
 export * from "./openPositionWithMetadata";

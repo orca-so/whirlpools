@@ -37,7 +37,6 @@
   pub(crate) mod r#initialize_tick_array;
   pub(crate) mod r#initialize_token_badge;
   pub(crate) mod r#lock_position;
-  pub(crate) mod r#migrate_repurpose_reward_authority_space;
   pub(crate) mod r#open_bundled_position;
   pub(crate) mod r#open_position;
   pub(crate) mod r#open_position_with_metadata;
@@ -104,7 +103,6 @@
   pub use self::r#initialize_tick_array::*;
   pub use self::r#initialize_token_badge::*;
   pub use self::r#lock_position::*;
-  pub use self::r#migrate_repurpose_reward_authority_space::*;
   pub use self::r#open_bundled_position::*;
   pub use self::r#open_position::*;
   pub use self::r#open_position_with_metadata::*;

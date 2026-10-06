@@ -46,7 +46,6 @@ import {
   type ParsedInitializeTickArrayInstruction,
   type ParsedInitializeTokenBadgeInstruction,
   type ParsedLockPositionInstruction,
-  type ParsedMigrateRepurposeRewardAuthoritySpaceInstruction,
   type ParsedOpenBundledPositionInstruction,
   type ParsedOpenPositionInstruction,
   type ParsedOpenPositionWithMetadataInstruction,
@@ -274,7 +273,6 @@ export enum WhirlpoolInstruction {
   InitializeTickArray,
   InitializeTokenBadge,
   LockPosition,
-  MigrateRepurposeRewardAuthoritySpace,
   OpenBundledPosition,
   OpenPosition,
   OpenPositionWithMetadata,
@@ -665,17 +663,6 @@ export function identifyWhirlpoolInstruction(
     )
   ) {
     return WhirlpoolInstruction.LockPosition;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([214, 161, 248, 79, 152, 98, 172, 231]),
-      ),
-      0,
-    )
-  ) {
-    return WhirlpoolInstruction.MigrateRepurposeRewardAuthoritySpace;
   }
   if (
     containsBytes(
@@ -1144,9 +1131,6 @@ export type ParsedWhirlpoolInstruction<
   | ({
       instructionType: WhirlpoolInstruction.LockPosition;
     } & ParsedLockPositionInstruction<TProgram>)
-  | ({
-      instructionType: WhirlpoolInstruction.MigrateRepurposeRewardAuthoritySpace;
-    } & ParsedMigrateRepurposeRewardAuthoritySpaceInstruction<TProgram>)
   | ({
       instructionType: WhirlpoolInstruction.OpenBundledPosition;
     } & ParsedOpenBundledPositionInstruction<TProgram>)

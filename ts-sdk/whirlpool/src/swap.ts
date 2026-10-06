@@ -45,9 +45,13 @@ import {
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import { fetchAllMint } from "@solana-program/token-2022";
 import { executeWithCallback } from "./actionHelpers";
+import {
+  appendExtraAccounts,
+  buildRemainingAccounts,
+} from "./remainingAccounts";
+import { getExtraAccountMetasForTransferHook } from "./transferHook";
 
 // TODO: allow specify number as well as bigint
-// TODO: transfer hook
 
 /**
  * Parameters for an exact input swap.
@@ -346,6 +350,43 @@ export async function swapInstructions<T extends SwapParams>(
   const otherAmountThreshold =
     "tokenMaxIn" in quote ? quote.tokenMaxIn : quote.tokenMinOut;
 
+  const ownerAccountA = tokenAccountAddresses[whirlpool.data.tokenMintA];
+  const ownerAccountB = tokenAccountAddresses[whirlpool.data.tokenMintB];
+  const [transferHookAccountsA, transferHookAccountsB] = await Promise.all([
+    getExtraAccountMetasForTransferHook(
+      rpc,
+      tokenA,
+      aToB ? ownerAccountA : whirlpool.data.tokenVaultA,
+      aToB ? whirlpool.data.tokenVaultA : ownerAccountA,
+      aToB ? signer.address : whirlpool.address,
+    ),
+    getExtraAccountMetasForTransferHook(
+      rpc,
+      tokenB,
+      aToB ? whirlpool.data.tokenVaultB : ownerAccountB,
+      aToB ? ownerAccountB : whirlpool.data.tokenVaultB,
+      aToB ? whirlpool.address : signer.address,
+    ),
+  ]);
+
+  const { remainingAccountsInfo, extraAccounts } = buildRemainingAccounts([
+    {
+      accountsType: AccountsType.TransferHookA,
+      accounts: transferHookAccountsA,
+    },
+    {
+      accountsType: AccountsType.TransferHookB,
+      accounts: transferHookAccountsB,
+    },
+    {
+      accountsType: AccountsType.SupplementalTickArrays,
+      accounts: [
+        { address: tickArrays[3].address, role: AccountRole.WRITABLE },
+        { address: tickArrays[4].address, role: AccountRole.WRITABLE },
+      ],
+    },
+  ]);
+
   const swapInstruction = getSwapV2Instruction(
     {
       tokenProgramA: tokenA.programAddress,
@@ -355,8 +396,8 @@ export async function swapInstructions<T extends SwapParams>(
       whirlpool: whirlpool.address,
       tokenMintA: whirlpool.data.tokenMintA,
       tokenMintB: whirlpool.data.tokenMintB,
-      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+      tokenOwnerAccountA: ownerAccountA,
+      tokenOwnerAccountB: ownerAccountB,
       tokenVaultA: whirlpool.data.tokenVaultA,
       tokenVaultB: whirlpool.data.tokenVaultB,
       tickArray0: tickArrays[0].address,
@@ -368,19 +409,12 @@ export async function swapInstructions<T extends SwapParams>(
       amountSpecifiedIsInput: specifiedInput,
       aToB,
       oracle: oracleAddress,
-      remainingAccountsInfo: {
-        slices: [
-          { accountsType: AccountsType.SupplementalTickArrays, length: 2 },
-        ],
-      },
+      remainingAccountsInfo,
     },
     { programAddress: whirlpoolDeployment.programId },
   );
 
-  swapInstruction.accounts.push(
-    { address: tickArrays[3].address, role: AccountRole.WRITABLE },
-    { address: tickArrays[4].address, role: AccountRole.WRITABLE },
-  );
+  appendExtraAccounts(swapInstruction, extraAccounts);
 
   instructions.push(swapInstruction);
   instructions.push(...cleanupInstructions);

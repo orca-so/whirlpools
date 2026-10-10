@@ -1,6 +1,4 @@
 import {
-  address,
-  createNoopSigner,
   getBase64EncodedWireTransaction,
   type Instruction,
   type Rpc,
@@ -50,18 +48,17 @@ export async function executeWithCallback<
  * Check if adding additional instructions would exceed transaction size limits.
  * @param currentInstructions Current list of instructions in transaction
  * @param instructionsToAdd Instructions to check if they can be added
+ * @param payer Signer that will pay for the final transaction
  * @returns True if adding instructions would exceed size limit, false otherwise
  */
 export async function wouldExceedTransactionSize(
   currentInstructions: Instruction[],
   instructionsToAdd: Instruction[],
+  payer: KeyPairSigner,
 ): Promise<boolean> {
-  const noopSigner = createNoopSigner(
-    address("11111111111111111111111111111111"),
-  );
   const tx = await buildTransaction(
     [...currentInstructions, ...instructionsToAdd],
-    noopSigner,
+    payer,
   );
   const encodedTransaction = getBase64EncodedWireTransaction(tx);
 

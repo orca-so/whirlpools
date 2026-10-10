@@ -100,6 +100,20 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
       }
     });
 
+    for (const amount of [{ inputAmount: 100n }, { outputAmount: 100n }]) {
+      it(`Rejects a non-pool mint for exact ${"inputAmount" in amount ? "input" : "output"}`, async () => {
+        await assert.rejects(
+          swapInstructions(
+            rpc,
+            { ...amount, mint: mints.get("TEA")! },
+            pools.get("A-B")!,
+            { whirlpoolDeployment },
+          ),
+          /The specified mint is not part of the Whirlpool/,
+        );
+      });
+    }
+
     const testSwapAExactIn = async (poolName: string) => {
       const [mintAName, mintBName] = poolName.split("-");
       const mintAAddress = mints.get(mintAName)!;

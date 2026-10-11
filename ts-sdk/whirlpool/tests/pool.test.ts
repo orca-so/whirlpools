@@ -13,8 +13,17 @@ import assert from "assert";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import type { Address } from "@solana/kit";
 import { setupMint } from "./utils/token";
-import { setupWhirlpool } from "./utils/program";
-import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";
+import {
+  setupAdaptiveFeeTier,
+  setupAdaptiveWhirlpool,
+  setupConfigAndFeeTiers,
+  setupWhirlpool,
+} from "./utils/program";
+import {
+  getWhirlpoolAddress,
+  WhirlpoolDeployment,
+} from "@orca-so/whirlpools-client";
+import { orderMints } from "../src/token";
 
 // Ensure both deployments are initialized so the parametrized describe.each below
 // sees real config addresses, not the static `mainnet` placeholders.
@@ -47,6 +56,8 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
         SPLASH_POOL_TICK_SPACING,
         { whirlpoolDeployment },
       );
+      await setupAdaptiveFeeTier(1025, 64, whirlpoolDeployment);
+      await setupAdaptiveFeeTier(1026, 64, whirlpoolDeployment);
     });
 
     it("Should be able to fetch a splash pool", async () => {
@@ -120,6 +131,7 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
         mintB,
         whirlpoolDeployment,
       );
+      // Uninitialized adaptive pools do not add fixed-fee placeholders.
       assert.strictEqual(pools.length, 3);
 
       // Note: we use find because ordering is not guaranteed
@@ -136,6 +148,110 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
       const pool2 = pools.find((p) => p.tickSpacing === 128);
       assert.strictEqual(pool2?.initialized, false);
       assert.strictEqual(pool2?.tickSpacing, 128);
+    });
+
+    it("Should fetch fixed and adaptive pools with the same tick spacing", async () => {
+      const adaptivePool = await setupAdaptiveWhirlpool(
+        mintA,
+        mintB,
+        1025,
+        whirlpoolDeployment,
+      );
+      const pools = await fetchWhirlpoolsByTokenPair(
+        rpc,
+        mintA,
+        mintB,
+        whirlpoolDeployment,
+      );
+      assert.strictEqual(pools.length, 4);
+      assert(
+        pools.some(
+          (pool) => pool.initialized && pool.address === concentratedPool,
+        ),
+      );
+      const adaptive = pools.find((pool) => pool.address === adaptivePool);
+      assert(adaptive?.initialized);
+      assert.strictEqual(adaptive.tickSpacing, 64);
+      assert.strictEqual(
+        adaptive.feeTierIndexSeed[0] + adaptive.feeTierIndexSeed[1] * 256,
+        1025,
+      );
+      assert.strictEqual(adaptive.feeRate, 500);
+      assert.strictEqual(adaptive.price, 1);
+      assert.strictEqual(
+        adaptive.whirlpoolsConfig,
+        whirlpoolDeployment.configAddress,
+      );
+      assert(
+        pools.some((pool) => !pool.initialized && pool.address === defaultPool),
+      );
+    });
+
+    it("Should fetch a pair with only an adaptive pool in either mint order", async () => {
+      const [tokenA, tokenB] = orderMints(await setupMint(), await setupMint());
+      const adaptivePool = await setupAdaptiveWhirlpool(
+        tokenA,
+        tokenB,
+        1026,
+        whirlpoolDeployment,
+      );
+      for (const [first, second] of [
+        [tokenA, tokenB],
+        [tokenB, tokenA],
+      ]) {
+        const pools = await fetchWhirlpoolsByTokenPair(
+          rpc,
+          first,
+          second,
+          whirlpoolDeployment,
+        );
+        const initialized = pools.filter((pool) => pool.initialized);
+        assert.strictEqual(initialized.length, 1);
+        assert.strictEqual(initialized[0].address, adaptivePool);
+        assert.strictEqual(pools.filter((pool) => !pool.initialized).length, 3);
+      }
+    });
+
+    it("Should scope adaptive discovery to the supplied configuration", async () => {
+      const configAddress = await setupConfigAndFeeTiers(
+        whirlpoolDeployment.programId,
+      );
+      const otherDeployment = WhirlpoolDeployment.custom(
+        whirlpoolDeployment.programId,
+        configAddress,
+      );
+      await setupAdaptiveFeeTier(1027, 64, otherDeployment);
+      const otherPool = await setupAdaptiveWhirlpool(
+        mintA,
+        mintB,
+        1027,
+        otherDeployment,
+      );
+      const pools = await fetchWhirlpoolsByTokenPair(
+        rpc,
+        mintA,
+        mintB,
+        whirlpoolDeployment,
+      );
+      assert(!pools.some((pool) => pool.address === otherPool));
+      const otherPools = await fetchWhirlpoolsByTokenPair(
+        rpc,
+        mintA,
+        mintB,
+        otherDeployment,
+      );
+      assert.strictEqual(
+        otherPools.filter((pool) => pool.initialized).length,
+        1,
+      );
+      assert(
+        otherPools.some(
+          (pool) => pool.initialized && pool.address === otherPool,
+        ),
+      );
+      assert(
+        otherPools.every((pool) => pool.whirlpoolsConfig === configAddress),
+      );
     });
   },
 );

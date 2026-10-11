@@ -5,6 +5,8 @@ import {
   getFeeTierAddress,
   getIncreaseLiquidityV2Instruction,
   getInitializeConfigInstruction,
+  getInitializeAdaptiveFeeTierInstruction,
+  getInitializePoolWithAdaptiveFeeInstructionAsync,
   getInitializeDynamicTickArrayInstruction,
   getInitializeFeeTierInstruction,
   getInitializePoolV2Instruction,
@@ -121,6 +123,74 @@ export async function setupConfigAndFeeTiers(
 
   await sendTransaction(instructions);
   return keypair.address;
+}
+
+export async function setupAdaptiveFeeTier(
+  feeTierIndex: number,
+  tickSpacing: number,
+  deployment: WhirlpoolDeployment = TEST_WHIRLPOOL_DEPLOYMENT,
+): Promise<Address> {
+  const [adaptiveFeeTier] = await getFeeTierAddress(feeTierIndex, deployment);
+  await sendTransaction([
+    getInitializeAdaptiveFeeTierInstruction(
+      {
+        whirlpoolsConfig: deployment.configAddress,
+        adaptiveFeeTier,
+        funder: signer,
+        feeAuthority: signer,
+        feeTierIndex,
+        tickSpacing,
+        initializePoolAuthority: signer.address,
+        delegatedFeeAuthority: signer.address,
+        defaultBaseFeeRate: 500,
+        filterPeriod: 30,
+        decayPeriod: 600,
+        reductionFactor: 500,
+        adaptiveFeeControlFactor: 4000,
+        maxVolatilityAccumulator: 350000,
+        tickGroupSize: 64,
+        majorSwapThresholdTicks: 32,
+      },
+      { programAddress: deployment.programId },
+    ),
+  ]);
+  return adaptiveFeeTier;
+}
+
+export async function setupAdaptiveWhirlpool(
+  tokenA: Address,
+  tokenB: Address,
+  feeTierIndex: number,
+  deployment: WhirlpoolDeployment = TEST_WHIRLPOOL_DEPLOYMENT,
+): Promise<Address> {
+  const [adaptiveFeeTier] = await getFeeTierAddress(feeTierIndex, deployment);
+  const [whirlpool] = await getWhirlpoolAddress(
+    tokenA,
+    tokenB,
+    feeTierIndex,
+    deployment,
+  );
+  await sendTransaction([
+    await getInitializePoolWithAdaptiveFeeInstructionAsync(
+      {
+        whirlpoolsConfig: deployment.configAddress,
+        tokenMintA: tokenA,
+        tokenMintB: tokenB,
+        funder: signer,
+        initializePoolAuthority: signer,
+        whirlpool,
+        tokenVaultA: getNextKeypair(),
+        tokenVaultB: getNextKeypair(),
+        adaptiveFeeTier,
+        tokenProgramA: TOKEN_PROGRAM_ADDRESS,
+        tokenProgramB: TOKEN_PROGRAM_ADDRESS,
+        initialSqrtPrice: 1n << 64n,
+        tradeEnableTimestamp: null,
+      },
+      { programAddress: deployment.programId },
+    ),
+  ]);
+  return whirlpool;
 }
 
 export async function setupWhirlpool(

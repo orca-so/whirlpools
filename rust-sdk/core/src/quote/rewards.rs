@@ -3,7 +3,7 @@ use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     try_apply_transfer_fee, CollectRewardQuote, CollectRewardsQuote, CoreError, PositionFacade,
-    TickFacade, TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW, NUM_REWARDS,
+    TickFacade, TransferFee, WhirlpoolFacade, NUM_REWARDS,
 };
 
 /// Calculate rewards owed for a position
@@ -32,7 +32,7 @@ pub fn collect_rewards_quote(
     transfer_fee_2: Option<TransferFee>,
     transfer_fee_3: Option<TransferFee>,
 ) -> Result<CollectRewardsQuote, CoreError> {
-    let timestamp_delta = current_timestamp - whirlpool.reward_last_updated_timestamp;
+    let timestamp_delta = current_timestamp.saturating_sub(whirlpool.reward_last_updated_timestamp);
     let transfer_fees = [transfer_fee_1, transfer_fee_2, transfer_fee_3];
     let mut reward_quotes: [CollectRewardQuote; NUM_REWARDS] =
         [CollectRewardQuote::default(); NUM_REWARDS];
@@ -43,9 +43,8 @@ pub fn collect_rewards_quote(
             let reward_growth_delta = whirlpool.reward_infos[i]
                 .emissions_per_second_x64
                 .checked_mul(timestamp_delta as u128)
-                .ok_or(ARITHMETIC_OVERFLOW)?
-                / whirlpool.liquidity;
-            reward_growth += <u128>::try_from(reward_growth_delta).unwrap();
+                .map_or(0, |x| x / whirlpool.liquidity);
+            reward_growth = reward_growth.wrapping_add(reward_growth_delta);
         }
 
         let mut reward_growth_below = tick_lower.reward_growths_outside[i];
@@ -324,5 +323,69 @@ mod tests {
         assert_eq!(result.rewards[0].rewards_owed, 0);
         assert_eq!(result.rewards[1].rewards_owed, 0);
         assert_eq!(result.rewards[2].rewards_owed, 0);
+    }
+
+    #[test]
+    fn test_timestamp_before_last_updated() {
+        let whirlpool = test_whirlpool(
+            7,
+            20,
+            [500u128 << 64, 600u128 << 64, 700u128 << 64],
+            [1, 2, 3],
+            50,
+        );
+        let quote = collect_rewards_quote(
+            whirlpool,
+            default_test_position(),
+            default_test_tick(),
+            default_test_tick(),
+            10,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(25099));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(30199));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(35299));
+    }
+
+    #[test]
+    fn test_emissions_overflow() {
+        let whirlpool = test_whirlpool(
+            7,
+            0,
+            [500u128 << 64, 600u128 << 64, 700u128 << 64],
+            [u128::MAX, 2, 3],
+            50,
+        );
+        let quote = collect_rewards_quote(
+            whirlpool,
+            default_test_position(),
+            default_test_tick(),
+            default_test_tick(),
+            10,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(25099));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(30199));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(35299));
+    }
+
+    #[test]
+    fn test_reward_growth_global_wraps() {
+        let whirlpool = test_whirlpool(7, 0, [u128::MAX, 0, 0], [500, 0, 0], 50);
+        let quote = collect_rewards_quote(
+            whirlpool,
+            default_test_position(),
+            default_test_tick(),
+            default_test_tick(),
+            10,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(100));
     }
 }

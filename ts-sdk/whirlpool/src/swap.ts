@@ -291,6 +291,12 @@ export async function swapInstructions<T extends SwapParams>(
     config.whirlpoolDeployment ?? DEFAULT_WHIRLPOOL_DEPLOYMENT;
 
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
+  if (
+    params.mint !== whirlpool.data.tokenMintA &&
+    params.mint !== whirlpool.data.tokenMintB
+  ) {
+    throw new Error("The specified mint is not part of the Whirlpool");
+  }
   const [tokenA, tokenB] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
     whirlpool.data.tokenMintB,

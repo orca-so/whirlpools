@@ -348,7 +348,8 @@ export async function harvestAllPositionFees(
       );
       return instructions;
     },
-    wouldExceedTransactionSize,
+    (currentInstructions, instructionsToAdd) =>
+      wouldExceedTransactionSize(currentInstructions, instructionsToAdd, owner),
   );
   return Promise.all(
     instructionSets.map((instructions) =>

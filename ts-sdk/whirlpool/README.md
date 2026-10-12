@@ -113,22 +113,26 @@ const { instructions, quote } = await swapInstructions(
 
 ## ACTIONS
 
-To use actions, you need to set some configuration first.
-The only required configuration is the keypair of the payer, and the rpc url.
+Before using actions, set the transaction fee payer and RPC URL. If you omit an action's `funder`, `authority`, or `signer`, also set a default with `setDefaultFunder`.
+
+For a single-wallet application, use the same signer instance for the payer and default funder:
 
 ```tsx
-import { setPayerFromBytes, setRpc } from "@orca-so/whirlpools";
+import {
+  setDefaultFunder,
+  setPayerFromBytes,
+  setRpc,
+} from "@orca-so/whirlpools";
 
-// Set payer from a private key byte array
-const privateKeyBytes = new Uint8Array([
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-  23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-]);
-await setPayerFromBytes(privateKeyBytes);
+// Use the keypair bytes loaded in the Wallet Creation example above.
+const payer = await setPayerFromBytes(keyPairBytes);
+setDefaultFunder(payer);
 
 // Set rpc url
 await setRpc("https://api.devnet.solana.com");
 ```
+
+The payer pays transaction fees. The default funder supplies the action's `funder`, `authority`, or `signer` when that option is omitted. These roles can use different wallets; pass the appropriate signer in each action's config when needed.
 
 You can also optionally set up the prioritization fees and jito tip settings according to your needs.
 

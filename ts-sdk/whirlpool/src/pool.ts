@@ -12,6 +12,8 @@ import {
   fetchAllMaybeWhirlpool,
   fetchAllFeeTierWithFilter,
   feeTierWhirlpoolsConfigFilter,
+  fetchAllAdaptiveFeeTierWithFilter,
+  adaptiveFeeTierWhirlpoolsConfigFilter,
 } from "@orca-so/whirlpools-client";
 import type {
   Rpc,
@@ -187,8 +189,10 @@ export async function fetchConcentratedLiquidityPool(
 }
 
 /**
- * Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
- * If a pool does not exist, it creates a placeholder account for the uninitialized pool with default data.
+ * Fetches initialized fixed and adaptive fee pools between two token mints in Orca Whirlpools.
+ * Includes placeholders for uninitialized fixed fee pools. Adaptive fee pools are
+ * returned only when initialized; their creation uses a separate API and may require
+ * a designated authority.
  *
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
@@ -227,16 +231,30 @@ export async function fetchWhirlpoolsByTokenPair(
   whirlpoolDeployment: WhirlpoolDeployment = DEFAULT_WHIRLPOOL_DEPLOYMENT,
 ): Promise<PoolInfo[]> {
   const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
-  const feeTierAccounts = await fetchAllFeeTierWithFilter(
-    rpc,
-    [feeTierWhirlpoolsConfigFilter(whirlpoolDeployment.configAddress)],
-    whirlpoolDeployment.programId,
-  );
+  const [feeTierAccounts, adaptiveFeeTierAccounts] = await Promise.all([
+    fetchAllFeeTierWithFilter(
+      rpc,
+      [feeTierWhirlpoolsConfigFilter(whirlpoolDeployment.configAddress)],
+      whirlpoolDeployment.programId,
+    ),
+    fetchAllAdaptiveFeeTierWithFilter(
+      rpc,
+      [
+        adaptiveFeeTierWhirlpoolsConfigFilter(
+          whirlpoolDeployment.configAddress,
+        ),
+      ],
+      whirlpoolDeployment.programId,
+    ),
+  ]);
 
-  const supportedTickSpacings = feeTierAccounts.map((x) => x.data.tickSpacing);
+  const feeTierIndexes = [
+    ...feeTierAccounts.map((x) => x.data.tickSpacing),
+    ...adaptiveFeeTierAccounts.map((x) => x.data.feeTierIndex),
+  ];
 
   const poolAddresses = await Promise.all(
-    supportedTickSpacings.map((x) =>
+    feeTierIndexes.map((x) =>
       getWhirlpoolAddress(tokenMintA, tokenMintB, x, whirlpoolDeployment).then(
         (x) => x[0],
       ),
@@ -252,9 +270,7 @@ export async function fetchWhirlpoolsByTokenPair(
   const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
 
   const pools: PoolInfo[] = [];
-  for (let i = 0; i < supportedTickSpacings.length; i++) {
-    const tickSpacing = supportedTickSpacings[i];
-    const feeTierAccount = feeTierAccounts[i];
+  for (let i = 0; i < feeTierIndexes.length; i++) {
     const poolAccount = poolAccounts[i];
     const poolAddress = poolAddresses[i];
 
@@ -270,12 +286,13 @@ export async function fetchWhirlpoolsByTokenPair(
         price: poolPrice,
         ...poolAccount.data,
       });
-    } else {
+    } else if (i < feeTierAccounts.length) {
+      const feeTierAccount = feeTierAccounts[i];
       pools.push({
         initialized: false,
         address: poolAddress,
         whirlpoolsConfig: whirlpoolDeployment.configAddress,
-        tickSpacing,
+        tickSpacing: feeTierAccount.data.tickSpacing,
         feeRate: feeTierAccount.data.defaultFeeRate,
         protocolFeeRate: configAccount.data.defaultProtocolFeeRate,
         tokenMintA,

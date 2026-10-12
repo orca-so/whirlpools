@@ -1,8 +1,9 @@
 use std::error::Error;
 
 use orca_whirlpools_client::{
-    fetch_all_fee_tier_with_filter, get_fee_tier_address, get_whirlpool_address, FeeTier,
-    FeeTierFilter, Whirlpool, WhirlpoolDeployment, WhirlpoolsConfig,
+    fetch_all_adaptive_fee_tier_with_filter, fetch_all_fee_tier_with_filter, get_fee_tier_address,
+    get_whirlpool_address, AdaptiveFeeTierFilter, FeeTier, FeeTierFilter, Whirlpool,
+    WhirlpoolDeployment, WhirlpoolsConfig,
 };
 
 use orca_whirlpools_core::sqrt_price_to_price;
@@ -274,11 +275,11 @@ pub async fn fetch_concentrated_liquidity_pool(
     }
 }
 
-/// Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
+/// Fetches initialized fixed and adaptive fee pools between two token mints in Orca Whirlpools.
 ///
-/// This function retrieves information about all pools between the specified token mints,
-/// including both initialized and uninitialized pools. If a pool does not exist, it creates
-/// a placeholder account for the uninitialized pool with default configuration details.
+/// Includes placeholders for uninitialized fixed fee pools. Adaptive fee pools are
+/// returned only when initialized; their creation uses a separate API and may require
+/// a designated authority.
 ///
 /// # Arguments
 ///
@@ -345,6 +346,15 @@ pub async fn fetch_whirlpools_by_token_pair(
     )
     .await?;
 
+    let adaptive_fee_tiers = fetch_all_adaptive_fee_tier_with_filter(
+        rpc,
+        vec![AdaptiveFeeTierFilter::WhirlpoolsConfig(
+            whirlpool_deployment.config_address(),
+        )],
+        Some(whirlpool_deployment.id()),
+    )
+    .await?;
+
     let account_infos = rpc
         .get_multiple_accounts(&[whirlpool_deployment.config_address(), token_a, token_b])
         .await?;
@@ -368,8 +378,18 @@ pub async fn fetch_whirlpools_by_token_pair(
     let whirlpool_addresses: Vec<Pubkey> = fee_tiers
         .iter()
         .map(|fee_tier| fee_tier.data.tick_spacing)
-        .map(|tick_spacing| {
-            get_whirlpool_address(&token_a, &token_b, tick_spacing, Some(whirlpool_deployment))
+        .chain(
+            adaptive_fee_tiers
+                .iter()
+                .map(|tier| tier.data.fee_tier_index),
+        )
+        .map(|fee_tier_index| {
+            get_whirlpool_address(
+                &token_a,
+                &token_b,
+                fee_tier_index,
+                Some(whirlpool_deployment),
+            )
         })
         .map(|x| x.map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, ProgramError>>()?;
@@ -377,16 +397,14 @@ pub async fn fetch_whirlpools_by_token_pair(
     let whirlpool_infos = rpc.get_multiple_accounts(&whirlpool_addresses).await?;
 
     let mut whirlpools: Vec<PoolInfo> = Vec::new();
-    for i in 0..whirlpool_addresses.len() {
-        let pool_address = whirlpool_addresses[i];
+    for (i, &pool_address) in whirlpool_addresses.iter().enumerate() {
         let pool_info = whirlpool_infos.get(i).and_then(|x| x.as_ref());
-        let fee_tier = &fee_tiers[i];
 
         if let Some(pool_info) = pool_info {
             let initialized_pool =
                 InitializedPool::from_bytes(&pool_info.data, pool_address, mint_a, mint_b)?;
             whirlpools.push(PoolInfo::Initialized(initialized_pool));
-        } else {
+        } else if let Some(fee_tier) = fee_tiers.get(i) {
             whirlpools.push(PoolInfo::Uninitialized(UninitializedPool {
                 address: pool_address,
                 whirlpools_config: whirlpool_deployment.config_address(),
@@ -406,7 +424,8 @@ pub async fn fetch_whirlpools_by_token_pair(
 mod tests {
     use super::*;
     use crate::tests::{
-        setup_ata_with_amount, setup_mint_with_decimals, setup_whirlpool, RpcContext,
+        setup_adaptive_fee_tier, setup_adaptive_whirlpool, setup_ata_with_amount,
+        setup_mint_with_decimals, setup_whirlpool, RpcContext,
     };
     use rstest::rstest;
     use serial_test::serial;
@@ -439,6 +458,9 @@ mod tests {
                 whirlpool_deployment,
             )
             .await?;
+
+            setup_adaptive_fee_tier(&ctx, 1025, 64, whirlpool_deployment).await?;
+            setup_adaptive_fee_tier(&ctx, 1026, 64, whirlpool_deployment).await?;
 
             Ok(Self {
                 ctx,
@@ -556,6 +578,7 @@ mod tests {
         .await
         .unwrap();
 
+        // Missing adaptive pools do not add fixed-fee placeholders.
         assert_eq!(pools.len(), 3); // 2 initialized + 1 uninitialized (128 tick spacing)
 
         // Verify concentrated liquidity pool
@@ -595,5 +618,94 @@ mod tests {
         if let PoolInfo::Uninitialized(pool) = uninitialized {
             assert_eq!(pool.fee_rate, 1000);
         }
+    }
+
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
+    #[tokio::test]
+    #[serial]
+    async fn test_fetch_fixed_and_adaptive_pools_with_same_tick_spacing(
+        #[case] deployment: WhirlpoolDeployment,
+    ) -> Result<(), Box<dyn Error>> {
+        let test_ctx = TestContext::new(deployment).await?;
+        let adaptive_address = setup_adaptive_whirlpool(
+            &test_ctx.ctx,
+            test_ctx.mint_a,
+            test_ctx.mint_b,
+            1025,
+            deployment,
+        )
+        .await?;
+        let pools = fetch_whirlpools_by_token_pair(
+            &test_ctx.ctx.rpc,
+            test_ctx.mint_a,
+            test_ctx.mint_b,
+            Some(deployment),
+        )
+        .await?;
+        assert_eq!(pools.len(), 4);
+        assert!(pools.iter().any(|pool| matches!(pool, PoolInfo::Initialized(p) if p.address == test_ctx.concentrated_pool)));
+        let adaptive = pools
+            .iter()
+            .find_map(|pool| match pool {
+                PoolInfo::Initialized(pool) if pool.address == adaptive_address => Some(pool),
+                _ => None,
+            })
+            .expect("Expected initialized adaptive pool");
+        assert_eq!(adaptive.data.tick_spacing, 64);
+        assert_eq!(u16::from_le_bytes(adaptive.data.fee_tier_index_seed), 1025);
+        assert_eq!(adaptive.data.fee_rate, 500);
+        assert_eq!(adaptive.data.whirlpools_config, deployment.config_address());
+        assert_eq!(adaptive.price, 1.0);
+        assert_eq!(
+            pools
+                .iter()
+                .filter(|pool| matches!(pool, PoolInfo::Uninitialized(_)))
+                .count(),
+            1
+        );
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(WhirlpoolDeployment::mainnet())]
+    #[case(WhirlpoolDeployment::mainnet_immutable())]
+    #[tokio::test]
+    #[serial]
+    async fn test_fetch_adaptive_only_pair_in_both_mint_orders(
+        #[case] deployment: WhirlpoolDeployment,
+    ) -> Result<(), Box<dyn Error>> {
+        let test_ctx = TestContext::new(deployment).await?;
+        let [mint_a, mint_b] = order_mints(
+            setup_mint_with_decimals(&test_ctx.ctx, 9).await?,
+            setup_mint_with_decimals(&test_ctx.ctx, 9).await?,
+        );
+        let adaptive_address =
+            setup_adaptive_whirlpool(&test_ctx.ctx, mint_a, mint_b, 1026, deployment).await?;
+        for (first, second) in [(mint_a, mint_b), (mint_b, mint_a)] {
+            let pools =
+                fetch_whirlpools_by_token_pair(&test_ctx.ctx.rpc, first, second, Some(deployment))
+                    .await?;
+            let initialized: Vec<_> = pools
+                .iter()
+                .filter_map(|pool| match pool {
+                    PoolInfo::Initialized(pool) => Some(pool),
+                    PoolInfo::Uninitialized(_) => None,
+                })
+                .collect();
+            assert_eq!(initialized.len(), 1);
+            assert_eq!(initialized[0].address, adaptive_address);
+            assert_eq!(initialized[0].data.token_mint_a, mint_a);
+            assert_eq!(initialized[0].data.token_mint_b, mint_b);
+            assert_eq!(
+                pools
+                    .iter()
+                    .filter(|pool| matches!(pool, PoolInfo::Uninitialized(_)))
+                    .count(),
+                3
+            );
+        }
+        Ok(())
     }
 }

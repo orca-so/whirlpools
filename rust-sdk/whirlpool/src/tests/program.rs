@@ -1,10 +1,11 @@
 use orca_whirlpools_client::{
-    get_bundled_position_address, get_fee_tier_address, get_position_address,
+    get_bundled_position_address, get_fee_tier_address, get_oracle_address, get_position_address,
     get_position_bundle_address, get_tick_array_address, get_token_badge_address,
-    get_whirlpool_address, InitializePoolV2, InitializePoolV2InstructionArgs,
-    InitializePositionBundle, InitializeTickArray, InitializeTickArrayInstructionArgs,
-    OpenBundledPosition, OpenBundledPositionInstructionArgs, OpenPosition,
-    OpenPositionInstructionArgs, OpenPositionWithTokenExtensions,
+    get_whirlpool_address, InitializeAdaptiveFeeTier, InitializeAdaptiveFeeTierInstructionArgs,
+    InitializePoolV2, InitializePoolV2InstructionArgs, InitializePoolWithAdaptiveFee,
+    InitializePoolWithAdaptiveFeeInstructionArgs, InitializePositionBundle, InitializeTickArray,
+    InitializeTickArrayInstructionArgs, OpenBundledPosition, OpenBundledPositionInstructionArgs,
+    OpenPosition, OpenPositionInstructionArgs, OpenPositionWithTokenExtensions,
     OpenPositionWithTokenExtensionsInstructionArgs, Whirlpool, WhirlpoolDeployment,
 };
 use orca_whirlpools_core::{
@@ -76,6 +77,77 @@ pub async fn init_tick_arrays_for_range(
     }
 
     Ok(())
+}
+
+pub async fn setup_adaptive_fee_tier(
+    ctx: &RpcContext,
+    fee_tier_index: u16,
+    tick_spacing: u16,
+    deployment: WhirlpoolDeployment,
+) -> Result<Pubkey, Box<dyn Error>> {
+    let adaptive_fee_tier = get_fee_tier_address(fee_tier_index, Some(deployment))?.0;
+    let mut instruction = InitializeAdaptiveFeeTier {
+        whirlpools_config: deployment.config_address(),
+        adaptive_fee_tier,
+        funder: ctx.signer.pubkey(),
+        fee_authority: ctx.signer.pubkey(),
+        system_program: solana_system_interface::program::id(),
+    }
+    .instruction(InitializeAdaptiveFeeTierInstructionArgs {
+        fee_tier_index,
+        tick_spacing,
+        initialize_pool_authority: ctx.signer.pubkey(),
+        delegated_fee_authority: ctx.signer.pubkey(),
+        default_base_fee_rate: 500,
+        filter_period: 30,
+        decay_period: 600,
+        reduction_factor: 500,
+        adaptive_fee_control_factor: 4000,
+        max_volatility_accumulator: 350000,
+        tick_group_size: 64,
+        major_swap_threshold_ticks: 32,
+    });
+    instruction.program_id = deployment.id();
+    ctx.send_transaction(vec![instruction]).await?;
+    Ok(adaptive_fee_tier)
+}
+
+pub async fn setup_adaptive_whirlpool(
+    ctx: &RpcContext,
+    token_a: Pubkey,
+    token_b: Pubkey,
+    fee_tier_index: u16,
+    deployment: WhirlpoolDeployment,
+) -> Result<Pubkey, Box<dyn Error>> {
+    let whirlpool = get_whirlpool_address(&token_a, &token_b, fee_tier_index, Some(deployment))?.0;
+    let vault_a = ctx.get_next_keypair();
+    let vault_b = ctx.get_next_keypair();
+    let mut instruction = InitializePoolWithAdaptiveFee {
+        whirlpools_config: deployment.config_address(),
+        token_mint_a: token_a,
+        token_mint_b: token_b,
+        token_badge_a: get_token_badge_address(&token_a, Some(deployment))?.0,
+        token_badge_b: get_token_badge_address(&token_b, Some(deployment))?.0,
+        funder: ctx.signer.pubkey(),
+        initialize_pool_authority: ctx.signer.pubkey(),
+        whirlpool,
+        oracle: get_oracle_address(&whirlpool, Some(deployment.id()))?.0,
+        token_vault_a: vault_a.pubkey(),
+        token_vault_b: vault_b.pubkey(),
+        adaptive_fee_tier: get_fee_tier_address(fee_tier_index, Some(deployment))?.0,
+        token_program_a: TOKEN_PROGRAM_ID,
+        token_program_b: TOKEN_PROGRAM_ID,
+        system_program: solana_system_interface::program::id(),
+        rent: solana_rent::Rent::id(),
+    }
+    .instruction(InitializePoolWithAdaptiveFeeInstructionArgs {
+        initial_sqrt_price: 1u128 << 64,
+        trade_enable_timestamp: None,
+    });
+    instruction.program_id = deployment.id();
+    ctx.send_transaction_with_signers(vec![instruction], vec![vault_a, vault_b])
+        .await?;
+    Ok(whirlpool)
 }
 
 pub async fn setup_whirlpool(

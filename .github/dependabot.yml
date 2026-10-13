@@ -1,15 +1,14 @@
 version: 2
 updates:
+  # npm — one entry covers the whole yarn workspace (root package.json declares all members).
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
     labels: []
+    open-pull-requests-limit: 10
     groups:
-      docusaurus:
-        applies-to: version-updates
-        patterns:
-          - "@docusaurus/*"  
+      # Groups we want to review on their own, before the catch-alls below.
       solana-v2-core:
         applies-to: version-updates
         patterns:
@@ -21,64 +20,44 @@ updates:
         applies-to: version-updates
         patterns:
           - "@solana-program/*"
-      typescript-types:
-        applies-to: version-updates
-        dependency-type: "development"
-        patterns:
-          - "@types/*"
-          - "typescript"
-      build-tools:
-        applies-to: version-updates
-        dependency-type: "development"
-        patterns:
-          - "@babel/*"
-          - "@esbuild/*"
-          - "@rollup/*"
-          - "@swc/*"
-          - "@webassemblyjs/*"
-      testing-tools:
-        applies-to: version-updates
-        dependency-type: "development"
-        patterns:
-          - "@vitest/*"
-          - "vitest"
-      monorepo-tools:
-        applies-to: version-updates
-        dependency-type: "development"
-        patterns:
-          - "@nx/*"
-          - "nx"
-      linting-tools:
-        applies-to: version-updates
-        dependency-type: "development"
-        patterns:
-          - "@eslint/*"
-          - "@eslint-community/*"
-          - "@typescript-eslint/*"
-          - "eslint"
-      release-tools:
-        applies-to: version-updates
-        dependency-type: "development"
-        patterns:
-          - "@changesets/*"
       codegen-tools:
         applies-to: version-updates
         patterns:
           - "@codama/*"
           - "codama"
-      docs-tooling:
+      docusaurus:
         applies-to: version-updates
-        dependency-type: "development"
         patterns:
+          - "@docusaurus/*"
           - "@algolia/*"
-          - "@img/*"
-          - "@csstools/*"
           - "@svgr/*"
+          - "@csstools/*"
+          - "@img/*"
       nextjs:
         applies-to: version-updates
         patterns:
           - "@next/*"
           - "next"
+      # Catch-alls: a dependency lands in the first group it matches, so anything
+      # not claimed above collapses into one prod PR and one dev PR.
+      npm-production:
+        applies-to: version-updates
+        dependency-type: "production"
+        patterns:
+          - "*"
+      npm-development:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns:
+          - "*"
+      # Security updates are never grouped unless a group opts in explicitly.
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # cargo — on-chain programs (root workspace = programs/*). Kept separate from the
+  # off-chain crates so program dependency bumps get their own review.
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
@@ -94,57 +73,55 @@ updates:
         applies-to: version-updates
         patterns:
           - "anchor-*"
-      serialization:
+      programs-other:
         applies-to: version-updates
         patterns:
-          - "serde*"
-          - "borsh*"
-      cryptography:
-        applies-to: version-updates
+          - "*"
+      programs-security:
+        applies-to: security-updates
         patterns:
-          - "ark-*"
-          - "ed25519*"
-          - "libsecp256k1*"
-      wasm-tooling:
-        applies-to: version-updates
-        patterns:
-          - "wasm-*"
+          - "*"
+
+  # cargo — off-chain crates. Every crate here has its own Cargo.lock, and groups only
+  # combine within a single update entry, so listing all of them in one entry turns
+  # "bump rand in 4 directories" into a single PR instead of four.
   - package-ecosystem: "cargo"
-    directories: ["/examples/*", "/rust-sdk/*", "/ts-sdk/*"]
+    directories:
+      - "/rust-sdk/*"
+      - "/ts-sdk/core"
+      - "/docs/rust"
+      - "/examples/rust-sdk/*"
     schedule:
       interval: "daily"
     labels: []
+    open-pull-requests-limit: 10
+    versioning-strategy: lockfile-only
     groups:
       solana-sdk:
         applies-to: version-updates
         patterns:
           - "solana-*"
           - "spl-*"
-      serialization:
+      cargo-other:
         applies-to: version-updates
         patterns:
-          - "serde*"
-          - "borsh*"
-      cryptography:
-        applies-to: version-updates
+          - "*"
+      cargo-security:
+        applies-to: security-updates
         patterns:
-          - "ark-*"
-          - "ed25519*"
-          - "libsecp256k1*"
-          - "curve25519*"
-      wasm-tooling:
-        applies-to: version-updates
-        patterns:
-          - "wasm-*"
-      async-runtime:
-        applies-to: version-updates
-        patterns:
-          - "tokio*"
-          - "futures*"
-          - "async-*"
-    versioning-strategy: lockfile-only
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
     labels: []
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"

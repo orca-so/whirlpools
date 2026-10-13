@@ -84,6 +84,3 @@ pub use v2::*;
 
 pub mod adaptive_fee;
 pub use adaptive_fee::*;
-
-pub mod migrate_repurpose_reward_authority_space;
-pub use migrate_repurpose_reward_authority_space::*;

@@ -936,14 +936,6 @@ pub mod whirlpool {
         instructions::set_config_feature_flag::handler(ctx, feature_flag)
     }
 
-    /// Migration instruction to repurpose the reward authority space in the Whirlpool.
-    /// TODO: This instruction should be removed once all pools have been migrated.
-    pub fn migrate_repurpose_reward_authority_space(
-        ctx: Context<MigrateRepurposeRewardAuthoritySpace>,
-    ) -> Result<()> {
-        instructions::migrate_repurpose_reward_authority_space::handler(ctx)
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     // V2 instructions (TokenExtensions)
     ////////////////////////////////////////////////////////////////////////////////

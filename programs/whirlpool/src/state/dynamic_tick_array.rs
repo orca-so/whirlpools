@@ -250,22 +250,12 @@ impl TickArrayType for DynamicTickArrayLoader {
 
         // If the tick needs to be initialized, we need to right-shift everything after byte_offset by DynamicTickData::LEN
         if !tick.initialized && update.initialized {
-            let data_mut = self.tick_data_mut();
-            let shift_data = &mut data_mut[byte_offset..];
-            shift_data.rotate_right(DynamicTickData::LEN);
-
-            // sync bitmap
-            self.update_tick_bitmap(tick_offset, true);
+            unreachable!("This path is only reachable when increasing liquidity, which is handled by the Pinocchio implementation");
         }
 
         // If the tick needs to be uninitialized, we need to left-shift everything after byte_offset by DynamicTickData::LEN
         if tick.initialized && !update.initialized {
-            let data_mut = self.tick_data_mut();
-            let shift_data = &mut data_mut[byte_offset..];
-            shift_data.rotate_left(DynamicTickData::LEN);
-
-            // sync bitmap
-            self.update_tick_bitmap(tick_offset, false);
+            unreachable!("This path is only reachable when decreasing liquidity, which is handled by the Pinocchio implementation");
         }
 
         // Update the tick data at byte_offset
@@ -301,17 +291,6 @@ impl DynamicTickArrayLoader {
 
     fn tick_bitmap(&self) -> u128 {
         u128::from_le_bytes(*array_ref![self.0, Self::TICK_BITMAP_OFFSET, 16])
-    }
-
-    fn update_tick_bitmap(&mut self, tick_offset: isize, initialized: bool) {
-        let mut tick_bitmap = self.tick_bitmap();
-        if initialized {
-            tick_bitmap |= 1 << tick_offset;
-        } else {
-            tick_bitmap &= !(1 << tick_offset);
-        }
-        self.0[Self::TICK_BITMAP_OFFSET..Self::TICK_BITMAP_OFFSET + 16]
-            .copy_from_slice(&tick_bitmap.to_le_bytes());
     }
 
     #[inline(always)]
@@ -425,377 +404,6 @@ mod array_update_tests {
                 assert_eq!(tick, uninitialized_tick().into());
                 assert!(array.is_tick_bitmap_off(i, 1));
             }
-        }
-    }
-
-    #[test]
-    fn initialize_tick_successfully() {
-        let mut array = tick_array();
-        let tick_index = 7;
-
-        let before = array.get_tick(tick_index, 1).unwrap();
-        assert_eq!(before, uninitialized_tick().into());
-        assert!(array.is_tick_bitmap_off(tick_index, 1));
-
-        array
-            .update_tick(tick_index, 1, &initialized_tick())
-            .unwrap();
-
-        assert_eq!(array.start_tick_index(), 0);
-        assert_eq!(array.whirlpool(), Pubkey::default());
-
-        for i in 0..TICK_ARRAY_SIZE {
-            let tick = array.get_tick(i, 1).unwrap();
-            if i == tick_index || i % 2 == 0 {
-                assert_eq!(tick, initialized_tick().into());
-                assert!(array.is_tick_bitmap_on(i, 1));
-            } else {
-                assert_eq!(tick, uninitialized_tick().into());
-                assert!(array.is_tick_bitmap_off(i, 1));
-            }
-        }
-    }
-
-    #[test]
-    fn uninitialize_tick_successfully() {
-        let mut array = tick_array();
-        let tick_index = 8;
-
-        let before = array.get_tick(tick_index, 1).unwrap();
-        assert_eq!(before, initialized_tick().into());
-        assert!(array.is_tick_bitmap_on(tick_index, 1));
-
-        array
-            .update_tick(tick_index, 1, &uninitialized_tick())
-            .unwrap();
-
-        assert_eq!(array.start_tick_index(), 0);
-        assert_eq!(array.whirlpool(), Pubkey::default());
-
-        for i in 0..TICK_ARRAY_SIZE {
-            let tick = array.get_tick(i, 1).unwrap();
-            if i % 2 == 0 && i != tick_index {
-                assert_eq!(tick, initialized_tick().into());
-                assert!(array.is_tick_bitmap_on(i, 1));
-            } else {
-                assert_eq!(tick, uninitialized_tick().into());
-                assert!(array.is_tick_bitmap_off(i, 1));
-            }
-        }
-    }
-
-    mod initialize_all_ticks_then_uninitialize_all_ticks {
-        use super::*;
-
-        const ASC: [usize; TICK_ARRAY_SIZE_USIZE] = [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
-            46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
-            68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
-        ];
-        const DESC: [usize; TICK_ARRAY_SIZE_USIZE] = [
-            87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66,
-            65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44,
-            43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22,
-            21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
-        ];
-
-        const PINGPONG: [usize; TICK_ARRAY_SIZE_USIZE] = [
-            0, 87, 1, 86, 2, 85, 3, 84, 4, 83, 5, 82, 6, 81, 7, 80, 8, 79, 9, 78, 10, 77, 11, 76,
-            12, 75, 13, 74, 14, 73, 15, 72, 16, 71, 17, 70, 18, 69, 19, 68, 20, 67, 21, 66, 22, 65,
-            23, 64, 24, 63, 25, 62, 26, 61, 27, 60, 28, 59, 29, 58, 30, 57, 31, 56, 32, 55, 33, 54,
-            34, 53, 35, 52, 36, 51, 37, 50, 38, 49, 39, 48, 40, 47, 41, 46, 42, 45, 43, 44,
-        ];
-        const PONGPING: [usize; TICK_ARRAY_SIZE_USIZE] = [
-            44, 43, 45, 42, 46, 41, 47, 40, 48, 39, 49, 38, 50, 37, 51, 36, 52, 35, 53, 34, 54, 33,
-            55, 32, 56, 31, 57, 30, 58, 29, 59, 28, 60, 27, 61, 26, 62, 25, 63, 24, 64, 23, 65, 22,
-            66, 21, 67, 20, 68, 19, 69, 18, 70, 17, 71, 16, 72, 15, 73, 14, 74, 13, 75, 12, 76, 11,
-            77, 10, 78, 9, 79, 8, 80, 7, 81, 6, 82, 5, 83, 4, 84, 3, 85, 2, 86, 1, 87, 0,
-        ];
-
-        const ALL_UNINITIALIZED_BITMAP: u128 = 0;
-        const ALL_INITIALIZED_BITMAP: u128 = 309485009821345068724781055; // 2^88 - 1
-
-        fn initialized_tick(offset: usize) -> TickUpdate {
-            TickUpdate {
-                initialized: true,
-                liquidity_net: 0x11002233445566778899aabbccddeeffi128 + offset as i128,
-                liquidity_gross: 0xff00eeddccbbaa998877665544332211u128 + offset as u128,
-                fee_growth_outside_a: 0x11220033445566778899aabbccddeeffu128 + offset as u128,
-                fee_growth_outside_b: 0xffee00ddccbbaa998877665544332211u128 + offset as u128,
-                reward_growths_outside: [
-                    0x11223300445566778899aabbccddeeffu128 + offset as u128,
-                    0x11223344005566778899aabbccddeeffu128 + offset as u128,
-                    0x11223344550066778899aabbccddeeffu128 + offset as u128,
-                ],
-            }
-        }
-
-        fn offset_to_tick_index(offset: usize, start_tick_index: i32, tick_spacing: u16) -> i32 {
-            start_tick_index + tick_spacing as i32 * offset as i32
-        }
-
-        fn test(
-            start_tick_index: i32,
-            tick_spacing: u16,
-            initialize_order: [usize; TICK_ARRAY_SIZE_USIZE],
-            uninitialize_order: [usize; TICK_ARRAY_SIZE_USIZE],
-        ) {
-            let whirlpool = Pubkey::new_unique();
-
-            let mut buf = [0u8; DynamicTickArray::MAX_LEN];
-
-            buf[0..4].copy_from_slice(&start_tick_index.to_le_bytes());
-            buf[4..36].copy_from_slice(&whirlpool.to_bytes());
-
-            // all ticks are not initialized
-            let array = DynamicTickArrayLoader::load_mut(&mut buf);
-            assert!(array.whirlpool() == whirlpool);
-            assert!(array.start_tick_index() == start_tick_index);
-            assert!(array.tick_bitmap() == ALL_UNINITIALIZED_BITMAP);
-            for offset in 0..TICK_ARRAY_SIZE_USIZE {
-                assert!(
-                    !array
-                        .get_tick(
-                            offset_to_tick_index(offset, start_tick_index, tick_spacing),
-                            tick_spacing
-                        )
-                        .unwrap()
-                        .initialized
-                );
-            }
-
-            // initialize all ticks
-            let mut initialized = 0;
-            let mut bitmap = ALL_UNINITIALIZED_BITMAP;
-            for i in 0..TICK_ARRAY_SIZE_USIZE {
-                let offset = initialize_order[i];
-                let tick_index = offset_to_tick_index(offset, start_tick_index, tick_spacing);
-
-                // initialize
-                let array = DynamicTickArrayLoader::load_mut(&mut buf);
-                array
-                    .update_tick(tick_index, tick_spacing, &initialized_tick(offset))
-                    .unwrap();
-
-                initialized += 1;
-                let uninitialized = TICK_ARRAY_SIZE_USIZE - initialized;
-
-                bitmap |= 1 << offset;
-
-                let allocated_buf_size = 32
-                    + 4
-                    + 16
-                    + DynamicTick::INITIALIZED_LEN * initialized
-                    + DynamicTick::UNINITIALIZED_LEN * uninitialized;
-
-                // clear not-allocated buf range
-                buf[allocated_buf_size..].fill(0u8);
-
-                // check state
-                let array = DynamicTickArrayLoader::load(&buf);
-                assert!(array.whirlpool() == whirlpool);
-                assert!(array.start_tick_index() == start_tick_index);
-                assert!(array.tick_bitmap() == bitmap);
-                for offset in initialize_order.iter().take(i + 1) {
-                    let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
-                    let tick = array.get_tick(tick_index, tick_spacing).unwrap();
-                    assert!(tick.initialized);
-                    assert_eq!(tick, initialized_tick(*offset).into());
-                }
-
-                // dirty write to non-allocated buf range
-                buf[allocated_buf_size..].fill(255u8);
-
-                let array = DynamicTickArrayLoader::load(&buf);
-                assert!(array.whirlpool() == whirlpool);
-                assert!(array.start_tick_index() == start_tick_index);
-                assert!(array.tick_bitmap() == bitmap);
-                for offset in initialize_order.iter().skip(i + 1) {
-                    let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
-                    let tick = array.get_tick(tick_index, tick_spacing).unwrap();
-                    assert!(!tick.initialized);
-                    assert_eq!(tick, uninitialized_tick().into());
-                }
-            }
-
-            // all ticks are initialized
-            let array = DynamicTickArrayLoader::load(&buf);
-            assert!(array.whirlpool() == whirlpool);
-            assert!(array.start_tick_index() == start_tick_index);
-            assert!(array.tick_bitmap() == ALL_INITIALIZED_BITMAP);
-            for offset in 0..TICK_ARRAY_SIZE_USIZE {
-                assert!(
-                    array
-                        .get_tick(
-                            offset_to_tick_index(offset, start_tick_index, tick_spacing),
-                            tick_spacing
-                        )
-                        .unwrap()
-                        .initialized
-                );
-            }
-
-            // uninitialize all ticks
-            let mut uninitialized = 0;
-            let mut bitmap = ALL_INITIALIZED_BITMAP;
-            for i in 0..TICK_ARRAY_SIZE_USIZE {
-                let offset = uninitialize_order[i];
-                let tick_index = offset_to_tick_index(offset, start_tick_index, tick_spacing);
-
-                // uninitialize
-                let array = DynamicTickArrayLoader::load_mut(&mut buf);
-                array
-                    .update_tick(tick_index, tick_spacing, &uninitialized_tick())
-                    .unwrap();
-
-                uninitialized += 1;
-                let initialized = TICK_ARRAY_SIZE_USIZE - uninitialized;
-
-                bitmap &= !(1 << offset);
-
-                let allocated_buf_size = 32
-                    + 4
-                    + 16
-                    + DynamicTick::INITIALIZED_LEN * initialized
-                    + DynamicTick::UNINITIALIZED_LEN * uninitialized;
-
-                // dirty write to non-allocated buf range
-                buf[allocated_buf_size..].fill(255u8);
-
-                // check state
-                let array = DynamicTickArrayLoader::load(&buf);
-                assert!(array.whirlpool() == whirlpool);
-                assert!(array.start_tick_index() == start_tick_index);
-                assert!(array.tick_bitmap() == bitmap);
-                for offset in uninitialize_order.iter().take(i + 1) {
-                    let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
-                    let tick = array.get_tick(tick_index, tick_spacing).unwrap();
-                    assert!(!tick.initialized);
-                    assert_eq!(tick, uninitialized_tick().into());
-                }
-
-                // clear not-allocated buf range
-                buf[allocated_buf_size..].fill(0u8);
-
-                let array = DynamicTickArrayLoader::load(&buf);
-                assert!(array.whirlpool() == whirlpool);
-                assert!(array.start_tick_index() == start_tick_index);
-                assert!(array.tick_bitmap() == bitmap);
-                for offset in uninitialize_order.iter().skip(i + 1) {
-                    let tick_index = offset_to_tick_index(*offset, start_tick_index, tick_spacing);
-                    let tick = array.get_tick(tick_index, tick_spacing).unwrap();
-                    assert!(tick.initialized);
-                    assert_eq!(tick, initialized_tick(*offset).into());
-                }
-            }
-
-            // all ticks are not initialized
-            let array = DynamicTickArrayLoader::load(&buf);
-            assert!(array.whirlpool() == whirlpool);
-            assert!(array.start_tick_index() == start_tick_index);
-            assert!(array.tick_bitmap() == ALL_UNINITIALIZED_BITMAP);
-            for offset in 0..TICK_ARRAY_SIZE_USIZE {
-                assert!(
-                    !array
-                        .get_tick(
-                            offset_to_tick_index(offset, start_tick_index, tick_spacing),
-                            tick_spacing
-                        )
-                        .unwrap()
-                        .initialized
-                );
-            }
-        }
-
-        fn tests(
-            initialize_order: [usize; TICK_ARRAY_SIZE_USIZE],
-            uninitialize_order: [usize; TICK_ARRAY_SIZE_USIZE],
-        ) {
-            test(-176, 1, initialize_order, uninitialize_order);
-            test(176, 1, initialize_order, uninitialize_order);
-            test(-28160, 64, initialize_order, uninitialize_order);
-            test(28160, 64, initialize_order, uninitialize_order);
-        }
-
-        #[test]
-        fn asc_asc() {
-            tests(ASC, ASC);
-        }
-
-        #[test]
-        fn asc_desc() {
-            tests(ASC, DESC);
-        }
-
-        #[test]
-        fn desc_asc() {
-            tests(DESC, ASC);
-        }
-
-        #[test]
-        fn desc_desc() {
-            tests(DESC, DESC);
-        }
-
-        #[test]
-        fn pingpong_pingpong() {
-            tests(PINGPONG, PINGPONG);
-        }
-
-        #[test]
-        fn pingpong_pongping() {
-            tests(PINGPONG, PONGPING);
-        }
-
-        #[test]
-        fn pongping_pingpong() {
-            tests(PONGPING, PINGPONG);
-        }
-
-        #[test]
-        fn pongping_pongping() {
-            tests(PONGPING, PONGPING);
-        }
-
-        #[test]
-        fn random_random_one() {
-            // generated random order
-            let initialize_order: [usize; TICK_ARRAY_SIZE_USIZE] = [
-                87, 81, 73, 4, 64, 83, 49, 35, 86, 58, 45, 62, 66, 51, 84, 8, 3, 14, 63, 68, 43,
-                27, 71, 67, 60, 85, 34, 19, 56, 21, 20, 65, 77, 48, 57, 23, 41, 7, 17, 12, 36, 16,
-                22, 52, 69, 55, 18, 44, 24, 28, 47, 6, 13, 29, 31, 53, 2, 61, 37, 42, 76, 32, 39,
-                0, 25, 11, 5, 33, 54, 70, 1, 72, 59, 15, 30, 10, 78, 79, 38, 40, 46, 74, 82, 50,
-                75, 26, 80, 9,
-            ];
-            let uninitialize_order: [usize; TICK_ARRAY_SIZE_USIZE] = [
-                59, 23, 32, 37, 43, 1, 56, 65, 46, 61, 34, 20, 58, 67, 40, 42, 21, 36, 11, 6, 0,
-                29, 13, 82, 75, 76, 30, 57, 81, 73, 24, 68, 79, 18, 51, 74, 10, 12, 15, 71, 38, 7,
-                72, 27, 16, 83, 44, 48, 33, 25, 50, 63, 39, 5, 4, 53, 17, 2, 86, 26, 8, 9, 80, 31,
-                19, 77, 47, 35, 70, 87, 45, 54, 78, 28, 22, 66, 60, 85, 69, 62, 49, 14, 52, 84, 55,
-                3, 41, 64,
-            ];
-            tests(initialize_order, uninitialize_order);
-        }
-
-        #[test]
-        fn random_random_two() {
-            // generated random order
-            let initialize_order: [usize; TICK_ARRAY_SIZE_USIZE] = [
-                31, 58, 79, 60, 29, 3, 0, 85, 8, 38, 71, 19, 82, 69, 86, 28, 49, 37, 2, 44, 23, 21,
-                10, 73, 18, 32, 76, 41, 42, 67, 63, 64, 78, 9, 45, 16, 35, 26, 46, 13, 59, 40, 74,
-                51, 81, 53, 84, 25, 57, 34, 65, 56, 17, 5, 48, 39, 4, 36, 54, 87, 72, 66, 62, 77,
-                83, 24, 52, 50, 14, 47, 27, 15, 6, 55, 11, 80, 20, 68, 30, 7, 43, 75, 61, 33, 70,
-                1, 22, 12,
-            ];
-            let uninitialize_order: [usize; TICK_ARRAY_SIZE_USIZE] = [
-                9, 41, 33, 39, 31, 54, 24, 82, 42, 19, 20, 30, 21, 2, 49, 72, 80, 14, 62, 7, 44,
-                84, 46, 48, 58, 50, 71, 76, 35, 0, 43, 1, 22, 51, 29, 64, 75, 10, 61, 53, 6, 47,
-                87, 40, 81, 65, 36, 4, 38, 85, 59, 66, 83, 86, 52, 70, 69, 16, 78, 18, 34, 8, 5,
-                27, 63, 13, 37, 68, 57, 23, 32, 25, 28, 56, 26, 15, 55, 67, 3, 77, 79, 73, 45, 17,
-                60, 11, 12, 74,
-            ];
-            tests(initialize_order, uninitialize_order);
         }
     }
 }
@@ -958,9 +566,90 @@ mod next_init_tick_tests {
     use super::*;
 
     impl DynamicTickArrayLoader {
-        fn set_start_tick_index(&mut self, start_tick_index: i32) {
+        fn set_start_tick_index_for_test(&mut self, start_tick_index: i32) {
             self.0[Self::START_TICK_INDEX_OFFSET..Self::START_TICK_INDEX_OFFSET + 4]
                 .copy_from_slice(&start_tick_index.to_le_bytes());
+        }
+
+        fn set_tick_for_test(
+            &mut self,
+            tick_index: i32,
+            tick_spacing: u16,
+            update: &TickUpdate,
+        ) -> Result<()> {
+            if !self.check_in_array_bounds(tick_index, tick_spacing)
+                || !Tick::check_is_usable_tick(tick_index, tick_spacing)
+            {
+                return Err(ErrorCode::TickNotFound.into());
+            }
+            let tick_offset = self.tick_offset(tick_index, tick_spacing)?;
+            let byte_offset = self.byte_offset(tick_offset)?;
+            let data = self.tick_data();
+            let mut tick_data = &data[byte_offset..byte_offset + DynamicTick::INITIALIZED_LEN];
+            let tick: Tick = DynamicTick::deserialize(&mut tick_data)?.into();
+
+            // If the tick needs to be initialized, we need to right-shift everything after byte_offset by DynamicTickData::LEN
+            if !tick.initialized && update.initialized {
+                let current_len = self.ticks_len();
+                let extended_len = current_len + crate::state::DynamicTickData::LEN;
+
+                let data_mut = self.tick_data_mut();
+                let ticks_slice = &mut data_mut[0..extended_len];
+
+                let copy_src_offset = byte_offset + 1;
+                let copy_dest_offset = copy_src_offset + crate::state::DynamicTickData::LEN;
+                ticks_slice.copy_within(copy_src_offset..current_len, copy_dest_offset);
+
+                // sync bitmap
+                self.update_tick_bitmap(tick_offset, true);
+            }
+
+            // If the tick needs to be uninitialized, we need to left-shift everything after byte_offset by DynamicTickData::LEN
+            if tick.initialized && !update.initialized {
+                let current_len = self.ticks_len();
+
+                let data_mut = self.tick_data_mut();
+                let ticks_slice = &mut data_mut[0..current_len];
+
+                let copy_dest_offset = byte_offset + 1;
+                let copy_src_offset = copy_dest_offset + crate::state::DynamicTickData::LEN;
+                ticks_slice.copy_within(copy_src_offset..current_len, copy_dest_offset);
+
+                // sync bitmap
+                self.update_tick_bitmap(tick_offset, false);
+            }
+
+            // Update the tick data at byte_offset
+            let tick_data_len = if update.initialized {
+                DynamicTick::INITIALIZED_LEN
+            } else {
+                DynamicTick::UNINITIALIZED_LEN
+            };
+
+            let data_mut = self.tick_data_mut();
+            let mut tick_data = &mut data_mut[byte_offset..byte_offset + tick_data_len];
+            DynamicTick::from(update).serialize(&mut tick_data)?;
+
+            Ok(())
+        }
+
+        fn ticks_len(&self) -> usize {
+            let initialized_ticks = self.tick_bitmap().count_ones() as usize;
+            let uninitialized_ticks = TICK_ARRAY_SIZE_USIZE - initialized_ticks;
+
+            initialized_ticks * DynamicTick::INITIALIZED_LEN
+                + uninitialized_ticks * DynamicTick::UNINITIALIZED_LEN
+        }
+
+        fn update_tick_bitmap(&mut self, tick_offset: isize, initialized: bool) {
+            let mut tick_bitmap = self.tick_bitmap();
+            if initialized {
+                tick_bitmap |= 1 << tick_offset;
+            } else {
+                tick_bitmap &= !(1 << tick_offset);
+            }
+            self.0[Self::TICK_BITMAP_OFFSET..Self::TICK_BITMAP_OFFSET + 16]
+                .copy_from_slice(&tick_bitmap.to_le_bytes());
         }
     }
 
@@ -976,7 +665,9 @@ mod next_init_tick_tests {
         let mut array = DynamicTickArrayLoader::default();
         let tick_spacing = 8;
 
-        array.update_tick(8, tick_spacing, &tick_update()).unwrap();
+        array
+            .set_tick_for_test(8, tick_spacing, &tick_update())
+            .unwrap();
 
         let result = array
             .get_next_init_tick_index(64, tick_spacing, true)
@@ -987,11 +678,11 @@ mod next_init_tick_tests {
     #[test]
     fn a_to_b_negative_tick() {
         let mut array = DynamicTickArrayLoader::default();
-        array.set_start_tick_index(-704);
+        array.set_start_tick_index_for_test(-704);
         let tick_spacing = 8;
 
         array
-            .update_tick(-64, tick_spacing, &tick_update())
+            .set_tick_for_test(-64, tick_spacing, &tick_update())
             .unwrap();
 
         let result = array
@@ -1017,7 +708,9 @@ mod next_init_tick_tests {
         let mut array = DynamicTickArrayLoader::default();
         let tick_spacing = 8;
 
-        array.update_tick(64, tick_spacing, &tick_update()).unwrap();
+        array
+            .set_tick_for_test(64, tick_spacing, &tick_update())
+            .unwrap();
 
         let result = array
             .get_next_init_tick_index(8, tick_spacing, false)
@@ -1028,11 +721,13 @@ mod next_init_tick_tests {
     #[test]
     fn b_to_a_negative_tick() {
         let mut array = DynamicTickArrayLoader::default();
-        array.set_start_tick_index(-704);
+        array.set_start_tick_index_for_test(-704);
         let tick_index = -64;
         let tick_spacing = 8;
 
-        array.update_tick(-8, tick_spacing, &tick_update()).unwrap();
+        array
+            .set_tick_for_test(-8, tick_spacing, &tick_update())
+            .unwrap();
 
         let result = array
             .get_next_init_tick_index(tick_index, tick_spacing, false)

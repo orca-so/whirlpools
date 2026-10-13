@@ -1326,7 +1326,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_growth_checkpoint_b: to_x64(5),
                             fee_owed_b: 150,
                             reward_infos: create_position_reward_infos(
-                                340282366920938463460300150086149952853,
+                                // partial checkpoint adjustment: 340282366920938463459685258617026301133 = ceiling(to_x64(8) / 10) + 340282366920938463444927863358058659840 (previous checkpoint)
+                                340282366920938463459685258617026301133,
                                 // 8 = 0.83 * 10
                                 8,
                             ),
@@ -2658,7 +2659,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_owed_a: 20000,
                             fee_growth_checkpoint_b: to_x64(20),
                             fee_owed_b: 20000,
-                            reward_infos: create_position_reward_infos(16769767339735956014, 909),
+                            // partial checkpoint adjustment: 16768090363001982419 = ceiling(to_x64(909) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(16768090363001982419, 909),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,
@@ -2786,7 +2788,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_owed_a: 20000,
                             fee_growth_checkpoint_b: to_x64(20),
                             fee_owed_b: 20000,
-                            reward_infos: create_position_reward_infos(16769767339735956014, 909),
+                            // partial checkpoint adjustment: 16768090363001982419 = ceiling(to_x64(909) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(16768090363001982419, 909),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,
@@ -2925,7 +2928,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_owed_a: 20000,
                             fee_growth_checkpoint_b: to_x64(20),
                             fee_owed_b: 20000,
-                            reward_infos: create_position_reward_infos(16769767339735956014, 909),
+                            // partial checkpoint adjustment: 16768090363001982419 = ceiling(to_x64(909) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(16768090363001982419, 909),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,
@@ -3050,7 +3054,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_owed_a: 90000,
                             fee_growth_checkpoint_b: to_x64(90),
                             fee_owed_b: 90000,
-                            reward_infos: create_position_reward_infos(67079069358943824058, 3636),
+                            // partial checkpoint adjustment: 67072361452007929676 = ceiling(to_x64(3636) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(67072361452007929676, 3636),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,
@@ -3443,7 +3448,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_growth_checkpoint_b: to_x64(20),
                             fee_owed_b: 20000,
                             // 0.909 = 0.909 - (-3) - (0.909 - -2.0909)
-                            reward_infos: create_position_reward_infos(16769767339735956014, 909),
+                            // partial checkpoint adjustment: 16768090363001982419 = ceiling(to_x64(909) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(16768090363001982419, 909),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,
@@ -3574,7 +3580,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_owed_a: 20000,
                             fee_growth_checkpoint_b: to_x64(20),
                             fee_owed_b: 20000,
-                            reward_infos: create_position_reward_infos(16769767339735956014, 909),
+                            // partial checkpoint adjustment: 16768090363001982419 = ceiling(to_x64(909) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(16768090363001982419, 909),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,
@@ -3718,7 +3725,8 @@ mod calculate_modify_liquidity_unit_tests {
                             fee_growth_checkpoint_b: to_x64(20),
                             fee_owed_b: 20000,
                             // 0.909 = 0.909 - (-4) - (0.909 - (-3.0909))
-                            reward_infos: create_position_reward_infos(16769767339735956014, 909),
+                            // partial checkpoint adjustment: 16768090363001982419 = ceiling(to_x64(909) / 1000) + 0 (previous checkpoint)
+                            reward_infos: create_position_reward_infos(16768090363001982419, 909),
                         },
                         tick_lower_update: TickUpdate {
                             initialized: true,

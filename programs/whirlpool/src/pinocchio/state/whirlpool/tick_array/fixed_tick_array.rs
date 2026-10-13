@@ -53,3 +53,10 @@ impl TickArray for MemoryMappedFixedTickArray {
         Ok(())
     }
 }
+
+const _: () = {
+    assert!(
+        core::mem::size_of::<MemoryMappedFixedTickArray>() == crate::state::FixedTickArray::LEN
+    );
+    assert!(core::mem::align_of::<MemoryMappedFixedTickArray>() == 1);
+};

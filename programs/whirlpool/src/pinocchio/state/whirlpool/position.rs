@@ -222,3 +222,8 @@ fn validate_tick_range_for_whirlpool(
 
     Ok(())
 }
+
+const _: () = {
+    assert!(core::mem::size_of::<MemoryMappedPosition>() == crate::state::Position::LEN);
+    assert!(core::mem::align_of::<MemoryMappedPosition>() == 1);
+};

@@ -8,7 +8,7 @@ const ACCOUNT_STORAGE_OVERHEAD = 128;
 /**
  * Calculates the minimum balance required for rent exemption for a given account size.
  *
- * @param {Rpc} rpc - The Solana RPC client to fetch sysvar rent data.
+ * @param {SysvarRent} rent - The sysvar rent parameters used to compute the exemption.
  * @param {number} dataSize - The size of the account data in bytes.
  * @returns {bigint} The minimum balance required for rent exemption in lamports.
  */

@@ -245,5 +245,31 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
         await testSwapBExactOut(poolName);
       });
     }
+
+    describe("Invalid specified mint", () => {
+      it("Should reject a mint that is neither tokenMintA nor tokenMintB (exact in)", async () => {
+        await assert.rejects(
+          swapInstructions(
+            rpc,
+            { inputAmount: 100n, mint: mints.get("TEFee")! },
+            pools.get("A-B")!,
+            { whirlpoolDeployment },
+          ),
+          /does not match either of the pool's token mints/,
+        );
+      });
+
+      it("Should reject a mint that is neither tokenMintA nor tokenMintB (exact out)", async () => {
+        await assert.rejects(
+          swapInstructions(
+            rpc,
+            { outputAmount: 100n, mint: mints.get("TEFee")! },
+            pools.get("A-B")!,
+            { whirlpoolDeployment },
+          ),
+          /does not match either of the pool's token mints/,
+        );
+      });
+    });
   },
 );

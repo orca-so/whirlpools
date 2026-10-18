@@ -1,12 +1,12 @@
 import {
   fetchAllMaybeToken,
-  fetchAllMint,
   findAssociatedTokenPda,
   getCloseAccountInstruction,
   getInitializeAccount3Instruction,
   getSyncNativeInstruction,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
+import { fetchAllMint } from "@solana-program/token-2022";
 import type {
   Account,
   Address,

@@ -186,6 +186,9 @@ export async function setPayerFromBytes(pkBytes: Uint8Array<ArrayBuffer>) {
   const kp = await createKeyPairFromBytes(pkBytes);
   const signer = await createSignerFromKeyPair(kp);
   _payer = signer;
+  // Also set the default funder so actions that omit the funder/authority/signer
+  // option use the payer as the default funder.
+  setDefaultFunder(signer);
   return signer;
 }
 

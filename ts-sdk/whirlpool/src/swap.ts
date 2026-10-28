@@ -296,6 +296,11 @@ export async function swapInstructions<T extends SwapParams>(
     whirlpool.data.tokenMintB,
   ]);
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
+  if (params.mint !== whirlpool.data.tokenMintA && params.mint !== whirlpool.data.tokenMintB) {
+    throw new Error(
+      `Mint ${params.mint} is not a token in this pool (expected ${whirlpool.data.tokenMintA} or ${whirlpool.data.tokenMintB})`,
+    );
+  }
   const specifiedInput = "inputAmount" in params;
 
   const tickArrays = await fetchTickArrayOrDefault(

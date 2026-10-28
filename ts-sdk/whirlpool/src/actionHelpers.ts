@@ -57,7 +57,7 @@ export async function wouldExceedTransactionSize(
   instructionsToAdd: Instruction[],
 ): Promise<boolean> {
   const noopSigner = createNoopSigner(
-    address("11111111111111111111111111111111"),
+    address("So11111111111111111111111111111111111111112"),
   );
   const tx = await buildTransaction(
     [...currentInstructions, ...instructionsToAdd],

@@ -116,6 +116,9 @@ const { instructions, quote } = await swapInstructions(
 To use actions, you need to set some configuration first.
 The only required configuration is the keypair of the payer, and the rpc url.
 
+`setPayerFromBytes` also sets the default funder, so actions that omit the
+`funder`/`authority`/`signer` option use the payer as the default funder.
+
 ```tsx
 import { setPayerFromBytes, setRpc } from "@orca-so/whirlpools";
 

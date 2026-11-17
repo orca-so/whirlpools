@@ -22,6 +22,7 @@ import {
   fetchPosition,
   fetchWhirlpool,
   getPositionAddress,
+  getSetFeeRateInstruction,
 } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import {
@@ -31,6 +32,7 @@ import {
 } from "@orca-so/whirlpools-core";
 import { resetPositionRangeInstructions } from "../src/resetPositionRange";
 import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
+import { swapInstructions } from "../src/swap";
 import { fetchAllMint } from "@solana-program/token-2022";
 
 const mintTypes = new Map([
@@ -275,5 +277,70 @@ describe.each(TEST_WHIRLPOOL_DEPLOYMENTS)(
         });
       }
     }
+
+    it("Should fail to reset a position that still owes fees after withdrawing liquidity", async () => {
+      const poolAddress = pools.get("A-B")!;
+      const mintAAddress = mints.get("A")!;
+      const positionMintAddress = await setupPosition(poolAddress, {
+        tickLower: -100,
+        tickUpper: 100,
+        liquidity: initialLiquidity,
+        whirlpoolDeployment,
+      });
+      const positionAddress = await getPositionAddress(
+        positionMintAddress,
+        whirlpoolDeployment.programId,
+      );
+
+      // Raise the fee rate so the small swap below (the fixture liquidity is
+      // thin) still charges a non-zero fee on this position.
+      const whirlpool = await fetchWhirlpool(rpc, poolAddress);
+      await sendTransaction([
+        getSetFeeRateInstruction(
+          {
+            whirlpoolsConfig: whirlpool.data.whirlpoolsConfig,
+            whirlpool: poolAddress,
+            feeAuthority: signer,
+            feeRate: 10_000,
+          },
+          { programAddress: whirlpoolDeployment.programId },
+        ),
+      ]);
+
+      // A swap through the position's range accrues fees that the position owes.
+      const { instructions: swapIx } = await swapInstructions(
+        rpc,
+        { inputAmount: 1_000n, mint: mintAAddress },
+        poolAddress,
+        { whirlpoolDeployment },
+      );
+      await sendTransaction(swapIx);
+
+      // Fees are tracked per tick and only written to the position when it is
+      // touched, so the withdrawal below is what surfaces the accrued fees.
+      // Withdrawing all liquidity leaves them owed, which is why the program
+      // rejects a reset with ClosePositionNotEmpty.
+      const { instructions: decreaseIx } = await decreaseLiquidityInstructions(
+        rpc,
+        positionMintAddress,
+        { liquidity: initialLiquidity },
+        { whirlpoolDeployment },
+      );
+      await sendTransaction(decreaseIx);
+
+      const afterWithdraw = await fetchPosition(rpc, positionAddress[0]);
+      assert.strictEqual(afterWithdraw.data.liquidity, 0n);
+      assert(
+        afterWithdraw.data.feeOwedA > 0n || afterWithdraw.data.feeOwedB > 0n,
+        "Fees were cleared by the withdrawal",
+      );
+
+      await expect(
+        resetPositionRangeInstructions(rpc, positionMintAddress, 300, 400, {
+          authority: signer,
+          whirlpoolDeployment,
+        }),
+      ).rejects.toThrow("collect fees and rewards");
+    });
   },
 );

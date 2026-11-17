@@ -102,7 +102,20 @@ export async function resetPositionRangeInstructions(
   const positionMint = await fetchMaybeMint(rpc, position.data.positionMint);
 
   assert(positionMint.exists, "Position mint not found");
-  assert(position.data.liquidity === BigInt(0), "Position must be empty");
+  // The program rejects the instruction with ClosePositionNotEmpty unless the
+  // position owes nothing, and fees and rewards stay owed after the liquidity
+  // is withdrawn. Check the same condition here so the caller gets an
+  // actionable error instead of an opaque program failure.
+  const owesFees =
+    position.data.feeOwedA !== BigInt(0) ||
+    position.data.feeOwedB !== BigInt(0);
+  const owesRewards = position.data.rewardInfos.some(
+    (reward) => reward.amountOwed !== BigInt(0),
+  );
+  assert(
+    position.data.liquidity === BigInt(0) && !owesFees && !owesRewards,
+    "Position must be empty: withdraw all liquidity and collect fees and rewards before resetting the range",
+  );
 
   const positionTokenAccount = await findAssociatedTokenPda({
     owner: authority.address,

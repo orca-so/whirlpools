@@ -72,46 +72,36 @@ export async function getMultipleAccounts(
     return [];
   }
 
-  const promises: Promise<void>[] = [];
-  const chunks = Math.ceil(addresses.length / chunkSize);
-  const result: Array<FetchedAccountEntry[]> = new Array<FetchedAccountEntry[]>(
-    chunks,
+  const chunkCount = Math.ceil(addresses.length / chunkSize);
+  const requests = Array.from(
+    { length: chunkCount },
+    async (_, index): Promise<FetchedAccountEntry[]> => {
+      const start = index * chunkSize;
+      const keys = AddressUtil.toPubKeys(
+        addresses.slice(start, start + chunkSize),
+      );
+      const accounts = await connection.getMultipleAccountsInfo(keys);
+      return accounts.map((account, i) => [keys[i], account]);
+    },
   );
 
-  for (let i = 0; i < result.length; i++) {
-    const slice = addresses.slice(i * chunkSize, (i + 1) * chunkSize);
-    const addressChunk = AddressUtil.toPubKeys(slice);
-    const promise = new Promise<void>(async (resolve) => {
-      const res = await connection.getMultipleAccountsInfo(addressChunk);
-      const fetchedAccountChunk = res.map((result, index) => {
-        return [addressChunk[index], result] as FetchedAccountEntry;
-      });
-      result[i] = fetchedAccountChunk;
-      resolve();
-    });
-    promises.push(promise);
-  }
-
-  await Promise.race([
-    Promise.all(promises),
-    timeoutAfter(
-      timeoutAfterSeconds,
-      "connection.getMultipleAccountsInfo timeout",
-    ),
-  ]);
-
-  const flattenedResult = result.flat();
-  invariant(
-    flattenedResult.length === addresses.length,
-    "getMultipleAccounts not enough results",
-  );
-  return flattenedResult;
-}
-
-function timeoutAfter(seconds: number, message: string) {
-  return new Promise((_, reject) => {
-    setTimeout(() => {
-      reject(new Error(message));
-    }, seconds * 1000);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error("connection.getMultipleAccountsInfo timeout"));
+    }, timeoutAfterSeconds * 1000);
   });
+
+  try {
+    // Promise.all preserves chunk order even when later requests finish first.
+    const chunks = await Promise.race([Promise.all(requests), timeout]);
+    const result = chunks.flat();
+    invariant(
+      result.length === addresses.length,
+      "getMultipleAccounts not enough results",
+    );
+    return result;
+  } finally {
+    clearTimeout(timer);
+  }
 }

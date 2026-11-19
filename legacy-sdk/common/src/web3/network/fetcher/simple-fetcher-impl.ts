@@ -17,7 +17,7 @@ export type RetentionPolicy<T> = ReadonlyMap<ParsableEntity<T>, number>;
  * Options when fetching the accounts
  */
 export type SimpleAccountFetchOptions = {
-  // Accepted maxAge in milliseconds for a cache entry hit for this account request.
+  // Maximum age in milliseconds. Zero always fetches from the network.
   maxAge?: number;
   // Timeout in seconds before the RPC call is considered failed.
   timeoutInSeconds?: number;
@@ -48,14 +48,9 @@ export class SimpleAccountFetcher<
     const addressKey = AddressUtil.toPubKey(address);
     const addressStr = AddressUtil.toString(address);
 
-    const cached = this.cache.get(addressStr);
     const maxAge = this.getMaxAge(this.retentionPolicy.get(parser), opts);
-    const elapsed = !!cached
-      ? now - (cached?.fetchedAt ?? 0)
-      : Number.NEGATIVE_INFINITY;
-    const expired = elapsed > maxAge;
-
-    if (!!cached && !expired) {
+    const cached = this.getFreshEntry(addressStr, now, maxAge);
+    if (cached) {
       return cached.value as U | null;
     }
 
@@ -65,7 +60,7 @@ export class SimpleAccountFetcher<
       this.cache.set(addressStr, { parser, value, fetchedAt: now });
       return value;
     } catch {
-      this.cache.set(addressStr, { parser, value: null, fetchedAt: now });
+      // A failed read tells us nothing about the account. Keep the last successful result.
       return null;
     }
   }
@@ -78,6 +73,14 @@ export class SimpleAccountFetcher<
       return opts.maxAge;
     }
     return parserMaxAge === undefined ? Number.POSITIVE_INFINITY : parserMaxAge;
+  }
+
+  private getFreshEntry(address: string, now: number, maxAge: number) {
+    const entry = this.cache.get(address);
+    if (entry && maxAge !== 0 && now - entry.fetchedAt <= maxAge) {
+      return entry;
+    }
+    return undefined;
   }
 
   async getAccounts<U extends T>(
@@ -155,27 +158,21 @@ export class SimpleAccountFetcher<
     const addressStrs = AddressUtil.toStrings(addresses);
     const maxAge = this.getMaxAge(this.retentionPolicy.get(parser), opts);
 
-    // Filter out all unexpired accounts to get the accounts to fetch
-    const undefinedAccounts = addressStrs.filter((addressStr) => {
-      const cached = this.cache.get(addressStr);
-      const elapsed = !!cached
-        ? now - (cached?.fetchedAt ?? 0)
-        : Number.NEGATIVE_INFINITY;
-      const expired = elapsed > maxAge;
-      return !cached || expired;
-    });
+    const addressesToFetch = addressStrs.filter(
+      (address) => !this.getFreshEntry(address, now, maxAge),
+    );
 
     // Fetch all undefined accounts and place in cache
     // TODO: We currently do not support contextSlot consistency across the batched getMultipleAccounts call
     // If the addresses list contain accounts in the 1st gMA call as subsequent calls and the gMA returns on different contextSlots,
     // the returned results can be inconsistent and unexpected by the user.
-    if (undefinedAccounts.length > 0) {
+    if (addressesToFetch.length > 0) {
       const fetchedAccountsMap = await getMultipleAccountsInMap(
         this.connection,
-        undefinedAccounts,
+        addressesToFetch,
         opts?.timeoutInSeconds,
       );
-      undefinedAccounts.forEach((key) => {
+      addressesToFetch.forEach((key) => {
         const fetchedEntry = fetchedAccountsMap.get(key);
         const value = parser.parse(AddressUtil.toPubKey(key), fetchedEntry);
         this.cache.set(key, { parser, value, fetchedAt: now });
